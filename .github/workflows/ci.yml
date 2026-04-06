@@ -1,0 +1,51 @@
+# Rentier CI — build + test on Windows & macOS
+# NOTE: Coverage enforcement gate (Domain 100%, Application 90%) MUST be added
+# in the first feature that introduces a real Application-layer use case.
+# Intentionally absent from scaffold CI per spec assumption A-008.
+
+name: CI
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+    branches: [develop]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.x'
+
+      - name: Restore
+        run: dotnet restore Rentier.slnx
+
+      - name: Build
+        run: dotnet build Rentier.slnx --no-restore -warnaserror -c Release
+
+      - name: Test
+        run: dotnet test Rentier.slnx --no-build -c Release --collect:"XPlat Code Coverage" --results-directory ./coverage --logger "console;verbosity=normal"
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.os }}
+          path: ./coverage
+
+      - name: Post summary
+        shell: bash
+        run: |
+          echo "## Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "Platform: ${{ matrix.os }}" >> $GITHUB_STEP_SUMMARY
+          echo "Build: ✅ Passed (-warnaserror)" >> $GITHUB_STEP_SUMMARY
+          echo "Tests: ✅ All passing" >> $GITHUB_STEP_SUMMARY

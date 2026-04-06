@@ -31,7 +31,14 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+- [ ] Clean Architecture boundary is preserved (`Desktop -> Application -> Domain`; Infrastructure implements Application contracts only).
+- [ ] All monetary/rate/percentage values are modeled as `decimal`.
+- [ ] All business dates are modeled as `DateOnly`; boundary conversions are identified.
+- [ ] Security/privacy constraints hold: local-first data, OS credential store for secrets, no telemetry.
+- [ ] External network usage is limited to approved endpoints (IMAP and NBS) or explicitly justified as a constitution amendment.
+- [ ] All I/O paths are async; UI work avoids blocking calls and uses reactive async command flow.
+- [ ] Tests and coverage impact are defined for Domain (rule/state coverage) and Application (>=90%).
+- [ ] Feature work is mapped to an approved spec task under `.specify/tasks/`.
 
 ## Project Structure
 
