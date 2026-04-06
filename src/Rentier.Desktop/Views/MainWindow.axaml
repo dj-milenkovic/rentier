@@ -1,0 +1,22 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:res="clr-namespace:Rentier.Desktop.Resources"
+        xmlns:vm="using:Rentier.Desktop.ViewModels"
+        x:Class="Rentier.Desktop.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="{x:Static res:Strings.AppTitle}"
+        Width="900" Height="600">
+  <DockPanel>
+    <ListBox DockPanel.Dock="Left"
+             ItemsSource="{Binding NavigationEntries}"
+             SelectedItem="{Binding SelectedEntry}"
+             Width="180">
+      <ListBox.ItemTemplate>
+        <DataTemplate x:DataType="vm:NavigationEntry">
+          <TextBlock Text="{Binding Label}" Margin="8"/>
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+    <ContentControl Content="{Binding CurrentViewModel}" Margin="16"/>
+  </DockPanel>
+</Window>

@@ -95,6 +95,15 @@
 - **FR-006**: System MUST authenticate users via [NEEDS CLARIFICATION: auth method not specified - email/password, SSO, OAuth?]
 - **FR-007**: System MUST retain user data for [NEEDS CLARIFICATION: retention period not specified]
 
+### Constitution Alignment *(mandatory)*
+
+- **CA-001 (Architecture)**: Specify impacted layers and confirm Clean Architecture boundaries remain valid.
+- **CA-002 (Money and Dates)**: Identify all monetary/date fields and confirm `decimal` and `DateOnly` usage.
+- **CA-003 (Privacy and Security)**: Confirm storage is local-first and any secrets use OS credential storage.
+- **CA-004 (Network Scope)**: List outbound calls and confirm they are within allowed endpoints.
+- **CA-005 (Async and UI)**: Confirm all I/O is async and UI flows avoid blocking operations.
+- **CA-006 (Testing Impact)**: Define required Domain/Application/Infrastructure/Desktop test updates.
+
 ### Key Entities *(include if feature involves data)*
 
 - **[Entity 1]**: [What it represents, key attributes without implementation]
