@@ -1,15 +1,13 @@
 using ReactiveUI;
-using Rentier.Desktop.Resources;
 
 namespace Rentier.Desktop.ViewModels;
 
 public sealed class SettingsViewModel : ReactiveObject
 {
-    private string _placeholder = Strings.ComingSoon;
+    public ProfileSettingsViewModel ProfileTab { get; }
 
-    public string Placeholder
+    public SettingsViewModel(ProfileSettingsViewModel profileTab)
     {
-        get => _placeholder;
-        set => this.RaiseAndSetIfChanged(ref _placeholder, value);
+        ProfileTab = profileTab;
     }
 }

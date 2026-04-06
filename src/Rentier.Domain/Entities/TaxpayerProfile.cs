@@ -7,13 +7,25 @@ namespace Rentier.Domain.Entities;
 /// </summary>
 public sealed class TaxpayerProfile
 {
-    public Guid Id { get; }
-    public string Jmbg { get; }
-    public string FullName { get; }
-    public string Address { get; }
-    public string OpstinaCode { get; }
+    public Guid Id { get; private set; }
+    public string Jmbg { get; private set; } = string.Empty;
+    public string FullName { get; private set; } = string.Empty;
+    public string Address { get; private set; } = string.Empty;
+    public string OpstinaCode { get; private set; } = string.Empty;
+    public string? PhoneNumber { get; private set; }
+    public string? Email { get; private set; }
 
-    public TaxpayerProfile(Guid id, string jmbg, string fullName, string address, string opstinaCode)
+    /// <summary>For EF Core materialization only.</summary>
+    private TaxpayerProfile() { }
+
+    public TaxpayerProfile(
+        Guid id,
+        string jmbg,
+        string fullName,
+        string address,
+        string opstinaCode,
+        string? phoneNumber = null,
+        string? email = null)
     {
         if (string.IsNullOrWhiteSpace(jmbg) || jmbg.Length != 13 || !jmbg.All(char.IsDigit))
             throw new DomainException("JMBG must be exactly 13 digit characters");
@@ -29,5 +41,7 @@ public sealed class TaxpayerProfile
         FullName = fullName;
         Address = address;
         OpstinaCode = opstinaCode;
+        PhoneNumber = phoneNumber;
+        Email = email;
     }
 }

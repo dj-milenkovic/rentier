@@ -19,4 +19,15 @@ public static class Strings
     public static string Nav_Reports => "Reports";
     public static string Nav_Settings => "Settings";
     public static string ComingSoon => "Coming soon";
+    public static string Settings_Profile_TabHeader => "Profile";
+    public static string Profile_Jmbg_Label => "JMBG (13 digits)";
+    public static string Profile_FullName_Label => "Full Name";
+    public static string Profile_Address_Label => "Address";
+    public static string Profile_OpstinaCode_Label => "Opština Code";
+    public static string Profile_PhoneNumber_Label => "Phone Number (optional)";
+    public static string Profile_Email_Label => "Email (optional)";
+    public static string Profile_Save_Button => "Save Profile";
+    public static string Profile_Saved_Confirmation => "Profile saved successfully.";
+    public static string Profile_JmbgValidation_Error => "JMBG must be exactly 13 digits.";
+    public static string Profile_RequiredField_Error => "This field is required.";
 }
