@@ -1,0 +1,39 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Rentier.Desktop.ViewModels"
+             xmlns:res="using:Rentier.Desktop.Resources"
+             x:Class="Rentier.Desktop.Views.ProfileSettingsView"
+             x:DataType="vm:ProfileSettingsViewModel">
+  <ScrollViewer>
+    <StackPanel Spacing="12" Margin="20">
+
+      <TextBlock Text="{x:Static res:Strings.Profile_Jmbg_Label}" />
+      <TextBox Text="{Binding Jmbg}" />
+
+      <TextBlock Text="{x:Static res:Strings.Profile_FullName_Label}" />
+      <TextBox Text="{Binding FullName}" />
+
+      <TextBlock Text="{x:Static res:Strings.Profile_Address_Label}" />
+      <TextBox Text="{Binding Address}" />
+
+      <TextBlock Text="{x:Static res:Strings.Profile_OpstinaCode_Label}" />
+      <TextBox Text="{Binding OpstinaCode}" />
+
+      <TextBlock Text="{x:Static res:Strings.Profile_PhoneNumber_Label}" />
+      <TextBox Text="{Binding PhoneNumber}" />
+
+      <TextBlock Text="{x:Static res:Strings.Profile_Email_Label}" />
+      <TextBox Text="{Binding Email}" />
+
+      <Button Content="{x:Static res:Strings.Profile_Save_Button}"
+              Command="{Binding SaveCommand}" />
+
+      <TextBlock Text="{Binding ErrorMessage}" Foreground="Red"
+                 IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+      <TextBlock Text="{Binding SuccessMessage}" Foreground="Green"
+                 IsVisible="{Binding SuccessMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+      <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsLoading}" />
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

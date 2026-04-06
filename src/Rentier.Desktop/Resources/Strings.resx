@@ -73,4 +73,37 @@
   <data name="ComingSoon" xml:space="preserve">
     <value>Coming soon</value>
   </data>
+  <data name="Settings_Profile_TabHeader" xml:space="preserve">
+    <value>Profile</value>
+  </data>
+  <data name="Profile_Jmbg_Label" xml:space="preserve">
+    <value>JMBG (13 digits)</value>
+  </data>
+  <data name="Profile_FullName_Label" xml:space="preserve">
+    <value>Full Name</value>
+  </data>
+  <data name="Profile_Address_Label" xml:space="preserve">
+    <value>Address</value>
+  </data>
+  <data name="Profile_OpstinaCode_Label" xml:space="preserve">
+    <value>Opština Code</value>
+  </data>
+  <data name="Profile_PhoneNumber_Label" xml:space="preserve">
+    <value>Phone Number (optional)</value>
+  </data>
+  <data name="Profile_Email_Label" xml:space="preserve">
+    <value>Email (optional)</value>
+  </data>
+  <data name="Profile_Save_Button" xml:space="preserve">
+    <value>Save Profile</value>
+  </data>
+  <data name="Profile_Saved_Confirmation" xml:space="preserve">
+    <value>Profile saved successfully.</value>
+  </data>
+  <data name="Profile_JmbgValidation_Error" xml:space="preserve">
+    <value>JMBG must be exactly 13 digits.</value>
+  </data>
+  <data name="Profile_RequiredField_Error" xml:space="preserve">
+    <value>This field is required.</value>
+  </data>
 </root>

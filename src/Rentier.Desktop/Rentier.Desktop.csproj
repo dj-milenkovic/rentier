@@ -8,6 +8,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Rentier.Application\Rentier.Application.csproj" />
     <ProjectReference Include="..\Rentier.Domain\Rentier.Domain.csproj" />
+    <ProjectReference Include="..\Rentier.Infrastructure\Rentier.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>
