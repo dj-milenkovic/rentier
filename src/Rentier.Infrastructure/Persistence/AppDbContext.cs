@@ -16,6 +16,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<Mailbox> Mailboxes => Set<Mailbox>();
     public DbSet<Importer> Importers => Set<Importer>();
     public DbSet<ExchangeRate> ExchangeRateCache => Set<ExchangeRate>();
+    public DbSet<Report> Reports => Set<Report>();
+    public DbSet<Filing> Filings => Set<Filing>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -1,6 +1,9 @@
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
+using Rentier.Application.Commands;
+using Rentier.Application.Common;
+using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Repositories;
 using Xunit;
@@ -21,6 +24,8 @@ public class DiRegistrationSmokeTests
         services.AddSingleton(Substitute.For<ITaxpayerProfileRepository>());
         services.AddSingleton(Substitute.For<IExchangeRateCacheRepository>());
         services.AddSingleton(Substitute.For<ICredentialStore>());
+        services.AddSingleton(Substitute.For<IMailboxSyncService>());
+        services.AddSingleton(Substitute.For<ICommandHandler<SyncMailboxCommand, Result<SyncResult, Error>>>());
 
         var provider = services.BuildServiceProvider();
 
@@ -31,5 +36,7 @@ public class DiRegistrationSmokeTests
         provider.GetRequiredService<ITaxpayerProfileRepository>().Should().NotBeNull();
         provider.GetRequiredService<IExchangeRateCacheRepository>().Should().NotBeNull();
         provider.GetRequiredService<ICredentialStore>().Should().NotBeNull();
+        provider.GetRequiredService<IMailboxSyncService>().Should().NotBeNull();
+        provider.GetRequiredService<ICommandHandler<SyncMailboxCommand, Result<SyncResult, Error>>>().Should().NotBeNull();
     }
 }

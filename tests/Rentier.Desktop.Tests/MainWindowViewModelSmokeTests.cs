@@ -39,11 +39,14 @@ public class MainWindowViewModelSmokeTests
             Substitute.For<ICommandHandler<UpdateImporterCommand, Result<VoidResult, Error>>>(),
             Substitute.For<ICommandHandler<DeleteImporterCommand, Result<VoidResult, Error>>>());
 
+    private static ReportsViewModel CreateReportsVm() =>
+        new(Substitute.For<ICommandHandler<SyncMailboxCommand, Result<SyncResult, Error>>>());
+
     [Fact]
     public void MainWindowViewModel_Constructed_NavigationEntriesHasThreeItems()
     {
         var filingsVm = new FilingsViewModel();
-        var reportsVm = new ReportsViewModel();
+        var reportsVm = CreateReportsVm();
         var settingsVm = new SettingsViewModel(CreateProfileVm(), CreateHolidayVm(), CreateMailboxVm(), CreateImporterVm());
         var vm = new MainWindowViewModel(filingsVm, reportsVm, settingsVm);
 
@@ -54,7 +57,7 @@ public class MainWindowViewModelSmokeTests
     public void MainWindowViewModel_Constructed_InitialViewModelIsFilingsViewModel()
     {
         var filingsVm = new FilingsViewModel();
-        var reportsVm = new ReportsViewModel();
+        var reportsVm = CreateReportsVm();
         var settingsVm = new SettingsViewModel(CreateProfileVm(), CreateHolidayVm(), CreateMailboxVm(), CreateImporterVm());
         var vm = new MainWindowViewModel(filingsVm, reportsVm, settingsVm);
 
