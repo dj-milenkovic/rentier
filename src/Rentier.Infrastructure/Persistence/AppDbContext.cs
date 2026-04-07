@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Rentier.Domain.Entities;
+using Rentier.Domain.ValueObjects;
 using Rentier.Infrastructure.Persistence.Configurations;
 
 namespace Rentier.Infrastructure.Persistence;
@@ -14,6 +15,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<HolidayYearRange> HolidayYearRange => Set<HolidayYearRange>();
     public DbSet<Mailbox> Mailboxes => Set<Mailbox>();
     public DbSet<Importer> Importers => Set<Importer>();
+    public DbSet<ExchangeRate> ExchangeRateCache => Set<ExchangeRate>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
