@@ -3,5 +3,9 @@
              xmlns:vm="using:Rentier.Desktop.ViewModels"
              x:Class="Rentier.Desktop.Views.ReportsView"
              x:DataType="vm:ReportsViewModel">
-  <TextBlock Text="{Binding Placeholder}" FontSize="18" VerticalAlignment="Center"/>
+  <StackPanel Spacing="8" Margin="16">
+    <Button Content="Sync Mailboxes" Command="{Binding SyncCommand}" IsEnabled="{Binding !IsSyncing}"/>
+    <ProgressBar Minimum="0" Maximum="100" Value="{Binding ProgressValue}" IsVisible="{Binding IsSyncing}"/>
+    <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap"/>
+  </StackPanel>
 </UserControl>
