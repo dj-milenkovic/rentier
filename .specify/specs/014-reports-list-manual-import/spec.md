@@ -101,13 +101,17 @@ A user wants to remove an erroneously imported report. They click a "Delete" act
 - **FR-009**: On successful validation, the system MUST persist a new Report record with: ReportName set to the selected file's filename, ImportDate set to today's date, status Init, and AttachmentContent containing the raw CSV bytes.
 - **FR-010**: Immediately after persisting the new Report, the system MUST trigger `ProcessReportsCommand` to run the filing generation pipeline and await its completion before returning.
 - **FR-011**: After pipeline execution, the report's final status (Processed or Error) MUST be visible in the list; if the pipeline produced an error, a user-facing error message MUST be displayed.
-- **FR-012**: Each row in the DataGrid MUST expose a "View Filings" action that navigates to the Filings pane pre-filtered by the selected report's ID.
+- **FR-012**: Each row in the DataGrid MUST expose a "View Filings" action that navigates to the Filings pane pre-filtered by the selected report's ID. Navigation is implemented via a `Action<Guid>` delegate (`navigateToFilings`) injected into `ReportsViewModel`; `MainWindowViewModel` wires this delegate to (a) set `FilingsViewModel.ReportIdFilter = reportId` and (b) set `SelectedEntry` to the Filings navigation entry. `FilingsViewModel` gains a `Guid? ReportIdFilter` property; when set it resets to page 1 and re-executes `LoadPageCommand`, which passes `ReportIdFilter` to `GetFilingsQuery`. No `INavigationService` abstraction is introduced.
 - **FR-013**: Each row in the DataGrid MUST expose a "Delete" action that shows a confirmation dialog before deletion; the dialog MUST explicitly state that linked filings will also be permanently removed.
-- **FR-014**: On confirmed deletion, the system MUST delete the Report and cascade-delete all linked Filings; the record MUST no longer appear in the list.
+- **FR-014**: On confirmed deletion, the system MUST delete the Report and cascade-delete all linked Filings; the record MUST no longer appear in the list. Cascade deletion is performed at the application layer (not via DB foreign-key cascade): `DeleteReportCommandHandler` calls `IFilingRepository.DeleteByReportIdAsync(reportId, ct)` first, then `IReportRepository.DeleteAsync(reportId, ct)`. The handler wraps both calls in a try/catch and returns `Result<VoidResult, Error>.Failure(...)` on any persistence error, leaving no partial state.
 - **FR-015**: All user-visible strings (button labels, dialog titles, error messages, column headers, status labels) MUST be stored in `Strings.resx` and referenced via the resource key.
 - **FR-016**: All file I/O, database reads/writes, and pipeline execution MUST be performed asynchronously; the UI MUST remain responsive during these operations.
 - **FR-017**: The existing IMAP Sync functionality (`SyncCommand`) on `ReportsViewModel` MUST remain fully operational and unmodified in behavior.
-- **FR-018**: New application-layer operations MUST be exposed as `GetReportsQuery` / Handler and `ImportReportCommand` / Handler, registered with `AddTransient` lifetime.
+- **FR-018**: New application-layer operations MUST be exposed as the following command/query pairs, each registered with `AddTransient` lifetime:
+  - `GetReportsQuery` / `GetReportsQueryHandler` — returns `Result<IReadOnlyList<ReportRowDto>, Error>` using `GetAllWithFilingCountAsync` plus importer-name lookup.
+  - `ImportReportCommand(Guid ImporterId, string FileName, byte[] CsvContent)` / `ImportReportCommandHandler` — validates CSV, checks duplicate, persists Report (status Init), triggers `ProcessReportsCommand`, returns `Result<Guid, Error>` (the new Report's Id). The Desktop layer reads file bytes via `window.StorageProvider.OpenFilePickerAsync(...)` before dispatching the command.
+  - `DeleteReportCommand(Guid ReportId)` / `DeleteReportCommandHandler` — cascade-deletes filings then report, returns `Result<VoidResult, Error>`.
+- **FR-019**: `ReportsViewModel` MUST implement `IActivatableViewModel`. Inside `WhenActivated(disposables => { ... })`, it MUST subscribe `LoadReportsCommand.Execute()` and call `.DisposeWith(disposables)` on all subscriptions, consistent with the project's ReactiveUI activation pattern.
 
 ### Constitution Alignment *(mandatory)*
 
@@ -126,6 +130,12 @@ A user wants to remove an erroneously imported report. They click a "Delete" act
 - **Report**: Represents a single imported brokerage statement. Key attributes: `Id` (unique identifier), `ReportName` (filename-derived, ≤ 500 characters), `ImportDate` (DateOnly — date the file was imported), `ImporterId` (reference to the Importer), `Status` (one of Init / Processed / Error), `AttachmentContent` (raw CSV bytes), `MailboxMessageId` (null for manually imported reports).
 - **Importer**: Represents a named data-source configuration. Key attributes: `Id`, `DisplayName` (shown in the importer selector dropdown), `ReportType` (e.g., IbkrCsv — determines which parser to use).
 - **Filing**: A generated tax filing record. Linked to a Report via `ReportId`. Used for the Filing Count column and the "View Filings" navigation. Cascade-deleted when its parent Report is deleted.
+- **ReportRowDto** *(Application read-model)*: `ReportRowDto(Guid Id, string ReportName, DateOnly ImportDate, string ImporterName, ReportStatus Status, int FilingCount)`. This is the projection returned by `GetReportsQueryHandler` for DataGrid binding. `ImporterName` is resolved from `Importer.DisplayName`; `FilingCount` is the count of `Filing` records whose `ReportId` matches this report's `Id`.
+
+### Repository Extensions Required
+
+- **`IReportRepository.GetAllWithFilingCountAsync(CancellationToken ct)`** — Returns `IReadOnlyList<(Report Report, int FilingCount)>`. The Infrastructure implementation performs a single EF query joining `Reports` → `Filings` with a `GroupJoin` count projection (`AsNoTracking`). `GetReportsQueryHandler` resolves `ImporterName` separately by fetching `IImporterRepository.GetAllAsync()` and building a `Dictionary<Guid, string>` lookup.
+- **`IFilingRepository.DeleteByReportIdAsync(Guid reportId, CancellationToken ct)`** — Bulk-deletes all `Filing` rows whose `ReportId == reportId` in a single EF `ExecuteDeleteAsync` call (EF 7+ bulk delete). Used by `DeleteReportCommandHandler` before deleting the parent `Report`.
 
 ## Success Criteria *(mandatory)*
 
@@ -145,9 +155,26 @@ A user wants to remove an erroneously imported report. They click a "Delete" act
 - `ImportDate` is set to the current local date at the moment of import; no date picker is provided.
 - The `MailboxMessageId` field is left null for manually imported reports (it is only populated by IMAP sync).
 - Pagination of the Reports DataGrid is out of scope for this version; all reports are loaded in a single query.
-- The "View Filings" navigation uses the existing routing/navigation mechanism already present in the application (e.g., a shared navigation service or message-passing approach already used by other panes).
+- **View Filings navigation mechanism**: No `INavigationService` abstraction exists in the current codebase. Navigation is implemented as an `Action<Guid>` delegate (`navigateToFilings`) injected into `ReportsViewModel`'s constructor. `MainWindowViewModel` constructs this delegate inline to: (1) set `FilingsViewModel.ReportIdFilter = reportId`, then (2) set `SelectedEntry` to the Filings `NavigationEntry`. `FilingsViewModel.ReportIdFilter` is a `Guid?` reactive property; when assigned a value it resets `_currentPage` to 1 and invokes `LoadPageCommand.Execute()`.
+- **Filing count retrieval**: `IReportRepository.GetAllWithFilingCountAsync` performs a single EF query (GroupJoin with count) to avoid N+1 per-report queries. The handler resolves `ImporterName` from a one-time `IImporterRepository.GetAllAsync()` dictionary lookup keyed by `Guid`.
+- **Delete cascade strategy**: Application-layer delete (not DB-level FK cascade). `DeleteReportCommandHandler` calls `IFilingRepository.DeleteByReportIdAsync` first, then `IReportRepository.DeleteAsync`. A single try/catch wraps both operations; any exception returns `Result.Failure(...)`.
+- **Import command dispatch**: The Desktop layer reads raw CSV bytes via `await window.StorageProvider.OpenFilePickerAsync(...)` (Avalonia 11 API) and then constructs `ImportReportCommand(ImporterId, FileName, CsvContent)`. File I/O is completed before the command is dispatched; the handler never touches the file system.
 - The `ProcessReportsCommand` processes **all** reports with status Init, not just the newly added one. This is the existing behavior and is preserved.
 - The importer dropdown in the Import dialog lists all importers returned by `IImporterRepository`; no filtering by `ReportType` is applied in the UI (the parser handles type validation during processing).
 - Error messages from the `ProcessReportsCommand` pipeline are already captured in the Report's status transition to Error; surfacing the failure to the user (as a dialog or status indicator) is handled at the ViewModel level using the existing `Result<T, Error>` pattern.
 - The existing `SyncCommand` and all associated IMAP sync logic in `ReportsViewModel` are out of scope for modification; they are preserved as-is.
 - `AddTransient` DI lifetime applies to all new Application-layer handlers, consistent with the project's desktop DI policy.
+
+## Clarifications
+
+### Session 2026-04-07
+
+- Q: What is the exact DTO shape returned by `GetReportsQueryHandler` and how are `FilingCount` and `ImporterName` retrieved without N+1 queries? → A: `ReportRowDto(Guid Id, string ReportName, DateOnly ImportDate, string ImporterName, ReportStatus Status, int FilingCount)`. Add `IReportRepository.GetAllWithFilingCountAsync(CancellationToken)` returning `IReadOnlyList<(Report Report, int FilingCount)>` via a single EF GroupJoin query. Handler resolves `ImporterName` via one `IImporterRepository.GetAllAsync()` dictionary lookup.
+
+- Q: What is the exact parameter contract for `ImportReportCommand` and which layer reads the file bytes? → A: `ImportReportCommand(Guid ImporterId, string FileName, byte[] CsvContent)`. The Desktop layer reads raw bytes via Avalonia 11 `window.StorageProvider.OpenFilePickerAsync(...)` before constructing the command. The handler validates CSV format, checks for duplicates via `ExistsByImporterAndNameAsync`, persists the Report, triggers `ProcessReportsCommand`, and returns `Result<Guid, Error>` (the new Report Id).
+
+- Q: How does "View Filings" navigation work given there is no `INavigationService` in the codebase? → A: `ReportsViewModel` accepts a `Action<Guid>` delegate (`navigateToFilings`) wired up by `MainWindowViewModel`. The delegate sets `FilingsViewModel.ReportIdFilter = reportId` (a new `Guid?` reactive property) and then sets `MainWindowViewModel.SelectedEntry` to the Filings entry. `FilingsViewModel.ReportIdFilter` assignment resets to page 1 and re-executes `LoadPageCommand` with the filter passed to `GetFilingsQuery`.
+
+- Q: How is delete cascade implemented — database-level FK or application-layer code? → A: Application-layer, two-step: `DeleteReportCommandHandler` calls `IFilingRepository.DeleteByReportIdAsync(reportId, ct)` (bulk EF delete), then `IReportRepository.DeleteAsync(reportId, ct)`. Both wrapped in try/catch returning `Result<VoidResult, Error>.Failure(...)` on error. `DeleteByReportIdAsync` is added to both `IFilingRepository` and `FilingRepository`.
+
+- Q: Must `ReportsViewModel` implement `IActivatableViewModel` to support auto-refresh on pane activation? → A: Yes. `ReportsViewModel` MUST implement `IActivatableViewModel`. Inside `WhenActivated`, it subscribes `LoadReportsCommand.Execute()` and calls `.DisposeWith(disposables)` on all subscriptions, matching the `FilingsViewModel` pattern already in use.

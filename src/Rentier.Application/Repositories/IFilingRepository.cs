@@ -17,4 +17,22 @@ public interface IFilingRepository
     /// <summary>Returns a paged, optionally-filtered list of filings ordered by FilingDeadline ascending.</summary>
     Task<(IReadOnlyList<Filing> Items, int TotalCount)> GetPagedAsync(
         FilingFilterMode filter, int skip, int take, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns the count of Filing records linked to the given Report.
+    /// Used by GetReportsQueryHandler to populate ReportRowDto.FilingCount without
+    /// loading full Filing entities (count-only EF query).
+    /// </summary>
+    Task<int> GetFilingCountByReportIdAsync(
+        Guid reportId,
+        CancellationToken ct = default);
+
+    /// <summary>
+    /// Deletes all Filing records whose ReportId matches reportId.
+    /// Used by DeleteReportCommandHandler BEFORE deleting the parent Report.
+    /// Implementation MUST use load-then-remove pattern — ExecuteDeleteAsync is prohibited.
+    /// </summary>
+    Task DeleteByReportIdAsync(
+        Guid reportId,
+        CancellationToken ct = default);
 }

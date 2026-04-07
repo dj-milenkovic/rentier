@@ -310,4 +310,106 @@
   <data name="IncomeType_Interest" xml:space="preserve">
     <value>Interest</value>
   </data>
+  <data name="Filings_Export_Button" xml:space="preserve">
+    <value>Export</value>
+  </data>
+  <data name="Filings_Export_SaveDialog_Title" xml:space="preserve">
+    <value>Save PP-OPO XML</value>
+  </data>
+  <data name="Filings_Export_Filter_Xml" xml:space="preserve">
+    <value>XML Files (*.xml)</value>
+  </data>
+  <data name="Filings_Export_Error_NoProfile" xml:space="preserve">
+    <value>Taxpayer profile is required before exporting.</value>
+  </data>
+  <data name="Filings_Export_Error_NotFound" xml:space="preserve">
+    <value>Filing not found.</value>
+  </data>
+  <data name="Filings_Export_Error_WriteFailed" xml:space="preserve">
+    <value>Failed to write export file.</value>
+  </data>
+  <data name="Filings_Export_Success" xml:space="preserve">
+    <value>Export saved successfully.</value>
+  </data>
+  <data name="Reports_Col_Name" xml:space="preserve">
+    <value>Report Name</value>
+  </data>
+  <data name="Reports_Col_ImportDate" xml:space="preserve">
+    <value>Import Date</value>
+  </data>
+  <data name="Reports_Col_Importer" xml:space="preserve">
+    <value>Importer</value>
+  </data>
+  <data name="Reports_Col_Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Reports_Col_FilingCount" xml:space="preserve">
+    <value>Filings</value>
+  </data>
+  <data name="Reports_Button_Import" xml:space="preserve">
+    <value>Import&#x2026;</value>
+  </data>
+  <data name="Reports_Button_Sync" xml:space="preserve">
+    <value>Sync Mailboxes</value>
+  </data>
+  <data name="Reports_Button_ViewFilings" xml:space="preserve">
+    <value>View Filings</value>
+  </data>
+  <data name="Reports_Button_Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Reports_Error_Dismiss" xml:space="preserve">
+    <value>&#x2715;</value>
+  </data>
+  <data name="Reports_Empty" xml:space="preserve">
+    <value>No reports found.</value>
+  </data>
+  <data name="Reports_Delete_Confirmation_Title" xml:space="preserve">
+    <value>Delete Report</value>
+  </data>
+  <data name="Reports_Delete_Confirmation_Message" xml:space="preserve">
+    <value>This will permanently delete the report and all linked filings. This action cannot be undone.</value>
+  </data>
+  <data name="Reports_Delete_Confirm_Button" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Reports_Delete_Cancel_Button" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Reports_Import_Title" xml:space="preserve">
+    <value>Import Report</value>
+  </data>
+  <data name="Reports_Import_NoImporters" xml:space="preserve">
+    <value>No importers are configured. Please add an importer before importing a report.</value>
+  </data>
+  <data name="Reports_Import_FilePickerTitle" xml:space="preserve">
+    <value>Select CSV File</value>
+  </data>
+  <data name="Reports_Import_FilePickerFilter" xml:space="preserve">
+    <value>CSV Files</value>
+  </data>
+  <data name="Reports_Error_ImportFailed" xml:space="preserve">
+    <value>Import failed. Please check the file format and try again.</value>
+  </data>
+  <data name="Reports_Error_DuplicateReport" xml:space="preserve">
+    <value>A report with this name already exists for the selected importer.</value>
+  </data>
+  <data name="Reports_Error_InvalidCsv" xml:space="preserve">
+    <value>The selected file is not a valid IBKR CSV export.</value>
+  </data>
+  <data name="Reports_Error_DeleteFailed" xml:space="preserve">
+    <value>Failed to delete the report. Please try again.</value>
+  </data>
+  <data name="Reports_Error_LoadFailed" xml:space="preserve">
+    <value>Failed to load reports. Please try again.</value>
+  </data>
+  <data name="ReportStatus_Init" xml:space="preserve">
+    <value>Init</value>
+  </data>
+  <data name="ReportStatus_Processed" xml:space="preserve">
+    <value>Processed</value>
+  </data>
+  <data name="ReportStatus_Error" xml:space="preserve">
+    <value>Error</value>
+  </data>
 </root>

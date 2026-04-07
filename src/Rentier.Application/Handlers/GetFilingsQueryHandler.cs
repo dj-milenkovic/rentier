@@ -17,6 +17,20 @@ public sealed class GetFilingsQueryHandler
     public async Task<Result<FilingsPageResult, Error>> HandleAsync(
         GetFilingsQuery query, CancellationToken ct = default)
     {
+        // When ReportIdFilter is set, bypass pagination and return all linked filings
+        if (query.ReportIdFilter.HasValue)
+        {
+            var linked = await _filings.GetByReportIdAsync(query.ReportIdFilter.Value, ct);
+            var linkedRows = linked
+                .Select(f => new FilingRowDto(
+                    f.Id, f.Status, f.IncomeType, f.PayingEntity,
+                    f.FilingDeadline, f.TaxPayableRsd, f.PaymentReference))
+                .ToList()
+                .AsReadOnly();
+            return Result<FilingsPageResult, Error>.Success(
+                new FilingsPageResult(linkedRows, linkedRows.Count, 1));
+        }
+
         if (query.Page < 1)
             return Result<FilingsPageResult, Error>.Failure(
                 new Error("VALIDATION_ERROR", "Page must be >= 1."));

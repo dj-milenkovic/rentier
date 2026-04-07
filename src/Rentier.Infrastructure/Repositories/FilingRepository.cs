@@ -99,4 +99,18 @@ public sealed class FilingRepository : IFilingRepository
 
         return (items.AsReadOnly(), total);
     }
+
+    public async Task<int> GetFilingCountByReportIdAsync(Guid reportId, CancellationToken ct = default)
+        => await _db.Filings.AsNoTracking().CountAsync(f => f.ReportId == reportId, ct);
+
+    public async Task DeleteByReportIdAsync(Guid reportId, CancellationToken ct = default)
+    {
+        var filings = await _db.Filings
+            .Where(f => f.ReportId == reportId)
+            .ToListAsync(ct);
+        if (filings.Count == 0)
+            return;
+        _db.Filings.RemoveRange(filings);
+        await _db.SaveChangesAsync(ct);
+    }
 }

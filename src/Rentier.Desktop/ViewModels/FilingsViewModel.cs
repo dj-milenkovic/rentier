@@ -23,7 +23,9 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
     private readonly ICommandHandler<UpdateFilingStatusCommand, Result<VoidResult, Error>> _updateStatus;
     private readonly ICommandHandler<UpdatePaymentReferenceCommand, Result<VoidResult, Error>> _updateReference;
     private readonly ICommandHandler<DeleteFilingCommand, Result<VoidResult, Error>> _deleteFiling;
+    private readonly ICommandHandler<ExportFilingCommand, Result<ExportFilingResult, Error>> _exportFiling;
     private readonly Func<string, Task<bool>> _confirmDelete;
+    private readonly Func<ExportFilingResult, Task> _saveFile;
     private readonly IScheduler _scheduler;
 
     private bool _isLoading;
@@ -32,6 +34,7 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
     private int _currentPage = 1;
     private int _totalPages = 1;
     private int _totalCount;
+    private Guid? _reportIdFilter;
 
     public bool IsLoading
     {
@@ -51,6 +54,18 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
         set
         {
             this.RaiseAndSetIfChanged(ref _showAll, value);
+            _currentPage = 1;
+            this.RaisePropertyChanged(nameof(CurrentPage));
+            LoadPageCommand.Execute().Subscribe();
+        }
+    }
+
+    public Guid? ReportIdFilter
+    {
+        get => _reportIdFilter;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _reportIdFilter, value);
             _currentPage = 1;
             this.RaisePropertyChanged(nameof(CurrentPage));
             LoadPageCommand.Execute().Subscribe();
@@ -90,20 +105,25 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
     public ReactiveCommand<(Guid Id, FilingStatus NewStatus), Unit> AdvanceStatusCommand { get; }
     public ReactiveCommand<(Guid Id, string? Reference), Unit> SavePaymentRefCommand { get; }
     public ReactiveCommand<Guid, Unit> DeleteCommand { get; }
+    public ReactiveCommand<Guid, Unit> ExportCommand { get; }
 
     public FilingsViewModel(
         IQueryHandler<GetFilingsQuery, Result<FilingsPageResult, Error>> getFilings,
         ICommandHandler<UpdateFilingStatusCommand, Result<VoidResult, Error>> updateStatus,
         ICommandHandler<UpdatePaymentReferenceCommand, Result<VoidResult, Error>> updateReference,
         ICommandHandler<DeleteFilingCommand, Result<VoidResult, Error>> deleteFiling,
+        ICommandHandler<ExportFilingCommand, Result<ExportFilingResult, Error>> exportFiling,
         Func<string, Task<bool>> confirmDelete,
+        Func<ExportFilingResult, Task> saveFile,
         IScheduler? scheduler = null)
     {
         _getFilings = getFilings;
         _updateStatus = updateStatus;
         _updateReference = updateReference;
         _deleteFiling = deleteFiling;
+        _exportFiling = exportFiling;
         _confirmDelete = confirmDelete;
+        _saveFile = saveFile;
         _scheduler = scheduler ?? RxApp.MainThreadScheduler;
 
         LoadPageCommand = ReactiveCommand.CreateFromTask(
@@ -177,9 +197,25 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
             },
             outputScheduler: _scheduler);
 
+        ExportCommand = ReactiveCommand.CreateFromTask<Guid>(
+            async (id, ct) =>
+            {
+                var result = await _exportFiling.HandleAsync(new ExportFilingCommand(id), ct);
+                if (!result.IsSuccess)
+                {
+                    ErrorMessage = result.Error.Message;
+                    return;
+                }
+                await _saveFile(result.Value);
+            },
+            outputScheduler: _scheduler);
+
         this.WhenActivated(disposables =>
         {
             LoadPageCommand.Execute().Subscribe().DisposeWith(disposables);
+            ExportCommand.ThrownExceptions
+                .Subscribe(ex => ErrorMessage = ex.Message)
+                .DisposeWith(disposables);
         });
     }
 
@@ -191,7 +227,7 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
         {
             var filter = _showAll ? FilingFilterMode.All : FilingFilterMode.Unpaid;
             var result = await _getFilings.HandleAsync(
-                new GetFilingsQuery(filter, _currentPage, 20), ct);
+                new GetFilingsQuery(filter, _currentPage, 20, _reportIdFilter), ct);
 
             if (!result.IsSuccess)
             {

@@ -63,18 +63,31 @@ A taxpayer attempts to export a filing for which the taxpayer profile has not ye
 ### Edge Cases
 
 - What happens when `PaymentNotes` on the importer is null or empty? The `Ostalo` element is included with an empty value (the field is always present in the schema).
+- What happens when `Filing.ReportId` is null (filing not yet linked to a Report/Importer)? `PaymentNotes` is treated as an empty string; the `Ostalo` element is written as an empty element and serialization continues. No error is raised for a missing importer link.
 - What happens when a monetary amount is zero? The element is still written as `"0.00"`.
 - What happens when `FilingDeadline` falls on a weekend or public holiday? The filing stores whatever deadline was calculated upstream; export uses it as-is without adjustment.
 - What happens if the user chooses a path where they do not have write permission? The export command surfaces a failure and the Desktop layer shows an error notification; no partial file is left on disk.
 - What happens if two filings share the same JMBG and accounting period? Each is exported independently; filename collisions at the save path are the user's responsibility to resolve via the save dialog.
 
+## Clarifications
+
+### Session 2026-04-07
+
+- Q: What is the repository loading chain for ExportFilingCommand, and what happens when Filing.ReportId is null? → A: Filing → Report (via `Filing.ReportId`) → Importer (via `Report.ImporterId`); handler requires `IFilingRepository`, `IReportRepository`, `IImporterRepository`, and `ITaxpayerProfileRepository`. If `Filing.ReportId` is null, `PaymentNotes` is treated as an empty string and serialization continues normally.
+- Q: What is the formal return type of ExportFilingCommand? → A: `Result<byte[], Error>` — the handler returns serialized XML bytes; the Desktop layer is solely responsible for opening the save dialog and writing bytes to disk.
+- Q: Which Avalonia 11 API is used for the native save dialog? → A: `window.StorageProvider.SaveFilePickerAsync(...)` — the legacy `SaveFileDialog` from `Avalonia.Controls` is not used.
+- Q: Where does the Export button live in the UI and how is the command typed? → A: A dedicated "Export" column in the FilingsView DataGrid; `FilingsViewModel` exposes a `ReactiveCommand` named `ExportCommand` that accepts the row's filing `Guid`.
+- Q: Does this feature require a new EF Core migration? → A: No — no new database tables or columns are introduced; all required data is already persisted by existing migrations.
+
+---
+
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-- **FR-001**: Users MUST be able to trigger an export action from a filing row in the filings list.
-- **FR-002**: System MUST present a native OS file save dialog when the user triggers the export action, pre-populated with the suggested filename `PP-OPO_YYYY-MM_JMBG.xml`.
-- **FR-003**: System MUST load the filing, the associated taxpayer profile, and the linked importer's payment notes before serialization.
+- **FR-001**: Users MUST be able to trigger an export action via a dedicated "Export" button rendered as a new column in the FilingsView DataGrid; each row's button is bound to that row's filing `Id` (Guid) so each filing can be exported independently.
+- **FR-002**: System MUST present a native OS file save dialog using Avalonia 11's `StorageProvider.SaveFilePickerAsync(...)` API (not the legacy `SaveFileDialog` from `Avalonia.Controls`) when the user triggers the export action, pre-populated with the suggested filename `PP-OPO_YYYY-MM_JMBG.xml` and filtered to `*.xml` files.
+- **FR-003**: System MUST load the filing, the associated taxpayer profile, and the linked importer's payment notes before serialization using the following repository chain: `IFilingRepository` → `IReportRepository` (via `Filing.ReportId`) → `IImporterRepository` (via `Report.ImporterId`) → `ITaxpayerProfileRepository`. If `Filing.ReportId` is null, `PaymentNotes` is treated as an empty string and serialization continues (see Edge Cases).
 - **FR-004**: System MUST reject the export and return a descriptive failure when the taxpayer profile is not configured.
 - **FR-005**: System MUST produce a valid ePorezi PP-OPO XML document with the following top-level structure:
   - `PodaciOPrijavi` (root): `VrstaPrijave=1`, `ObracunskiPeriod` (YYYY-MM), `DatumOstvarivanjaPrihoda` (YYYY-MM-DD), `DatumDospelostiObaveze` (YYYY-MM-DD)
@@ -90,7 +103,7 @@ A taxpayer attempts to export a filing for which the taxpayer profile has not ye
 
 ### Constitution Alignment *(mandatory)*
 
-- **CA-001 (Architecture)**: The feature spans four layers. Domain: no changes (existing entities reused). Application: new `IXmlFilingSerializer` interface and `ExportFilingCommand`/Handler. Infrastructure: `PpOpoXmlSerializer` implementing the interface. Desktop: UI binding to trigger the command and host the save dialog. Clean Architecture boundaries are preserved — the interface is defined in Application and only Infrastructure knows the XML serialization format.
+- **CA-001 (Architecture)**: The feature spans four layers. Domain: no changes (existing entities reused). Application: new `IXmlFilingSerializer` interface and `ExportFilingCommand`/Handler (returns `Result<byte[], Error>`). Infrastructure: `PpOpoXmlSerializer` implementing the interface. Desktop: `FilingsViewModel.ExportCommand` (`ReactiveCommand<Guid, Unit>`) triggers the handler, opens the Avalonia 11 `StorageProvider.SaveFilePickerAsync(...)` dialog, and writes bytes to disk. Clean Architecture boundaries are preserved — the interface is defined in Application and only Infrastructure knows the XML serialization format.
 - **CA-002 (Money and Dates)**: Monetary fields (`GrossIncomeRsd`, `WhtPaidRsd`, `GrossTaxPayableRsd`, `TaxPayableRsd`) are all `decimal`; dates (`IncomeDate`, `FilingDeadline`) are `DateOnly`. Both types are used as-is from the domain; serialization converts them to string representations only at the output boundary.
 - **CA-003 (Privacy and Security)**: All data is read from the local database and written to a local file chosen by the user. No data leaves the device. JMBG and taxpayer personal details are written to disk only at the user's explicit request via the save dialog. No secrets or credentials are involved.
 - **CA-004 (Network Scope)**: No outbound network calls. The feature is entirely local: read from DB, serialize to bytes, write to user-selected path.
@@ -102,8 +115,9 @@ A taxpayer attempts to export a filing for which the taxpayer profile has not ye
 - **Filing**: Represents a single tax filing event. Key fields used for export: `Id`, `IncomeType`, `IncomeDate`, `FilingDeadline`, `GrossIncomeRsd`, `WhtPaidRsd`, `GrossTaxPayableRsd`, `TaxPayableRsd`. Links to a Report which links to an Importer.
 - **TaxpayerProfile**: Represents the user's personal tax identity. Key fields: `JMBG`, `FullName`, `Address`, `OpstinaCode`, `Phone`, `Email`. Required to be present before export can proceed.
 - **Importer**: Represents the entity that paid income to the taxpayer. Key field used for export: `PaymentNotes` (maps to `Ostalo` in the XML).
-- **ExportFilingCommand**: Application-layer command that takes a Filing ID, loads all required entities, and returns the serialized XML as a byte array.
+- **ExportFilingCommand**: Application-layer command that takes a filing `Id` (`Guid`), loads all required entities via `IFilingRepository`, `IReportRepository`, `IImporterRepository`, and `ITaxpayerProfileRepository`, and returns `Result<byte[], Error>` containing the serialized XML bytes on success.
 - **IXmlFilingSerializer**: Application-layer interface that abstracts the serialization of a filing + taxpayer profile + payment notes into an XML byte array.
+- **FilingsViewModel (Desktop)**: Exposes an `ExportCommand` (`ReactiveCommand<Guid, Unit>`) that accepts the filing `Guid` from the DataGrid row; the command awaits the `ExportFilingCommand` result, opens the Avalonia 11 save dialog via `StorageProvider.SaveFilePickerAsync(...)`, writes the returned bytes to disk asynchronously, and surfaces failures via an in-app error notification without opening the save dialog.
 
 ## Success Criteria *(mandatory)*
 
@@ -128,5 +142,8 @@ A taxpayer attempts to export a filing for which the taxpayer profile has not ye
 - `VrstaPrijave` is always `1` for this feature (initial filing); amended filings are out of scope.
 - `NacinIsplate` is always `3` for this feature; other payment methods are out of scope.
 - If `PaymentNotes` is null or whitespace, `Ostalo` is written as an empty element.
+- If `Filing.ReportId` is null (filing not yet linked to a Report), `PaymentNotes` is treated as an empty string; the `Ostalo` element is still written as an empty element (consistent with the null/whitespace edge case above).
 - The Desktop layer uses `AddTransient` registration for all new services, consistent with existing project conventions.
 - The save dialog default file extension filter is `*.xml`.
+- The native save dialog is opened via Avalonia 11's `window.StorageProvider.SaveFilePickerAsync(...)` API; the legacy `Avalonia.Controls.SaveFileDialog` is not used anywhere in this feature.
+- This feature introduces **no new EF Core database migrations**; all required data (`Filing`, `Report`, `Importer`, `TaxpayerProfile`) is already persisted by existing migrations.
