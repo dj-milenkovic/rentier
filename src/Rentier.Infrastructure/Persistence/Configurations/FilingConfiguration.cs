@@ -27,5 +27,8 @@ public sealed class FilingConfiguration : IEntityTypeConfiguration<Filing>
             .OnDelete(DeleteBehavior.SetNull);
         builder.HasIndex(f => f.TaxpayerProfileId);
         builder.HasIndex(f => f.ReportId);
+        builder.Property(f => f.PaymentReference)
+            .IsRequired(false)
+            .HasMaxLength(200);
     }
 }

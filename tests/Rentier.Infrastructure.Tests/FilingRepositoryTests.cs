@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Rentier.Application.Enums;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 using Rentier.Infrastructure.Persistence;
@@ -174,5 +175,113 @@ public class FilingRepositoryTests : IAsyncLifetime
     {
         var act = async () => await _repository.DeleteAsync(Guid.NewGuid());
         await act.Should().NotThrowAsync();
+    }
+
+    // ---- GetPagedAsync tests ----
+
+    [Fact]
+    public async Task GetPagedAsync_UnpaidFilter_ReturnsOnlyInitAndFiledFilings()
+    {
+        var profile = MakeProfile();
+        await _context.TaxpayerProfiles.AddAsync(profile);
+        await _context.SaveChangesAsync();
+
+        var init   = MakeFiling(profile.Id, date: new DateOnly(2024, 1, 1));
+        var filed  = MakeFiling(profile.Id, date: new DateOnly(2024, 2, 1));
+        var paid   = MakeFiling(profile.Id, date: new DateOnly(2024, 3, 1));
+
+        filed.AdvanceStatus(FilingStatus.Filed);
+        paid.AdvanceStatus(FilingStatus.Filed);
+        paid.AdvanceStatus(FilingStatus.Paid);
+
+        await _repository.AddAsync(init);
+        await _repository.AddAsync(filed);
+        await _repository.AddAsync(paid);
+
+        var (items, total) = await _repository.GetPagedAsync(FilingFilterMode.Unpaid, 0, 100);
+
+        items.Should().HaveCount(2);
+        total.Should().Be(2);
+        items.Should().NotContain(f => f.Status == FilingStatus.Paid);
+    }
+
+    [Fact]
+    public async Task GetPagedAsync_AllFilter_ReturnsAllFilings()
+    {
+        var profile = MakeProfile();
+        await _context.TaxpayerProfiles.AddAsync(profile);
+        await _context.SaveChangesAsync();
+
+        var init  = MakeFiling(profile.Id, date: new DateOnly(2024, 1, 1));
+        var filed = MakeFiling(profile.Id, date: new DateOnly(2024, 2, 1));
+        var paid  = MakeFiling(profile.Id, date: new DateOnly(2024, 3, 1));
+
+        filed.AdvanceStatus(FilingStatus.Filed);
+        paid.AdvanceStatus(FilingStatus.Filed);
+        paid.AdvanceStatus(FilingStatus.Paid);
+
+        await _repository.AddAsync(init);
+        await _repository.AddAsync(filed);
+        await _repository.AddAsync(paid);
+
+        var (items, total) = await _repository.GetPagedAsync(FilingFilterMode.All, 0, 100);
+
+        items.Should().HaveCount(3);
+        total.Should().Be(3);
+    }
+
+    [Fact]
+    public async Task GetPagedAsync_ResultsAreSortedByFilingDeadlineAscending()
+    {
+        var profile = MakeProfile();
+        await _context.TaxpayerProfiles.AddAsync(profile);
+        await _context.SaveChangesAsync();
+
+        var later   = MakeFiling(profile.Id, date: new DateOnly(2024, 6, 1));
+        var earlier = MakeFiling(profile.Id, date: new DateOnly(2024, 1, 1));
+        var middle  = MakeFiling(profile.Id, date: new DateOnly(2024, 3, 1));
+
+        await _repository.AddAsync(later);
+        await _repository.AddAsync(earlier);
+        await _repository.AddAsync(middle);
+
+        var (items, _) = await _repository.GetPagedAsync(FilingFilterMode.All, 0, 100);
+
+        items[0].FilingDeadline.Should().BeBefore(items[1].FilingDeadline);
+        items[1].FilingDeadline.Should().BeBefore(items[2].FilingDeadline);
+    }
+
+    [Fact]
+    public async Task GetPagedAsync_Pagination_SkipsAndTakesCorrectly()
+    {
+        var profile = MakeProfile();
+        await _context.TaxpayerProfiles.AddAsync(profile);
+        await _context.SaveChangesAsync();
+
+        for (var i = 1; i <= 5; i++)
+            await _repository.AddAsync(MakeFiling(profile.Id, date: new DateOnly(2024, i, 1)));
+
+        // skip 2, take 2 => items 3 and 4
+        var (items, _) = await _repository.GetPagedAsync(FilingFilterMode.All, 2, 2);
+
+        items.Should().HaveCount(2);
+        items[0].FilingDeadline.Should().Be(new DateOnly(2024, 3, 1).AddDays(30));
+    }
+
+    [Fact]
+    public async Task GetPagedAsync_ReturnsTotalCountBeforePaging()
+    {
+        var profile = MakeProfile();
+        await _context.TaxpayerProfiles.AddAsync(profile);
+        await _context.SaveChangesAsync();
+
+        for (var i = 1; i <= 5; i++)
+            await _repository.AddAsync(MakeFiling(profile.Id, date: new DateOnly(2024, i, 1)));
+
+        // take only 2, but total should be 5
+        var (items, total) = await _repository.GetPagedAsync(FilingFilterMode.All, 0, 2);
+
+        items.Should().HaveCount(2);
+        total.Should().Be(5);
     }
 }

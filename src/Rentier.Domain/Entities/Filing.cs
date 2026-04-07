@@ -33,6 +33,7 @@ public sealed class Filing
     public decimal TaxPayableRsd { get; private set; }
     public DateOnly FilingDeadline { get; private set; }
     public Guid? ReportId { get; private set; }
+    public string? PaymentReference { get; private set; }
 
     // EF Core parameterless constructor
     private Filing() { }
@@ -106,5 +107,17 @@ public sealed class Filing
             throw new DomainException($"Invalid Filing status transition: {Status} → {newStatus}");
 
         Status = newStatus;
+    }
+
+    /// <summary>
+    /// Sets the payment reference. Trims whitespace, stores null when empty after trim.
+    /// Throws DomainException when the value exceeds 200 characters.
+    /// </summary>
+    public void SetPaymentReference(string? reference)
+    {
+        var trimmed = reference?.Trim();
+        if (trimmed?.Length > 200)
+            throw new DomainException("PaymentReference must not exceed 200 characters.");
+        PaymentReference = string.IsNullOrEmpty(trimmed) ? null : trimmed;
     }
 }
