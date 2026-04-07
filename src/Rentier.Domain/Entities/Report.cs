@@ -1,24 +1,52 @@
+using Rentier.Domain.Enums;
 using Rentier.Domain.Exceptions;
 
 namespace Rentier.Domain.Entities;
 
 /// <summary>
-/// Represents a parsed activity statement produced from an imported IBKR CSV file.
+/// Represents a raw activity statement email attachment awaiting processing.
 /// ImportDate is DateOnly per constitution Principle III.
 /// </summary>
 public sealed class Report
 {
-    public Guid Id { get; }
-    public DateOnly ImportDate { get; }
-    public Guid ImporterId { get; }
+    public Guid Id { get; private set; }
+    public DateOnly ImportDate { get; private set; }
+    public Guid ImporterId { get; private set; }
+    public ReportStatus Status { get; private set; }
+    public string ReportName { get; private set; } = string.Empty;
+    public byte[]? AttachmentContent { get; private set; }
+    public long? MailboxMessageId { get; private set; }
 
-    public Report(Guid id, DateOnly importDate, Guid importerId)
+    // EF Core parameterless constructor
+    private Report() { }
+
+    /// <summary>Creates a new Report from an email attachment. ImportDate is always today (UTC).</summary>
+    public static Report Create(
+        Guid importerId,
+        string reportName,
+        byte[]? attachmentContent,
+        long? mailboxMessageId)
     {
-        if (importDate > DateOnly.FromDateTime(DateTime.UtcNow.Date))
-            throw new DomainException("ImportDate must not be in the future");
+        if (string.IsNullOrWhiteSpace(reportName))
+            throw new DomainException("ReportName must not be empty");
+        if (reportName.Length > 500)
+            throw new DomainException("ReportName must not exceed 500 characters");
 
-        Id = id;
-        ImportDate = importDate;
-        ImporterId = importerId;
+        return new Report
+        {
+            Id = Guid.NewGuid(),
+            ImporterId = importerId,
+            ImportDate = DateOnly.FromDateTime(DateTime.UtcNow),
+            Status = ReportStatus.Init,
+            ReportName = reportName.Trim(),
+            AttachmentContent = attachmentContent,
+            MailboxMessageId = mailboxMessageId
+        };
+    }
+
+    /// <summary>Transitions the report to a new processing status.</summary>
+    public void SetStatus(ReportStatus status)
+    {
+        Status = status;
     }
 }
