@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Rentier.Application.Enums;
 using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
 using Rentier.Infrastructure.Persistence;
@@ -78,5 +79,24 @@ public sealed class FilingRepository : IFilingRepository
             _db.Filings.Remove(entity);
             await _db.SaveChangesAsync(ct);
         }
+    }
+
+    public async Task<(IReadOnlyList<Filing> Items, int TotalCount)> GetPagedAsync(
+        FilingFilterMode filter, int skip, int take, CancellationToken ct = default)
+    {
+        var query = _db.Filings.AsNoTracking();
+
+        if (filter == FilingFilterMode.Unpaid)
+            query = query.Where(f =>
+                f.Status == FilingStatus.Init || f.Status == FilingStatus.Filed);
+
+        var total = await query.CountAsync(ct);
+        var items = await query
+            .OrderBy(f => f.FilingDeadline)
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync(ct);
+
+        return (items.AsReadOnly(), total);
     }
 }

@@ -1,5 +1,6 @@
 ---
 description: Create or update the feature specification from a natural language feature description.
+model: claude-opus-4.6
 handoffs: 
   - label: Build Technical Plan
     agent: speckit.plan

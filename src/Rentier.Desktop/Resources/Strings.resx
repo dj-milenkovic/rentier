@@ -229,4 +229,85 @@
   <data name="Importers_NoMailbox_Placeholder" xml:space="preserve">
     <value>— No Mailbox —</value>
   </data>
+  <data name="Filings_Col_Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Filings_Col_IncomeType" xml:space="preserve">
+    <value>Income Type</value>
+  </data>
+  <data name="Filings_Col_PayingEntity" xml:space="preserve">
+    <value>Paying Entity</value>
+  </data>
+  <data name="Filings_Col_Deadline" xml:space="preserve">
+    <value>Filing Deadline</value>
+  </data>
+  <data name="Filings_Col_TaxPayable" xml:space="preserve">
+    <value>Tax Payable</value>
+  </data>
+  <data name="Filings_Col_PaymentRef" xml:space="preserve">
+    <value>Payment Reference</value>
+  </data>
+  <data name="Filings_Filter_Unpaid" xml:space="preserve">
+    <value>Unpaid</value>
+  </data>
+  <data name="Filings_Filter_All" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="Filings_Page_Previous" xml:space="preserve">
+    <value>← Previous</value>
+  </data>
+  <data name="Filings_Page_Next" xml:space="preserve">
+    <value>Next →</value>
+  </data>
+  <data name="Filings_Page_Indicator" xml:space="preserve">
+    <value>Page {0} of {1}</value>
+  </data>
+  <data name="Filings_Empty" xml:space="preserve">
+    <value>No filings found.</value>
+  </data>
+  <data name="Filings_Delete_Confirmation_Title" xml:space="preserve">
+    <value>Delete Filing</value>
+  </data>
+  <data name="Filings_Delete_Confirmation_Message" xml:space="preserve">
+    <value>Are you sure you want to delete this filing? This action cannot be undone.</value>
+  </data>
+  <data name="Filings_Delete_Action_Button" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Filings_Delete_Confirm_Button" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Filings_Delete_Cancel_Button" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Filings_Error_NotFound" xml:space="preserve">
+    <value>Filing not found.</value>
+  </data>
+  <data name="Filings_Error_InvalidTransition" xml:space="preserve">
+    <value>Invalid status transition.</value>
+  </data>
+  <data name="Filings_Error_PaymentRefTooLong" xml:space="preserve">
+    <value>Payment reference must not exceed 200 characters.</value>
+  </data>
+  <data name="Filings_Error_LoadFailed" xml:space="preserve">
+    <value>Failed to load filings. Please try again.</value>
+  </data>
+  <data name="Filings_Error_Dismiss" xml:space="preserve">
+    <value>✕</value>
+  </data>
+  <data name="FilingStatus_Init" xml:space="preserve">
+    <value>Init</value>
+  </data>
+  <data name="FilingStatus_Filed" xml:space="preserve">
+    <value>Filed</value>
+  </data>
+  <data name="FilingStatus_Paid" xml:space="preserve">
+    <value>Paid</value>
+  </data>
+  <data name="IncomeType_Dividend" xml:space="preserve">
+    <value>Dividend</value>
+  </data>
+  <data name="IncomeType_Interest" xml:space="preserve">
+    <value>Interest</value>
+  </data>
 </root>
