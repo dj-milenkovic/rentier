@@ -30,7 +30,6 @@ public static class CompositionRoot
         // ViewModels
         services.AddTransient<ProfileSettingsViewModel>();
         services.AddTransient<FilingsViewModel>();
-        services.AddTransient<ReportsViewModel>();
         services.AddTransient<SettingsViewModel>();
         services.AddSingleton<MainWindowViewModel>();
 
@@ -135,6 +134,38 @@ public static class CompositionRoot
                 throw;
             }
         });
+
+        // Reports handlers
+        services.AddTransient<
+            IQueryHandler<GetReportsQuery, Result<IReadOnlyList<ReportRowDto>, Error>>,
+            GetReportsQueryHandler>();
+        services.AddTransient<
+            ICommandHandler<ImportReportCommand, Result<Guid, Error>>,
+            ImportReportCommandHandler>();
+        services.AddTransient<
+            ICommandHandler<DeleteReportCommand, Result<VoidResult, Error>>,
+            DeleteReportCommandHandler>();
+
+        // 2-arg confirmation delegate for report delete (distinct type from 1-arg Func<string,Task<bool>>)
+        services.AddTransient<Func<string, string, Task<bool>>>(provider => (title, msg) =>
+            ConfirmDialogHelper.ShowAsync(
+                title,
+                msg,
+                Strings.Reports_Delete_Confirm_Button,
+                Strings.Reports_Delete_Cancel_Button));
+
+        // CSV file picker + importer selection delegate for report import
+        services.AddTransient<Func<Task<(Guid ImporterId, string FileName, byte[] Content)?>>>(
+            provider => async () =>
+            {
+                var getImporters = provider.GetRequiredService<
+                    IQueryHandler<GetImportersQuery, Result<IReadOnlyList<ImporterDto>, Error>>>();
+                var importersResult = await getImporters.HandleAsync(new GetImportersQuery());
+                IReadOnlyList<ImporterDto> importers = importersResult.IsSuccess
+                    ? importersResult.Value
+                    : [];
+                return await ImportDialogHelper.ShowAsync(importers);
+            });
 
         return services;
     }

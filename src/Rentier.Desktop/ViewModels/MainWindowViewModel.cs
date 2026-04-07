@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using ReactiveUI;
 using Rentier.Desktop.Resources;
 
@@ -30,9 +31,21 @@ public sealed class MainWindowViewModel : ReactiveObject
 
     public MainWindowViewModel(
         FilingsViewModel filingsVm,
-        ReportsViewModel reportsVm,
+        IServiceProvider provider,
         SettingsViewModel settingsVm)
     {
+        // Wire the navigateToFilings delegate — closes over filingsVm and this.SelectedEntry
+        Action<Guid> navigateToFilings = reportId =>
+        {
+            filingsVm.ReportIdFilter = reportId;
+            var filingsEntry = NavigationEntries?.FirstOrDefault(e => e.ViewModel is FilingsViewModel);
+            if (filingsEntry is not null)
+                SelectedEntry = filingsEntry;
+        };
+
+        var reportsVm = ActivatorUtilities.CreateInstance<ReportsViewModel>(
+            provider, navigateToFilings);
+
         NavigationEntries = new List<NavigationEntry>
         {
             new(Strings.Nav_Filings, filingsVm),

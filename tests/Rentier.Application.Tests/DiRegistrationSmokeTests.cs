@@ -72,4 +72,34 @@ public class DiRegistrationSmokeTests
         provider.GetRequiredService<ICommandHandler<DeleteFilingCommand, Result<VoidResult, Error>>>()
             .Should().NotBeNull();
     }
+
+    [Fact]
+    public void ServiceCollection_ReportHandlers_AllResolveSuccessfully()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton(Substitute.For<IReportRepository>());
+        services.AddSingleton(Substitute.For<IFilingRepository>());
+        services.AddSingleton(Substitute.For<IImporterRepository>());
+        services.AddSingleton(Substitute.For<IStatementParser>());
+        services.AddSingleton(Substitute.For<ICommandHandler<ProcessReportsCommand, Result<ProcessReportsResult, Error>>>());
+
+        services.AddTransient<
+            IQueryHandler<GetReportsQuery, Result<IReadOnlyList<ReportRowDto>, Error>>,
+            GetReportsQueryHandler>();
+        services.AddTransient<
+            ICommandHandler<ImportReportCommand, Result<Guid, Error>>,
+            ImportReportCommandHandler>();
+        services.AddTransient<
+            ICommandHandler<DeleteReportCommand, Result<VoidResult, Error>>,
+            DeleteReportCommandHandler>();
+
+        var provider = services.BuildServiceProvider();
+
+        provider.GetRequiredService<IQueryHandler<GetReportsQuery, Result<IReadOnlyList<ReportRowDto>, Error>>>()
+            .Should().NotBeNull();
+        provider.GetRequiredService<ICommandHandler<ImportReportCommand, Result<Guid, Error>>>()
+            .Should().NotBeNull();
+        provider.GetRequiredService<ICommandHandler<DeleteReportCommand, Result<VoidResult, Error>>>()
+            .Should().NotBeNull();
+    }
 }
