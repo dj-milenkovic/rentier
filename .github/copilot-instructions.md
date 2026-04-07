@@ -56,3 +56,32 @@ When implementing features, create:
 - Withholding tax credit cannot exceed computed Serbian tax (15%).
 - NBS exchange rates are fetched per-date, cached in SQLite.
 - IBKR CSV: only process "Dividends" and "Interest" activity sections.
+
+<!-- BEGIN_SPECIFY_AUTO — managed by /speckit.plan — do not edit manually -->
+## Feature 006 — NBS Exchange Rate Fetcher (In Progress)
+
+### New Technology
+- `System.Xml.Linq.XDocument` — XML parsing for NBS ASMX responses (BCL, no extra NuGet)
+- `AddHttpClient<IExchangeRateFetcher, NbsExchangeRateFetcher>()` — typed HttpClient pattern
+
+### Key Files
+- `src/Rentier.Application/Interfaces/IExchangeRateFetcher.cs` — NEW service interface
+- `src/Rentier.Infrastructure/ExchangeRates/NbsExchangeRateFetcher.cs` — NEW HTTP + cache fetcher
+- `src/Rentier.Infrastructure/Repositories/ExchangeRateCacheRepository.cs` — NEW EF repo
+- `src/Rentier.Infrastructure/Persistence/Configurations/ExchangeRateCacheConfiguration.cs` — NEW EF config
+- `src/Rentier.Infrastructure/Persistence/AppDbContext.cs` — add `DbSet<ExchangeRate>`
+- `src/Rentier.Infrastructure/InfrastructureServiceExtensions.cs` — add 2 registrations
+- Migration: `0006_ExchangeRateCache`
+
+### NBS API
+- URL: `https://webservices.nbs.rs/CommunicationOfficeService1_3/ExchangeRateXmlService.asmx/GetAllExchangeRates?InputDate={MM/dd/yyyy}&CurrencyCodeCo=0`
+- Rate formula: `RateToRsd = Middle_Rate / Unit` (decimal, InvariantCulture parse)
+- Batch cache: all 15 currencies saved per HTTP call via `SaveBatchAsync`
+
+### Error Codes
+`UNSUPPORTED_CURRENCY` | `RATE_NOT_FOUND` | `NBS_HTTP_ERROR` | `NBS_PARSE_ERROR`
+
+### Testing
+- Unit: `FakeHttpMessageHandler` (hand-rolled, no Moq)
+- Integration: `[Trait("Category","Integration")]` — exclude with `--filter "Category!=Integration"`
+<!-- END_SPECIFY_AUTO -->
