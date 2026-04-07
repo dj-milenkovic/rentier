@@ -124,4 +124,65 @@ public class GetFilingsQueryHandlerTests
         await _repo.Received(1).GetPagedAsync(
             Arg.Any<FilingFilterMode>(), 40, 20, Arg.Any<CancellationToken>());
     }
+
+    // ── ReportIdFilter branch (added by feature 014) ─────────────────────────
+
+    [Fact]
+    public async Task HandleAsync_WhenReportIdFilterSet_CallsGetByReportIdAsyncInsteadOfGetPagedAsync()
+    {
+        var reportId = Guid.NewGuid();
+        _repo.GetByReportIdAsync(reportId, Arg.Any<CancellationToken>())
+            .Returns(Array.Empty<Filing>().ToList().AsReadOnly() as IReadOnlyList<Filing>);
+
+        await _sut.HandleAsync(new GetFilingsQuery(FilingFilterMode.Unpaid, 1, 20, reportId));
+
+        await _repo.Received(1).GetByReportIdAsync(reportId, Arg.Any<CancellationToken>());
+        await _repo.DidNotReceive().GetPagedAsync(
+            Arg.Any<FilingFilterMode>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenReportIdFilterSet_ReturnsAllFilingsAsSinglePage()
+    {
+        var reportId = Guid.NewGuid();
+        var filing1 = MakeFiling();
+        var filing2 = MakeFiling();
+        _repo.GetByReportIdAsync(reportId, Arg.Any<CancellationToken>())
+            .Returns(new List<Filing> { filing1, filing2 }.AsReadOnly() as IReadOnlyList<Filing>);
+
+        var result = await _sut.HandleAsync(new GetFilingsQuery(FilingFilterMode.Unpaid, 1, 20, reportId));
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.TotalPages.Should().Be(1);
+        result.Value.Rows.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenReportIdFilterSet_ReturnsFilingCountAsTotal()
+    {
+        var reportId = Guid.NewGuid();
+        var filings = Enumerable.Range(0, 5).Select(_ => MakeFiling()).ToList();
+        _repo.GetByReportIdAsync(reportId, Arg.Any<CancellationToken>())
+            .Returns(filings.AsReadOnly() as IReadOnlyList<Filing>);
+
+        var result = await _sut.HandleAsync(new GetFilingsQuery(FilingFilterMode.Unpaid, 1, 20, reportId));
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.TotalCount.Should().Be(5);
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenReportIdFilterSetAndNoFilings_ReturnsEmptyPageResult()
+    {
+        var reportId = Guid.NewGuid();
+        _repo.GetByReportIdAsync(reportId, Arg.Any<CancellationToken>())
+            .Returns(Array.Empty<Filing>().ToList().AsReadOnly() as IReadOnlyList<Filing>);
+
+        var result = await _sut.HandleAsync(new GetFilingsQuery(FilingFilterMode.Unpaid, 1, 20, reportId));
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Rows.Should().BeEmpty();
+        result.Value.TotalCount.Should().Be(0);
+        result.Value.TotalPages.Should().Be(1);
+    }
 }

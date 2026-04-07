@@ -284,4 +284,131 @@ public class FilingRepositoryTests : IAsyncLifetime
         items.Should().HaveCount(2);
         total.Should().Be(5);
     }
+
+    // ── GetFilingCountByReportIdAsync tests (feature 014) ───────────────────
+
+    private async Task<(Importer importer, Report report, TaxpayerProfile profile)> SeedReportAsync()
+    {
+        var importer = Importer.Create("Test Importer");
+        await _context.Importers.AddAsync(importer);
+        await _context.SaveChangesAsync();
+
+        var report = Report.Create(importer.Id, "stmt.csv", null, null);
+        await _context.Reports.AddAsync(report);
+        await _context.SaveChangesAsync();
+
+        var profile = MakeProfile();
+        await _context.TaxpayerProfiles.AddAsync(profile);
+        await _context.SaveChangesAsync();
+
+        return (importer, report, profile);
+    }
+
+    [Fact]
+    public async Task GetFilingCountByReportIdAsync_WhenNoFilingsExist_ReturnsZero()
+    {
+        var (_, report, _) = await SeedReportAsync();
+
+        var count = await _repository.GetFilingCountByReportIdAsync(report.Id);
+
+        count.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task GetFilingCountByReportIdAsync_WhenFilingsLinked_ReturnsCorrectCount()
+    {
+        var (_, report, profile) = await SeedReportAsync();
+        for (var i = 0; i < 3; i++)
+        {
+            var f = Filing.CreateFromIncome(profile.Id, IncomeType.Dividend, $"Co{i}",
+                new DateOnly(2024, 1 + i, 15), 1000m, 0m, 150m, 150m,
+                new DateOnly(2024, 2 + i, 15), report.Id);
+            await _repository.AddAsync(f);
+        }
+
+        var count = await _repository.GetFilingCountByReportIdAsync(report.Id);
+
+        count.Should().Be(3);
+    }
+
+    [Fact]
+    public async Task GetFilingCountByReportIdAsync_WithUnknownReportId_ReturnsZero()
+    {
+        var count = await _repository.GetFilingCountByReportIdAsync(Guid.NewGuid());
+
+        count.Should().Be(0);
+    }
+
+    // ── DeleteByReportIdAsync tests (feature 014) ────────────────────────────
+
+    [Fact]
+    public async Task DeleteByReportIdAsync_WhenFilingsExist_DeletesAllMatchingFilings()
+    {
+        var (_, report, profile) = await SeedReportAsync();
+        for (var i = 0; i < 3; i++)
+        {
+            var f = Filing.CreateFromIncome(profile.Id, IncomeType.Dividend, $"Co{i}",
+                new DateOnly(2024, 1 + i, 15), 1000m, 0m, 150m, 150m,
+                new DateOnly(2024, 2 + i, 15), report.Id);
+            await _repository.AddAsync(f);
+        }
+
+        await _repository.DeleteByReportIdAsync(report.Id);
+
+        var remaining = await _repository.GetByReportIdAsync(report.Id);
+        remaining.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task DeleteByReportIdAsync_WhenNoFilingsExist_IsIdempotentAndDoesNotThrow()
+    {
+        var (_, report, _) = await SeedReportAsync();
+
+        var act = async () => await _repository.DeleteByReportIdAsync(report.Id);
+
+        await act.Should().NotThrowAsync();
+    }
+
+    [Fact]
+    public async Task DeleteByReportIdAsync_WhenCalledTwice_IsIdempotent()
+    {
+        var (_, report, profile) = await SeedReportAsync();
+        var f = Filing.CreateFromIncome(profile.Id, IncomeType.Dividend, "ACME",
+            new DateOnly(2024, 3, 15), 1000m, 0m, 150m, 150m,
+            new DateOnly(2024, 4, 15), report.Id);
+        await _repository.AddAsync(f);
+
+        await _repository.DeleteByReportIdAsync(report.Id);
+        var act = async () => await _repository.DeleteByReportIdAsync(report.Id);
+
+        await act.Should().NotThrowAsync();
+    }
+
+    [Fact]
+    public async Task DeleteByReportIdAsync_OnlyDeletesFilingsMatchingReportId()
+    {
+        var (_, report1, profile) = await SeedReportAsync();
+
+        var importer2 = Importer.Create("Other");
+        await _context.Importers.AddAsync(importer2);
+        await _context.SaveChangesAsync();
+        var report2 = Report.Create(importer2.Id, "other.csv", null, null);
+        await _context.Reports.AddAsync(report2);
+        await _context.SaveChangesAsync();
+
+        var f1 = Filing.CreateFromIncome(profile.Id, IncomeType.Dividend, "Co1",
+            new DateOnly(2024, 1, 15), 1000m, 0m, 150m, 150m,
+            new DateOnly(2024, 2, 15), report1.Id);
+        var f2 = Filing.CreateFromIncome(profile.Id, IncomeType.Dividend, "Co2",
+            new DateOnly(2024, 3, 15), 2000m, 0m, 300m, 300m,
+            new DateOnly(2024, 4, 15), report2.Id);
+        await _repository.AddAsync(f1);
+        await _repository.AddAsync(f2);
+
+        await _repository.DeleteByReportIdAsync(report1.Id);
+
+        var remaining = await _repository.GetByReportIdAsync(report2.Id);
+        remaining.Should().HaveCount(1);
+        remaining[0].Id.Should().Be(f2.Id);
+    }
 }
