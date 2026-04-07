@@ -1,0 +1,4 @@
+Interest,Header,Currency,Date,Description,Amount
+Interest,Data,USD,2024-01-31,Credit Interest for Jan-2024,5.42
+Interest,Data,USD,2024-01-31,Debit Interest for Jan-2024,-1.20
+Interest,Total,USD,,Total,4.22
