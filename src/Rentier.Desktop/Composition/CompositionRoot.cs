@@ -5,6 +5,8 @@ using Rentier.Application.DTOs;
 using Rentier.Application.Handlers;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
+using Rentier.Desktop.Dialogs;
+using Rentier.Desktop.Resources;
 using Rentier.Desktop.ViewModels;
 
 namespace Rentier.Desktop.Composition;
@@ -73,6 +75,28 @@ public static class CompositionRoot
             ICommandHandler<DeleteImporterCommand, Result<VoidResult, Error>>,
             DeleteImporterCommandHandler>();
         services.AddTransient<ImporterSettingsViewModel>();
+
+        // Filing handlers — registered in CompositionRoot (not InfrastructureServiceExtensions)
+        services.AddTransient<
+            IQueryHandler<GetFilingsQuery, Result<FilingsPageResult, Error>>,
+            GetFilingsQueryHandler>();
+        services.AddTransient<
+            ICommandHandler<UpdateFilingStatusCommand, Result<VoidResult, Error>>,
+            UpdateFilingStatusCommandHandler>();
+        services.AddTransient<
+            ICommandHandler<UpdatePaymentReferenceCommand, Result<VoidResult, Error>>,
+            UpdatePaymentReferenceCommandHandler>();
+        services.AddTransient<
+            ICommandHandler<DeleteFilingCommand, Result<VoidResult, Error>>,
+            DeleteFilingCommandHandler>();
+
+        // Confirmation delegate for delete — must be explicitly registered so FilingsViewModel resolves
+        services.AddTransient<Func<string, Task<bool>>>(provider => msg =>
+            ConfirmDialogHelper.ShowAsync(
+                Strings.Filings_Delete_Confirmation_Title,
+                msg,
+                Strings.Filings_Delete_Confirm_Button,
+                Strings.Filings_Delete_Cancel_Button));
 
         return services;
     }

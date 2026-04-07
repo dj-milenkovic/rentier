@@ -1,3 +1,4 @@
+using Rentier.Application.Enums;
 using Rentier.Domain.Entities;
 
 namespace Rentier.Application.Repositories;
@@ -12,4 +13,8 @@ public interface IFilingRepository
     Task AddAsync(Filing filing, CancellationToken ct = default);
     Task UpdateAsync(Filing filing, CancellationToken ct = default);
     Task DeleteAsync(Guid id, CancellationToken ct = default);
+
+    /// <summary>Returns a paged, optionally-filtered list of filings ordered by FilingDeadline ascending.</summary>
+    Task<(IReadOnlyList<Filing> Items, int TotalCount)> GetPagedAsync(
+        FilingFilterMode filter, int skip, int take, CancellationToken ct = default);
 }
