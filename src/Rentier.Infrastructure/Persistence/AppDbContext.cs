@@ -10,6 +10,10 @@ namespace Rentier.Infrastructure.Persistence;
 public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
     public DbSet<TaxpayerProfile> TaxpayerProfiles => Set<TaxpayerProfile>();
+    public DbSet<PublicHoliday> PublicHolidays => Set<PublicHoliday>();
+    public DbSet<HolidayYearRange> HolidayYearRange => Set<HolidayYearRange>();
+    public DbSet<Mailbox> Mailboxes => Set<Mailbox>();
+    public DbSet<Importer> Importers => Set<Importer>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

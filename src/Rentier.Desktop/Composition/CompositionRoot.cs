@@ -32,6 +32,48 @@ public static class CompositionRoot
         services.AddTransient<SettingsViewModel>();
         services.AddSingleton<MainWindowViewModel>();
 
+        // Holiday handlers
+        services.AddTransient<
+            IQueryHandler<GetHolidayConfQuery, Result<HolidayConfDto, Error>>,
+            GetHolidayConfQueryHandler>();
+        services.AddTransient<
+            ICommandHandler<SaveHolidayConfCommand, Result<VoidResult, Error>>,
+            SaveHolidayConfCommandHandler>();
+        services.AddTransient<
+            ICommandHandler<ImportHolidaysFromWebCommand, Result<IReadOnlyList<HolidayEntryDto>, Error>>,
+            ImportHolidaysFromWebCommandHandler>();
+        services.AddTransient<HolidaySettingsViewModel>();
+
+        // Mailbox handlers
+        services.AddTransient<
+            IQueryHandler<GetMailboxesQuery, Result<IReadOnlyList<MailboxDto>, Error>>,
+            GetMailboxesQueryHandler>();
+        services.AddTransient<
+            ICommandHandler<AddMailboxCommand, Result<Guid, Error>>,
+            AddMailboxCommandHandler>();
+        services.AddTransient<
+            ICommandHandler<UpdateMailboxCommand, Result<VoidResult, Error>>,
+            UpdateMailboxCommandHandler>();
+        services.AddTransient<
+            ICommandHandler<DeleteMailboxCommand, Result<VoidResult, Error>>,
+            DeleteMailboxCommandHandler>();
+        services.AddTransient<MailboxSettingsViewModel>();
+
+        // Importer handlers
+        services.AddTransient<
+            IQueryHandler<GetImportersQuery, Result<IReadOnlyList<ImporterDto>, Error>>,
+            GetImportersQueryHandler>();
+        services.AddTransient<
+            ICommandHandler<AddImporterCommand, Result<Guid, Error>>,
+            AddImporterCommandHandler>();
+        services.AddTransient<
+            ICommandHandler<UpdateImporterCommand, Result<VoidResult, Error>>,
+            UpdateImporterCommandHandler>();
+        services.AddTransient<
+            ICommandHandler<DeleteImporterCommand, Result<VoidResult, Error>>,
+            DeleteImporterCommandHandler>();
+        services.AddTransient<ImporterSettingsViewModel>();
+
         return services;
     }
 }

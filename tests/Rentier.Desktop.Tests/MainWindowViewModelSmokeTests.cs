@@ -17,12 +17,34 @@ public class MainWindowViewModelSmokeTests
             Substitute.For<ICommandHandler<SaveTaxpayerProfileCommand, Result<VoidResult, Error>>>(),
             Substitute.For<IQueryHandler<GetTaxpayerProfileQuery, Result<TaxpayerProfileDto?, Error>>>());
 
+    private static HolidaySettingsViewModel CreateHolidayVm() =>
+        new(
+            Substitute.For<IQueryHandler<GetHolidayConfQuery, Result<HolidayConfDto, Error>>>(),
+            Substitute.For<ICommandHandler<SaveHolidayConfCommand, Result<VoidResult, Error>>>(),
+            Substitute.For<ICommandHandler<ImportHolidaysFromWebCommand, Result<IReadOnlyList<HolidayEntryDto>, Error>>>());
+
+    private static MailboxSettingsViewModel CreateMailboxVm() =>
+        new(
+            Substitute.For<IQueryHandler<GetMailboxesQuery, Result<IReadOnlyList<MailboxDto>, Error>>>(),
+            Substitute.For<ICommandHandler<AddMailboxCommand, Result<Guid, Error>>>(),
+            Substitute.For<ICommandHandler<UpdateMailboxCommand, Result<VoidResult, Error>>>(),
+            Substitute.For<ICommandHandler<DeleteMailboxCommand, Result<VoidResult, Error>>>());
+
+    private static ImporterSettingsViewModel CreateImporterVm() =>
+        new(
+            Substitute.For<IQueryHandler<GetImportersQuery, Result<IReadOnlyList<ImporterDto>, Error>>>(),
+            Substitute.For<IQueryHandler<GetTaxpayerProfileQuery, Result<TaxpayerProfileDto?, Error>>>(),
+            Substitute.For<IQueryHandler<GetMailboxesQuery, Result<IReadOnlyList<MailboxDto>, Error>>>(),
+            Substitute.For<ICommandHandler<AddImporterCommand, Result<Guid, Error>>>(),
+            Substitute.For<ICommandHandler<UpdateImporterCommand, Result<VoidResult, Error>>>(),
+            Substitute.For<ICommandHandler<DeleteImporterCommand, Result<VoidResult, Error>>>());
+
     [Fact]
     public void MainWindowViewModel_Constructed_NavigationEntriesHasThreeItems()
     {
         var filingsVm = new FilingsViewModel();
         var reportsVm = new ReportsViewModel();
-        var settingsVm = new SettingsViewModel(CreateProfileVm());
+        var settingsVm = new SettingsViewModel(CreateProfileVm(), CreateHolidayVm(), CreateMailboxVm(), CreateImporterVm());
         var vm = new MainWindowViewModel(filingsVm, reportsVm, settingsVm);
 
         vm.NavigationEntries.Count.Should().Be(3);
@@ -33,7 +55,7 @@ public class MainWindowViewModelSmokeTests
     {
         var filingsVm = new FilingsViewModel();
         var reportsVm = new ReportsViewModel();
-        var settingsVm = new SettingsViewModel(CreateProfileVm());
+        var settingsVm = new SettingsViewModel(CreateProfileVm(), CreateHolidayVm(), CreateMailboxVm(), CreateImporterVm());
         var vm = new MainWindowViewModel(filingsVm, reportsVm, settingsVm);
 
         vm.CurrentViewModel.Should().BeOfType<FilingsViewModel>();

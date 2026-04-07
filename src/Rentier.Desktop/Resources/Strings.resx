@@ -106,4 +106,127 @@
   <data name="Profile_RequiredField_Error" xml:space="preserve">
     <value>This field is required.</value>
   </data>
+  <data name="Settings_Holidays_TabHeader" xml:space="preserve">
+    <value>Holidays</value>
+  </data>
+  <data name="Holidays_AddRow_Button" xml:space="preserve">
+    <value>Add</value>
+  </data>
+  <data name="Holidays_DeleteRow_Button" xml:space="preserve">
+    <value>Delete Selected</value>
+  </data>
+  <data name="Holidays_Save_Button" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Holidays_Import_Button" xml:space="preserve">
+    <value>Import from Web</value>
+  </data>
+  <data name="Holidays_Date_Column" xml:space="preserve">
+    <value>Date</value>
+  </data>
+  <data name="Holidays_Name_Column" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Holidays_StartYear_Label" xml:space="preserve">
+    <value>Start Year</value>
+  </data>
+  <data name="Holidays_EndYear_Label" xml:space="preserve">
+    <value>End Year</value>
+  </data>
+  <data name="Holidays_Saved_Confirmation" xml:space="preserve">
+    <value>Changes saved successfully.</value>
+  </data>
+  <data name="Holidays_ImportError_Prefix" xml:space="preserve">
+    <value>Import failed: </value>
+  </data>
+  <data name="Holidays_ImportYear_Prompt" xml:space="preserve">
+    <value>Enter year to import:</value>
+  </data>
+  <data name="Holidays_InvalidDate_Error" xml:space="preserve">
+    <value>Invalid date format.</value>
+  </data>
+  <data name="Holidays_UnsavedChanges_Label" xml:space="preserve">
+    <value>Unsaved changes</value>
+  </data>
+  <data name="Settings_Mailboxes_TabHeader" xml:space="preserve">
+    <value>Mailboxes</value>
+  </data>
+  <data name="Mailboxes_Host_Label" xml:space="preserve">
+    <value>IMAP Host</value>
+  </data>
+  <data name="Mailboxes_Port_Label" xml:space="preserve">
+    <value>Port</value>
+  </data>
+  <data name="Mailboxes_Username_Label" xml:space="preserve">
+    <value>Username / Email</value>
+  </data>
+  <data name="Mailboxes_Password_Label" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="Mailboxes_Password_Hint" xml:space="preserve">
+    <value>Leave blank to keep existing</value>
+  </data>
+  <data name="Mailboxes_InitialSyncDate_Label" xml:space="preserve">
+    <value>Sync From Date</value>
+  </data>
+  <data name="Mailboxes_AddNew_Button" xml:space="preserve">
+    <value>Add New</value>
+  </data>
+  <data name="Mailboxes_Save_Button" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Mailboxes_Delete_Button" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Mailboxes_ErrorMessage_Label" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="Mailboxes_SuccessMessage_Label" xml:space="preserve">
+    <value>Saved successfully</value>
+  </data>
+  <data name="Settings_Importers_TabHeader" xml:space="preserve">
+    <value>Importers</value>
+  </data>
+  <data name="Importers_DisplayName_Label" xml:space="preserve">
+    <value>Display Name</value>
+  </data>
+  <data name="Importers_ReportType_Label" xml:space="preserve">
+    <value>Report Type</value>
+  </data>
+  <data name="Importers_TaxpayerProfile_Label" xml:space="preserve">
+    <value>Taxpayer Profile</value>
+  </data>
+  <data name="Importers_Mailbox_Label" xml:space="preserve">
+    <value>Mailbox</value>
+  </data>
+  <data name="Importers_FromFilter_Label" xml:space="preserve">
+    <value>From Filter</value>
+  </data>
+  <data name="Importers_SubjectFilter_Label" xml:space="preserve">
+    <value>Subject Filter</value>
+  </data>
+  <data name="Importers_AttachmentRegex_Label" xml:space="preserve">
+    <value>Attachment Regex</value>
+  </data>
+  <data name="Importers_PaymentNotes_Label" xml:space="preserve">
+    <value>Payment Notes</value>
+  </data>
+  <data name="Importers_AddNew_Button" xml:space="preserve">
+    <value>Add New</value>
+  </data>
+  <data name="Importers_Save_Button" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Importers_Delete_Button" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Importers_Saved_Confirmation" xml:space="preserve">
+    <value>Importer saved.</value>
+  </data>
+  <data name="Importers_NoProfile_Placeholder" xml:space="preserve">
+    <value>— No Profile —</value>
+  </data>
+  <data name="Importers_NoMailbox_Placeholder" xml:space="preserve">
+    <value>— No Mailbox —</value>
+  </data>
 </root>

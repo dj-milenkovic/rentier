@@ -4,6 +4,7 @@
              x:Class="Rentier.Desktop.App">
   <Application.Styles>
     <FluentTheme />
+    <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
   </Application.Styles>
   <Application.DataTemplates>
     <local:ViewLocator/>

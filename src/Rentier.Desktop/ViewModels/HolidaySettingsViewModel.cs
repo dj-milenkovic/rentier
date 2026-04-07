@@ -1,0 +1,202 @@
+using System.Collections.ObjectModel;
+using System.Reactive;
+using System.Reactive.Concurrency;
+using System.Reactive.Disposables;
+using System.Reactive.Linq;
+using ReactiveUI;
+using Rentier.Application.Commands;
+using Rentier.Application.Common;
+using Rentier.Application.DTOs;
+using Rentier.Application.Interfaces;
+using Rentier.Application.Queries;
+using Rentier.Desktop.Resources;
+
+namespace Rentier.Desktop.ViewModels;
+
+public sealed class HolidaySettingsViewModel : ReactiveObject, IActivatableViewModel
+{
+    private readonly IQueryHandler<GetHolidayConfQuery, Result<HolidayConfDto, Error>> _queryHandler;
+    private readonly ICommandHandler<SaveHolidayConfCommand, Result<VoidResult, Error>> _saveHandler;
+    private readonly ICommandHandler<ImportHolidaysFromWebCommand, Result<IReadOnlyList<HolidayEntryDto>, Error>> _importHandler;
+    private readonly IScheduler _scheduler;
+
+    private int _startYear;
+    private int _endYear;
+    private bool _isLoading;
+    private string? _errorMessage;
+    private string? _successMessage;
+    private int _importYear = DateTime.Today.Year;
+    private HolidayEntryViewModel? _selectedEntry;
+    private bool _hasUnsavedChanges;
+
+    public int StartYear
+    {
+        get => _startYear;
+        set => this.RaiseAndSetIfChanged(ref _startYear, value);
+    }
+
+    public int EndYear
+    {
+        get => _endYear;
+        set => this.RaiseAndSetIfChanged(ref _endYear, value);
+    }
+
+    public bool IsLoading
+    {
+        get => _isLoading;
+        private set => this.RaiseAndSetIfChanged(ref _isLoading, value);
+    }
+
+    public string? ErrorMessage
+    {
+        get => _errorMessage;
+        private set => this.RaiseAndSetIfChanged(ref _errorMessage, value);
+    }
+
+    public string? SuccessMessage
+    {
+        get => _successMessage;
+        private set => this.RaiseAndSetIfChanged(ref _successMessage, value);
+    }
+
+    public int ImportYear
+    {
+        get => _importYear;
+        set => this.RaiseAndSetIfChanged(ref _importYear, value);
+    }
+
+    public HolidayEntryViewModel? SelectedEntry
+    {
+        get => _selectedEntry;
+        set => this.RaiseAndSetIfChanged(ref _selectedEntry, value);
+    }
+
+    public bool HasUnsavedChanges
+    {
+        get => _hasUnsavedChanges;
+        private set => this.RaiseAndSetIfChanged(ref _hasUnsavedChanges, value);
+    }
+
+    public ObservableCollection<HolidayEntryViewModel> Entries { get; } = new();
+
+    public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> AddRowCommand { get; }
+    public ReactiveCommand<HolidayEntryViewModel, System.Reactive.Unit> DeleteRowCommand { get; }
+    public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> SaveCommand { get; }
+    public ReactiveCommand<int, System.Reactive.Unit> ImportCommand { get; }
+
+    public ViewModelActivator Activator { get; } = new();
+
+    public HolidaySettingsViewModel(
+        IQueryHandler<GetHolidayConfQuery, Result<HolidayConfDto, Error>> queryHandler,
+        ICommandHandler<SaveHolidayConfCommand, Result<VoidResult, Error>> saveHandler,
+        ICommandHandler<ImportHolidaysFromWebCommand, Result<IReadOnlyList<HolidayEntryDto>, Error>> importHandler,
+        IScheduler? scheduler = null)
+    {
+        _queryHandler = queryHandler;
+        _saveHandler = saveHandler;
+        _importHandler = importHandler;
+        _scheduler = scheduler ?? RxApp.MainThreadScheduler;
+
+        AddRowCommand = ReactiveCommand.Create(() =>
+        {
+            Entries.Add(new HolidayEntryViewModel());
+            HasUnsavedChanges = true;
+        });
+
+        var canDelete = this.WhenAnyValue(x => x.SelectedEntry).Select(e => e != null);
+        DeleteRowCommand = ReactiveCommand.Create<HolidayEntryViewModel>(entry =>
+        {
+            Entries.Remove(entry);
+            HasUnsavedChanges = true;
+        }, canDelete);
+
+        SaveCommand = ReactiveCommand.CreateFromTask(async (CancellationToken ct) =>
+        {
+            IsLoading = true;
+            ErrorMessage = null;
+            SuccessMessage = null;
+            try
+            {
+                var cmd = new SaveHolidayConfCommand(
+                    Entries.Select(e => e.ToDto()).ToList(),
+                    StartYear,
+                    EndYear);
+                var result = await _saveHandler.HandleAsync(cmd, ct);
+                if (result.IsSuccess)
+                {
+                    SuccessMessage = Strings.Holidays_Saved_Confirmation;
+                    HasUnsavedChanges = false;
+                }
+                else
+                {
+                    ErrorMessage = result.Error.Message;
+                }
+            }
+            finally
+            {
+                IsLoading = false;
+            }
+        });
+
+        ImportCommand = ReactiveCommand.CreateFromTask<int>(async (int year, CancellationToken ct) =>
+        {
+            IsLoading = true;
+            ErrorMessage = null;
+            SuccessMessage = null;
+            try
+            {
+                var cmd = new ImportHolidaysFromWebCommand(year);
+                var result = await _importHandler.HandleAsync(cmd, ct);
+                if (result.IsSuccess)
+                {
+                    Entries.Clear();
+                    foreach (var dto in result.Value)
+                        Entries.Add(HolidayEntryViewModel.FromDto(dto));
+                }
+                else
+                {
+                    ErrorMessage = $"{Strings.Holidays_ImportError_Prefix}{result.Error.Message}";
+                }
+            }
+            finally
+            {
+                IsLoading = false;
+            }
+        });
+
+        this.WhenActivated(disposables =>
+        {
+            Observable.FromAsync(ct => LoadAsync(ct))
+                .ObserveOn(_scheduler)
+                .Subscribe()
+                .DisposeWith(disposables);
+        });
+    }
+
+    private async Task LoadAsync(CancellationToken ct = default)
+    {
+        IsLoading = true;
+        ErrorMessage = null;
+        try
+        {
+            var result = await _queryHandler.HandleAsync(new GetHolidayConfQuery(), ct);
+            if (result.IsSuccess)
+            {
+                Entries.Clear();
+                foreach (var dto in result.Value.Holidays)
+                    Entries.Add(HolidayEntryViewModel.FromDto(dto));
+                StartYear = result.Value.StartYear;
+                EndYear = result.Value.EndYear;
+                HasUnsavedChanges = false;
+            }
+            else
+            {
+                ErrorMessage = result.Error.Message;
+            }
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+}
