@@ -89,6 +89,9 @@ public static class CompositionRoot
         services.AddTransient<
             ICommandHandler<DeleteFilingCommand, Result<VoidResult, Error>>,
             DeleteFilingCommandHandler>();
+        services.AddTransient<
+            ICommandHandler<ExportFilingCommand, Result<ExportFilingResult, Error>>,
+            ExportFilingCommandHandler>();
 
         // Confirmation delegate for delete — must be explicitly registered so FilingsViewModel resolves
         services.AddTransient<Func<string, Task<bool>>>(provider => msg =>
@@ -97,6 +100,41 @@ public static class CompositionRoot
                 msg,
                 Strings.Filings_Delete_Confirm_Button,
                 Strings.Filings_Delete_Cancel_Button));
+
+        // Export file-writer delegate — opens native save dialog and writes bytes to disk
+        services.AddTransient<Func<ExportFilingResult, Task>>(provider =>
+            async (ExportFilingResult result) =>
+            {
+            var lifetime = Avalonia.Application.Current?.ApplicationLifetime
+                as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime;
+            var topLevel = Avalonia.Controls.TopLevel.GetTopLevel(lifetime?.MainWindow);
+            if (topLevel is null) return;
+
+            var file = await topLevel.StorageProvider.SaveFilePickerAsync(
+                new Avalonia.Platform.Storage.FilePickerSaveOptions
+                {
+                    Title = Strings.Filings_Export_SaveDialog_Title,
+                    SuggestedFileName = result.SuggestedFileName,
+                    FileTypeChoices =
+                    [
+                        new Avalonia.Platform.Storage.FilePickerFileType(
+                            Strings.Filings_Export_Filter_Xml) { Patterns = ["*.xml"] }
+                    ]
+                });
+
+            if (file is null) return;
+
+            await using var stream = await file.OpenWriteAsync();
+            try
+            {
+                await stream.WriteAsync(result.Bytes);
+            }
+            catch
+            {
+                await file.DeleteAsync();
+                throw;
+            }
+        });
 
         return services;
     }

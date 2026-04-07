@@ -108,6 +108,18 @@
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
 
+        <!-- Export action column -->
+        <DataGridTemplateColumn Header="{x:Static res:Strings.Filings_Export_Button}" Width="80">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <Button Content="{x:Static res:Strings.Filings_Export_Button}"
+                      Tag="{Binding Id}"
+                      Click="ExportButton_Click"
+                      HorizontalAlignment="Center" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+
         <!-- Delete action column -->
         <DataGridTemplateColumn Width="80">
           <DataGridTemplateColumn.CellTemplate>
