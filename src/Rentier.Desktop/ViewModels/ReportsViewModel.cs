@@ -154,10 +154,10 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
         {
             var result = await _importReport.HandleAsync(
                 new ImportReportCommand(importerId, fileName, content), ct);
-            if (!result.IsSuccess)
-                ErrorMessage = result.Error.Message;
-
+            var errorToPreserve = result.IsSuccess ? null : result.Error.Message;
             await LoadReportsAsync(ct);
+            if (errorToPreserve is not null)
+                ErrorMessage = errorToPreserve;
         }
         finally
         {
@@ -177,10 +177,10 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
         try
         {
             var result = await _deleteReport.HandleAsync(new DeleteReportCommand(reportId), ct);
-            if (!result.IsSuccess)
-                ErrorMessage = result.Error.Message;
-
+            var errorToPreserve = result.IsSuccess ? null : result.Error.Message;
             await LoadReportsAsync(ct);
+            if (errorToPreserve is not null)
+                ErrorMessage = errorToPreserve;
         }
         finally
         {
