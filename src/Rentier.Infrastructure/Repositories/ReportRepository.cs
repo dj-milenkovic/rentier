@@ -20,7 +20,9 @@ public sealed class ReportRepository : IReportRepository
 
     public async Task<IReadOnlyList<Report>> GetAllAsync(CancellationToken ct = default)
     {
-        var list = await _db.Reports.AsNoTracking().ToListAsync(ct);
+        var list = await _db.Reports.AsNoTracking()
+            .OrderByDescending(r => r.ImportDate)
+            .ToListAsync(ct);
         return list.AsReadOnly();
     }
 

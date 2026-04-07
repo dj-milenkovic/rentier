@@ -1,0 +1,63 @@
+using Rentier.Application.Commands;
+using Rentier.Application.Common;
+using Rentier.Application.DTOs;
+using Rentier.Application.Interfaces;
+using Rentier.Application.Repositories;
+
+namespace Rentier.Application.Handlers;
+
+public sealed class ExportFilingCommandHandler
+    : ICommandHandler<ExportFilingCommand, Result<ExportFilingResult, Error>>
+{
+    private readonly IFilingRepository _filings;
+    private readonly ITaxpayerProfileRepository _profiles;
+    private readonly IReportRepository _reports;
+    private readonly IImporterRepository _importers;
+    private readonly IXmlFilingSerializer _serializer;
+
+    public ExportFilingCommandHandler(
+        IFilingRepository filings,
+        ITaxpayerProfileRepository profiles,
+        IReportRepository reports,
+        IImporterRepository importers,
+        IXmlFilingSerializer serializer)
+    {
+        _filings = filings;
+        _profiles = profiles;
+        _reports = reports;
+        _importers = importers;
+        _serializer = serializer;
+    }
+
+    public async Task<Result<ExportFilingResult, Error>> HandleAsync(
+        ExportFilingCommand command, CancellationToken ct = default)
+    {
+        var filing = await _filings.GetByIdAsync(command.FilingId, ct);
+        if (filing is null)
+            return Result<ExportFilingResult, Error>.Failure(
+                Error.NotFound($"Filing {command.FilingId} not found."));
+
+        var profile = await _profiles.GetAsync(ct);
+        if (profile is null)
+            return Result<ExportFilingResult, Error>.Failure(
+                Error.Domain("Taxpayer profile is required before exporting."));
+
+        var paymentNotes = string.Empty;
+        if (filing.ReportId.HasValue)
+        {
+            var report = await _reports.GetByIdAsync(filing.ReportId.Value, ct);
+            if (report is not null)
+            {
+                var importer = await _importers.GetByIdAsync(report.ImporterId, ct);
+                paymentNotes = importer?.PaymentNotes ?? string.Empty;
+            }
+        }
+
+        var bytes = _serializer.Serialize(filing, profile, paymentNotes);
+        var suggestedFileName =
+            $"PP-OPO_{filing.IncomeDate:yyyy-MM}_{profile.Jmbg}.xml";
+
+        return Result<ExportFilingResult, Error>.Success(
+            new ExportFilingResult(bytes, suggestedFileName));
+    }
+}

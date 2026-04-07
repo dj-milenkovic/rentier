@@ -54,7 +54,9 @@ public class MainWindowViewModelSmokeTests
             Substitute.For<ICommandHandler<UpdateFilingStatusCommand, Result<VoidResult, Error>>>(),
             Substitute.For<ICommandHandler<UpdatePaymentReferenceCommand, Result<VoidResult, Error>>>(),
             Substitute.For<ICommandHandler<DeleteFilingCommand, Result<VoidResult, Error>>>(),
+            Substitute.For<ICommandHandler<ExportFilingCommand, Result<ExportFilingResult, Error>>>(),
             _ => Task.FromResult(false),
+            _ => Task.CompletedTask,
             ImmediateScheduler.Instance);
     }
 
