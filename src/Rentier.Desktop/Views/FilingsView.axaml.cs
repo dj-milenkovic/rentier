@@ -41,4 +41,12 @@ public partial class FilingsView : ReactiveUserControl<FilingsViewModel>
 
         ViewModel?.DeleteCommand.Execute(id).Subscribe();
     }
+
+    private void ExportButton_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button btn) return;
+        if (btn.Tag is not Guid id) return;
+
+        ViewModel?.ExportCommand.Execute(id).Subscribe();
+    }
 }

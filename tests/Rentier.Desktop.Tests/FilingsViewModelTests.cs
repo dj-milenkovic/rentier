@@ -40,6 +40,9 @@ public class FilingsViewModelTests
         new(Guid.NewGuid(), status, IncomeType.Dividend, "ACME Corp",
             deadline ?? new DateOnly(2024, 4, 30), 100m, null);
 
+    private static ICommandHandler<ExportFilingCommand, Result<ExportFilingResult, Error>> MockExport() =>
+        Substitute.For<ICommandHandler<ExportFilingCommand, Result<ExportFilingResult, Error>>>();
+
     private static FilingsViewModel CreateVm(
         IQueryHandler<GetFilingsQuery, Result<FilingsPageResult, Error>>? getFilings = null,
         ICommandHandler<UpdateFilingStatusCommand, Result<VoidResult, Error>>? updateStatus = null,
@@ -52,7 +55,9 @@ public class FilingsViewModelTests
             updateStatus ?? MockUpdateStatus(),
             updateRef    ?? MockUpdateRef(),
             deleteFiling ?? MockDelete(),
+            MockExport(),
             confirmDelete ?? (_ => Task.FromResult(false)),
+            _ => Task.CompletedTask,
             ImmediateScheduler.Instance);
     }
 
