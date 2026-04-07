@@ -6,6 +6,7 @@ using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
 using Rentier.Desktop.ViewModels;
+using System.Reactive.Concurrency;
 using Xunit;
 
 namespace Rentier.Desktop.Tests;
@@ -42,10 +43,25 @@ public class MainWindowViewModelSmokeTests
     private static ReportsViewModel CreateReportsVm() =>
         new(Substitute.For<ICommandHandler<SyncMailboxCommand, Result<SyncResult, Error>>>());
 
+    private static FilingsViewModel CreateFilingsVm()
+    {
+        var getFilings = Substitute.For<IQueryHandler<GetFilingsQuery, Result<FilingsPageResult, Error>>>();
+        getFilings.HandleAsync(Arg.Any<GetFilingsQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<FilingsPageResult, Error>.Success(
+                new FilingsPageResult([], 0, 1)));
+        return new FilingsViewModel(
+            getFilings,
+            Substitute.For<ICommandHandler<UpdateFilingStatusCommand, Result<VoidResult, Error>>>(),
+            Substitute.For<ICommandHandler<UpdatePaymentReferenceCommand, Result<VoidResult, Error>>>(),
+            Substitute.For<ICommandHandler<DeleteFilingCommand, Result<VoidResult, Error>>>(),
+            _ => Task.FromResult(false),
+            ImmediateScheduler.Instance);
+    }
+
     [Fact]
     public void MainWindowViewModel_Constructed_NavigationEntriesHasThreeItems()
     {
-        var filingsVm = new FilingsViewModel();
+        var filingsVm = CreateFilingsVm();
         var reportsVm = CreateReportsVm();
         var settingsVm = new SettingsViewModel(CreateProfileVm(), CreateHolidayVm(), CreateMailboxVm(), CreateImporterVm());
         var vm = new MainWindowViewModel(filingsVm, reportsVm, settingsVm);
@@ -56,7 +72,7 @@ public class MainWindowViewModelSmokeTests
     [Fact]
     public void MainWindowViewModel_Constructed_InitialViewModelIsFilingsViewModel()
     {
-        var filingsVm = new FilingsViewModel();
+        var filingsVm = CreateFilingsVm();
         var reportsVm = CreateReportsVm();
         var settingsVm = new SettingsViewModel(CreateProfileVm(), CreateHolidayVm(), CreateMailboxVm(), CreateImporterVm());
         var vm = new MainWindowViewModel(filingsVm, reportsVm, settingsVm);

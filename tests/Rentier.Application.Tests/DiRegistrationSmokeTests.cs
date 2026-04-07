@@ -4,7 +4,9 @@ using NSubstitute;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
+using Rentier.Application.Handlers;
 using Rentier.Application.Interfaces;
+using Rentier.Application.Queries;
 using Rentier.Application.Repositories;
 using Xunit;
 
@@ -38,5 +40,36 @@ public class DiRegistrationSmokeTests
         provider.GetRequiredService<ICredentialStore>().Should().NotBeNull();
         provider.GetRequiredService<IMailboxSyncService>().Should().NotBeNull();
         provider.GetRequiredService<ICommandHandler<SyncMailboxCommand, Result<SyncResult, Error>>>().Should().NotBeNull();
+    }
+
+    [Fact]
+    public void ServiceCollection_FilingHandlers_AllResolveSuccessfully()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton(Substitute.For<IFilingRepository>());
+
+        services.AddTransient<
+            IQueryHandler<GetFilingsQuery, Result<FilingsPageResult, Error>>,
+            GetFilingsQueryHandler>();
+        services.AddTransient<
+            ICommandHandler<UpdateFilingStatusCommand, Result<VoidResult, Error>>,
+            UpdateFilingStatusCommandHandler>();
+        services.AddTransient<
+            ICommandHandler<UpdatePaymentReferenceCommand, Result<VoidResult, Error>>,
+            UpdatePaymentReferenceCommandHandler>();
+        services.AddTransient<
+            ICommandHandler<DeleteFilingCommand, Result<VoidResult, Error>>,
+            DeleteFilingCommandHandler>();
+
+        var provider = services.BuildServiceProvider();
+
+        provider.GetRequiredService<IQueryHandler<GetFilingsQuery, Result<FilingsPageResult, Error>>>()
+            .Should().NotBeNull();
+        provider.GetRequiredService<ICommandHandler<UpdateFilingStatusCommand, Result<VoidResult, Error>>>()
+            .Should().NotBeNull();
+        provider.GetRequiredService<ICommandHandler<UpdatePaymentReferenceCommand, Result<VoidResult, Error>>>()
+            .Should().NotBeNull();
+        provider.GetRequiredService<ICommandHandler<DeleteFilingCommand, Result<VoidResult, Error>>>()
+            .Should().NotBeNull();
     }
 }
