@@ -17,6 +17,131 @@ namespace Rentier.Infrastructure.Persistence.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.25");
 
+            modelBuilder.Entity("Rentier.Domain.Entities.HolidayYearRange", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("EndYear")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("StartYear")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("HolidayYearRange", (string)null);
+                });
+
+            modelBuilder.Entity("Rentier.Domain.Entities.Importer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AttachmentRegex")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FromFilter")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("");
+
+                    b.Property<Guid?>("MailboxId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PaymentNotes")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(4000)
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("");
+
+                    b.Property<int>("ReportType")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("SubjectFilter")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("");
+
+                    b.Property<Guid?>("TaxpayerProfileId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MailboxId");
+
+                    b.HasIndex("TaxpayerProfileId");
+
+                    b.ToTable("Importers", (string)null);
+                });
+
+            modelBuilder.Entity("Rentier.Domain.Entities.Mailbox", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Host")
+                        .IsRequired()
+                        .HasMaxLength(253)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly>("InitialSyncDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Port")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasMaxLength(320)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Mailboxes", (string)null);
+                });
+
+            modelBuilder.Entity("Rentier.Domain.Entities.PublicHoliday", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Year");
+
+                    b.ToTable("PublicHolidays", (string)null);
+                });
+
             modelBuilder.Entity("Rentier.Domain.Entities.TaxpayerProfile", b =>
                 {
                     b.Property<Guid>("Id")
@@ -57,6 +182,46 @@ namespace Rentier.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("TaxpayerProfiles", (string)null);
+                });
+
+            modelBuilder.Entity("Rentier.Domain.Entities.Importer", b =>
+                {
+                    b.HasOne("Rentier.Domain.Entities.Mailbox", null)
+                        .WithMany()
+                        .HasForeignKey("MailboxId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Rentier.Domain.Entities.TaxpayerProfile", null)
+                        .WithMany()
+                        .HasForeignKey("TaxpayerProfileId")
+                        .OnDelete(DeleteBehavior.SetNull);
+                });
+
+            modelBuilder.Entity("Rentier.Domain.Entities.Mailbox", b =>
+                {
+                    b.OwnsOne("Rentier.Domain.ValueObjects.MailboxCursor", "Cursor", b1 =>
+                        {
+                            b1.Property<Guid>("MailboxId")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<DateOnly?>("LastSyncDate")
+                                .HasColumnType("TEXT")
+                                .HasColumnName("Cursor_LastSyncDate");
+
+                            b1.Property<long?>("LastUid")
+                                .HasColumnType("INTEGER")
+                                .HasColumnName("Cursor_LastUid");
+
+                            b1.HasKey("MailboxId");
+
+                            b1.ToTable("Mailboxes");
+
+                            b1.WithOwner()
+                                .HasForeignKey("MailboxId");
+                        });
+
+                    b.Navigation("Cursor")
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

@@ -9,5 +9,14 @@
     <TabItem Header="{x:Static res:Strings.Settings_Profile_TabHeader}">
       <views:ProfileSettingsView DataContext="{Binding ProfileTab}" />
     </TabItem>
+    <TabItem Header="{x:Static res:Strings.Settings_Holidays_TabHeader}">
+      <views:HolidaySettingsView DataContext="{Binding HolidayTab}" />
+    </TabItem>
+    <TabItem Header="{x:Static res:Strings.Settings_Mailboxes_TabHeader}">
+      <views:MailboxSettingsView DataContext="{Binding MailboxesTab}" />
+    </TabItem>
+    <TabItem Header="{x:Static res:Strings.Settings_Importers_TabHeader}">
+      <views:ImporterSettingsView DataContext="{Binding ImportersTab}" />
+    </TabItem>
   </TabControl>
 </UserControl>
