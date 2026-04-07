@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
@@ -40,9 +41,6 @@ public class MainWindowViewModelSmokeTests
             Substitute.For<ICommandHandler<UpdateImporterCommand, Result<VoidResult, Error>>>(),
             Substitute.For<ICommandHandler<DeleteImporterCommand, Result<VoidResult, Error>>>());
 
-    private static ReportsViewModel CreateReportsVm() =>
-        new(Substitute.For<ICommandHandler<SyncMailboxCommand, Result<SyncResult, Error>>>());
-
     private static FilingsViewModel CreateFilingsVm()
     {
         var getFilings = Substitute.For<IQueryHandler<GetFilingsQuery, Result<FilingsPageResult, Error>>>();
@@ -60,13 +58,31 @@ public class MainWindowViewModelSmokeTests
             ImmediateScheduler.Instance);
     }
 
+    private static IServiceProvider CreateProvider()
+    {
+        var services = new ServiceCollection();
+
+        var getReports = Substitute.For<IQueryHandler<GetReportsQuery, Result<IReadOnlyList<ReportRowDto>, Error>>>();
+        getReports.HandleAsync(Arg.Any<GetReportsQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<IReadOnlyList<ReportRowDto>, Error>.Success(Array.Empty<ReportRowDto>()));
+
+        services.AddSingleton(Substitute.For<ICommandHandler<SyncMailboxCommand, Result<SyncResult, Error>>>());
+        services.AddSingleton(getReports);
+        services.AddSingleton(Substitute.For<ICommandHandler<ImportReportCommand, Result<Guid, Error>>>());
+        services.AddSingleton(Substitute.For<ICommandHandler<DeleteReportCommand, Result<VoidResult, Error>>>());
+        services.AddSingleton<Func<string, string, Task<bool>>>((_, _) => Task.FromResult(false));
+        services.AddSingleton<Func<Task<(Guid ImporterId, string FileName, byte[] Content)?>>>(
+            () => Task.FromResult<(Guid, string, byte[])?>(null));
+
+        return services.BuildServiceProvider();
+    }
+
     [Fact]
     public void MainWindowViewModel_Constructed_NavigationEntriesHasThreeItems()
     {
-        var filingsVm = CreateFilingsVm();
-        var reportsVm = CreateReportsVm();
+        var filingsVm  = CreateFilingsVm();
         var settingsVm = new SettingsViewModel(CreateProfileVm(), CreateHolidayVm(), CreateMailboxVm(), CreateImporterVm());
-        var vm = new MainWindowViewModel(filingsVm, reportsVm, settingsVm);
+        var vm = new MainWindowViewModel(filingsVm, CreateProvider(), settingsVm);
 
         vm.NavigationEntries.Count.Should().Be(3);
     }
@@ -74,10 +90,9 @@ public class MainWindowViewModelSmokeTests
     [Fact]
     public void MainWindowViewModel_Constructed_InitialViewModelIsFilingsViewModel()
     {
-        var filingsVm = CreateFilingsVm();
-        var reportsVm = CreateReportsVm();
+        var filingsVm  = CreateFilingsVm();
         var settingsVm = new SettingsViewModel(CreateProfileVm(), CreateHolidayVm(), CreateMailboxVm(), CreateImporterVm());
-        var vm = new MainWindowViewModel(filingsVm, reportsVm, settingsVm);
+        var vm = new MainWindowViewModel(filingsVm, CreateProvider(), settingsVm);
 
         vm.CurrentViewModel.Should().BeOfType<FilingsViewModel>();
     }
