@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Repositories;
 using Rentier.Infrastructure.ExchangeRates;
+using Rentier.Infrastructure.Parsing;
 using Rentier.Infrastructure.Persistence;
 using Rentier.Infrastructure.Repositories;
 using Rentier.Infrastructure.Scraping;
@@ -28,6 +29,7 @@ public static class InfrastructureServiceExtensions
 #pragma warning restore CA1416
         services.AddTransient<IExchangeRateCacheRepository, ExchangeRateCacheRepository>();
         services.AddHttpClient<IExchangeRateFetcher, NbsExchangeRateFetcher>();
+        services.AddTransient<IStatementParser, IbkrCsvParser>();
         return services;
     }
 }
