@@ -1,0 +1,6 @@
+Dividends,Header,Currency,Date,Description,Amount
+Dividends,Data,USD,2024-01-15,"MSFT(US5949181045) Cash Dividend",24.00
+Dividends,Total,USD,,Total,24.00
+Withholding Tax,Header,Currency,Date,Description,Amount
+Withholding Tax,Data,USD,2024-01-20,"AAPL(US0378331005) Cash Dividend - US Tax",-3.60
+Withholding Tax,Total,USD,,Total,-3.60
