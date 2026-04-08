@@ -1,4 +1,5 @@
-using FluentAssertions;
+﻿using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
@@ -7,6 +8,7 @@ using Rentier.Application.Handlers;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Parsing;
 using Rentier.Application.Repositories;
+using Rentier.Application.Services;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 using Rentier.Domain.ValueObjects;
@@ -17,7 +19,7 @@ namespace Rentier.Application.Tests;
 public class ProcessReportsCommandHandlerTests
 {
     private static readonly Guid ProfileId = Guid.NewGuid();
-    private static readonly DateOnly TestDate = new(2024, 6, 15);
+    private static readonly DateOnly TestDate = new(2024, 6, 17);
 
     private static HolidayConfDto MakeHolidayDto()
         => new HolidayConfDto([], 2024, 2024);
@@ -34,6 +36,9 @@ public class ProcessReportsCommandHandlerTests
 
     private static Report MakeReportWithContent(Guid importerId)
         => Report.Create(importerId, "statement.csv", [1, 2, 3], null);
+
+    private static ExchangeRateResolver MakeResolver(IExchangeRateFetcher fetcher)
+        => new ExchangeRateResolver(fetcher, NullLogger<ExchangeRateResolver>.Instance);
 
     private ProcessReportsCommandHandler MakeHandler(
         IReportRepository? reportRepo = null,
@@ -57,13 +62,16 @@ public class ProcessReportsCommandHandlerTests
             parser = p;
         }
 
+        var resolver = MakeResolver(rateFetcher ?? Substitute.For<IExchangeRateFetcher>());
+
         return new ProcessReportsCommandHandler(
             reportRepo ?? Substitute.For<IReportRepository>(),
             importerRepo ?? Substitute.For<IImporterRepository>(),
             filingRepo ?? Substitute.For<IFilingRepository>(),
-            rateFetcher ?? Substitute.For<IExchangeRateFetcher>(),
+            resolver,
             holidayRepo,
-            parser);
+            parser,
+            NullLogger<ProcessReportsCommandHandler>.Instance);
     }
 
     [Fact]
@@ -99,7 +107,7 @@ public class ProcessReportsCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         result.Value.ReportsErrored.Should().Be(1);
-        result.Value.Errors.Should().HaveCount(1);
+        result.Value.EventErrors.Should().BeEmpty();
         await reportRepo.Received(1).UpdateAsync(
             Arg.Is<Report>(r => r.Status == ReportStatus.Error),
             Arg.Any<CancellationToken>());
@@ -340,7 +348,7 @@ public class ProcessReportsCommandHandlerTests
 
         var rateFetcher = Substitute.For<IExchangeRateFetcher>();
         rateFetcher.FetchRateAsync(Arg.Any<DateOnly>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(Result<ExchangeRate, Error>.Failure(Error.NotFound("Rate not found")));
+            .Returns(Result<ExchangeRate, Error>.Failure(new Error("RATE_NOT_FOUND", "Rate not found")));
 
         var filingRepo = Substitute.For<IFilingRepository>();
         var handler = MakeHandler(
@@ -349,10 +357,9 @@ public class ProcessReportsCommandHandlerTests
 
         var result = await handler.HandleAsync(new ProcessReportsCommand());
 
-        // Report processed but with inner error for the dividend
-        result.Value.ReportsProcessed.Should().Be(1);
-        result.Value.Errors.Should().HaveCount(1);
-        result.Value.Errors[0].Should().Contain("Swiss Co");
+        result.Value.ReportsErrored.Should().Be(1);
+        result.Value.EventErrors.Should().HaveCount(1);
+        result.Value.EventErrors[0].EntityName.Should().Be("Swiss Co");
     }
 
     [Fact]
@@ -376,9 +383,9 @@ public class ProcessReportsCommandHandlerTests
             .Returns(Result<StatementParseResult, Error>.Success(parseResult));
 
         var rateFetcher = Substitute.For<IExchangeRateFetcher>();
-        // CHF direct fails, USD succeeds
+        // CHF direct fails (non-retryable for fast execution), USD succeeds
         rateFetcher.FetchRateAsync(Arg.Any<DateOnly>(), "CHF", Arg.Any<CancellationToken>())
-            .Returns(Result<ExchangeRate, Error>.Failure(Error.NotFound("CHF not found")));
+            .Returns(Result<ExchangeRate, Error>.Failure(new Error("UNSUPPORTED_CURRENCY", "CHF not supported")));
         rateFetcher.FetchRateAsync(Arg.Any<DateOnly>(), "USD", Arg.Any<CancellationToken>())
             .Returns(Result<ExchangeRate, Error>.Success(new ExchangeRate(TestDate, "USD", 100m)));
 
@@ -395,7 +402,7 @@ public class ProcessReportsCommandHandlerTests
 
         // CHF cross-rate: 100 * (1.1 * 100) = 11000 RSD gross
         result.Value.FilingsCreated.Should().Be(1);
-        result.Value.Errors.Should().BeEmpty();
+        result.Value.EventErrors.Should().BeEmpty();
     }
 
     [Fact]
@@ -417,6 +424,6 @@ public class ProcessReportsCommandHandlerTests
         var result = await handler.HandleAsync(new ProcessReportsCommand());
 
         result.Value.ReportsErrored.Should().Be(1);
-        result.Value.Errors[0].Should().Contain("TaxpayerProfileId");
+        result.Value.EventErrors.Should().BeEmpty();
     }
 }

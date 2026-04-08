@@ -1,9 +1,10 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
 using ReactiveUI;
 using Rentier.Application.Commands;
+using Rentier.Domain.ValueObjects;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 
@@ -95,7 +96,7 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
             var progress = new Progress<SyncProgressEntry>(entry =>
                 LogEntries.Add(new SyncProgressEntryViewModel(entry)));
 
-            var result = await _handler.HandleAsync(new SyncAllCommand(), progress, _cts.Token);
+            var result = await _handler.HandleAsync(new SyncAllCommand(SyncParameters.Default), progress, _cts.Token);
 
             if (result.IsSuccess)
             {

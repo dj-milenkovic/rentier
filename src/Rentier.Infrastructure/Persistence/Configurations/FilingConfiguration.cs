@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Rentier.Domain.Entities;
 
@@ -30,5 +30,7 @@ public sealed class FilingConfiguration : IEntityTypeConfiguration<Filing>
         builder.Property(f => f.PaymentReference)
             .IsRequired(false)
             .HasMaxLength(200);
+        builder.Property(f => f.ExchangeRateSourceDate).IsRequired(false);
+        builder.Property(f => f.ExchangeRateSourceType).IsRequired(false);
     }
 }

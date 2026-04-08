@@ -1,9 +1,11 @@
+﻿using Microsoft.Extensions.Logging;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Parsing;
 using Rentier.Application.Repositories;
+using Rentier.Application.Services;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 using Rentier.Domain.Services;
@@ -17,24 +19,27 @@ public sealed class ProcessReportsCommandHandler
     private readonly IReportRepository _reportRepository;
     private readonly IImporterRepository _importerRepository;
     private readonly IFilingRepository _filingRepository;
-    private readonly IExchangeRateFetcher _exchangeRateFetcher;
+    private readonly ExchangeRateResolver _exchangeRateResolver;
     private readonly IHolidayRepository _holidayRepository;
     private readonly IStatementParser _statementParser;
+    private readonly ILogger<ProcessReportsCommandHandler> _logger;
 
     public ProcessReportsCommandHandler(
         IReportRepository reportRepository,
         IImporterRepository importerRepository,
         IFilingRepository filingRepository,
-        IExchangeRateFetcher exchangeRateFetcher,
+        ExchangeRateResolver exchangeRateResolver,
         IHolidayRepository holidayRepository,
-        IStatementParser statementParser)
+        IStatementParser statementParser,
+        ILogger<ProcessReportsCommandHandler> logger)
     {
         _reportRepository = reportRepository;
         _importerRepository = importerRepository;
         _filingRepository = filingRepository;
-        _exchangeRateFetcher = exchangeRateFetcher;
+        _exchangeRateResolver = exchangeRateResolver;
         _holidayRepository = holidayRepository;
         _statementParser = statementParser;
+        _logger = logger;
     }
 
     public async Task<Result<ProcessReportsResult, Error>> HandleAsync(
@@ -45,40 +50,62 @@ public sealed class ProcessReportsCommandHandler
 
         var initReports = await _reportRepository.GetByStatusAsync(ReportStatus.Init, ct);
 
-        var errors = new List<string>();
+        var allEventErrors = new List<FilingCreationError>();
         var filingsCreated = 0;
         var reportsProcessed = 0;
         var reportsErrored = 0;
+        var reportsPartialError = 0;
 
         foreach (var report in initReports)
         {
             ct.ThrowIfCancellationRequested();
             try
             {
-                var created = await ProcessReportAsync(report, holidays, errors, ct);
+                var (created, succeeded, failed, eventErrors) =
+                    await ProcessReportAsync(report, holidays, ct);
+
                 filingsCreated += created;
-                report.SetStatus(ReportStatus.Processed);
+                allEventErrors.AddRange(eventErrors);
+
+                ReportStatus status;
+                if (failed == 0)
+                {
+                    status = ReportStatus.Processed;
+                    reportsProcessed++;
+                }
+                else if (succeeded > 0)
+                {
+                    status = ReportStatus.PartialError;
+                    reportsPartialError++;
+                }
+                else
+                {
+                    status = ReportStatus.Error;
+                    reportsErrored++;
+                }
+
+                report.SetStatus(status);
                 await _reportRepository.UpdateAsync(report, ct);
-                reportsProcessed++;
+
+                _logger.LogInformation(
+                    "Report {ReportId}: {Total} events, {Created} filings, {Failed} failed -> {Status}",
+                    report.Id, succeeded + failed, created, failed, status);
             }
             catch (Exception ex)
             {
-                errors.Add($"Report {report.Id}: {ex.Message}");
                 report.SetStatus(ReportStatus.Error);
                 await _reportRepository.UpdateAsync(report, ct);
                 reportsErrored++;
+                _logger.LogError(ex, "Report {ReportId} failed: {Message}", report.Id, ex.Message);
             }
         }
 
         return Result<ProcessReportsResult, Error>.Success(
-            new ProcessReportsResult(filingsCreated, reportsProcessed, reportsErrored, errors));
+            new ProcessReportsResult(filingsCreated, reportsProcessed, reportsErrored, allEventErrors, reportsPartialError));
     }
 
-    private async Task<int> ProcessReportAsync(
-        Report report,
-        HolidayConf holidays,
-        List<string> errors,
-        CancellationToken ct)
+    private async Task<(int created, int succeeded, int failed, List<FilingCreationError> errors)>
+        ProcessReportAsync(Report report, HolidayConf holidays, CancellationToken ct)
     {
         if (report.AttachmentContent == null || report.AttachmentContent.Length == 0)
             throw new InvalidOperationException("Report has no attachment content");
@@ -98,31 +125,28 @@ public sealed class ProcessReportsCommandHandler
             throw new InvalidOperationException($"Parse failed: {parseResult.Error.Message}");
 
         var parsed = parseResult.Value;
-        var rateProvider = BuildRateProvider(parsed, ct);
+        var rateProvider = BuildRateProvider(parsed, holidays, ct);
         var created = 0;
+        var succeeded = 0;
+        var failed = 0;
+        var errors = new List<FilingCreationError>();
 
         // Process dividends
         foreach (var div in parsed.Dividends)
         {
             ct.ThrowIfCancellationRequested();
+            RateResolution? resolution = null;
             try
             {
-                // Match WHT by date, entity name, and currency
                 var wht = parsed.Withholdings.FirstOrDefault(w =>
-                    w.Date == div.Date &&
-                    w.EntityName == div.EntityName &&
-                    w.Currency == div.Currency);
+                    w.Date == div.Date && w.EntityName == div.EntityName && w.Currency == div.Currency);
+
+                resolution = await rateProvider(div.Date, div.Currency);
 
                 var info = await TaxCalculationService.CalculateAsync(
-                    IncomeType.Dividend,
-                    div.EntityName,
-                    div.Date,
-                    div.Amount,
-                    div.Currency,
-                    wht?.Amount ?? 0m,
-                    wht?.Currency ?? div.Currency,
-                    rateProvider,
-                    ct);
+                    IncomeType.Dividend, div.EntityName, div.Date, div.Amount, div.Currency,
+                    wht?.Amount ?? 0m, wht?.Currency ?? div.Currency,
+                    (_, _) => Task.FromResult(resolution.Rate), ct);
 
                 var exists = await _filingRepository.ExistsByIncomeAsync(
                     taxpayerProfileId, div.EntityName, div.Date, info.GrossIncomeRsd, ct);
@@ -131,48 +155,39 @@ public sealed class ProcessReportsCommandHandler
                 {
                     var deadline = FilingDeadlineCalculator.CalculateDeadline(div.Date, holidays);
                     var filing = Filing.CreateFromIncome(
-                        taxpayerProfileId,
-                        IncomeType.Dividend,
-                        div.EntityName,
-                        div.Date,
-                        info.GrossIncomeRsd,
-                        info.WhtPaidRsd,
-                        info.GrossTaxPayableRsd,
-                        info.TaxPayableRsd,
-                        deadline,
-                        report.Id);
+                        taxpayerProfileId, IncomeType.Dividend, div.EntityName, div.Date,
+                        info.GrossIncomeRsd, info.WhtPaidRsd, info.GrossTaxPayableRsd, info.TaxPayableRsd,
+                        deadline, report.Id, resolution.SourceDate, resolution.SourceType);
 
                     await _filingRepository.AddAsync(filing, ct);
                     created++;
                 }
+                succeeded++;
             }
             catch (Exception ex)
             {
-                errors.Add($"Dividend {div.EntityName} {div.Date}: {ex.Message}");
+                var (code, message) = ParseErrorFromException(ex);
+                errors.Add(new FilingCreationError(div.EntityName, div.Date, div.Currency, div.Amount, code, message));
+                failed++;
             }
         }
 
-        // Process interest — credit entries only
+        // Process interest - credit entries only
         foreach (var interest in parsed.Interest.Where(i => i.Type == InterestType.Credit))
         {
             ct.ThrowIfCancellationRequested();
+            RateResolution? resolution = null;
             try
             {
-                // Match WHT by date and entity name (no currency filter for interest)
                 var wht = parsed.Withholdings.FirstOrDefault(w =>
-                    w.Date == interest.Date &&
-                    w.EntityName == interest.EntityName);
+                    w.Date == interest.Date && w.EntityName == interest.EntityName);
+
+                resolution = await rateProvider(interest.Date, interest.Currency);
 
                 var info = await TaxCalculationService.CalculateAsync(
-                    IncomeType.Interest,
-                    interest.EntityName,
-                    interest.Date,
-                    interest.Amount,
-                    interest.Currency,
-                    wht?.Amount ?? 0m,
-                    wht?.Currency ?? interest.Currency,
-                    rateProvider,
-                    ct);
+                    IncomeType.Interest, interest.EntityName, interest.Date, interest.Amount, interest.Currency,
+                    wht?.Amount ?? 0m, wht?.Currency ?? interest.Currency,
+                    (_, _) => Task.FromResult(resolution.Rate), ct);
 
                 var exists = await _filingRepository.ExistsByIncomeAsync(
                     taxpayerProfileId, interest.EntityName, interest.Date, info.GrossIncomeRsd, ct);
@@ -181,51 +196,63 @@ public sealed class ProcessReportsCommandHandler
                 {
                     var deadline = FilingDeadlineCalculator.CalculateDeadline(interest.Date, holidays);
                     var filing = Filing.CreateFromIncome(
-                        taxpayerProfileId,
-                        IncomeType.Interest,
-                        interest.EntityName,
-                        interest.Date,
-                        info.GrossIncomeRsd,
-                        info.WhtPaidRsd,
-                        info.GrossTaxPayableRsd,
-                        info.TaxPayableRsd,
-                        deadline,
-                        report.Id);
+                        taxpayerProfileId, IncomeType.Interest, interest.EntityName, interest.Date,
+                        info.GrossIncomeRsd, info.WhtPaidRsd, info.GrossTaxPayableRsd, info.TaxPayableRsd,
+                        deadline, report.Id, resolution.SourceDate, resolution.SourceType);
 
                     await _filingRepository.AddAsync(filing, ct);
                     created++;
                 }
+                succeeded++;
             }
             catch (Exception ex)
             {
-                errors.Add($"Interest {interest.EntityName} {interest.Date}: {ex.Message}");
+                var (code, message) = ParseErrorFromException(ex);
+                errors.Add(new FilingCreationError(interest.EntityName, interest.Date, interest.Currency, interest.Amount, code, message));
+                failed++;
             }
         }
 
-        return created;
+        return (created, succeeded, failed, errors);
     }
 
-    private Func<DateOnly, string, Task<ExchangeRate>> BuildRateProvider(
-        StatementParseResult parsed,
-        CancellationToken ct)
+    private Func<DateOnly, string, Task<RateResolution>> BuildRateProvider(
+        StatementParseResult parsed, HolidayConf holidays, CancellationToken ct)
     {
         return async (date, currency) =>
         {
-            var directResult = await _exchangeRateFetcher.FetchRateAsync(date, currency, ct);
-            if (directResult.IsSuccess)
-                return directResult.Value;
+            var result = await _exchangeRateResolver.ResolveAsync(date, currency, holidays, ct: ct);
+            if (result.IsSuccess)
+                return result.Value;
 
             // Cross-rate fallback: find IBKR rate for this currency to USD
             var ibkrRate = parsed.EmbeddedRates
                 .FirstOrDefault(r => r.FromCurrency.Equals(currency, StringComparison.OrdinalIgnoreCase));
             if (ibkrRate != null)
             {
-                var usdResult = await _exchangeRateFetcher.FetchRateAsync(date, "USD", ct);
+                var usdResult = await _exchangeRateResolver.ResolveAsync(date, "USD", holidays, ct: ct);
                 if (usdResult.IsSuccess)
-                    return new ExchangeRate(date, currency, ibkrRate.Rate * usdResult.Value.RateToRsd);
+                {
+                    var syntheticRate = new ExchangeRate(usdResult.Value.SourceDate, currency,
+                        ibkrRate.Rate * usdResult.Value.Rate.RateToRsd);
+                    return new RateResolution(syntheticRate, usdResult.Value.SourceDate, usdResult.Value.SourceType);
+                }
             }
 
-            throw new InvalidOperationException($"Exchange rate not found for {currency} on {date}");
+            throw new InvalidOperationException($"{result.Error.Code}|{result.Error.Message}");
         };
+    }
+
+    private static (string code, string message) ParseErrorFromException(Exception ex)
+    {
+        var msg = ex.Message;
+        var pipeIdx = msg.IndexOf('|');
+        if (pipeIdx > 0)
+        {
+            var code = msg[..pipeIdx];
+            var message = msg[(pipeIdx + 1)..];
+            return (code, message);
+        }
+        return ("DOMAIN_ERROR", msg);
     }
 }
