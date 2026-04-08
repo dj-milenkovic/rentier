@@ -1,5 +1,6 @@
 using FluentAssertions;
 using NSubstitute;
+using Rentier.Application.Common;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
@@ -14,11 +15,11 @@ public class ImapMailboxSyncServiceTests
         => Mailbox.Create("imap.example.com", 993, "user@example.com", new DateOnly(2024, 1, 1));
 
     [Fact]
-    public async Task SyncAsync_NoPassword_ReturnsFailure()
+    public async Task SyncAsync_CredentialNotFound_ReturnsFailure()
     {
         var credStore = Substitute.For<ICredentialStore>();
         credStore.GetCredentialAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns((string?)null);
+            .Returns(Result<string, Error>.Failure(Error.CredentialNotFound("Rentier/Mailbox/test/password")));
 
         var svc = new ImapMailboxSyncService(
             Substitute.For<IReportRepository>(),
@@ -29,15 +30,15 @@ public class ImapMailboxSyncServiceTests
         var result = await svc.SyncAsync(mailbox, Array.Empty<Importer>(), null, CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Message.Should().Contain("No password found");
+        result.Error.Code.Should().Be("CREDENTIAL_NOT_FOUND");
     }
 
     [Fact]
-    public async Task SyncAsync_EmptyPassword_ReturnsFailure()
+    public async Task SyncAsync_ProviderUnavailable_ReturnsFailure()
     {
         var credStore = Substitute.For<ICredentialStore>();
         credStore.GetCredentialAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(string.Empty);
+            .Returns(Result<string, Error>.Failure(Error.ProviderUnavailable("Daemon not running")));
 
         var svc = new ImapMailboxSyncService(
             Substitute.For<IReportRepository>(),
@@ -48,7 +49,7 @@ public class ImapMailboxSyncServiceTests
         var result = await svc.SyncAsync(mailbox, Array.Empty<Importer>(), null, CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("INFRASTRUCTURE_ERROR");
+        result.Error.Code.Should().Be("PROVIDER_UNAVAILABLE");
     }
 
     [Fact]

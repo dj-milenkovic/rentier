@@ -1,0 +1,334 @@
+
+<!DOCTYPE html><!--
+
+scripts and programs that download content transparent to the user are not allowed without permission
+
+
+
+--><html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><title>Holidays and Observances in Serbia in 2016</title>
+<meta name="description" content="Overview of holidays and many observances in Serbia during the year 2016">
+<meta name="robots" content="max-image-preview:large"><meta property="og:image" content="https://www.timeanddate.com/scripts/cityog.php?title=Holidays%20%26%20Observations&amp;tint=0xB53E38&amp;country=2016&amp;state=Serbia&amp;image=belgrade1">
+<meta property="og:type" content="website"><style>
+@font-face{font-family:iconfont;src:url("/common/fonts/iconfont.woff2?v0") format("woff2"),url("/common/fonts/iconfont.woff?v0") format("woff"),url("/common/fonts/iconfont.ttf?v0") format("truetype"),url("/common/fonts/iconfont.svg?v0#iconfont") format("svg");font-weight:400;font-style:normal}
+</style>
+
+<link rel=preload href="/common/fonts/iconfont.woff2?v0" as=font type="font/woff2" crossorigin>
+<link rel=preconnect href="https://c.tadst.com" crossorigin>
+<link rel=preload href="//c.tadst.com/com/common/v/global_v55.css" as=style>
+<link rel=preload href="https://web.cmp.usercentrics.eu/ui/loader.js" as=script>
+<link rel=preload href="//c.tadst.com/com/common/pb/prebid_com_v3_638d076a3877.cmp_0.js" as=script>
+<script src="//c.tadst.com/com/common/pb/prebid_com_v3_638d076a3877.cmp_0.js" async></script>
+<script src="https://securepubads.g.doubleclick.net/tag/js/gpt.js" async></script>
+<script src="https://c.amazon-adsystem.com/aax2/apstag.js" async></script>
+<script src="https://btloader.com/tag?o=5174239513018368&upapi=true" async></script>
+<script>
+AD={s:[],o:0};
+googletag=window.googletag||{};
+googletag.cmd=googletag.cmd||[];
+(function(){
+var _q=[];
+window.AdMgr={_q:_q,dispSlot:function(i){_q.push(['dispSlot',i])}};
+})();
+</script>
+<script src="//c.tadst.com/com/common/v/admgr_v28.js" async></script>
+<script>
+window.AdMgrCfg={"techs":{"pb":1,"aps":1},"gdprStart":"nc","logUrl":"/scripts/logads.php?d=d","rotEmpty":true,"debug":0,"hasCMP":1,"timeout":1149,"pf":"022","ppid":"f50813a602549ecbc1bd6d1267fb295a","slots":[{"n":"/1004254/tadcom_970","s":[[970,90],[728,90]],"i":"div-gpt-com-970x90-head","wm":1320,"wf":{"n":"/1004254/com728","s":[[728,90]],"i":"div-gpt-com-728x90-head","ro":2,"na":"keep","t":[["pf","026"]]},"ro":2,"na":"keep","t":[["pf","017"]]},{"n":"/1004254/com_300","s":[[300,250]],"i":"div-gpt-com-300x250","ro":3,"na":"keep","t":[["pf","028"]]}],"bidderConfigs":{"pb":{"adUnits":[{"code":"/1004254/tadcom_970","mediaTypes":{"banner":{"sizes":[[970,90],[728,90]]}},"bids":[{"bidder":"criteo","params":{"zoneId":1702571}},{"bidder":"onetag","params":{"pubId":"7b5d361d6af8a75"}},{"bidder":"amx","params":{"tagId":"dGltZWFuZGRhdGUuY29t"}},{"bidder":"insticator","params":{"adUnitId":"01JJ7HSPFMMBNCBWJSDQYYPEMA","publisherId":"be9f3fb2-3a4a-468e-9dd8-1e941423d85b"}},{"bidder":"ix","params":{"siteId":"924834","size":[970,90]}},{"bidder":"rise","params":{"org":"6516aab5dd00540001482f61"}},{"bidder":"oms","params":{"publisherId":20895}},{"bidder":"medianet","params":{"cid":"8CU692DPW","crid":"635764783"}},{"bidder":"pubmatic","params":{"adSlot":"4851008","publisherId":"157610"}},{"bidder":"rubicon","params":{"accountId":"16448","siteId":"127484","zoneId":"2677290"}},{"bidder":"sovrn","params":{"tagid":"422101"}}],"ortb2Imp":{"ext":{"gpid":"/1004254/tadcom_970#a3782"}}},{"code":"/1004254/com728","mediaTypes":{"banner":{"sizes":[[728,90]]}},"bids":[{"bidder":"criteo","params":{"zoneId":1164883}},{"bidder":"onetag","params":{"pubId":"7b5d361d6af8a75"}},{"bidder":"amx","params":{"tagId":"dGltZWFuZGRhdGUuY29t"}},{"bidder":"insticator","params":{"adUnitId":"01JJ7HSPFMMBNCBWJSDQYYPEMA","publisherId":"be9f3fb2-3a4a-468e-9dd8-1e941423d85b"}},{"bidder":"ix","params":{"siteId":"189917","size":[728,90]}},{"bidder":"rise","params":{"org":"6516aab5dd00540001482f61"}},{"bidder":"oms","params":{"publisherId":20895}},{"bidder":"medianet","params":{"cid":"8CU692DPW","crid":"680365832"}},{"bidder":"pubmatic","params":{"adSlot":"com728@728x90","publisherId":"157610"}},{"bidder":"rubicon","params":{"accountId":"16448","siteId":"127484","zoneId":"601634"}},{"bidder":"sovrn","params":{"tagid":"422101"}}],"ortb2Imp":{"ext":{"gpid":"/1004254/com728#a3782"}}},{"code":"/1004254/com_300","mediaTypes":{"banner":{"sizes":[[300,250]]}},"bids":[{"bidder":"criteo","params":{"zoneId":1164881}},{"bidder":"onetag","params":{"pubId":"7b5d361d6af8a75"}},{"bidder":"amx","params":{"tagId":"dGltZWFuZGRhdGUuY29t"}},{"bidder":"insticator","params":{"adUnitId":"01JJ7HSPFMMBNCBWJSDQYYPEMA","publisherId":"be9f3fb2-3a4a-468e-9dd8-1e941423d85b"}},{"bidder":"ix","params":{"siteId":"189919","size":[300,250]}},{"bidder":"rise","params":{"org":"6516aab5dd00540001482f61"}},{"bidder":"oms","params":{"publisherId":20895}},{"bidder":"medianet","params":{"cid":"8CU692DPW","crid":"558762728"}},{"bidder":"pubmatic","params":{"adSlot":"com_300@300x250","publisherId":"157610"}},{"bidder":"rubicon","params":{"accountId":"16448","siteId":"127484","zoneId":"601640"}},{"bidder":"sovrn","params":{"tagid":"422098"}}],"ortb2Imp":{"ext":{"gpid":"/1004254/com_300#a3782"}}}],"pbjsConfig":{"userSync":{"userIds":[{"name":"criteo"},{"name":"id5Id","params":{"partner":1517},"storage":{"name":"id5id","type":"html5","expires":90,"refreshInSeconds":7200}},{"name":"sharedId","params":{"pixelUrl":"/scripts/sharedid.php"},"storage":{"name":"_sharedID","type":"cookie","expires":30}}],"filterSettings":{"iframe":{"bidders":"*","filter":"include"}}},"s2sConfig":{"accountId":"1","bidders":["medianet","pubmatic","rubicon","sovrn"],"adapter":"prebidServer","enabled":true,"endpoint":{"p1Consent":"https://www.timeanddate.com/.pbs/v1/openrtb2/auction","noP1Consent":"https://www.timeanddate.com/.pbs/v1/openrtb2/auction"},"syncEndpoint":{"p1Consent":"https://www.timeanddate.com/.pbs/v1/cookie_sync","noP1Consent":"https://www.timeanddate.com/.pbs/v1/cookie_sync"},"timeout":861},"floors":{"enforcement":{"enforceJS":false},"data":{"schema":{"fields":["size"]},"values":{"970x90":0.16999999999999998,"300x250":0.29},"default":0.25}},"consentManagement":{"gdpr":{"cmpApi":"iab","timeout":6000,"defaultGdprScope":true}}},"extraConfigs":{"rubicon":{"bidders":["rubicon"],"config":{"schain":{"validation":"strict","config":{"ver":"1.0","complete":1,"nodes":[{"asi":"netricsales.com","sid":"16448","hp":1}]}}}}}},"aps":{"pubID":"12d5d789-63e3-47bc-ba31-070e97a96f2c","bidTimeout":1149}},"targeting":{"ab":"a","hr":"15","ut":"d1","taxch":"1008","taxso":"1216","taxca":"157","taxla":"1068","sessionab":"b","art":"3782","tadhb":33,"abr":"0"}};
+
+
+</script>
+<link href="/site.webmanifest" rel="manifest"><link type="image/png" href="//c.tadst.com/favicon-48x48.png" rel="icon" sizes="48x48"><link type="image/png" href="//c.tadst.com/favicon-16x16.png" rel="icon" sizes="16x16"><link type="image/png" href="//c.tadst.com/favicon-32x32.png" rel="icon" sizes="32x32"><link rel="stylesheet" type="text/css" href="//c.tadst.com/com/common/v/global_v55.css">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Calendar","item":"https://www.timeanddate.com/calendar/"},{"@type":"ListItem","position":2,"name":"Holidays","item":"https://www.timeanddate.com/holidays/"},{"@type":"ListItem","position":3,"name":"Serbia","item":"https://www.timeanddate.com/holidays/serbia"},{"@type":"ListItem","position":4,"name":"2016"}]}
+</script><link rel="stylesheet" type="text/css" href="//c.tadst.com/com/common/v/index_holiday_v16.css">
+<link rel="stylesheet" type="text/css" href="//c.tadst.com/com/common/v/articles_v47.css"><style>
+</style><style>
+.layout-grid{display:-ms-grid;display:grid;grid-template-areas:". main sidebar .";-ms-grid-columns:minmax(16px,1fr) 900px 300px minmax(16px,1fr);grid-template-columns:minmax(16px,1fr) 900px 300px minmax(16px,1fr)}@media (max-width:1440px){.layout-grid{-ms-grid-columns:minmax(16px,1fr) 900px 300px minmax(16px,1fr);grid-template-columns:minmax(16px,1fr) 900px 300px minmax(16px,1fr)}}@media (max-width:1024px){.layout-grid{-ms-grid-columns:16px 1fr 300px 16px;grid-template-columns:16px 1fr 300px 16px}}@media (max-width:768px){.layout-grid{grid-template-areas:". main ." ". sidebar ." ". sky .";-ms-grid-columns:16px 1fr 16px;grid-template-columns:16px 1fr 16px;-ms-grid-rows:auto auto auto;grid-template-rows:auto auto auto}}.layout-grid__main{-ms-grid-row:1;-ms-grid-column:2;grid-area:main;margin-right:6px;overflow:auto}@media (max-width:768px){.layout-grid__main{margin-right:0}}.layout-grid__main--extra-pad{margin-right:48px}@media (max-width:1440px){.layout-grid__main--extra-pad{margin-right:36px}}@media (max-width:1024px){.layout-grid__main--extra-pad{margin-right:24px}}@media (max-width:768px){.layout-grid__main--extra-pad{margin-right:0}}.layout-grid__sidebar{-ms-grid-row:1;-ms-grid-column:3;grid-area:sidebar}.layout-grid__sky{align-self:flex-start;grid-area:sky}@media (max-width:768px){.layout-grid__main{-ms-grid-row:1;-ms-grid-column:2}.layout-grid__sidebar{-ms-grid-row:2;-ms-grid-column:2}.layout-grid__sky{-ms-grid-row:3;-ms-grid-column:2}}.layout-grid__sky #ad1{float:none}.layout-grid__sky--sticky{position:sticky;top:40px}@media (max-width:768px){.layout-grid__sky--sticky{position:relative;top:0}}.layout-grid__hero{grid-area:hero}.layout-grid__footer{grid-area:footer}
+</style><style>
+
+.pager {
+margin-top: 12px;
+text-align: left;
+}
+
+.jumplist__options {
+display: inline;
+}
+
+.jumplist__item {
+padding-right: 2px;
+}
+
+.sticky {
+position: sticky;
+top: 40px;
+}
+
+</style>
+</head>
+<body class="tpl-custom_bc " >
+<div id=header__wrapper class=header__wrapper>
+<div id=header__inner class=header__inner>
+<div id=header class=banner>
+<div class=fixed>
+<div id=logo>
+<a href="/" rel=home title="Home page timeanddate.com"><div class="tad-logo" role="img" aria-label="timeanddate.com"></div></a>
+</div>
+</div>
+</div>
+<div id=ad-wrap><div id=ad-wrap2 class=fixed><div id=ad7><div id='div-gpt-com-970x90-head'><script>
+AdMgr.dispSlot(0);
+</script>
+</div></div></div></div>
+<nav id=nav class=site-nav-bar>
+<div class="site-nav-bar__inner fixed">
+<button class="site-nav-bar__button site-nav-bar__button--menu" id=site-nav-menu title="Menu" aria-label="Menu">
+<i class="i-font i-menu"></i>
+</button>
+<div class=site-nav-bar__logo>
+<a href="/" rel=home title="Home page timeanddate.com"><img src="//c.tadst.com/gfx/n/logo/logo-2021--horizontal-inverted-darkbg.svg" loading=lazy alt="timeanddate.com" width=140 height=19></a>
+</div>
+<form action="/search/results.html" class=site-nav-bar__search-form>
+<input class=site-nav-bar__search placeholder="Search..." id=site-nav-search name=query title="Search" aria-label="Search"/>
+<button class="site-nav-bar__button site-nav-bar__button--search" id=site-nav-search-btn aria-label="Search">
+<div class=site-nav-bar__search-inner>
+<i class="i-font i-search"></i>
+</div>
+</button>
+</form>
+<div class=site-nav-bar__menu-wrap>
+<div class=site-nav__header>
+<button class=site-nav__login id=site-nav-login>Sign in</button>
+<button class=site-nav__close id=site-nav-close title="Close">
+<i class="i-font i-close"></i>
+</button>
+</div>
+<ul id=site-nav class=site-nav>
+<li class="site-nav__menu "><a href="/news/" class=site-nav__title>News</a><ul class=site-nav__sub-menu><li class="site-nav__item site-nav__item--divider site-nav__item--mob"><a class=site-nav__link href="/news">News Home</a><li class=site-nav__item><a class=site-nav__link href="/news/astronomy/">Astronomy News</a><li class=site-nav__item><a class=site-nav__link href="/news/time/">Time Zone News</a><li class="site-nav__item site-nav__item--divider"><a class=site-nav__link href="/news/calendar/">Calendar &amp; Holiday News</a><li class="site-nav__item site-nav__item--divider"><a class=site-nav__link href="/newsletter/">Newsletter</a><li class=site-nav__item><a class=site-nav__link href="/live/">Live events</a></ul></li><li class="site-nav__menu "><a href="/worldclock/" class=site-nav__title>World Clock</a><ul class=site-nav__sub-menu><li class=site-nav__item><a class=site-nav__link href="/worldclock/">Main World Clock</a><li class=site-nav__item><a class=site-nav__link href="/worldclock/full.html">Extended World Clock</a><li class="site-nav__item site-nav__item--divider"><a class=site-nav__link href="/worldclock/personal.html">Personal World Clock</a><li class=site-nav__item><a class=site-nav__link href="/clocks/free.html">Clock for Your Site</a><li class=site-nav__item><a class=site-nav__link href="/worldclock/timezone/utc">UTC Time</a></ul></li><li class="site-nav__menu "><a href="/time/" class=site-nav__title>Time Zones</a><ul class=site-nav__sub-menu><li class="site-nav__item site-nav__item--divider site-nav__item--mob"><a class=site-nav__link href="/time">Time Zones Home</a><li class=site-nav__item><a class=site-nav__link href="/worldclock/converter.html">Time Zone Converter</a><li class=site-nav__item><a class=site-nav__link href="/worldclock/meeting.html">Meeting Planner</a><li class="site-nav__item site-nav__item--divider"><a class=site-nav__link href="/worldclock/fixedform.html">Event Time Announcer</a><li class=site-nav__item><a class=site-nav__link href="/time/map/">Time Zone Map</a><li class="site-nav__item site-nav__item--divider"><a class=site-nav__link href="/time/zones/">Time Zone Abbreviations</a><li class=site-nav__item><a class=site-nav__link href="/time/dst/">Daylight Saving Time</a><li class=site-nav__item><a class=site-nav__link href="/time/change/">Time Changes Worldwide</a><li class=site-nav__item><a class=site-nav__link href="/time/difference/">Time Difference</a><li class=site-nav__item><a class=site-nav__link href="/news/time/">Time Zone News</a></ul></li><li class="site-nav__menu   active"><a href="/calendar/" class=site-nav__title>Calendar</a><ul class=site-nav__sub-menu><li class="site-nav__item site-nav__item--divider site-nav__item--mob"><a class=site-nav__link href="/calendar/info.html">Calendars Home</a><li class=site-nav__item><a class=site-nav__link href="/calendar/">Calendar 2026</a><li class=site-nav__item><a class=site-nav__link href="/calendar/?year=2027">Calendar 2027</a><li class="site-nav__item site-nav__item--divider"><a class=site-nav__link href="/calendar/monthly.html">Monthly Calendar</a><li class=site-nav__item><a class=site-nav__link href="/calendar/create.html">Printable Calendar (PDF)</a><li class="site-nav__item site-nav__item--divider"><a class=site-nav__link href="/calendar/events/">Add Your Own Calendar Events</a><li class=site-nav__item><a class=site-nav__link href="/calendar/basic.html">Calendar Creator</a><li class=site-nav__item><a class=site-nav__link href="/holidays/">Holidays Worldwide</a><li class=site-nav__item><a class=site-nav__link href="/on-this-day/">On This Day in History</a><li class="site-nav__item site-nav__item--divider"><a class=site-nav__link href="/holidays/fun/">Fun Holidays</a><li class=site-nav__item><a class=site-nav__link href="/calendar/months/">Months of the Year</a><li class=site-nav__item><a class=site-nav__link href="/calendar/days/">Days of the Week</a><li class=site-nav__item><a class=site-nav__link href="/date/leapyear.html">About Leap Years</a><li class=site-nav__item><a class=site-nav__link href="/news/calendar/">Calendar &amp; Holiday News</a></ul></li><li class="site-nav__menu "><a href="/weather/" class=site-nav__title>Weather</a><ul class=site-nav__sub-menu><li class=site-nav__item><a class=site-nav__link href="/weather/">Worldwide</a><li class=site-nav__item><a class=site-nav__link href="/scripts/go.php">Local Weather</a><li class=site-nav__item><a class=site-nav__link href="/scripts/go.php?type=ext">2-Week Forecast</a><li class="site-nav__item site-nav__item--divider"><a class=site-nav__link href="/scripts/go.php?type=hourly">Hour-by-Hour</a><li class=site-nav__item><a class=site-nav__link href="/scripts/go.php?type=historic">Past Week</a><li class=site-nav__item><a class=site-nav__link href="/scripts/go.php?type=climate">Climate</a></ul></li><li class="site-nav__menu "><a href="/astronomy/" class=site-nav__title>Sun, Moon &amp; Space</a><ul class=site-nav__sub-menu><li class="site-nav__item site-nav__item--divider site-nav__item--mob"><a class=site-nav__link href="/astronomy">Sun &amp; Moon Home</a><li class=site-nav__item><a class=site-nav__link href="/sun/">Sun Calculator</a><li class=site-nav__item><a class=site-nav__link href="/moon/">Moon Calculator</a><li class="site-nav__item site-nav__item--divider"><a class=site-nav__link href="/moon/phases/">Moon Phases</a><li class=site-nav__item><a class=site-nav__link href="/astronomy/night/">Night Sky</a><li class="site-nav__item site-nav__item--divider"><a class=site-nav__link href="/astronomy/meteor-shower/">Meteor Showers</a><li class=site-nav__item><a class=site-nav__link href="/worldclock/sunearth.html">Day and Night Map</a><li class="site-nav__item site-nav__item--divider"><a class=site-nav__link href="/astronomy/moon/light.html">Moon Light World Map</a><li class=site-nav__item><a class=site-nav__link href="/eclipse/">Eclipses</a><li class="site-nav__item site-nav__item--divider"><a class=site-nav__link href="/live/">Live Streams</a><li class=site-nav__item><a class=site-nav__link href="/calendar/seasons.html">Seasons</a><li class=site-nav__item><a class=site-nav__link href="/news/astronomy/">Astronomy News</a></ul></li><li class="site-nav__menu "><a href="/counters/" class=site-nav__title>Timers</a><ul class=site-nav__sub-menu><li class="site-nav__item site-nav__item--mob"><a class=site-nav__link href="/counters">Timers Home</a><li class=site-nav__item><a class=site-nav__link href="/stopwatch/">Stopwatch</a><li class="site-nav__item site-nav__item--divider"><a class=site-nav__link href="/timer/">Timer</a><li class="site-nav__item site-nav__item--divider"><a class=site-nav__link href="/countdown/create">Countdown to Any Date</a><li class=site-nav__item><a class=site-nav__link href="/countdown/summer">Summer Countdown</a><li class=site-nav__item><a class=site-nav__link href="/countdown/newyear">New Year Countdown</a><li class=site-nav__item><a class=site-nav__link href="/clocks/freecountdown.html">Countdown for Your Site</a></ul></li><li class="site-nav__menu "><a href="/date/" class=site-nav__title>Calculators</a><ul class=site-nav__sub-menu><li class="site-nav__item site-nav__item--divider site-nav__item--mob"><a class=site-nav__link href="/date/">Calculators Home</a><li class=site-nav__item><a class=site-nav__link href="/date/duration.html">Date to Date Calculator (duration)</a><li class=site-nav__item><a class=site-nav__link href="/date/workdays.html">Business Date to Date (exclude holidays)</a><li class=site-nav__item><a class=site-nav__link href="/date/dateadd.html">Date Calculator (add / subtract)</a><li class="site-nav__item site-nav__item--divider"><a class=site-nav__link href="/date/weekdayadd.html">Business Date (exclude holidays)</a><li class=site-nav__item><a class=site-nav__link href="/date/weekday.html">Weekday Calculator</a><li class=site-nav__item><a class=site-nav__link href="/date/weeknumber.html">Week Number Calculator</a><li class="site-nav__item site-nav__item--divider"><a class=site-nav__link href="/date/roman-calculator.html">Roman Numeral Converter</a><li class=site-nav__item><a class=site-nav__link href="/date/birthday.html">Alternative Age Calculator</a><li class=site-nav__item><a class=site-nav__link href="/date/pattern.html">Date Pattern Calculator</a><li class=site-nav__item><a class=site-nav__link href="/worldclock/distance.html">Distance Calculator</a></ul></li><li class="site-nav__menu site-nav__menu--my-account"><a href="/custom/" class=site-nav__title><i class='i-font i-account_circle site-nav__desktop-title'></i>  <span>My Account</span></a><ul class=site-nav__sub-menu><li class="site-nav__item site-nav__item--divider site-nav__item--mob"><a class=site-nav__link href="/custom">My Account</a><li class=site-nav__item><a id=popchi class=site-nav__link href="/custom/location.html">My Location</a><li class=site-nav__item><a class=site-nav__link href="/custom/site.html">My Units</a><li class=site-nav__item><a class=site-nav__link href="/calendar/events/">My Events</a><li class=site-nav__item><a class=site-nav__link href="/worldclock/personal.html">My World Clock</a><li class="site-nav__item site-nav__item--divider"><a class=site-nav__link href="/custom/privacy.html">My Privacy</a><li class=site-nav__item><a class=site-nav__link href="/services/">Paid Services</a><li class=site-nav__item><a id=poplogin class=site-nav__link href="/custom/login.html">Sign in</a><li class=site-nav__item><a id=popreg class=site-nav__link href="/custom/create.html">Register</a></ul></li>
+</ul> 
+</div>
+<div class=site-nav-bar__blur id=site-nav-blur></div>
+</div>
+</nav>
+</div>
+</div><div id=po1 class=po></div><div id=mpo></div><div id=anw class=alert-notice__wrap></div><div class=main-content-div><script>window.TAD=window.TAD||{};window.TAD.queCMP=window.TAD.queCMP||[];TAD.abtest='a';window.TAD.toCdnAssetUrl=function(a){return '//c.tadst.com/com/common/frontend/39/' + a;};TAD.isCMP=true;</script><div class="fixed"></div>
+<div class="main-content-div
+">
+<header class="bn-header bn-header--holiday"><div class="row socrow"><div id=bc class="fixed"><div id=bct><a target=_top href="/" class=fx>Home</a> &nbsp; <a target=_top href="/calendar/" class=fx>Calendar</a> &nbsp; <a target=_top href="/holidays/" class=fx>Holidays</a> &nbsp; <a target=_top href="/holidays/serbia" class=fx>Serbia</a> &nbsp; 2016</div></div></div><div class="bn-header__wrap fixed"><div class="headline-banner"><section class="headline-banner__wrap"><img src="//c.tadst.com/gfx/n/fl/48/rs.png" width=48 height=32 alt="Flag for Serbia" class="headline-banner__flag"><div class="headline-banner__content"><h1 class="headline-banner__title">Holidays and Observances in Serbia in 2016</h1></div></section>
+<section class="headline-banner__extra"><form action="/holidays/search.html" class="bn-header__searchbox picker-city noprint"><input type=hidden name=from value="rs"><input
+type="search"
+autocomplete="off"
+class="picker-city__input"
+placeholder="Search holiday name or country…"
+onfocus="ifc(this, 'hol', 1 )"
+name="query"
+/><button type="submit" class="picker-city__button" title="Search"><i class="i-font i-search"></i></button></form></section></div></div>
+<section class="bn-header__extra"><div class="fixed"><strong>Suggested countries:</strong>
+<a href="/holidays/ireland/">Ireland</a> | <a href="/holidays/australia/">Australia</a> | <a href="/holidays/canada/">Canada</a> | <a href="/holidays/uk/">United Kingdom</a> | <a href="/holidays/us/">United States</a> | <a href="/holidays/">List of all countries</a></div></section></header>
+<main class="layout-grid pdflexi"><section class="layout-grid__main layout-grid__main--extra-pad"><article class="table-data"><section class="table-data__config"><label>Showing:&nbsp;<span data-tad-control="HolidayCountry.Count">all</span>
+&nbsp;&nbsp;
+<select id=hol name=hol data-tad-control="HolidayCountry.Filter" data-tad-options="{table:'holidays-table'}"><option value=1 selected>Public holidays</option><option value=134217729>Public and optional holidays</option><option value=134217737>Public holidays and non-working days</option><option value=134217753>Holidays and some observances</option><option value=138412057>Holidays (incl. some local) and observances</option><option value=146886937>All holidays/observances/religious events</option><option value="nojs" data-showcustom>Custom – choose holidays...</option></select></label>
+<label>For:&nbsp;
+<select id=year name=year data-tad-control="HolidayCountry.Year" data-tad-options="{baseURL:'/holidays/serbia/'}"><option value=2000>2000</option><option value=2001>2001</option><option value=2002>2002</option><option value=2003>2003</option><option value=2004>2004</option><option value=2005>2005</option><option value=2006>2006</option><option value=2007>2007</option><option value=2008>2008</option><option value=2009>2009</option><option value=2010>2010</option><option value=2011>2011</option><option value=2012>2012</option><option value=2013>2013</option><option value=2014>2014</option><option value=2015>2015</option><option value=2016 selected>2016</option><option value=2017>2017</option><option value=2018>2018</option><option value=2019>2019</option><option value=2020>2020</option><option value=2021>2021</option><option value=2022>2022</option><option value=2023>2023</option><option value=2024>2024</option><option value=2025>2025</option><option value=2026>2026</option><option value=today>Today</option><option value=2027>2027</option><option value=2028>2028</option><option value=2029>2029</option><option value=2030>2030</option><option value=2031>2031</option><option value=2032>2032</option><option value=2033>2033</option><option value=2034>2034</option><option value=2035>2035</option><option value=2036>2036</option><option value=2037>2037</option><option value=2038>2038</option><option value=2039>2039</option><option value=2040>2040</option></select></label></section>
+<section class="custom-holidays"
+data-tad-control="HolidayCountry.FilterCustom"
+style="display: none"
+><section class="quick-selection "><span class="quick-selection__item"><a href="#" data-tad-control="HolidayCountry.TriggerEvent" data-tad-options="{event: 'selectAll'}">Select All</a></span><span class="quick-selection__item"><a href="#" data-tad-control="HolidayCountry.TriggerEvent" data-tad-options="{event: 'selectNone'}">Clear All</a></span><span class="quick-selection__item" data-tad-control="HolidayCountry.Reset" data-tad-options="{ defaultValue: TAD.chm}"><a href="#">Reset to Default</a></span></section>
+<section class="custom-holidays__options"><label><input type=checkbox value=0>Federal/National Holidays (13)</label><label><input type=checkbox value=22>Common Local Holidays (0)</label><label><input type=checkbox value=4>Important observances (9)</label><label><input type=checkbox value=8>Seasons (4)</label><label><input type=checkbox value=12>Major Christian (5)</label><label><input type=checkbox value=14>Major Jewish (1)</label><label><input type=checkbox value=16>Major Muslim (2)</label><label><input type=checkbox value=23>Major Orthodox (9)</label><label><input type=checkbox value=27>Optional Holiday (9)</label></section></section>
+<nav class="jumplist"><span class="jumplist__label"><i class="i-font i-jump_down"></i> Jump to:</span>
+<span class="jumplist__item" data-tad-control="HolidayCountry.Next" data-tad-options="{date: TAD.local_sod * 1000}" ><a href="#hol_next" >Next</a></span>
+<span class="jumplist__options" data-tad-control="HolidayCountry.JumpList" ><a href="#hol_jan">JAN</a>
+|
+<a href="#hol_feb">FEB</a>
+|
+<a href="#hol_mar">MAR</a>
+|
+<a href="#hol_apr">APR</a>
+|
+<a href="#hol_may">MAY</a>
+|
+<a href="#hol_jun">JUN</a>
+|
+<a href="#hol_jul">JUL</a>
+|
+<a href="#hol_aug">AUG</a>
+|
+<a href="#hol_sep">SEP</a>
+|
+<a href="#hol_oct">OCT</a>
+|
+<a href="#hol_nov">NOV</a>
+|
+<a href="#hol_dec">DEC</a></span></nav>
+<section class="table-data__table">
+
+
+
+
+
+
+
+
+
+
+
+<h2 id=holidays>Holidays and Observances in Serbia in 2016</h2><table id=holidays-table class="table table--left table--inner-borders-rows table--full-width table--sticky table--holidaycountry" data-tad-control="HolidayCountry.Table"><thead><tr><th rowspan=2>Date</th><th rowspan=2>&nbsp;</th><th rowspan=2>Name</th><th rowspan=2>Type</th></tr><tr></tr></thead><tbody><tr id=hol_jan ></tr><tr id=tr1 class=showrow  data-mask=1 data-date=1451606400000><th class="nw" >1 Jan</th><td class="nw" >Friday</td><td><a href="/holidays/serbia/new-year-day">Western New Year&#39;s Day</a></td><td>National Holiday</td></tr><tr id=tr2 class=showrow  data-mask=1 data-date=1451692800000><th class="nw" >2 Jan</th><td class="nw" >Saturday</td><td><a href="/holidays/serbia/new-year-day-2">Second Day of Western New Year&#39;s Day</a></td><td>National Holiday</td></tr><tr id=tr3 class=hiderow  data-mask=8388624 data-date=1451779200000><th class="nw" >3 Jan</th><td class="nw" >Sunday</td><td><a href="/holidays/serbia/fathers-day">Father&#8217;s Day</a></td><td>Observance, Orthodox</td></tr><tr id=tr4 class=hiderow  data-mask=142606336 data-date=1452038400000><th class="nw" >6 Jan</th><td class="nw" >Wednesday</td><td><a href="/holidays/serbia/first-day-of-baptism">First Day of Baptism</a></td><td>Orthodox, Optional Holiday</td></tr><tr id=tr5 class=showrow  data-mask=8388609 data-date=1452124800000><th class="nw" >7 Jan</th><td class="nw" >Thursday</td><td><a href="/holidays/serbia/christmas-day">Christmas Day</a></td><td>National Holiday, Orthodox</td></tr><tr id=tr6 class=hiderow  data-mask=8388624 data-date=1452729600000><th class="nw" >14 Jan</th><td class="nw" >Thursday</td><td><a href="/holidays/serbia/orthodox-new-year">New Year</a></td><td>Observance, Orthodox</td></tr><tr id=tr7 class=hiderow  data-mask=16 data-date=1453852800000><th class="nw" >27 Jan</th><td class="nw" >Wednesday</td><td><a href="/holidays/serbia/spirituality-day">Spirituality Day/St Sava&#39;s Day</a></td><td>Observance</td></tr><tr id=hol_feb ></tr><tr id=tr9 class=showrow  data-mask=1 data-date=1455494400000><th class="nw" >15 Feb</th><td class="nw" >Monday</td><td><a href="/holidays/serbia/statehood-day">Statehood Day of the Republic of Serbia</a></td><td>National Holiday</td></tr><tr id=tr10 class=showrow  data-mask=1 data-date=1455580800000><th class="nw" >16 Feb</th><td class="nw" >Tuesday</td><td><a href="/holidays/serbia/statehood-day-2">Statehood Day of the Republic of Serbia (Day 2)</a></td><td>National Holiday</td></tr><tr id=hol_mar ></tr><tr id=tr12 class=hiderow  data-mask=8388624 data-date=1457395200000><th class="nw" >8 Mar</th><td class="nw" >Tuesday</td><td><a href="/holidays/serbia/mothers-day">Mother&#8217;s Day</a></td><td>Observance, Orthodox</td></tr><tr id=tr13 class=hiderow  data-mask=256 data-date=1458451804000><th class="nw" >20 Mar</th><td class="nw" >Sunday</td><td><a href="/calendar/march-equinox.html">March Equinox</a></td><td>Season</td></tr><tr id=tr14 class=hiderow  data-mask=134221824 data-date=1458864000000><th class="nw" >25 Mar</th><td class="nw" >Friday</td><td><a href="/holidays/serbia/good-friday">Western Good Friday</a></td><td>Christian, Optional Holiday</td></tr><tr id=tr15 class=hiderow  data-mask=134221824 data-date=1458950400000><th class="nw" >26 Mar</th><td class="nw" >Saturday</td><td><a href="/holidays/serbia/easter-saturday">Western Easter Saturday</a></td><td>Christian, Optional Holiday</td></tr><tr id=tr16 class=hiderow  data-mask=134221824 data-date=1459036800000><th class="nw" >27 Mar</th><td class="nw" >Sunday</td><td><a href="/holidays/serbia/easter-sunday">Western Easter Sunday</a></td><td>Christian, Optional Holiday</td></tr><tr id=tr17 class=hiderow  data-mask=134221824 data-date=1459123200000><th class="nw" >28 Mar</th><td class="nw" >Monday</td><td><a href="/holidays/serbia/easter-monday-western">Western Easter Monday</a></td><td>Christian, Optional Holiday</td></tr><tr id=hol_apr ></tr><tr id=tr19 class=hiderow  data-mask=16 data-date=1461283200000><th class="nw" >22 Apr</th><td class="nw" >Friday</td><td><a href="/holidays/serbia/holocaust-remembrance-day">Holocaust Remembrance Day</a></td><td>Observance</td></tr><tr id=tr20 class=showrow  data-mask=8388609 data-date=1461888000000><th class="nw" >29 Apr</th><td class="nw" >Friday</td><td><a href="/holidays/serbia/good-friday-orthodox">Good Friday</a></td><td>National Holiday, Orthodox</td></tr><tr id=tr21 class=showrow  data-mask=8388609 data-date=1461974400000><th class="nw" >30 Apr</th><td class="nw" >Saturday</td><td><a href="/holidays/serbia/holy-saturday-orthodox">Holy Saturday</a></td><td>National Holiday, Orthodox</td></tr><tr id=hol_may ></tr><tr id=tr23 class=showrow  data-mask=1 data-date=1462060800000><th class="nw" >1 May</th><td class="nw" >Sunday</td><td><a href="/holidays/serbia/labor-holiday">Labor holiday</a></td><td>National Holiday</td></tr><tr id=tr24 class=showrow  data-mask=8388609 data-date=1462060800000><th class="nw" >1 May</th><td class="nw" >Sunday</td><td><a href="/holidays/serbia/easter-orthodox">Easter Day</a></td><td>National Holiday, Orthodox</td></tr><tr id=tr25 class=showrow  data-mask=8388609 data-date=1462147200000><th class="nw" >2 May</th><td class="nw" >Monday</td><td><a href="/holidays/serbia/easter-monday-orthodox">Easter Monday</a></td><td>National Holiday, Orthodox</td></tr><tr id=tr26 class=showrow  data-mask=1 data-date=1462147200000><th class="nw" >2 May</th><td class="nw" >Monday</td><td><a href="/holidays/serbia/labor-holiday">Day off for Labor holiday</a></td><td>National Holiday</td></tr><tr id=tr27 class=showrow  data-mask=1 data-date=1462233600000><th class="nw" >3 May</th><td class="nw" >Tuesday</td><td><a href="/holidays/serbia/labor-holiday-2">Labor Day Holiday</a></td><td>National Holiday</td></tr><tr id=tr28 class=hiderow  data-mask=16 data-date=1462752000000><th class="nw" >9 May</th><td class="nw" >Monday</td><td><a href="/holidays/serbia/victory-day">Victory Day</a></td><td>Observance</td></tr><tr id=hol_jun ></tr><tr id=tr30 class=hiderow  data-mask=256 data-date=1466469251000><th class="nw" >21 Jun</th><td class="nw" >Tuesday</td><td><a href="/calendar/june-solstice.html">June Solstice</a></td><td>Season</td></tr><tr id=tr31 class=hiderow  data-mask=16 data-date=1467072000000><th class="nw" >28 Jun</th><td class="nw" >Tuesday</td><td><a href="/holidays/serbia/st-vitus-day">St Vitus&#39; Day</a></td><td>Observance</td></tr><tr id=hol_jul ></tr><tr id=tr33 class=hiderow  data-mask=134283264 data-date=1467849600000><th class="nw" >7 Jul</th><td class="nw" >Thursday</td><td><a href="/holidays/serbia/eid-al-fitr-first-day">Eid al-Fitr</a></td><td>Muslim, Optional Holiday</td></tr><tr id=hol_aug ></tr><tr id=hol_sep ></tr><tr id=tr36 class=hiderow  data-mask=134283264 data-date=1473724800000><th class="nw" >13 Sep</th><td class="nw" >Tuesday</td><td><a href="/holidays/serbia/eid-al-adha-first-day">First Day of Eid al-Adha</a></td><td>Muslim, Optional Holiday</td></tr><tr id=tr37 class=hiderow  data-mask=256 data-date=1474561270000><th class="nw" >22 Sep</th><td class="nw" >Thursday</td><td><a href="/calendar/september-equinox.html">September Equinox</a></td><td>Season</td></tr><tr id=hol_oct ></tr><tr id=tr39 class=hiderow  data-mask=134234112 data-date=1476230400000><th class="nw" >12 Oct</th><td class="nw" >Wednesday</td><td><a href="/holidays/serbia/yom-kippur">Yom Kippur</a></td><td>Hebrew, Optional Holiday</td></tr><tr id=tr40 class=hiderow  data-mask=16 data-date=1477008000000><th class="nw" >21 Oct</th><td class="nw" >Friday</td><td><a href="/holidays/serbia/world-war-two-victims-remembrance-day">World War II Victims Remembrance Day</a></td><td>Observance</td></tr><tr id=hol_nov ></tr><tr id=tr42 class=showrow  data-mask=1 data-date=1478822400000><th class="nw" >11 Nov</th><td class="nw" >Friday</td><td><a href="/holidays/serbia/armistice-day">Armistice Day</a></td><td>National Holiday</td></tr><tr id=hol_dec ></tr><tr id=tr44 class=hiderow  data-mask=256 data-date=1482320650000><th class="nw" >21 Dec</th><td class="nw" >Wednesday</td><td><a href="/calendar/december-solstice.html">December Solstice</a></td><td>Season</td></tr><tr id=tr45 class=hiderow  data-mask=134221824 data-date=1482624000000><th class="nw" >25 Dec</th><td class="nw" >Sunday</td><td><a href="/holidays/serbia/first-day-of-christmas">First Day of Western Christmas</a></td><td>Christian, Optional Holiday</td></tr><tr id=tr46 class=hiderow  data-mask=16 data-date=1483142400000><th class="nw" >31 Dec</th><td class="nw" >Saturday</td><td><a href="/holidays/serbia/new-year-eve">Western New Year&#39;s Eve</a></td><td>Observance</td></tr></tbody></table><script type="text/javascript">
+TAD=window.TAD||{};TAD.year=2016;TAD.country=38;TAD.chm=1;TAD.dhm=146886937;TAD.local_sod=1460073600;
+</script>
+
+
+
+<p class="detail info holiday-country__no-holidays">No holidays shown? That's because you didn't select any holiday types. Please check at least one of the boxes.</p>
+<p class=holiday-country__disclaimer><em>While we diligently research and update our holiday dates, some of the information in the table above may be preliminary. If you find an error, please <a href="/information/feedback.html?url=/holidays/" alt="Send feedback to us" onclick="return bls(this)">let us know</a>.</em></p><ul class=pager><li class=pager__prev><a href="/holidays/serbia/2015">2015</a></li><li class="pager__current--dropdown pager__current"><select id=year name=year data-tad-control="HolidayCountry.Year" data-tad-options="{baseURL:'/holidays/serbia/'}"><option value=2000>2000</option><option value=2001>2001</option><option value=2002>2002</option><option value=2003>2003</option><option value=2004>2004</option><option value=2005>2005</option><option value=2006>2006</option><option value=2007>2007</option><option value=2008>2008</option><option value=2009>2009</option><option value=2010>2010</option><option value=2011>2011</option><option value=2012>2012</option><option value=2013>2013</option><option value=2014>2014</option><option value=2015>2015</option><option value=2016 selected>2016</option><option value=2017>2017</option><option value=2018>2018</option><option value=2019>2019</option><option value=2020>2020</option><option value=2021>2021</option><option value=2022>2022</option><option value=2023>2023</option><option value=2024>2024</option><option value=2025>2025</option><option value=2026>2026</option><option value=today>Today</option><option value=2027>2027</option><option value=2028>2028</option><option value=2029>2029</option><option value=2030>2030</option><option value=2031>2031</option><option value=2032>2032</option><option value=2033>2033</option><option value=2034>2034</option><option value=2035>2035</option><option value=2036>2036</option><option value=2037>2037</option><option value=2038>2038</option><option value=2039>2039</option><option value=2040>2040</option></select></li><li class=pager__next><a href="/holidays/serbia/2017">2017</a></li></section>
+<section class="calendar-links"><a class="calendar-links__item" href="#" data-tad-control="HolidayCountry.Link" data-tad-options="{ url: '/calendar/custom.html', year: TAD.year, country: TAD.country }"><i class="i-font i-cal_tick mgr5"></i>
+Show holidays on a calendar</a>
+<span>|</span>
+<a class="calendar-links__item" href="#" data-tad-control="HolidayCountry.Link" data-tad-options="{ url: '/calendar/create.html', year: TAD.year, country: TAD.country }"><i class="i-font i-print mgr5"></i>
+Print holidays to PDF</a></section></article>
+<article class="unknown-country"><h3>Unable to find that country</h3>
+Please check your spelling and try again or select one of the <a href="/holidays/">available countries</a>.</article></section>
+<aside class="layout-grid__sidebar"><div class="clip-block clip-block--calendar"><h3 class="clip-block__title">Create Calendar With Holidays</h3>
+<form name=cf id=cf class="small ten" method=get action="/scripts/createcal2.php"><div class=form-row><label class="inline six"><input type=radio name=typ value=0 checked>Full year</label><input placeholder=yyyy type=text autocomplete=off  tad-va=date onfocus="window.ifc&&ifc(this,'y')" pattern="[0-9]*" maxlength=4 size=9 id=boxyear name=year title="Enter year as a 4-digit number." class=six value=2016></div><div class=form-row><label class="inline six"><input type=radio name=typ value=1>Month</label><select id=month name=month class="inline six" onchange='document.cf.typ[1].checked=true'><option value=1>January</option><option value=2>February</option><option value=3>March</option><option value=4 selected>April</option><option value=5>May</option><option value=6>June</option><option value=7>July</option><option value=8>August</option><option value=9>September</option><option value=10>October</option><option value=11>November</option><option value=12>December</option></select></div><div class=form-row><select id=country name=country class="inline twelve" title="Select country"><option value=29>Australia</option><option value=27>Canada</option><option value=35>India</option><option value=32>Ireland</option><option value=30>New Zealand</option><option value=9>United Kingdom</option><option value=1>United States</option><option value=160>Afghanistan</option><option value=93>Albania</option><option value=123>Algeria</option><option value=207>American Samoa</option><option value=97>Andorra</option><option value=127>Angola</option><option value=217>Anguilla</option><option value=221>Antigua and Barbuda</option><option value=37>Argentina</option><option value=102>Armenia</option><option value=177>Aruba</option><option value=29>Australia</option><option value=36>Austria</option><option value=85>Azerbaijan</option><option value=110>Bahamas</option><option value=133>Bahrain</option><option value=233>Bangladesh</option><option value=112>Barbados</option><option value=83>Belarus</option><option value=31>Belgium</option><option value=193>Belize</option><option value=148>Benin</option><option value=113>Bermuda</option><option value=198>Bhutan</option><option value=53>Bolivia</option><option value=86>Bosnia and Herzegovina</option><option value=144>Botswana</option><option value=33>Brazil</option><option value=224>British Virgin Islands</option><option value=79>Brunei</option><option value=73>Bulgaria</option><option value=165>Burkina Faso</option><option value=166>Burundi</option><option value=140>Cambodia</option><option value=134>Cameroon</option><option value=27>Canada</option><option value=157>Cape Verde</option><option value=111>Cayman Islands</option><option value=167>Central African Republic</option><option value=161>Chad</option><option value=43>Chile</option><option value=41>China</option><option value=46>Colombia</option><option value=172>Comoros</option><option value=84>Congo DR</option><option value=208>Cook Islands</option><option value=58>Costa Rica</option><option value=28>Croatia</option><option value=51>Cuba</option><option value=189>Curaçao</option><option value=94>Cyprus</option><option value=3>Czechia</option><option value=2>Denmark</option><option value=153>Djibouti</option><option value=229>Dominica</option><option value=52>Dominican Republic</option><option value=49>Ecuador</option><option value=80>Egypt</option><option value=55>El Salvador</option><option value=61>Equatorial Guinea</option><option value=168>Eritrea</option><option value=72>Estonia</option><option value=81>Ethiopia</option><option value=219>Falkland Islands</option><option value=175>Faroe Islands</option><option value=180>Fiji</option><option value=24>Finland</option><option value=5>France</option><option value=235>French Guiana</option><option value=205>French Polynesia</option><option value=150>Gabon</option><option value=149>Gambia</option><option value=87>Georgia</option><option value=8>Germany</option><option value=118>Ghana</option><option value=119>Gibraltar</option><option value=11>Greece</option><option value=138>Greenland</option><option value=22>Gregorian calendar</option><option value=182>Grenada</option><option value=236>Guadeloupe</option><option value=188>Guam</option><option value=50>Guatemala</option><option value=191>Guernsey</option><option value=169>Guinea</option><option value=173>Guinea-Bissau</option><option value=227>Guyana</option><option value=103>Haiti</option><option value=54>Honduras</option><option value=42>Hong Kong</option><option value=12>Hungary</option><option value=88>Iceland</option><option value=35>India</option><option value=65>Indonesia</option><option value=75>Iran</option><option value=109>Iraq</option><option value=32>Ireland</option><option value=234>Isle of Man</option><option value=34>Israel</option><option value=13>Italy</option><option value=125>Ivory Coast</option><option value=117>Jamaica</option><option value=26>Japan</option><option value=192>Jersey</option><option value=44>Jordan</option><option value=23>Julian calendar</option><option value=82>Kazakhstan</option><option value=105>Kenya</option><option value=194>Kiribati</option><option value=120>Kosovo</option><option value=108>Kuwait</option><option value=136>Kyrgyzstan</option><option value=176>La Réunion</option><option value=200>Laos</option><option value=89>Latvia</option><option value=121>Lebanon</option><option value=163>Lesotho</option><option value=129>Liberia</option><option value=124>Libya</option><option value=96>Liechtenstein</option><option value=90>Lithuania</option><option value=17>Luxembourg</option><option value=186>Macau</option><option value=156>Madagascar</option><option value=162>Malawi</option><option value=69>Malaysia</option><option value=201>Maldives</option><option value=152>Mali</option><option value=95>Malta</option><option value=213>Marshall Islands</option><option value=181>Martinique</option><option value=210>Mauritania</option><option value=143>Mauritius</option><option value=171>Mayotte</option><option value=40>Mexico</option><option value=211>Micronesia</option><option value=91>Moldova</option><option value=99>Monaco</option><option value=185>Mongolia</option><option value=101>Montenegro</option><option value=220>Montserrat</option><option value=106>Morocco</option><option value=126>Mozambique</option><option value=190>Myanmar</option><option value=130>Namibia</option><option value=215>Nauru</option><option value=187>Nepal</option><option value=204>New Caledonia</option><option value=30>New Zealand</option><option value=57>Nicaragua</option><option value=158>Niger</option><option value=77>Nigeria</option><option value=237>Norfolk Island</option><option value=183>North Korea</option><option value=92>North Macedonia</option><option value=225>Northern Mariana Islands</option><option value=18>Norway</option><option value=135>Oman</option><option value=64>Pakistan</option><option value=212>Palau</option><option value=60>Panama</option><option value=202>Papua New Guinea</option><option value=56>Paraguay</option><option value=47>Peru</option><option value=67>Philippines</option><option value=14>Poland</option><option value=15>Portugal</option><option value=114>Puerto Rico</option><option value=107>Qatar</option><option value=151>Republic of the Congo</option><option value=19>Romania</option><option value=20>Russia</option><option value=128>Rwanda</option><option value=232>Saint Barthélemy</option><option value=170>Saint Helena</option><option value=226>Saint Kitts and Nevis</option><option value=218>Saint Lucia</option><option value=231>Saint Martin</option><option value=228>Saint Pierre and Miquelon</option><option value=222>Saint Vincent and the Grenadines</option><option value=206>Samoa</option><option value=98>San Marino</option><option value=174>São Tomé and Príncipe</option><option value=74>Saudi Arabia</option><option value=147>Senegal</option><option value=38 selected>Serbia</option><option value=154>Seychelles</option><option value=164>Sierra Leone</option><option value=63>Singapore</option><option value=230>Sint Maarten</option><option value=39>Slovakia</option><option value=45>Slovenia</option><option value=209>Solomon Islands</option><option value=137>Somalia</option><option value=62>South Africa</option><option value=70>South Korea</option><option value=146>South Sudan</option><option value=16>Spain</option><option value=116>Sri Lanka</option><option value=145>Sudan</option><option value=178>Suriname</option><option value=155>Swaziland</option><option value=21>Sweden</option><option value=10>Switzerland</option><option value=132>Syria</option><option value=71>Taiwan</option><option value=197>Tajikistan</option><option value=115>Tanzania</option><option value=68>Thailand</option><option value=25>The Netherlands</option><option value=199>Timor-Leste</option><option value=159>Togo</option><option value=195>Tonga</option><option value=104>Trinidad and Tobago</option><option value=122>Tunisia</option><option value=4>Turkey</option><option value=196>Turkmenistan</option><option value=223>Turks and Caicos Islands</option><option value=214>Tuvalu</option><option value=179>U.S. Virgin Islands</option><option value=139>Uganda</option><option value=76>Ukraine</option><option value=66>United Arab Emirates</option><option value=9>United Kingdom</option><option value=1>United States</option><option value=59>Uruguay</option><option value=184>Uzbekistan</option><option value=203>Vanuatu</option><option value=100>Vatican City</option><option value=48>Venezuela</option><option value=78>Vietnam</option><option value=216>Wallis and Futuna</option><option value=131>Yemen</option><option value=142>Zambia</option><option value=141>Zimbabwe</option></select></div><div class=form-row><input type=submit value="View Calendar"></div></form></div>
+<div class="sticky"><div id=ad300>Advertising<br><div id='div-gpt-com-300x250' style='min-width:300px;min-height:250px;'><script>
+AdMgr.dispSlot(1);
+</script>
+</div></div><p class="help-link noprint"><a href="/holidays/help.html">Need some help?</a></p>
+<article class="card card--list card--small"><a href="/news/calendar/" class="card__link" aria-label="News: Holiday Changes"><div class="card__img-wrap"><img src="//c.tadst.com/gfx/64x64/calendar-news-index--universal.jpg?1" width=64 height=64 alt="Simple illustration of a newspaper next to a calendar." class=card__img srcset="//c.tadst.com/gfx/128x128/calendar-news-index--universal.jpg?1 2x,//c.tadst.com/gfx/192x192/calendar-news-index--universal.jpg?1 3x"></div>
+<section class="card__content"><h4 class="card__title">News: Holiday Changes</h4>
+<p class="card__text">The latest news about calendars, holidays, and special dates.</p></section></a></article>
+<div class=botlnk><h2>Other Calendars</h2><ul><li><a href="/calendar/">Calendar for 2026</a> &#8211; Calendar with holidays for this year</li>
+<li><a href="/calendar/?year=2027">Calendar for 2027</a></li>
+<li><a href="/calendar/generate.html">Calendar Generator</a> &#8211; Create a calendar for any year</li>
+<li><a href="/calendar/create.html">Printable Calendar</a> &#8211; PDF calendars for printing</li></ul>
+<h2>Related Links</h2><ul><li><a href="/moon/phases/">Moon Phase Calendar</a> &#8211; Calculate moon phases for any year</li>
+<li><a href="/date/duration.html">Duration Between Two Dates</a> &#8211; Calculates number of days</li>
+<li><a href="/date/dateadd.html">Date Calculator</a> &#8211; Add or subtract days, months, years</li>
+<li><a href="/countdown/create">Countdown to Any Date</a> &#8211; Create your own countdown</li></ul></div></div></aside></main></div>
+<section id="rel-posts" class="rel-posts"><div class="pdflexi"><div class="fixed"><h2 class="rel-posts__title" id="translateyou">You Might Also Like</h2>
+<div class="layout-cards">    <article class=card>
+<a href="/news/astronomy/artemis-mementos-2026" class="card__link" aria-label="Artemis II on Historic Moon Flight">
+<div class="card__img-wrap">
+<img src="https://c.tadst.com/gfx/300x168/artemisiilaunch.jpg?1" width=300 height=168 alt="Artemis II on Historic Moon Flight" class=card__img loading=lazy>
+</div>
+<section class=card__content>
+<h4 class=card__title>
+Artemis II on Historic Moon Flight
+</h4>
+<p class=card__text>
+The crew of Artemis II will carry some unique historical artifacts on their lunar flyby. In other news, the Moon has a new crater.
+</p>
+</section>
+</a>
+</article>    <article class=card>
+<a href="/news/astronomy/night-sky-april-2026" class="card__link" aria-label="Sky Guide for April 2026">
+<div class="card__img-wrap">
+<img src="https://c.tadst.com/gfx/300x168/the-sky-in-april-2026-small.png?2" width=300 height=168 alt="Sky Guide for April 2026" class=card__img loading=lazy>
+</div>
+<section class=card__content>
+<h4 class=card__title>
+Sky Guide for April 2026
+</h4>
+<p class=card__text>
+What&rsquo;s up in the day and night sky in April 2026, including a ghostly lunar glow, Moon-planet meetups, and the Lyrid meteor shower.
+</p>
+</section>
+</a>
+</article>    <article class=card>
+<a href="/news/astronomy/moon-april-2026" class="card__link" aria-label="Moon Guide for April 2026">
+<div class="card__img-wrap">
+<img src="https://c.tadst.com/gfx/300x168/april-2026-moon-phase-times-small.jpg?1" width=300 height=168 alt="Moon Guide for April 2026" class=card__img loading=lazy>
+</div>
+<section class=card__content>
+<h4 class=card__title>
+Moon Guide for April 2026
+</h4>
+<p class=card__text>
+Discover the phases of the Moon in April 2026. Also: find Venus and the Pleiades near the Crescent Moon, and what is the opposite of the Harvest Moon effect?
+</p>
+</section>
+</a>
+</article>    <article class=card>
+<a href="/holidays/serbia/good-friday-orthodox" class="card__link" aria-label="Good Friday">
+<div class="card__img-wrap">
+<img src="//c.tadst.com/gfx/300x168/good-friday-austria.jpg" width=300 height=168 alt="" class=card__img loading=lazy>
+</div>
+<section class=card__content>
+<h4 class=card__title>
+Good Friday
+</h4>
+<p class=card__text>
+Millions of Orthodox Christians around the world annually observe Good Friday to commemorate the events leading up to Jesus Christ's crucifixion.
+</p>
+</section>
+</a>
+</article></div></div></div></section>
+<script src="//c.tadst.com/com/common/v/wcommon_v78.js"></script>
+<script src="//c.tadst.com/com/common/v/page_holiday_country_v11.js"></script>
+</div></div>
+<footer class="footer"><section class="feedback-bar"><div class="fixed feedback-bar__wrap"><section id="instant-feedback" class="feedback-bar__instant-feedback"><span class="feedback-bar__msg">How was your experience?</span>
+<span class="feedback-bar__thankyou">Thank you for your feedback!</span>
+<a href="#" onclick="return blif(1)" class="feedback-bar__thumb feedback-bar__thumb--up" title="Vote Good" aria-label="Vote for having a good experience"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0V0z"/><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg></a>
+<a href="#" onclick="return blif(0)" class="feedback-bar__thumb feedback-bar__thumb--down" title="Vote Bad" aria-label="Vote for having a bad experience"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M15 3H6c-.83 0-1.54.5-1.84 1.22l-3.02 7.05c-.09.23-.14.47-.14.73v2c0 1.1.9 2 2 2h6.31l-.95 4.57-.03.32c0 .41.17.79.44 1.06L9.83 23l6.59-6.59c.36-.36.58-.86.58-1.41V5c0-1.1-.9-2-2-2zm4 0v12h4V3h-4z"/></svg></a></section>
+<section class="feedback-bar__contact"><a id="bls1" href="/information/feedback.html" onclick="return bls(this)">Contact Us
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/><path d="M0 0h24v24H0z" fill="none"/></svg></a></section></div></section>
+<section class="fixed footer__wrap"><section class="footer__block footer__block--promo"><article class="footer-card"><a href="/services/supporter.html" class="footer-card__img-link"><img class="footer-card__img" width="100" height="100" src="//c.tadst.com/gfx/n/i/service__supporter.svg" loading="lazy" alt="Illustration of a pink shield with a white heart." /></a>
+<section class="footer-card__content"><h4 class="footer-card__title"><a href="/services/supporter.html">Love Our Site? Become a Supporter
+</a></h4>
+<ul class="footer-card__text"><li>Browse our site <strong>advert free.</strong></li>
+<li>Sun &amp; Moon times <strong>precise to the second.</strong></li>
+<li><strong>Exclusive calendar templates</strong> for PDF Calendar.</li></ul></section></article>
+<section class="footer__logo"><a href="/" rel="home" aria-label="Home"><img src="//c.tadst.com/gfx/n/logo/logo-2021--horizontal-color-whitebg.svg" loading="lazy" alt="The timeanddate logo" width="176" height="24" /></a>
+<p><a href="/information/copyright.html">© Time and Date AS 1995–2026</a></p></section></section>
+<section class="footer__block footer__block--links-wrap"><section class="footer__links"><nav class="footer__links-block footer__links-block--company" aria-labelledby="footer-company"><h4 id="footer-company">Company</h4>
+<ul><li><a href="/company/">About us</a></li>
+<li><a href="/company/jobs">Careers/Jobs</a></li>
+<li><a href="/information/feedback.html" id="bls2" onclick="return bls(this)">Contact Us</a></li>
+<li><a href="/information/contact.html">Contact Details</a></li>
+<li><a href="/sitemap.html">Sitemap</a></li>
+<li><a href="/newsletter/">Newsletter</a></li></ul></nav>
+<nav class="footer__links-block footer__links-block--legal" aria-labelledby="footer-legal"><h4 id="footer-legal">Legal</h4>
+<ul><li><a href="/information/copyright.html">Link policy</a></li>
+<li><a href="/information/advertising.html">Advertising</a></li>
+<li><a href="/information/disclaimer.html">Disclaimer</a></li>
+<li><a href="/information/terms-conditions.html">Terms &amp; Conditions</a></li>
+<li><a href="/information/privacy.html">Privacy Policy</a></li>
+<li><a href="javascript:openprivacy()">Privacy Settings</a></li>
+</ul></nav>
+<nav class="footer__links-block footer__links-block--services" aria-labelledby="footer-services"><h4 id="footer-services">Services</h4>
+<ul><li><a href="/worldclock/">World Clock</a></li>
+<li><a href="/time/">Time Zones</a></li>
+<li><a href="/calendar/">Calendar</a></li>
+<li><a href="/weather/">Weather</a></li>
+<li><a href="/astronomy/">Sun &amp; Moon</a></li>
+<li><a href="/counters/">Timers</a></li>
+<li><a href="/date/">Calculators</a></li>
+<li><a href="/services/api/">API</a></li>
+<li><a href="/extra/">Apps</a></li>
+<li><a href="/information/rss-feeds.html">RSS Feeds</a></li>
+</ul></nav>
+<nav class="footer__links-block footer__links-block--sites" aria-labelledby="footer-sites"><h4 id="footer-sites">Sites</h4>
+<ul><li><a href="https://www.timeanddate.no">timeanddate.no</a></li>
+<li><a href="https://www.timeanddate.de">timeanddate.de</a></li>
+</ul></nav>
+<section class="footer__social"><h4>Follow Us</h4>
+<div class="footer__social-icons"><a href="https://www.facebook.com/timeanddate/" aria-label="Facebook"><i class="footer__social-icon footer__social-icon--facebook" title="timeanddate.com on Facebook"></i></a>
+<a href="https://twitter.com/timeanddate" aria-label="X (Twitter)"><i class="footer__social-icon footer__social-icon--twitter" title="timeanddate.com on X/Twitter"></i></a>
+<a href="https://www.linkedin.com/company/time-and-date-as/about/" aria-label="LinkedIn"><i class="footer__social-icon footer__social-icon--linkedin" title="timeanddate.com on Linkedin"></i></a>
+<a href="https://www.instagram.com/timeanddatecom/" aria-label="Instagram"><i class="footer__social-icon footer__social-icon--instagram" title="timeanddate.com on Instagram"></i></a>
+<a href="https://www.youtube.com/c/timeanddate" aria-label="YouTube"><i class="footer__social-icon footer__social-icon--youtube" title="timeanddate.com on YouTube"></i></a></div></section></section>
+<p class="footer__copyright">© Time and Date AS 1995–2026.
+<a href="/information/copyright.html">Privacy &amp; Terms</a></p></section></section></footer>
+<script>
+bli();main();
+</script>
+<div id="FBD" style="display:none" class="wfc"></div>
+<script>
+openprivacy=function(){
+    if(window.cmpOpen){
+        window.cmpOpen();
+    }else if(window.__tcfapi){
+        __tcfapi('displayConsentUi',2,function(){});
+    }else{
+        wl("/custom/privacy.html");
+    }
+};
+</script></body></html>

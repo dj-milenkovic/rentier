@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Rentier.Application\Rentier.Application.csproj" />
+    <ProjectReference Include="..\Rentier.Tests.Common\Rentier.Tests.Common.csproj" />
   </ItemGroup>
 
   <ItemGroup>
