@@ -84,7 +84,7 @@ public class UpdateMailboxCommandHandlerTests
     [Fact]
     public async Task HandleAsync_SaveCredentialFails_PropagatesCredentialWriteFailed()
     {
-        var existing = Mailbox.Create("imap.example.com", 993, "user@example.com", TestDate);
+        var existing = Mailbox.Create("imap.example.com", 993, "user@example.com");
         _repo.GetByIdAsync(existing.Id, Arg.Any<CancellationToken>()).Returns(existing);
 
         var failingCredentials = Substitute.For<ICredentialStore>();
@@ -92,7 +92,7 @@ public class UpdateMailboxCommandHandlerTests
             .Returns(Result<VoidResult, Error>.Failure(Error.CredentialWriteFailed("OS store locked")));
 
         var handler = new UpdateMailboxCommandHandler(_repo, failingCredentials);
-        var cmd = new UpdateMailboxCommand(existing.Id, "imap.example.com", 993, "user@example.com", "pass", TestDate);
+        var cmd = new UpdateMailboxCommand(existing.Id, "imap.example.com", 993, "user@example.com", "pass");
 
         var result = await handler.HandleAsync(cmd);
 
