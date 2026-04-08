@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using NSubstitute;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
@@ -7,6 +7,7 @@ using Rentier.Application.Handlers;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
+using Rentier.Domain.ValueObjects;
 using Xunit;
 
 namespace Rentier.Application.Tests;
@@ -23,8 +24,7 @@ public class SyncMailboxCommandHandlerTests
 
     private static Mailbox MakeMailbox(Guid id)
     {
-        // Use reflection via the public constructor to create a mailbox with a specific Id
-        return Mailbox.Create("imap.example.com", 993, "user@test.com", new DateOnly(2024, 1, 1));
+        return Mailbox.Create("imap.example.com", 993, "user@test.com");
     }
 
     [Fact]
@@ -39,7 +39,7 @@ public class SyncMailboxCommandHandlerTests
             Substitute.For<IMailboxRepository>(),
             Substitute.For<IMailboxSyncService>());
 
-        var result = await handler.HandleAsync(new SyncMailboxCommand());
+        var result = await handler.HandleAsync(new SyncMailboxCommand(SyncParameters.Default));
 
         result.IsSuccess.Should().BeTrue();
         result.Value.ReportsCreated.Should().Be(0);
@@ -61,8 +61,8 @@ public class SyncMailboxCommandHandlerTests
         importerRepo.GetAllAsync(Arg.Any<CancellationToken>())
             .Returns(new[] { importer1, importer2 });
 
-        var mailbox1 = Mailbox.Create("imap1.test.com", 993, "u1@test.com", new DateOnly(2024, 1, 1));
-        var mailbox2 = Mailbox.Create("imap2.test.com", 993, "u2@test.com", new DateOnly(2024, 1, 1));
+        var mailbox1 = Mailbox.Create("imap1.test.com", 993, "u1@test.com");
+        var mailbox2 = Mailbox.Create("imap2.test.com", 993, "u2@test.com");
 
         var mailboxRepo = Substitute.For<IMailboxRepository>();
         mailboxRepo.GetByIdAsync(mailboxId1, Arg.Any<CancellationToken>()).Returns(mailbox1);
@@ -70,16 +70,16 @@ public class SyncMailboxCommandHandlerTests
 
         var syncService = Substitute.For<IMailboxSyncService>();
         syncService.SyncAsync(Arg.Any<Mailbox>(), Arg.Any<IReadOnlyList<Importer>>(),
-                Arg.Any<IProgress<SyncProgress>?>(), Arg.Any<CancellationToken>())
+                Arg.Any<SyncParameters>(), Arg.Any<IProgress<SyncProgress>?>(), Arg.Any<CancellationToken>())
             .Returns(Result<SyncResult, Error>.Success(new SyncResult(1, [])));
 
         var handler = new SyncMailboxCommandHandler(importerRepo, mailboxRepo, syncService);
 
-        await handler.HandleAsync(new SyncMailboxCommand());
+        await handler.HandleAsync(new SyncMailboxCommand(SyncParameters.Default));
 
         await syncService.Received(2).SyncAsync(
             Arg.Any<Mailbox>(), Arg.Any<IReadOnlyList<Importer>>(),
-            Arg.Any<IProgress<SyncProgress>?>(), Arg.Any<CancellationToken>());
+            Arg.Any<SyncParameters>(), Arg.Any<IProgress<SyncProgress>?>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -100,7 +100,7 @@ public class SyncMailboxCommandHandlerTests
         var handler = new SyncMailboxCommandHandler(
             importerRepo, mailboxRepo, Substitute.For<IMailboxSyncService>());
 
-        var result = await handler.HandleAsync(new SyncMailboxCommand());
+        var result = await handler.HandleAsync(new SyncMailboxCommand(SyncParameters.Default));
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Errors.Should().HaveCount(1);
@@ -117,18 +117,18 @@ public class SyncMailboxCommandHandlerTests
         var importerRepo = Substitute.For<IImporterRepository>();
         importerRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(new[] { importer });
 
-        var mailbox = Mailbox.Create("imap.test.com", 993, "u@test.com", new DateOnly(2024, 1, 1));
+        var mailbox = Mailbox.Create("imap.test.com", 993, "u@test.com");
         var mailboxRepo = Substitute.For<IMailboxRepository>();
         mailboxRepo.GetByIdAsync(mailboxId, Arg.Any<CancellationToken>()).Returns(mailbox);
 
         var syncService = Substitute.For<IMailboxSyncService>();
         syncService.SyncAsync(Arg.Any<Mailbox>(), Arg.Any<IReadOnlyList<Importer>>(),
-                Arg.Any<IProgress<SyncProgress>?>(), Arg.Any<CancellationToken>())
+                Arg.Any<SyncParameters>(), Arg.Any<IProgress<SyncProgress>?>(), Arg.Any<CancellationToken>())
             .Returns(Result<SyncResult, Error>.Failure(Error.Infrastructure("IMAP error")));
 
         var handler = new SyncMailboxCommandHandler(importerRepo, mailboxRepo, syncService);
 
-        var result = await handler.HandleAsync(new SyncMailboxCommand());
+        var result = await handler.HandleAsync(new SyncMailboxCommand(SyncParameters.Default));
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Errors.Should().Contain("IMAP error");
@@ -144,19 +144,19 @@ public class SyncMailboxCommandHandlerTests
         var importerRepo = Substitute.For<IImporterRepository>();
         importerRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(new[] { importer });
 
-        var mailbox = Mailbox.Create("imap.test.com", 993, "u@test.com", new DateOnly(2024, 1, 1));
+        var mailbox = Mailbox.Create("imap.test.com", 993, "u@test.com");
         var mailboxRepo = Substitute.For<IMailboxRepository>();
         mailboxRepo.GetByIdAsync(mailboxId, Arg.Any<CancellationToken>()).Returns(mailbox);
 
         var syncService = Substitute.For<IMailboxSyncService>();
         syncService.SyncAsync(Arg.Any<Mailbox>(), Arg.Any<IReadOnlyList<Importer>>(),
-                Arg.Any<IProgress<SyncProgress>?>(), Arg.Any<CancellationToken>())
+                Arg.Any<SyncParameters>(), Arg.Any<IProgress<SyncProgress>?>(), Arg.Any<CancellationToken>())
             .Returns(Result<SyncResult, Error>.Success(
                 new SyncResult(3, ["attachment parse error"])));
 
         var handler = new SyncMailboxCommandHandler(importerRepo, mailboxRepo, syncService);
 
-        var result = await handler.HandleAsync(new SyncMailboxCommand());
+        var result = await handler.HandleAsync(new SyncMailboxCommand(SyncParameters.Default));
 
         result.IsSuccess.Should().BeTrue();
         result.Value.ReportsCreated.Should().Be(3);
@@ -173,25 +173,26 @@ public class SyncMailboxCommandHandlerTests
         var importerRepo = Substitute.For<IImporterRepository>();
         importerRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(new[] { importer });
 
-        var mailbox = Mailbox.Create("imap.test.com", 993, "u@test.com", new DateOnly(2024, 1, 1));
+        var mailbox = Mailbox.Create("imap.test.com", 993, "u@test.com");
         var mailboxRepo = Substitute.For<IMailboxRepository>();
         mailboxRepo.GetByIdAsync(mailboxId, Arg.Any<CancellationToken>()).Returns(mailbox);
 
         var syncService = Substitute.For<IMailboxSyncService>();
         syncService.SyncAsync(Arg.Any<Mailbox>(), Arg.Any<IReadOnlyList<Importer>>(),
-                Arg.Any<IProgress<SyncProgress>?>(), Arg.Any<CancellationToken>())
+                Arg.Any<SyncParameters>(), Arg.Any<IProgress<SyncProgress>?>(), Arg.Any<CancellationToken>())
             .Returns(Result<SyncResult, Error>.Success(new SyncResult(0, [])));
 
         var handler = new SyncMailboxCommandHandler(importerRepo, mailboxRepo, syncService);
 
         var progress = Substitute.For<IProgress<SyncProgress>>();
-        var command = new SyncMailboxCommand(progress);
+        var command = new SyncMailboxCommand(SyncParameters.Default, progress);
 
         await handler.HandleAsync(command);
 
         await syncService.Received(1).SyncAsync(
             Arg.Any<Mailbox>(),
             Arg.Any<IReadOnlyList<Importer>>(),
+            Arg.Any<SyncParameters>(),
             progress,
             Arg.Any<CancellationToken>());
     }
