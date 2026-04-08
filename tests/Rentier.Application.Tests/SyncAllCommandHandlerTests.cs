@@ -1,10 +1,11 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using NSubstitute;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Handlers;
 using Rentier.Application.Interfaces;
+using Rentier.Domain.ValueObjects;
 using Xunit;
 
 namespace Rentier.Application.Tests;
@@ -41,6 +42,8 @@ public class SyncAllCommandHandlerTests
     private static IProgress<SyncProgressEntry> NoProgress() =>
         Substitute.For<IProgress<SyncProgressEntry>>();
 
+    private static SyncAllCommand DefaultCommand() => new(SyncParameters.Default);
+
     // ── Tests ────────────────────────────────────────────────────────────────
 
     [Fact]
@@ -52,7 +55,7 @@ public class SyncAllCommandHandlerTests
             Result<ProcessReportsResult, Error>.Success(new ProcessReportsResult(2, 5, 0, [])));
 
         var handler = CreateHandler(syncHandler, processHandler);
-        var result = await handler.HandleAsync(new SyncAllCommand(), NoProgress());
+        var result = await handler.HandleAsync(DefaultCommand(), NoProgress());
 
         result.IsSuccess.Should().BeTrue();
         result.Value.MailboxesSynced.Should().Be(1);
@@ -71,7 +74,7 @@ public class SyncAllCommandHandlerTests
             Result<ProcessReportsResult, Error>.Success(new ProcessReportsResult(1, 2, 0, [])));
 
         var handler = CreateHandler(syncHandler, processHandler);
-        var result = await handler.HandleAsync(new SyncAllCommand(), NoProgress());
+        var result = await handler.HandleAsync(DefaultCommand(), NoProgress());
 
         result.IsSuccess.Should().BeTrue();
         result.Value.FilingsCreated.Should().Be(1);
@@ -88,7 +91,7 @@ public class SyncAllCommandHandlerTests
             Result<SyncResult, Error>.Failure(new Error("SYNC_FAILED", "Connection refused")));
 
         var handler = CreateHandler(syncHandler);
-        var result = await handler.HandleAsync(new SyncAllCommand(), NoProgress());
+        var result = await handler.HandleAsync(DefaultCommand(), NoProgress());
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Errors.Should().ContainSingle(e => e == "Connection refused");
@@ -102,7 +105,7 @@ public class SyncAllCommandHandlerTests
             Result<ProcessReportsResult, Error>.Failure(new Error("PROCESS_FAILED", "DB error")));
 
         var handler = CreateHandler(processHandler: processHandler);
-        var result = await handler.HandleAsync(new SyncAllCommand(), NoProgress());
+        var result = await handler.HandleAsync(DefaultCommand(), NoProgress());
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Errors.Should().ContainSingle(e => e == "DB error");
@@ -115,7 +118,7 @@ public class SyncAllCommandHandlerTests
             Result<SyncResult, Error>.Success(new SyncResult(7, [])));
 
         var handler = CreateHandler(syncHandler);
-        var result = await handler.HandleAsync(new SyncAllCommand(), NoProgress());
+        var result = await handler.HandleAsync(DefaultCommand(), NoProgress());
 
         result.IsSuccess.Should().BeTrue();
         result.Value.AttachmentsDownloaded.Should().Be(7);
@@ -133,7 +136,7 @@ public class SyncAllCommandHandlerTests
             Result<ProcessReportsResult, Error>.Success(new ProcessReportsResult(1, 3, 0, [])));
 
         var handler = CreateHandler(syncHandler, processHandler);
-        await handler.HandleAsync(new SyncAllCommand(), progress);
+        await handler.HandleAsync(DefaultCommand(), progress);
 
         // Give Progress<T> callbacks a chance to fire (they may dispatch on the thread pool)
         await Task.Delay(50);
@@ -153,7 +156,7 @@ public class SyncAllCommandHandlerTests
         var progress = new Progress<SyncProgressEntry>(e => reported.Add(e));
 
         var handler = CreateHandler(syncHandler);
-        await handler.HandleAsync(new SyncAllCommand(), progress);
+        await handler.HandleAsync(DefaultCommand(), progress);
 
         await Task.Delay(50);
 
@@ -170,7 +173,7 @@ public class SyncAllCommandHandlerTests
         var progress = new Progress<SyncProgressEntry>(e => reported.Add(e));
 
         var handler = CreateHandler(processHandler: processHandler);
-        await handler.HandleAsync(new SyncAllCommand(), progress);
+        await handler.HandleAsync(DefaultCommand(), progress);
 
         await Task.Delay(50);
 
@@ -189,7 +192,7 @@ public class SyncAllCommandHandlerTests
         var processHandler = MakeProcessReportsHandler();
 
         var handler = CreateHandler(syncHandler, processHandler);
-        await handler.HandleAsync(new SyncAllCommand(), NoProgress(), cts.Token);
+        await handler.HandleAsync(DefaultCommand(), NoProgress(), cts.Token);
 
         await syncHandler.Received(1)
             .HandleAsync(Arg.Any<SyncMailboxCommand>(), cts.Token);
@@ -205,7 +208,7 @@ public class SyncAllCommandHandlerTests
             .Returns(Result<SyncResult, Error>.Success(new SyncResult(0, [])));
 
         var handler = CreateHandler(syncHandler);
-        await handler.HandleAsync(new SyncAllCommand(), NoProgress());
+        await handler.HandleAsync(DefaultCommand(), NoProgress());
 
         await syncHandler.Received(1)
             .HandleAsync(

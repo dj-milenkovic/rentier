@@ -27,10 +27,10 @@ public class UpdateMailboxCommandHandlerTests
     [Fact]
     public async Task HandleAsync_ValidUpdate_UpdatesRepoAndReturnsSuccess()
     {
-        var existing = Mailbox.Create("imap.old.com", 993, "old@example.com", TestDate);
+        var existing = Mailbox.Create("imap.old.com", 993, "old@example.com");
         _repo.GetByIdAsync(existing.Id, Arg.Any<CancellationToken>()).Returns(existing);
 
-        var cmd = new UpdateMailboxCommand(existing.Id, "imap.new.com", 143, "new@example.com", null, TestDate);
+        var cmd = new UpdateMailboxCommand(existing.Id, "imap.new.com", 143, "new@example.com", null);
 
         var result = await _handler.HandleAsync(cmd);
 
@@ -44,7 +44,7 @@ public class UpdateMailboxCommandHandlerTests
         var id = Guid.NewGuid();
         _repo.GetByIdAsync(id, Arg.Any<CancellationToken>()).Returns((Mailbox?)null);
 
-        var cmd = new UpdateMailboxCommand(id, "imap.example.com", 993, "user@example.com", null, TestDate);
+        var cmd = new UpdateMailboxCommand(id, "imap.example.com", 993, "user@example.com", null);
 
         var result = await _handler.HandleAsync(cmd);
 
@@ -56,10 +56,10 @@ public class UpdateMailboxCommandHandlerTests
     [Fact]
     public async Task HandleAsync_WithNewPassword_UpdatesCredentialUsingCorrectKey()
     {
-        var existing = Mailbox.Create("imap.example.com", 993, "user@example.com", TestDate);
+        var existing = Mailbox.Create("imap.example.com", 993, "user@example.com");
         _repo.GetByIdAsync(existing.Id, Arg.Any<CancellationToken>()).Returns(existing);
 
-        var cmd = new UpdateMailboxCommand(existing.Id, "imap.example.com", 993, "user@example.com", "newpass", TestDate);
+        var cmd = new UpdateMailboxCommand(existing.Id, "imap.example.com", 993, "user@example.com", "newpass");
 
         await _handler.HandleAsync(cmd);
 
@@ -70,10 +70,10 @@ public class UpdateMailboxCommandHandlerTests
     [Fact]
     public async Task HandleAsync_EmptyPassword_PreservesExistingCredential()
     {
-        var existing = Mailbox.Create("imap.example.com", 993, "user@example.com", TestDate);
+        var existing = Mailbox.Create("imap.example.com", 993, "user@example.com");
         _repo.GetByIdAsync(existing.Id, Arg.Any<CancellationToken>()).Returns(existing);
 
-        var cmd = new UpdateMailboxCommand(existing.Id, "imap.example.com", 993, "user@example.com", "", TestDate);
+        var cmd = new UpdateMailboxCommand(existing.Id, "imap.example.com", 993, "user@example.com", "");
 
         await _handler.HandleAsync(cmd);
 

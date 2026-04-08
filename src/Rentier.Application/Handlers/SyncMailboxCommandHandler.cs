@@ -51,6 +51,7 @@ public sealed class SyncMailboxCommandHandler
             var result = await _syncService.SyncAsync(
                 mailbox,
                 group.ToList().AsReadOnly(),
+                command.Parameters,
                 command.Progress,
                 ct);
 

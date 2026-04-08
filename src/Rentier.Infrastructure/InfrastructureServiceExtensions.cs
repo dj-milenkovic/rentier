@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Rentier.Application.Commands;
@@ -7,6 +7,7 @@ using Rentier.Application.DTOs;
 using Rentier.Application.Handlers;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Repositories;
+using Rentier.Application.Services;
 using Rentier.Infrastructure.ExchangeRates;
 using Rentier.Infrastructure.Parsing;
 using Rentier.Infrastructure.Persistence;
@@ -47,7 +48,10 @@ public static class InfrastructureServiceExtensions
         }
 
         services.AddTransient<IExchangeRateCacheRepository, ExchangeRateCacheRepository>();
-        services.AddHttpClient<IExchangeRateFetcher, NbsExchangeRateFetcher>();
+        services.AddHttpClient<NbsExchangeRateFetcher>();
+        services.AddHttpClient<NbsWebScraper>();
+        services.AddTransient<IExchangeRateFetcher, CompositeExchangeRateFetcher>();
+        services.AddTransient<ExchangeRateResolver>();
         services.AddTransient<IStatementParser, IbkrCsvParser>();
         services.AddTransient<IReportRepository, ReportRepository>();
         services.AddTransient<IFilingRepository, FilingRepository>();

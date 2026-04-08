@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 using Rentier.Domain.Exceptions;
@@ -124,5 +124,43 @@ public class FilingCreateFromIncomeTests
             1000m, 0m, 150m, 150m, Deadline);
 
         filing.FilingDeadline.Should().Be(Deadline);
+    }
+
+    [Fact]
+    public void CreateFromIncome_WithoutProvenance_BothProvenancePropertiesNull()
+    {
+        var filing = Filing.CreateFromIncome(
+            Guid.NewGuid(), IncomeType.Dividend, "Test Co", new DateOnly(2024, 1, 15),
+            100m, 0m, 15m, 15m, new DateOnly(2024, 2, 15), null);
+
+        filing.ExchangeRateSourceDate.Should().BeNull();
+        filing.ExchangeRateSourceType.Should().BeNull();
+    }
+
+    [Fact]
+    public void CreateFromIncome_WithExactProvenance_SetsBothFields()
+    {
+        var incomeDate = new DateOnly(2024, 1, 15);
+        var filing = Filing.CreateFromIncome(
+            Guid.NewGuid(), IncomeType.Dividend, "Test Co", incomeDate,
+            100m, 0m, 15m, 15m, new DateOnly(2024, 2, 15), null,
+            incomeDate, ExchangeRateSourceType.Exact);
+
+        filing.ExchangeRateSourceDate.Should().Be(incomeDate);
+        filing.ExchangeRateSourceType.Should().Be(ExchangeRateSourceType.Exact);
+    }
+
+    [Fact]
+    public void CreateFromIncome_WithFallbackProvenance_SetsFallbackSourceDate()
+    {
+        var incomeDate = new DateOnly(2024, 1, 13); // Saturday
+        var fallbackDate = new DateOnly(2024, 1, 12); // Friday
+        var filing = Filing.CreateFromIncome(
+            Guid.NewGuid(), IncomeType.Dividend, "Test Co", incomeDate,
+            100m, 0m, 15m, 15m, new DateOnly(2024, 2, 15), null,
+            fallbackDate, ExchangeRateSourceType.Fallback);
+
+        filing.ExchangeRateSourceDate.Should().Be(fallbackDate);
+        filing.ExchangeRateSourceType.Should().Be(ExchangeRateSourceType.Fallback);
     }
 }
