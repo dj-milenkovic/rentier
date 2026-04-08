@@ -66,34 +66,41 @@ public class MainWindowViewModelSmokeTests
         getReports.HandleAsync(Arg.Any<GetReportsQuery>(), Arg.Any<CancellationToken>())
             .Returns(Result<IReadOnlyList<ReportRowDto>, Error>.Success(Array.Empty<ReportRowDto>()));
 
+        var getDashboard = Substitute.For<IQueryHandler<GetDashboardQuery, Result<DashboardDto, Error>>>();
+        getDashboard.HandleAsync(Arg.Any<GetDashboardQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<DashboardDto, Error>.Success(
+                new DashboardDto([], [], 0, 0, 0, 0m, null)));
+
         services.AddSingleton(Substitute.For<ICommandHandler<SyncMailboxCommand, Result<SyncResult, Error>>>());
         services.AddSingleton(getReports);
+        services.AddSingleton(getDashboard);
         services.AddSingleton(Substitute.For<ICommandHandler<ImportReportCommand, Result<Guid, Error>>>());
         services.AddSingleton(Substitute.For<ICommandHandler<DeleteReportCommand, Result<VoidResult, Error>>>());
         services.AddSingleton<Func<string, string, Task<bool>>>((_, _) => Task.FromResult(false));
         services.AddSingleton<Func<Task<(Guid ImporterId, string FileName, byte[] Content)?>>>(
             () => Task.FromResult<(Guid, string, byte[])?>(null));
+        services.AddSingleton(Substitute.For<ISyncAllCommandHandler>());
 
         return services.BuildServiceProvider();
     }
 
     [Fact]
-    public void MainWindowViewModel_Constructed_NavigationEntriesHasThreeItems()
+    public void MainWindowViewModel_Constructed_NavigationEntriesHasFiveItems()
     {
         var filingsVm  = CreateFilingsVm();
         var settingsVm = new SettingsViewModel(CreateProfileVm(), CreateHolidayVm(), CreateMailboxVm(), CreateImporterVm());
         var vm = new MainWindowViewModel(filingsVm, CreateProvider(), settingsVm);
 
-        vm.NavigationEntries.Count.Should().Be(3);
+        vm.NavigationEntries.Count.Should().Be(5);
     }
 
     [Fact]
-    public void MainWindowViewModel_Constructed_InitialViewModelIsFilingsViewModel()
+    public void MainWindowViewModel_Constructed_InitialViewModelIsDashboardViewModel()
     {
         var filingsVm  = CreateFilingsVm();
         var settingsVm = new SettingsViewModel(CreateProfileVm(), CreateHolidayVm(), CreateMailboxVm(), CreateImporterVm());
         var vm = new MainWindowViewModel(filingsVm, CreateProvider(), settingsVm);
 
-        vm.CurrentViewModel.Should().BeOfType<FilingsViewModel>();
+        vm.CurrentViewModel.Should().BeOfType<DashboardViewModel>();
     }
 }

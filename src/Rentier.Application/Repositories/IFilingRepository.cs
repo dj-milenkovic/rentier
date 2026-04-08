@@ -35,4 +35,19 @@ public interface IFilingRepository
     Task DeleteByReportIdAsync(
         Guid reportId,
         CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns filings with Status ∈ {Init, Filed} whose FilingDeadline falls within [today, today+days], ordered by FilingDeadline ascending.
+    /// </summary>
+    Task<IReadOnlyList<Filing>> GetUpcomingAsync(DateOnly today, int days, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns filings with Status ∈ {Init, Filed} whose FilingDeadline is before today, ordered by FilingDeadline ascending.
+    /// </summary>
+    Task<IReadOnlyList<Filing>> GetOverdueAsync(DateOnly today, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns aggregate counts by status and the total unpaid tax amount.
+    /// </summary>
+    Task<(int InitCount, int FiledCount, int PaidCount, decimal TotalUnpaidRsd)> GetFilingStatsAsync(CancellationToken ct = default);
 }
