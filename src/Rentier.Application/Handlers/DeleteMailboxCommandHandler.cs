@@ -20,14 +20,7 @@ public sealed class DeleteMailboxCommandHandler
     public async Task<Result<VoidResult, Error>> HandleAsync(
         DeleteMailboxCommand command, CancellationToken ct = default)
     {
-        try
-        {
-            await _credentials.DeleteCredentialAsync($"Rentier/Mailbox/{command.Id}", ct);
-        }
-        catch
-        {
-            // credential may not exist — swallow all exceptions
-        }
+        await _credentials.DeleteCredentialAsync(CredentialKeys.MailboxPassword(command.Id), ct);
 
         await _repository.DeleteAsync(command.Id, ct);
         return Result<VoidResult, Error>.Success(VoidResult.Value);

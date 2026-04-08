@@ -6,6 +6,7 @@ using Rentier.Application.Handlers;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
+using Rentier.Tests.Common.Fakes;
 using Xunit;
 
 namespace Rentier.Application.Tests;
@@ -13,14 +14,14 @@ namespace Rentier.Application.Tests;
 public class UpdateMailboxCommandHandlerTests
 {
     private readonly IMailboxRepository _repo = Substitute.For<IMailboxRepository>();
-    private readonly ICredentialStore _credentials = Substitute.For<ICredentialStore>();
+    private readonly FakeCredentialStore _fakeCredentials = new();
     private readonly UpdateMailboxCommandHandler _handler;
 
     private static readonly DateOnly TestDate = new(2024, 1, 1);
 
     public UpdateMailboxCommandHandlerTests()
     {
-        _handler = new UpdateMailboxCommandHandler(_repo, _credentials);
+        _handler = new UpdateMailboxCommandHandler(_repo, _fakeCredentials);
     }
 
     [Fact]
@@ -53,7 +54,7 @@ public class UpdateMailboxCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WithNewPassword_UpdatesCredential()
+    public async Task HandleAsync_WithNewPassword_UpdatesCredentialUsingCorrectKey()
     {
         var existing = Mailbox.Create("imap.example.com", 993, "user@example.com", TestDate);
         _repo.GetByIdAsync(existing.Id, Arg.Any<CancellationToken>()).Returns(existing);
@@ -62,10 +63,8 @@ public class UpdateMailboxCommandHandlerTests
 
         await _handler.HandleAsync(cmd);
 
-        await _credentials.Received(1).SaveCredentialAsync(
-            Arg.Is<string>(k => k.Contains(existing.Id.ToString())),
-            "newpass",
-            Arg.Any<CancellationToken>());
+        var savedKey = _fakeCredentials.StoredKeys.Single();
+        savedKey.Should().Be(CredentialKeys.MailboxPassword(existing.Id));
     }
 
     [Fact]
@@ -78,8 +77,26 @@ public class UpdateMailboxCommandHandlerTests
 
         await _handler.HandleAsync(cmd);
 
-        await _credentials.DidNotReceive().SaveCredentialAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+        _fakeCredentials.StoredKeys.Should().BeEmpty();
         await _repo.Received(1).UpdateAsync(existing, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_SaveCredentialFails_PropagatesCredentialWriteFailed()
+    {
+        var existing = Mailbox.Create("imap.example.com", 993, "user@example.com", TestDate);
+        _repo.GetByIdAsync(existing.Id, Arg.Any<CancellationToken>()).Returns(existing);
+
+        var failingCredentials = Substitute.For<ICredentialStore>();
+        failingCredentials.SaveCredentialAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(Result<VoidResult, Error>.Failure(Error.CredentialWriteFailed("OS store locked")));
+
+        var handler = new UpdateMailboxCommandHandler(_repo, failingCredentials);
+        var cmd = new UpdateMailboxCommand(existing.Id, "imap.example.com", 993, "user@example.com", "pass", TestDate);
+
+        var result = await handler.HandleAsync(cmd);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Code.Should().Be("CREDENTIAL_WRITE_FAILED");
     }
 }

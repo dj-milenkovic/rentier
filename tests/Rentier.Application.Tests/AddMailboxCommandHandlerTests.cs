@@ -5,6 +5,7 @@ using Rentier.Application.Common;
 using Rentier.Application.Handlers;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Repositories;
+using Rentier.Tests.Common.Fakes;
 using Xunit;
 
 namespace Rentier.Application.Tests;
@@ -12,14 +13,14 @@ namespace Rentier.Application.Tests;
 public class AddMailboxCommandHandlerTests
 {
     private readonly IMailboxRepository _repo = Substitute.For<IMailboxRepository>();
-    private readonly ICredentialStore _credentials = Substitute.For<ICredentialStore>();
+    private readonly FakeCredentialStore _fakeCredentials = new();
     private readonly AddMailboxCommandHandler _handler;
 
     private static readonly DateOnly TestDate = new(2024, 1, 1);
 
     public AddMailboxCommandHandlerTests()
     {
-        _handler = new AddMailboxCommandHandler(_repo, _credentials);
+        _handler = new AddMailboxCommandHandler(_repo, _fakeCredentials);
     }
 
     [Fact]
@@ -35,18 +36,30 @@ public class AddMailboxCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WithPassword_SavesCredentialBeforeAdd()
+    public async Task HandleAsync_WithPassword_SavesCredentialWithCorrectKey()
     {
         var cmd = new AddMailboxCommand("imap.example.com", 993, "user@example.com", "secret123", TestDate);
 
         var result = await _handler.HandleAsync(cmd);
 
         result.IsSuccess.Should().BeTrue();
-        await _credentials.Received(1).SaveCredentialAsync(
-            Arg.Is<string>(k => k.StartsWith("Rentier/Mailbox/")),
-            "secret123",
-            Arg.Any<CancellationToken>());
+        var savedKey = _fakeCredentials.StoredKeys.Single();
+        savedKey.Should().EndWith("/password");
+        savedKey.Should().StartWith("Rentier/Mailbox/");
         await _repo.Received(1).AddAsync(Arg.Any<Domain.Entities.Mailbox>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_WithPassword_UsesCredentialKeysFormat()
+    {
+        var cmd = new AddMailboxCommand("imap.example.com", 993, "user@example.com", "secret123", TestDate);
+
+        var result = await _handler.HandleAsync(cmd);
+
+        result.IsSuccess.Should().BeTrue();
+        var savedKey = _fakeCredentials.StoredKeys.Single();
+        // Key format: Rentier/Mailbox/{guid}/password
+        savedKey.Should().MatchRegex(@"^Rentier/Mailbox/[0-9a-f\-]+/password$");
     }
 
     [Fact]
@@ -56,8 +69,7 @@ public class AddMailboxCommandHandlerTests
 
         await _handler.HandleAsync(cmd);
 
-        await _credentials.DidNotReceive().SaveCredentialAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+        _fakeCredentials.StoredKeys.Should().BeEmpty();
         await _repo.Received(1).AddAsync(Arg.Any<Domain.Entities.Mailbox>(), Arg.Any<CancellationToken>());
     }
 
@@ -68,8 +80,7 @@ public class AddMailboxCommandHandlerTests
 
         await _handler.HandleAsync(cmd);
 
-        await _credentials.DidNotReceive().SaveCredentialAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+        _fakeCredentials.StoredKeys.Should().BeEmpty();
         await _repo.Received(1).AddAsync(Arg.Any<Domain.Entities.Mailbox>(), Arg.Any<CancellationToken>());
     }
 
@@ -82,6 +93,23 @@ public class AddMailboxCommandHandlerTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("DOMAIN_VALIDATION");
+        await _repo.DidNotReceive().AddAsync(Arg.Any<Domain.Entities.Mailbox>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_SaveCredentialFails_ReturnsFailureWithoutSavingToRepo()
+    {
+        var failingCredentials = Substitute.For<ICredentialStore>();
+        failingCredentials.SaveCredentialAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(Result<VoidResult, Error>.Failure(Error.CredentialWriteFailed("OS store failure")));
+
+        var handler = new AddMailboxCommandHandler(_repo, failingCredentials);
+        var cmd = new AddMailboxCommand("imap.example.com", 993, "user@example.com", "pass", TestDate);
+
+        var result = await handler.HandleAsync(cmd);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Code.Should().Be("CREDENTIAL_WRITE_FAILED");
         await _repo.DidNotReceive().AddAsync(Arg.Any<Domain.Entities.Mailbox>(), Arg.Any<CancellationToken>());
     }
 }

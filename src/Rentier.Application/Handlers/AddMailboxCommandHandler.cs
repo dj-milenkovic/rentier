@@ -33,7 +33,12 @@ public sealed class AddMailboxCommandHandler
         }
 
         if (!string.IsNullOrEmpty(command.Password))
-            await _credentials.SaveCredentialAsync($"Rentier/Mailbox/{mailbox.Id}", command.Password, ct);
+        {
+            var credResult = await _credentials.SaveCredentialAsync(
+                CredentialKeys.MailboxPassword(mailbox.Id), command.Password, ct);
+            if (!credResult.IsSuccess)
+                return Result<Guid, Error>.Failure(credResult.Error);
+        }
 
         await _repository.AddAsync(mailbox, ct);
         return Result<Guid, Error>.Success(mailbox.Id);

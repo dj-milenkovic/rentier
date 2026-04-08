@@ -45,12 +45,13 @@ public class ImapMailboxSyncService : IMailboxSyncService
         ArgumentNullException.ThrowIfNull(mailbox);
         ArgumentNullException.ThrowIfNull(importers);
 
-        var password = await _credentialStore.GetCredentialAsync(
-            $"Rentier/Mailbox/{mailbox.Id}/password", ct);
+        var credResult = await _credentialStore.GetCredentialAsync(
+            CredentialKeys.MailboxPassword(mailbox.Id), ct);
 
-        if (string.IsNullOrEmpty(password))
-            return Result<SyncResult, Error>.Failure(
-                Error.Infrastructure($"No password found for mailbox {mailbox.Id}"));
+        if (!credResult.IsSuccess)
+            return Result<SyncResult, Error>.Failure(credResult.Error);
+
+        var password = credResult.Value;
 
         var errors = new List<string>();
         var reportsCreated = 0;
