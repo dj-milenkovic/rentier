@@ -1,0 +1,481 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AppTitle" xml:space="preserve">
+    <value>Rentier</value>
+  </data>
+  <data name="Nav_Filings" xml:space="preserve">
+    <value>Filings</value>
+  </data>
+  <data name="Nav_Dashboard" xml:space="preserve">
+    <value>Dashboard</value>
+  </data>
+  <data name="Nav_Reports" xml:space="preserve">
+    <value>Reports</value>
+  </data>
+  <data name="Nav_Sync" xml:space="preserve">
+    <value>Sync</value>
+  </data>
+  <data name="Nav_Settings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="Sync_StartButton" xml:space="preserve">
+    <value>▶ Start Sync</value>
+  </data>
+  <data name="Sync_CancelButton" xml:space="preserve">
+    <value>⬛ Cancel</value>
+  </data>
+  <data name="Sync_Title" xml:space="preserve">
+    <value>Sync</value>
+  </data>
+  <data name="Sync_Starting" xml:space="preserve">
+    <value>Starting mailbox sync...</value>
+  </data>
+  <data name="Sync_ProcessingReports" xml:space="preserve">
+    <value>Processing reports...</value>
+  </data>
+  <data name="Sync_NoNewReports" xml:space="preserve">
+    <value>No new reports to process.</value>
+  </data>
+  <data name="Sync_Complete" xml:space="preserve">
+    <value>Sync complete: {0} filing(s) created, {1} error(s).</value>
+  </data>
+  <data name="Sync_Failed" xml:space="preserve">
+    <value>Sync failed: {0}</value>
+  </data>
+  <data name="Sync_MailboxComplete" xml:space="preserve">
+    <value>Mailbox sync complete. {0} attachment(s) downloaded.</value>
+  </data>
+  <data name="Sync_NavLabel" xml:space="preserve">
+    <value>Sync</value>
+  </data>
+  <data name="ComingSoon" xml:space="preserve">
+    <value>Coming soon</value>
+  </data>
+  <data name="Settings_Profile_TabHeader" xml:space="preserve">
+    <value>Profile</value>
+  </data>
+  <data name="Profile_Jmbg_Label" xml:space="preserve">
+    <value>JMBG (13 digits)</value>
+  </data>
+  <data name="Profile_FullName_Label" xml:space="preserve">
+    <value>Full Name</value>
+  </data>
+  <data name="Profile_Address_Label" xml:space="preserve">
+    <value>Address</value>
+  </data>
+  <data name="Profile_OpstinaCode_Label" xml:space="preserve">
+    <value>Opština Code</value>
+  </data>
+  <data name="Profile_PhoneNumber_Label" xml:space="preserve">
+    <value>Phone Number (optional)</value>
+  </data>
+  <data name="Profile_Email_Label" xml:space="preserve">
+    <value>Email (optional)</value>
+  </data>
+  <data name="Profile_Save_Button" xml:space="preserve">
+    <value>Save Profile</value>
+  </data>
+  <data name="Profile_Saved_Confirmation" xml:space="preserve">
+    <value>Profile saved successfully.</value>
+  </data>
+  <data name="Profile_JmbgValidation_Error" xml:space="preserve">
+    <value>JMBG must be exactly 13 digits.</value>
+  </data>
+  <data name="Profile_RequiredField_Error" xml:space="preserve">
+    <value>This field is required.</value>
+  </data>
+  <data name="Settings_Holidays_TabHeader" xml:space="preserve">
+    <value>Holidays</value>
+  </data>
+  <data name="Holidays_AddRow_Button" xml:space="preserve">
+    <value>Add</value>
+  </data>
+  <data name="Holidays_DeleteRow_Button" xml:space="preserve">
+    <value>Delete Selected</value>
+  </data>
+  <data name="Holidays_Save_Button" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Holidays_Import_Button" xml:space="preserve">
+    <value>Import from Web</value>
+  </data>
+  <data name="Holidays_Date_Column" xml:space="preserve">
+    <value>Date</value>
+  </data>
+  <data name="Holidays_Name_Column" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Holidays_StartYear_Label" xml:space="preserve">
+    <value>Start Year</value>
+  </data>
+  <data name="Holidays_EndYear_Label" xml:space="preserve">
+    <value>End Year</value>
+  </data>
+  <data name="Holidays_Saved_Confirmation" xml:space="preserve">
+    <value>Changes saved successfully.</value>
+  </data>
+  <data name="Holidays_ImportError_Prefix" xml:space="preserve">
+    <value>Import failed: </value>
+  </data>
+  <data name="Holidays_ImportYear_Prompt" xml:space="preserve">
+    <value>Enter year to import:</value>
+  </data>
+  <data name="Holidays_InvalidDate_Error" xml:space="preserve">
+    <value>Invalid date format.</value>
+  </data>
+  <data name="Holidays_UnsavedChanges_Label" xml:space="preserve">
+    <value>Unsaved changes</value>
+  </data>
+  <data name="Settings_Mailboxes_TabHeader" xml:space="preserve">
+    <value>Mailboxes</value>
+  </data>
+  <data name="Mailboxes_Host_Label" xml:space="preserve">
+    <value>IMAP Host</value>
+  </data>
+  <data name="Mailboxes_Port_Label" xml:space="preserve">
+    <value>Port</value>
+  </data>
+  <data name="Mailboxes_Username_Label" xml:space="preserve">
+    <value>Username / Email</value>
+  </data>
+  <data name="Mailboxes_Password_Label" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="Mailboxes_Password_Hint" xml:space="preserve">
+    <value>Leave blank to keep existing</value>
+  </data>
+  <data name="Mailboxes_InitialSyncDate_Label" xml:space="preserve">
+    <value>Sync From Date</value>
+  </data>
+  <data name="Mailboxes_AddNew_Button" xml:space="preserve">
+    <value>Add New</value>
+  </data>
+  <data name="Mailboxes_Save_Button" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Mailboxes_Delete_Button" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Mailboxes_ErrorMessage_Label" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="Mailboxes_SuccessMessage_Label" xml:space="preserve">
+    <value>Saved successfully</value>
+  </data>
+  <data name="Settings_Importers_TabHeader" xml:space="preserve">
+    <value>Importers</value>
+  </data>
+  <data name="Importers_DisplayName_Label" xml:space="preserve">
+    <value>Display Name</value>
+  </data>
+  <data name="Importers_ReportType_Label" xml:space="preserve">
+    <value>Report Type</value>
+  </data>
+  <data name="Importers_TaxpayerProfile_Label" xml:space="preserve">
+    <value>Taxpayer Profile</value>
+  </data>
+  <data name="Importers_Mailbox_Label" xml:space="preserve">
+    <value>Mailbox</value>
+  </data>
+  <data name="Importers_FromFilter_Label" xml:space="preserve">
+    <value>From Filter</value>
+  </data>
+  <data name="Importers_SubjectFilter_Label" xml:space="preserve">
+    <value>Subject Filter</value>
+  </data>
+  <data name="Importers_AttachmentRegex_Label" xml:space="preserve">
+    <value>Attachment Regex</value>
+  </data>
+  <data name="Importers_PaymentNotes_Label" xml:space="preserve">
+    <value>Payment Notes</value>
+  </data>
+  <data name="Importers_AddNew_Button" xml:space="preserve">
+    <value>Add New</value>
+  </data>
+  <data name="Importers_Save_Button" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Importers_Delete_Button" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Importers_Saved_Confirmation" xml:space="preserve">
+    <value>Importer saved.</value>
+  </data>
+  <data name="Importers_NoProfile_Placeholder" xml:space="preserve">
+    <value>— No Profile —</value>
+  </data>
+  <data name="Importers_NoMailbox_Placeholder" xml:space="preserve">
+    <value>— No Mailbox —</value>
+  </data>
+  <data name="Filings_Col_Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Filings_Col_IncomeType" xml:space="preserve">
+    <value>Income Type</value>
+  </data>
+  <data name="Filings_Col_PayingEntity" xml:space="preserve">
+    <value>Paying Entity</value>
+  </data>
+  <data name="Filings_Col_Deadline" xml:space="preserve">
+    <value>Filing Deadline</value>
+  </data>
+  <data name="Filings_Col_TaxPayable" xml:space="preserve">
+    <value>Tax Payable</value>
+  </data>
+  <data name="Filings_Col_PaymentRef" xml:space="preserve">
+    <value>Payment Reference</value>
+  </data>
+  <data name="Filings_Filter_Unpaid" xml:space="preserve">
+    <value>Unpaid</value>
+  </data>
+  <data name="Filings_Filter_All" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="Filings_Page_Previous" xml:space="preserve">
+    <value>← Previous</value>
+  </data>
+  <data name="Filings_Page_Next" xml:space="preserve">
+    <value>Next →</value>
+  </data>
+  <data name="Filings_Page_Indicator" xml:space="preserve">
+    <value>Page {0} of {1}</value>
+  </data>
+  <data name="Filings_Empty" xml:space="preserve">
+    <value>No filings found.</value>
+  </data>
+  <data name="Filings_Delete_Confirmation_Title" xml:space="preserve">
+    <value>Delete Filing</value>
+  </data>
+  <data name="Filings_Delete_Confirmation_Message" xml:space="preserve">
+    <value>Are you sure you want to delete this filing? This action cannot be undone.</value>
+  </data>
+  <data name="Filings_Delete_Action_Button" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Filings_Delete_Confirm_Button" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Filings_Delete_Cancel_Button" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Filings_Error_NotFound" xml:space="preserve">
+    <value>Filing not found.</value>
+  </data>
+  <data name="Filings_Error_InvalidTransition" xml:space="preserve">
+    <value>Invalid status transition.</value>
+  </data>
+  <data name="Filings_Error_PaymentRefTooLong" xml:space="preserve">
+    <value>Payment reference must not exceed 200 characters.</value>
+  </data>
+  <data name="Filings_Error_LoadFailed" xml:space="preserve">
+    <value>Failed to load filings. Please try again.</value>
+  </data>
+  <data name="Filings_Error_Dismiss" xml:space="preserve">
+    <value>✕</value>
+  </data>
+  <data name="FilingStatus_Init" xml:space="preserve">
+    <value>Init</value>
+  </data>
+  <data name="FilingStatus_Filed" xml:space="preserve">
+    <value>Filed</value>
+  </data>
+  <data name="FilingStatus_Paid" xml:space="preserve">
+    <value>Paid</value>
+  </data>
+  <data name="IncomeType_Dividend" xml:space="preserve">
+    <value>Dividend</value>
+  </data>
+  <data name="IncomeType_Interest" xml:space="preserve">
+    <value>Interest</value>
+  </data>
+  <data name="Filings_Export_Button" xml:space="preserve">
+    <value>Export</value>
+  </data>
+  <data name="Filings_Export_SaveDialog_Title" xml:space="preserve">
+    <value>Save PP-OPO XML</value>
+  </data>
+  <data name="Filings_Export_Filter_Xml" xml:space="preserve">
+    <value>XML Files (*.xml)</value>
+  </data>
+  <data name="Filings_Export_Error_NoProfile" xml:space="preserve">
+    <value>Taxpayer profile is required before exporting.</value>
+  </data>
+  <data name="Filings_Export_Error_NotFound" xml:space="preserve">
+    <value>Filing not found.</value>
+  </data>
+  <data name="Filings_Export_Error_WriteFailed" xml:space="preserve">
+    <value>Failed to write export file.</value>
+  </data>
+  <data name="Filings_Export_Success" xml:space="preserve">
+    <value>Export saved successfully.</value>
+  </data>
+  <data name="Reports_Col_Name" xml:space="preserve">
+    <value>Report Name</value>
+  </data>
+  <data name="Reports_Col_ImportDate" xml:space="preserve">
+    <value>Import Date</value>
+  </data>
+  <data name="Reports_Col_Importer" xml:space="preserve">
+    <value>Importer</value>
+  </data>
+  <data name="Reports_Col_Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Reports_Col_FilingCount" xml:space="preserve">
+    <value>Filings</value>
+  </data>
+  <data name="Reports_Button_Import" xml:space="preserve">
+    <value>Import&#x2026;</value>
+  </data>
+  <data name="Reports_Button_Sync" xml:space="preserve">
+    <value>Sync Mailboxes</value>
+  </data>
+  <data name="Reports_Button_ViewFilings" xml:space="preserve">
+    <value>View Filings</value>
+  </data>
+  <data name="Reports_Button_Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Reports_Error_Dismiss" xml:space="preserve">
+    <value>&#x2715;</value>
+  </data>
+  <data name="Reports_Empty" xml:space="preserve">
+    <value>No reports found.</value>
+  </data>
+  <data name="Reports_Delete_Confirmation_Title" xml:space="preserve">
+    <value>Delete Report</value>
+  </data>
+  <data name="Reports_Delete_Confirmation_Message" xml:space="preserve">
+    <value>This will permanently delete the report and all linked filings. This action cannot be undone.</value>
+  </data>
+  <data name="Reports_Delete_Confirm_Button" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Reports_Delete_Cancel_Button" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Reports_Import_Title" xml:space="preserve">
+    <value>Import Report</value>
+  </data>
+  <data name="Reports_Import_NoImporters" xml:space="preserve">
+    <value>No importers are configured. Please add an importer before importing a report.</value>
+  </data>
+  <data name="Reports_Import_FilePickerTitle" xml:space="preserve">
+    <value>Select CSV File</value>
+  </data>
+  <data name="Reports_Import_FilePickerFilter" xml:space="preserve">
+    <value>CSV Files</value>
+  </data>
+  <data name="Reports_Error_ImportFailed" xml:space="preserve">
+    <value>Import failed. Please check the file format and try again.</value>
+  </data>
+  <data name="Reports_Error_DuplicateReport" xml:space="preserve">
+    <value>A report with this name already exists for the selected importer.</value>
+  </data>
+  <data name="Reports_Error_InvalidCsv" xml:space="preserve">
+    <value>The selected file is not a valid IBKR CSV export.</value>
+  </data>
+  <data name="Reports_Error_DeleteFailed" xml:space="preserve">
+    <value>Failed to delete the report. Please try again.</value>
+  </data>
+  <data name="Reports_Error_LoadFailed" xml:space="preserve">
+    <value>Failed to load reports. Please try again.</value>
+  </data>
+  <data name="ReportStatus_Init" xml:space="preserve">
+    <value>Init</value>
+  </data>
+  <data name="ReportStatus_Processed" xml:space="preserve">
+    <value>Processed</value>
+  </data>
+  <data name="ReportStatus_Error" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="Dashboard_UpcomingDeadlines" xml:space="preserve">
+    <value>📋 Upcoming Deadlines (30 days)</value>
+  </data>
+  <data name="Dashboard_OverdueFilings" xml:space="preserve">
+    <value>⚠ Overdue Filings</value>
+  </data>
+  <data name="Dashboard_PendingCount" xml:space="preserve">
+    <value>Pending</value>
+  </data>
+  <data name="Dashboard_FiledCount" xml:space="preserve">
+    <value>Filed</value>
+  </data>
+  <data name="Dashboard_PaidCount" xml:space="preserve">
+    <value>Paid</value>
+  </data>
+  <data name="Dashboard_TotalUnpaid" xml:space="preserve">
+    <value>Total Unpaid</value>
+  </data>
+  <data name="Dashboard_LastSync" xml:space="preserve">
+    <value>Last Sync</value>
+  </data>
+  <data name="Dashboard_LastSyncNever" xml:space="preserve">
+    <value>Never</value>
+  </data>
+  <data name="Dashboard_ViewAllFilings" xml:space="preserve">
+    <value>View All Filings</value>
+  </data>
+  <data name="Dashboard_LoadError" xml:space="preserve">
+    <value>Failed to load dashboard data.</value>
+  </data>
+</root>

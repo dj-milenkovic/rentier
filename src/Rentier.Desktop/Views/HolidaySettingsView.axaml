@@ -1,0 +1,64 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Rentier.Desktop.ViewModels"
+             xmlns:res="using:Rentier.Desktop.Resources"
+             x:Class="Rentier.Desktop.Views.HolidaySettingsView"
+             x:DataType="vm:HolidaySettingsViewModel"
+             x:CompileBindings="False">
+  <DockPanel LastChildFill="True">
+    <!-- Toolbar -->
+    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="8,8,8,4">
+      <Button Content="{x:Static res:Strings.Holidays_AddRow_Button}"
+              Command="{Binding AddRowCommand}" />
+      <Button Content="{x:Static res:Strings.Holidays_DeleteRow_Button}"
+              Command="{Binding DeleteRowCommand}"
+              CommandParameter="{Binding SelectedEntry}" />
+      <Button Content="{x:Static res:Strings.Holidays_Save_Button}"
+              Command="{Binding SaveCommand}" />
+      <Button Content="{x:Static res:Strings.Holidays_Import_Button}"
+              Command="{Binding ImportCommand}"
+              CommandParameter="{Binding ImportYear}" />
+    </StackPanel>
+
+    <!-- Year Range Row -->
+    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="8,4">
+      <TextBlock Text="{x:Static res:Strings.Holidays_StartYear_Label}"
+                 VerticalAlignment="Center" />
+      <NumericUpDown Value="{Binding StartYear}"
+                     Minimum="2020" Maximum="2099"
+                     Width="100" />
+      <TextBlock Text="{x:Static res:Strings.Holidays_EndYear_Label}"
+                 VerticalAlignment="Center" />
+      <NumericUpDown Value="{Binding EndYear}"
+                     Minimum="2020" Maximum="2099"
+                     Width="100" />
+    </StackPanel>
+
+    <!-- Feedback Row -->
+    <StackPanel DockPanel.Dock="Bottom" Margin="8,4">
+      <TextBlock Text="{Binding ErrorMessage}"
+                 IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                 Foreground="Red" />
+      <TextBlock Text="{Binding SuccessMessage}"
+                 IsVisible="{Binding SuccessMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                 Foreground="Green" />
+      <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsLoading}" />
+    </StackPanel>
+
+    <!-- DataGrid -->
+    <DataGrid x:Name="HolidaysGrid"
+              ItemsSource="{Binding Entries}"
+              SelectedItem="{Binding SelectedEntry, Mode=TwoWay}"
+              AutoGenerateColumns="False"
+              Margin="8,4">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="{x:Static res:Strings.Holidays_Date_Column}"
+                            Binding="{Binding Date}"
+                            Width="*" />
+        <DataGridTextColumn Header="{x:Static res:Strings.Holidays_Name_Column}"
+                            Binding="{Binding Name}"
+                            Width="2*" />
+      </DataGrid.Columns>
+    </DataGrid>
+  </DockPanel>
+</UserControl>

@@ -1,0 +1,321 @@
+using System.Globalization;
+using System.Text;
+using CsvHelper;
+using CsvHelper.Configuration;
+using Rentier.Application.Common;
+using Rentier.Application.Interfaces;
+using Rentier.Application.Parsing;
+
+namespace Rentier.Infrastructure.Parsing;
+
+public sealed class IbkrCsvParser : IStatementParser
+{
+    public async Task<Result<StatementParseResult, Error>> ParseAsync(
+        Stream csvStream, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (csvStream is null)
+                return Result<StatementParseResult, Error>.Failure(
+                    new Error("STREAM_ERROR", "CSV stream must not be null."));
+
+            List<string[]> rows;
+            try
+            {
+                rows = await ReadRowsAsync(csvStream, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                return Result<StatementParseResult, Error>.Failure(
+                    new Error("PARSE_EXCEPTION", ex.Message));
+            }
+
+            var knownSections = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "Dividends", "Withholding Tax", "Interest", "Base Currency Exchange Rate"
+            };
+            bool hasAnySection = rows.Any(r =>
+                r.Length >= 1 && knownSections.Contains(r[0]));
+
+            if (!hasAnySection)
+                return Result<StatementParseResult, Error>.Failure(
+                    new Error("INVALID_FORMAT", "No recognised IBKR sections found in the CSV."));
+
+            var allErrors = new List<ParseError>();
+
+            var (dividends, divErrors) = ParseDividends(rows);
+            allErrors.AddRange(divErrors);
+
+            var (withholdings, whtErrors) = ParseWithholdingTax(rows, dividends);
+            allErrors.AddRange(whtErrors);
+
+            var (interest, intErrors) = ParseInterest(rows);
+            allErrors.AddRange(intErrors);
+
+            var (fxRates, fxErrors) = ParseExchangeRates(rows);
+            allErrors.AddRange(fxErrors);
+
+            return Result<StatementParseResult, Error>.Success(new StatementParseResult(
+                dividends.Values.ToList().AsReadOnly(),
+                interest.Values.ToList().AsReadOnly(),
+                withholdings,
+                fxRates,
+                allErrors.AsReadOnly()));
+        }
+        catch (Exception ex)
+        {
+            return Result<StatementParseResult, Error>.Failure(
+                new Error("PARSE_EXCEPTION", ex.Message));
+        }
+    }
+
+    private static async Task<List<string[]>> ReadRowsAsync(
+        Stream stream, CancellationToken ct)
+    {
+        using var reader = new StreamReader(stream, Encoding.UTF8, leaveOpen: true);
+        using var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture)
+        {
+            HasHeaderRecord = false,
+            MissingFieldFound = null,
+            BadDataFound = null,
+        });
+
+        var rows = new List<string[]>();
+        while (await csv.ReadAsync())
+        {
+            ct.ThrowIfCancellationRequested();
+            var record = csv.Parser.Record;
+            if (record is not null)
+                rows.Add(record);
+        }
+        return rows;
+    }
+
+    // ISIN pattern: (XX0000000000) — 2 letter country + 9 alphanumeric + 1 digit
+    internal static string StripIsin(string description) =>
+        description.Split('(')[0].Trim();
+
+    private static (Dictionary<(string Entity, DateOnly Date, string Currency), DividendRecord> dividends,
+                    List<ParseError> errors)
+        ParseDividends(List<string[]> rows)
+    {
+        var dict = new Dictionary<(string, DateOnly, string), DividendRecord>();
+        var errors = new List<ParseError>();
+        int rowIndex = 0;
+
+        foreach (var record in rows)
+        {
+            rowIndex++;
+            if (record.Length < 1 || !string.Equals(record[0], "Dividends", StringComparison.OrdinalIgnoreCase))
+                continue;
+            if (record.Length < 2 || !string.Equals(record[1], "Data", StringComparison.OrdinalIgnoreCase))
+                continue;
+            if (record.Length < 6)
+            {
+                errors.Add(new ParseError("ROW_TOO_SHORT", $"Dividends row has {record.Length} fields, expected >=6.", rowIndex));
+                continue;
+            }
+
+            var currency = record[2].Trim();
+            var dateStr = record[3].Trim();
+            var description = record[4].Trim();
+            var amountStr = record[5].Trim();
+
+            if (!DateOnly.TryParseExact(dateStr, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
+            {
+                errors.Add(new ParseError("ROW_DATE_INVALID", $"Cannot parse date '{dateStr}'.", rowIndex));
+                continue;
+            }
+            if (!decimal.TryParse(amountStr, NumberStyles.Any, CultureInfo.InvariantCulture, out var amount))
+            {
+                errors.Add(new ParseError("ROW_AMOUNT_INVALID", $"Cannot parse amount '{amountStr}'.", rowIndex));
+                continue;
+            }
+
+            var entity = StripIsin(description);
+            var key = (entity, date, currency);
+
+            if (dict.TryGetValue(key, out var existing))
+                dict[key] = existing with { Amount = existing.Amount + amount };
+            else
+                dict[key] = new DividendRecord(date, currency, entity, amount);
+        }
+
+        return (dict, errors);
+    }
+
+    private static (IReadOnlyList<WithholdingTaxRecord> withholdings, List<ParseError> errors)
+        ParseWithholdingTax(
+            List<string[]> rows,
+            Dictionary<(string Entity, DateOnly Date, string Currency), DividendRecord> dividends)
+    {
+        var result = new List<WithholdingTaxRecord>();
+        var errors = new List<ParseError>();
+        int rowIndex = 0;
+
+        foreach (var record in rows)
+        {
+            rowIndex++;
+            if (record.Length < 1 || !string.Equals(record[0], "Withholding Tax", StringComparison.OrdinalIgnoreCase))
+                continue;
+            if (record.Length < 2 || !string.Equals(record[1], "Data", StringComparison.OrdinalIgnoreCase))
+                continue;
+            if (record.Length < 6)
+            {
+                errors.Add(new ParseError("ROW_TOO_SHORT", $"WHT row has {record.Length} fields, expected >=6.", rowIndex));
+                continue;
+            }
+
+            var currency = record[2].Trim();
+            var dateStr = record[3].Trim();
+            var description = record[4].Trim();
+            var amountStr = record[5].Trim();
+
+            if (!DateOnly.TryParseExact(dateStr, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
+            {
+                errors.Add(new ParseError("ROW_DATE_INVALID", $"Cannot parse WHT date '{dateStr}'.", rowIndex));
+                continue;
+            }
+            if (!decimal.TryParse(amountStr, NumberStyles.Any, CultureInfo.InvariantCulture, out var rawAmount))
+            {
+                errors.Add(new ParseError("ROW_AMOUNT_INVALID", $"Cannot parse WHT amount '{amountStr}'.", rowIndex));
+                continue;
+            }
+            if (rawAmount > 0)
+            {
+                errors.Add(new ParseError("WHT_POSITIVE_AMOUNT",
+                    $"WHT amount should be negative in IBKR CSV, got '{amountStr}'.", rowIndex));
+                continue;
+            }
+
+            var entity = StripIsin(description);
+            var exactKey = (entity, date, currency);
+
+            if (dividends.TryGetValue(exactKey, out _))
+            {
+                result.Add(new WithholdingTaxRecord(date, currency, entity, Math.Abs(rawAmount)));
+            }
+            else
+            {
+                // Check if there's a dividend for same entity+date but different currency
+                bool sameDateEntity = dividends.Keys.Any(k =>
+                    k.Entity == entity && k.Date == date);
+
+                if (sameDateEntity)
+                    errors.Add(new ParseError("WHT_CURRENCY_MISMATCH",
+                        $"WHT currency '{currency}' does not match dividend currency for '{entity}' on {date:yyyy-MM-dd}.", rowIndex));
+                else
+                    errors.Add(new ParseError("WHT_UNMATCHED",
+                        $"No dividend found for WHT entry: entity='{entity}', date={date:yyyy-MM-dd}, currency='{currency}'.", rowIndex));
+            }
+        }
+
+        return (result.AsReadOnly(), errors);
+    }
+
+    private static (Dictionary<(string Currency, DateOnly Date, InterestType Type), InterestRecord> interest,
+                    List<ParseError> errors)
+        ParseInterest(List<string[]> rows)
+    {
+        var dict = new Dictionary<(string, DateOnly, InterestType), InterestRecord>();
+        var errors = new List<ParseError>();
+        int rowIndex = 0;
+
+        foreach (var record in rows)
+        {
+            rowIndex++;
+            if (record.Length < 1 || !string.Equals(record[0], "Interest", StringComparison.OrdinalIgnoreCase))
+                continue;
+            if (record.Length < 2 || !string.Equals(record[1], "Data", StringComparison.OrdinalIgnoreCase))
+                continue;
+            if (record.Length < 6)
+                continue; // silently skip short rows in Interest section
+
+            var currency = record[2].Trim();
+            var dateStr = record[3].Trim();
+            var description = record[4].Trim();
+            var amountStr = record[5].Trim();
+
+            InterestType type;
+            if (description.Contains("Credit Interest", StringComparison.OrdinalIgnoreCase))
+                type = InterestType.Credit;
+            else if (description.Contains("Debit Interest", StringComparison.OrdinalIgnoreCase))
+                type = InterestType.Debit;
+            else
+                continue; // silently skip non-standard interest rows
+
+            if (!DateOnly.TryParseExact(dateStr, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
+            {
+                errors.Add(new ParseError("ROW_DATE_INVALID", $"Cannot parse interest date '{dateStr}'.", rowIndex));
+                continue;
+            }
+            if (!decimal.TryParse(amountStr, NumberStyles.Any, CultureInfo.InvariantCulture, out var rawAmount))
+            {
+                errors.Add(new ParseError("ROW_AMOUNT_INVALID", $"Cannot parse interest amount '{amountStr}'.", rowIndex));
+                continue;
+            }
+
+            var amount = Math.Abs(rawAmount); // always store positive
+            var key = (currency, date, type);
+
+            if (dict.TryGetValue(key, out var existing))
+                dict[key] = existing with { Amount = existing.Amount + amount };
+            else
+                dict[key] = new InterestRecord(date, currency, "Interactive Brokers", amount, type);
+        }
+
+        return (dict, errors);
+    }
+
+    private static (IReadOnlyList<IbkrExchangeRate> rates, List<ParseError> errors)
+        ParseExchangeRates(List<string[]> rows)
+    {
+        var dict = new Dictionary<(DateOnly Date, string From, string To), IbkrExchangeRate>();
+        var errors = new List<ParseError>();
+        int rowIndex = 0;
+
+        foreach (var record in rows)
+        {
+            rowIndex++;
+            if (record.Length < 1 || !string.Equals(record[0], "Base Currency Exchange Rate", StringComparison.OrdinalIgnoreCase))
+                continue;
+            if (record.Length < 2 || !string.Equals(record[1], "Data", StringComparison.OrdinalIgnoreCase))
+                continue;
+            if (record.Length < 7)
+            {
+                errors.Add(new ParseError("ROW_TOO_SHORT", $"FX rate row has {record.Length} fields, expected >=7.", rowIndex));
+                continue;
+            }
+
+            var fromCurrency = record[2].Trim();
+            var dateStr = record[3].Trim();
+            var toCurrency = record[5].Trim();
+            var rateStr = record[6].Trim();
+
+            if (!DateOnly.TryParseExact(dateStr, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
+            {
+                errors.Add(new ParseError("ROW_DATE_INVALID", $"Cannot parse FX rate date '{dateStr}'.", rowIndex));
+                continue;
+            }
+            if (!decimal.TryParse(rateStr, NumberStyles.Any, CultureInfo.InvariantCulture, out var rate))
+            {
+                errors.Add(new ParseError("ROW_AMOUNT_INVALID", $"Cannot parse FX rate '{rateStr}'.", rowIndex));
+                continue;
+            }
+            if (rate <= 0)
+            {
+                errors.Add(new ParseError("RATE_NON_POSITIVE", $"FX rate must be positive, got '{rateStr}'.", rowIndex));
+                continue;
+            }
+
+            var key = (date, fromCurrency, toCurrency);
+            if (dict.ContainsKey(key))
+                errors.Add(new ParseError("RATE_DUPLICATE",
+                    $"Duplicate FX rate for {fromCurrency}/{toCurrency} on {date:yyyy-MM-dd}. Last value wins.", rowIndex));
+
+            dict[key] = new IbkrExchangeRate(date, fromCurrency, toCurrency, rate);
+        }
+
+        return (dict.Values.ToList().AsReadOnly(), errors);
+    }
+}

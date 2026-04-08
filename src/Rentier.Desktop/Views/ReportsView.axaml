@@ -1,0 +1,94 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Rentier.Desktop.ViewModels"
+             xmlns:res="using:Rentier.Desktop.Resources"
+             xmlns:local="using:Rentier.Desktop.Converters"
+             x:Class="Rentier.Desktop.Views.ReportsView"
+             x:CompileBindings="False">
+  <DockPanel>
+
+    <!-- Toolbar -->
+    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="8,8,8,4">
+      <Button Content="{x:Static res:Strings.Reports_Button_Import}"
+              Command="{Binding ImportCommand}"
+              IsEnabled="{Binding !IsLoading}" />
+      <Button Content="{x:Static res:Strings.Reports_Button_Sync}"
+              Command="{Binding SyncCommand}"
+              IsEnabled="{Binding !IsSyncing}" />
+      <ProgressBar Minimum="0" Maximum="100"
+                   Value="{Binding SyncProgressValue}"
+                   IsVisible="{Binding IsSyncing}"
+                   Width="120" VerticalAlignment="Center" />
+      <TextBlock Text="{Binding SyncStatusMessage}"
+                 IsVisible="{Binding IsSyncing}"
+                 VerticalAlignment="Center" />
+    </StackPanel>
+
+    <!-- Loading indicator -->
+    <ProgressBar DockPanel.Dock="Top"
+                 IsIndeterminate="True"
+                 IsVisible="{Binding IsLoading}"
+                 Height="4" />
+
+    <!-- Error banner -->
+    <StackPanel DockPanel.Dock="Top"
+                Orientation="Horizontal"
+                Spacing="8"
+                Margin="8,4"
+                IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+      <TextBlock Text="{Binding ErrorMessage}"
+                 Foreground="Red"
+                 VerticalAlignment="Center"
+                 TextWrapping="Wrap" />
+      <Button Content="{x:Static res:Strings.Reports_Error_Dismiss}"
+              Command="{Binding ClearErrorCommand}" />
+    </StackPanel>
+
+    <!-- Empty state -->
+    <TextBlock DockPanel.Dock="Top"
+               Text="{x:Static res:Strings.Reports_Empty}"
+               IsVisible="{Binding IsEmpty}"
+               HorizontalAlignment="Center"
+               Margin="0,32" />
+
+    <!-- Reports DataGrid -->
+    <DataGrid ItemsSource="{Binding Rows}"
+              AutoGenerateColumns="False"
+              IsReadOnly="True"
+              GridLinesVisibility="Horizontal"
+              Margin="8,4">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="{x:Static res:Strings.Reports_Col_Name}"
+                            Binding="{Binding ReportName}"
+                            Width="*" />
+        <DataGridTextColumn Header="{x:Static res:Strings.Reports_Col_ImportDate}"
+                            Binding="{Binding ImportDateDisplay}"
+                            Width="110" />
+        <DataGridTextColumn Header="{x:Static res:Strings.Reports_Col_Importer}"
+                            Binding="{Binding ImporterName}"
+                            Width="160" />
+        <DataGridTextColumn Header="{x:Static res:Strings.Reports_Col_Status}"
+                            Binding="{Binding Status, Converter={x:Static local:ReportStatusDisplayConverter.Instance}}"
+                            Width="100" />
+        <DataGridTextColumn Header="{x:Static res:Strings.Reports_Col_FilingCount}"
+                            Binding="{Binding FilingCount}"
+                            Width="70" />
+        <DataGridTemplateColumn Width="Auto">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <StackPanel Orientation="Horizontal" Spacing="4" Margin="4,2">
+                <Button Content="{x:Static res:Strings.Reports_Button_ViewFilings}"
+                        Command="{Binding DataContext.ViewFilingsCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                        CommandParameter="{Binding Id}" />
+                <Button Content="{x:Static res:Strings.Reports_Button_Delete}"
+                        Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                        CommandParameter="{Binding Id}" />
+              </StackPanel>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+      </DataGrid.Columns>
+    </DataGrid>
+
+  </DockPanel>
+</UserControl>
