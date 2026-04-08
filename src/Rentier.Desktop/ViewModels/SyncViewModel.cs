@@ -2,8 +2,10 @@
 using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
+using System.Reactive.Linq;
 using ReactiveUI;
 using Rentier.Application.Commands;
+using Rentier.Domain.Enums;
 using Rentier.Domain.ValueObjects;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
@@ -19,6 +21,7 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
     private readonly IScheduler _scheduler;
     private CancellationTokenSource? _cts;
 
+    // ── Running state ────────────────────────────────────────────────────────
     private bool _isRunning;
     public bool IsRunning
     {
@@ -54,6 +57,57 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
         private set => this.RaiseAndSetIfChanged(ref _hasErrors, value);
     }
 
+    // ── Sync mode / strategy selection ──────────────────────────────────────
+    public SyncMode[] AvailableSyncModes { get; } = Enum.GetValues<SyncMode>();
+    public DuplicateStrategy[] AvailableDuplicateStrategies { get; } = Enum.GetValues<DuplicateStrategy>();
+
+    private SyncMode _selectedSyncMode = SyncMode.Incremental;
+    public SyncMode SelectedSyncMode
+    {
+        get => _selectedSyncMode;
+        set => this.RaiseAndSetIfChanged(ref _selectedSyncMode, value);
+    }
+
+    private DuplicateStrategy _selectedDuplicateStrategy = DuplicateStrategy.SkipExisting;
+    public DuplicateStrategy SelectedDuplicateStrategy
+    {
+        get => _selectedDuplicateStrategy;
+        set => this.RaiseAndSetIfChanged(ref _selectedDuplicateStrategy, value);
+    }
+
+    private DateTimeOffset? _replayFromDateOffset;
+    public DateTimeOffset? ReplayFromDateOffset
+    {
+        get => _replayFromDateOffset;
+        set => this.RaiseAndSetIfChanged(ref _replayFromDateOffset, value);
+    }
+
+    public DateOnly? ReplayFromDate =>
+        ReplayFromDateOffset.HasValue
+            ? DateOnly.FromDateTime(ReplayFromDateOffset.Value.DateTime)
+            : null;
+
+    /// <summary>Upper bound for the DatePicker — today in local time as UTC-offset.</summary>
+    public DateTimeOffset TodayOffset { get; } = new DateTimeOffset(
+        DateTime.UtcNow.Date, TimeSpan.Zero);
+
+    // ── Derived observables ──────────────────────────────────────────────────
+    private readonly ObservableAsPropertyHelper<bool> _isReplayFromDateMode;
+    public bool IsReplayFromDateMode => _isReplayFromDateMode.Value;
+
+    private readonly ObservableAsPropertyHelper<bool> _isReplayMode;
+    public bool IsReplayMode => _isReplayMode.Value;
+
+    private readonly ObservableAsPropertyHelper<bool> _isFullReplayMode;
+    public bool IsFullReplayMode => _isFullReplayMode.Value;
+
+    private readonly ObservableAsPropertyHelper<string> _impactSummary;
+    public string ImpactSummary => _impactSummary.Value;
+
+    private readonly ObservableAsPropertyHelper<string?> _validationError;
+    public string? ValidationError => _validationError.Value;
+
+    // ── Commands ─────────────────────────────────────────────────────────────
     public ReactiveCommand<Unit, Unit> SyncCommand { get; }
     public ReactiveCommand<Unit, Unit> CancelCommand { get; }
 
@@ -63,7 +117,65 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
         _navigateToFilings = navigateToFilings;
         _scheduler = scheduler ?? RxApp.MainThreadScheduler;
 
-        SyncCommand = ReactiveCommand.CreateFromTask(RunSyncAsync, outputScheduler: _scheduler);
+        var modeStream = this.WhenAnyValue(x => x.SelectedSyncMode);
+        var strategyStream = this.WhenAnyValue(x => x.SelectedDuplicateStrategy);
+        var dateStream = this.WhenAnyValue(x => x.ReplayFromDateOffset);
+
+        _isReplayFromDateMode = modeStream
+            .Select(m => m == SyncMode.ReplayFromDate)
+            .ToProperty(this, x => x.IsReplayFromDateMode);
+
+        _isReplayMode = modeStream
+            .Select(m => m is SyncMode.ReplayFromDate or SyncMode.FullReplay)
+            .ToProperty(this, x => x.IsReplayMode);
+
+        _isFullReplayMode = modeStream
+            .Select(m => m == SyncMode.FullReplay)
+            .ToProperty(this, x => x.IsFullReplayMode);
+
+        _validationError = modeStream.CombineLatest(dateStream, (m, d) =>
+        {
+            if (m == SyncMode.ReplayFromDate)
+            {
+                if (d == null) return Resources.Strings.Sync_Validation_DateRequired;
+                var date = DateOnly.FromDateTime(d.Value.DateTime);
+                if (date > DateOnly.FromDateTime(DateTime.UtcNow))
+                    return Resources.Strings.Sync_Validation_DateNotFuture;
+            }
+            return (string?)null;
+        }).ToProperty(this, x => x.ValidationError);
+
+        _impactSummary = modeStream.CombineLatest(strategyStream, dateStream, (m, s, d) =>
+        {
+            var dateStr = d.HasValue ? DateOnly.FromDateTime(d.Value.DateTime).ToString("yyyy-MM-dd") : "...";
+            return (m, s) switch
+            {
+                (SyncMode.Incremental, DuplicateStrategy.SkipExisting) =>
+                    "Fetches new emails since last sync. Duplicates are skipped.",
+                (SyncMode.Incremental, DuplicateStrategy.CreateNewRevision) =>
+                    "Fetches new emails since last sync. Duplicates create new revisions.",
+                (SyncMode.Incremental, DuplicateStrategy.ReprocessInPlace) =>
+                    "Fetches new emails since last sync. Existing reports are reprocessed.",
+                (SyncMode.ReplayFromDate, DuplicateStrategy.SkipExisting) =>
+                    $"Re-fetches emails from {dateStr}. Duplicates are skipped.",
+                (SyncMode.ReplayFromDate, DuplicateStrategy.CreateNewRevision) =>
+                    $"Re-fetches emails from {dateStr}. Duplicates create new revisions.",
+                (SyncMode.ReplayFromDate, DuplicateStrategy.ReprocessInPlace) =>
+                    $"Re-fetches emails from {dateStr}. Existing reports are reprocessed.",
+                (SyncMode.FullReplay, DuplicateStrategy.SkipExisting) =>
+                    "Fetches ALL emails in the mailbox. Duplicates are skipped.",
+                (SyncMode.FullReplay, DuplicateStrategy.CreateNewRevision) =>
+                    "Fetches ALL emails in the mailbox. Duplicates create new revisions.",
+                (SyncMode.FullReplay, DuplicateStrategy.ReprocessInPlace) =>
+                    "Fetches ALL emails. Existing reports are reprocessed (safe fallback to revision if filed).",
+                _ => string.Empty
+            };
+        }).ToProperty(this, x => x.ImpactSummary, initialValue: string.Empty);
+
+        var canSync = this.WhenAnyValue(x => x.ValidationError)
+            .Select(e => e == null);
+
+        SyncCommand = ReactiveCommand.CreateFromTask(RunSyncAsync, canSync, outputScheduler: _scheduler);
 
         CancelCommand = ReactiveCommand.Create(
             () => _cts?.Cancel(),
@@ -96,7 +208,12 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
             var progress = new Progress<SyncProgressEntry>(entry =>
                 LogEntries.Add(new SyncProgressEntryViewModel(entry)));
 
-            var result = await _handler.HandleAsync(new SyncAllCommand(SyncParameters.Default), progress, _cts.Token);
+            var parameters = new SyncParameters(
+                SelectedSyncMode,
+                SelectedDuplicateStrategy,
+                SelectedSyncMode == SyncMode.ReplayFromDate ? ReplayFromDate : null);
+
+            var result = await _handler.HandleAsync(new SyncAllCommand(parameters), progress, _cts.Token);
 
             if (result.IsSuccess)
             {

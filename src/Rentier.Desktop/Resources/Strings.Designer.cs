@@ -152,4 +152,14 @@ public static class Strings
     public static string ReportStatus_Init => "Init";
     public static string ReportStatus_Processed => "Processed";
     public static string ReportStatus_Error => "Error";
+    public static string Sync_Mode_Incremental => "Incremental";
+    public static string Sync_Mode_ReplayFromDate => "Replay from Date";
+    public static string Sync_Mode_FullReplay => "Full Replay";
+    public static string Sync_Strategy_SkipExisting => "Skip Existing";
+    public static string Sync_Strategy_CreateNewRevision => "Create New Revision";
+    public static string Sync_Strategy_ReprocessInPlace => "Reprocess in Place";
+    public static string Sync_ReplayDate_Watermark => "Select replay start date";
+    public static string Sync_Validation_DateRequired => "Replay date is required for this mode";
+    public static string Sync_Validation_DateNotFuture => "Replay date cannot be in the future";
+    public static string Sync_FullReplay_Warning => "⚠ Full Replay will re-process ALL emails in the mailbox. This may take a long time.";
 }
