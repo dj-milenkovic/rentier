@@ -1,0 +1,92 @@
+<reactive:ReactiveUserControl
+    x:TypeArguments="vm:DashboardViewModel"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:reactive="http://reactiveui.net"
+    xmlns:vm="using:Rentier.Desktop.ViewModels"
+    xmlns:res="using:Rentier.Desktop.Resources"
+    x:Class="Rentier.Desktop.Views.DashboardView"
+    x:CompileBindings="False">
+  <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="16" RowSpacing="16">
+
+    <!-- Loading indicator -->
+    <ProgressBar Grid.Row="0" IsVisible="{Binding IsLoading}" IsIndeterminate="True" Height="4" />
+
+    <!-- Error banner -->
+    <TextBlock Grid.Row="0"
+               IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+               Text="{Binding ErrorMessage}" Foreground="Red" TextWrapping="Wrap" Margin="0,4" />
+
+    <!-- Summary Cards -->
+    <Border Grid.Row="1" Background="#F5F5F5" CornerRadius="6" Padding="12">
+      <UniformGrid Columns="5">
+        <StackPanel Margin="4" HorizontalAlignment="Center">
+          <TextBlock Text="{x:Static res:Strings.Dashboard_PendingCount}" FontSize="11" Foreground="Gray" HorizontalAlignment="Center" />
+          <TextBlock Text="{Binding InitCount}" FontSize="22" FontWeight="Bold" HorizontalAlignment="Center" />
+        </StackPanel>
+        <StackPanel Margin="4" HorizontalAlignment="Center">
+          <TextBlock Text="{x:Static res:Strings.Dashboard_FiledCount}" FontSize="11" Foreground="Gray" HorizontalAlignment="Center" />
+          <TextBlock Text="{Binding FiledCount}" FontSize="22" FontWeight="Bold" HorizontalAlignment="Center" />
+        </StackPanel>
+        <StackPanel Margin="4" HorizontalAlignment="Center">
+          <TextBlock Text="{x:Static res:Strings.Dashboard_PaidCount}" FontSize="11" Foreground="Gray" HorizontalAlignment="Center" />
+          <TextBlock Text="{Binding PaidCount}" FontSize="22" FontWeight="Bold" HorizontalAlignment="Center" />
+        </StackPanel>
+        <StackPanel Margin="4" HorizontalAlignment="Center">
+          <TextBlock Text="{x:Static res:Strings.Dashboard_TotalUnpaid}" FontSize="11" Foreground="Gray" HorizontalAlignment="Center" />
+          <TextBlock Text="{Binding TotalUnpaidDisplay}" FontSize="14" FontWeight="SemiBold" HorizontalAlignment="Center" />
+        </StackPanel>
+        <StackPanel Margin="4" HorizontalAlignment="Center">
+          <TextBlock Text="{x:Static res:Strings.Dashboard_LastSync}" FontSize="11" Foreground="Gray" HorizontalAlignment="Center" />
+          <TextBlock Text="{Binding LastSyncDisplay}" FontSize="14" HorizontalAlignment="Center" />
+        </StackPanel>
+      </UniformGrid>
+    </Border>
+
+    <!-- Overdue Filings -->
+    <StackPanel Grid.Row="2"
+                IsVisible="{Binding OverdueFilings.Count, Converter={x:Static ObjectConverters.IsNotNull}}">
+      <Border Background="#FFEEEE" CornerRadius="6" Padding="8,6" Margin="0,0,0,6">
+        <TextBlock Text="{x:Static res:Strings.Dashboard_OverdueFilings}" FontWeight="Bold" Foreground="#CC0000" />
+      </Border>
+      <ItemsControl ItemsSource="{Binding OverdueFilings}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Border Background="#FFF5F5" BorderBrush="#FFCCCC" BorderThickness="1"
+                    CornerRadius="4" Padding="8,4" Margin="0,2">
+              <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+                <TextBlock Grid.Column="0" Text="{Binding PayingEntity}" FontWeight="SemiBold" />
+                <TextBlock Grid.Column="1" Text="{Binding FilingDeadline}" Margin="8,0" Foreground="#CC0000" />
+                <TextBlock Grid.Column="2" Text="{Binding Status}" Margin="8,0" />
+                <TextBlock Grid.Column="3" Text="{Binding TaxPayableRsd, StringFormat={}{0:N2} RSD}" Margin="8,0" />
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </StackPanel>
+
+    <!-- Upcoming Deadlines DataGrid -->
+    <Grid Grid.Row="3" RowDefinitions="Auto,*">
+      <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="0,0,0,6">
+        <TextBlock Text="{x:Static res:Strings.Dashboard_UpcomingDeadlines}" FontWeight="Bold" VerticalAlignment="Center" />
+        <Button Content="{x:Static res:Strings.Dashboard_ViewAllFilings}" Command="{Binding NavigateToFilingsCommand}" />
+      </StackPanel>
+      <DataGrid Grid.Row="1"
+                Name="UpcomingGrid"
+                ItemsSource="{Binding UpcomingDeadlines}"
+                IsReadOnly="True"
+                GridLinesVisibility="Horizontal"
+                CanUserSortColumns="True"
+                AutoGenerateColumns="False">
+        <DataGrid.Columns>
+          <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_PayingEntity}" Binding="{Binding PayingEntity}" Width="*" />
+          <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_Deadline}" Binding="{Binding FilingDeadline}" Width="110" />
+          <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_IncomeType}" Binding="{Binding IncomeType}" Width="90" />
+          <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_Status}" Binding="{Binding Status}" Width="90" />
+          <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_TaxPayable}" Binding="{Binding TaxPayableRsd, StringFormat={}{0:N2}}" Width="140" />
+        </DataGrid.Columns>
+      </DataGrid>
+    </Grid>
+  </Grid>
+</reactive:ReactiveUserControl>
