@@ -9,7 +9,6 @@ public sealed class MailboxItemViewModel : ReactiveObject
     private string _host = string.Empty;
     private int _port;
     private string _username = string.Empty;
-    private DateOnly _initialSyncDate;
     private DateOnly? _lastSyncDate;
     private long? _lastUid;
 
@@ -37,12 +36,6 @@ public sealed class MailboxItemViewModel : ReactiveObject
         private set => this.RaiseAndSetIfChanged(ref _username, value);
     }
 
-    public DateOnly InitialSyncDate
-    {
-        get => _initialSyncDate;
-        private set => this.RaiseAndSetIfChanged(ref _initialSyncDate, value);
-    }
-
     public DateOnly? LastSyncDate
     {
         get => _lastSyncDate;
@@ -64,7 +57,6 @@ public sealed class MailboxItemViewModel : ReactiveObject
         vm.Host = dto.Host;
         vm.Port = dto.Port;
         vm.Username = dto.Username;
-        vm.InitialSyncDate = dto.InitialSyncDate;
         vm.LastSyncDate = dto.LastSyncDate;
         vm.LastUid = dto.LastUid;
         return vm;
@@ -76,7 +68,6 @@ public sealed class MailboxItemViewModel : ReactiveObject
         Host = dto.Host;
         Port = dto.Port;
         Username = dto.Username;
-        InitialSyncDate = dto.InitialSyncDate;
         LastSyncDate = dto.LastSyncDate;
         LastUid = dto.LastUid;
         this.RaisePropertyChanged(nameof(DisplayName));

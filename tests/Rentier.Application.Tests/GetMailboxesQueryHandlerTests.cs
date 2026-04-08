@@ -35,9 +35,8 @@ public class GetMailboxesQueryHandlerTests
     [Fact]
     public async Task HandleAsync_WithTwoMailboxes_ReturnsMappedDtos()
     {
-        var date = new DateOnly(2024, 1, 1);
-        var m1 = Mailbox.Create("imap.host1.com", 993, "user1@example.com", date);
-        var m2 = Mailbox.Create("imap.host2.com", 143, "user2@example.com", date);
+        var m1 = Mailbox.Create("imap.host1.com", 993, "user1@example.com");
+        var m2 = Mailbox.Create("imap.host2.com", 143, "user2@example.com");
 
         _repo.GetAllAsync(Arg.Any<CancellationToken>())
             .Returns(new List<Mailbox> { m1, m2 });
@@ -51,7 +50,6 @@ public class GetMailboxesQueryHandlerTests
         dto1.Host.Should().Be("imap.host1.com");
         dto1.Port.Should().Be(993);
         dto1.Username.Should().Be("user1@example.com");
-        dto1.InitialSyncDate.Should().Be(date);
 
         var dto2 = result.Value.First(d => d.Id == m2.Id);
         dto2.Host.Should().Be("imap.host2.com");

@@ -28,7 +28,7 @@ public sealed class UpdateMailboxCommandHandler
 
         try
         {
-            mailbox.UpdateDetails(command.Host, command.Port, command.Username, command.InitialSyncDate);
+            mailbox.UpdateDetails(command.Host, command.Port, command.Username);
         }
         catch (DomainException ex)
         {

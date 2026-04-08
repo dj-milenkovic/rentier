@@ -26,7 +26,7 @@ public class AddMailboxCommandHandlerTests
     [Fact]
     public async Task HandleAsync_ValidCommand_ReturnsSuccessWithGuid()
     {
-        var cmd = new AddMailboxCommand("imap.example.com", 993, "user@example.com", null, TestDate);
+        var cmd = new AddMailboxCommand("imap.example.com", 993, "user@example.com", null);
 
         var result = await _handler.HandleAsync(cmd);
 
@@ -38,7 +38,7 @@ public class AddMailboxCommandHandlerTests
     [Fact]
     public async Task HandleAsync_WithPassword_SavesCredentialWithCorrectKey()
     {
-        var cmd = new AddMailboxCommand("imap.example.com", 993, "user@example.com", "secret123", TestDate);
+        var cmd = new AddMailboxCommand("imap.example.com", 993, "user@example.com", "secret123");
 
         var result = await _handler.HandleAsync(cmd);
 
@@ -65,7 +65,7 @@ public class AddMailboxCommandHandlerTests
     [Fact]
     public async Task HandleAsync_NullPassword_SkipsCredentialSave()
     {
-        var cmd = new AddMailboxCommand("imap.example.com", 993, "user@example.com", null, TestDate);
+        var cmd = new AddMailboxCommand("imap.example.com", 993, "user@example.com", null);
 
         await _handler.HandleAsync(cmd);
 
@@ -76,7 +76,7 @@ public class AddMailboxCommandHandlerTests
     [Fact]
     public async Task HandleAsync_EmptyPassword_SkipsCredentialSave()
     {
-        var cmd = new AddMailboxCommand("imap.example.com", 993, "user@example.com", "", TestDate);
+        var cmd = new AddMailboxCommand("imap.example.com", 993, "user@example.com", "");
 
         await _handler.HandleAsync(cmd);
 
@@ -87,7 +87,7 @@ public class AddMailboxCommandHandlerTests
     [Fact]
     public async Task HandleAsync_InvalidHost_ReturnsDomainError()
     {
-        var cmd = new AddMailboxCommand("", 993, "user@example.com", null, TestDate);
+        var cmd = new AddMailboxCommand("", 993, "user@example.com", null);
 
         var result = await _handler.HandleAsync(cmd);
 
