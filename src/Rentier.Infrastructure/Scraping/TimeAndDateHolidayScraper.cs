@@ -28,7 +28,7 @@ internal sealed class TimeAndDateHolidayScraper : IHolidayImporter
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
             return Result<IReadOnlyList<HolidayEntryDto>, Error>.Failure(
-                new Error("FETCH_FAILED", $"Failed to fetch holidays: {ex.Message}"));
+                new Error("HOLIDAY_IMPORT_FAILED", $"Failed to fetch holidays: {ex.Message}"));
         }
 
         try
@@ -37,30 +37,38 @@ internal sealed class TimeAndDateHolidayScraper : IHolidayImporter
             var context = BrowsingContext.New(config);
             var document = await context.OpenAsync(req => req.Content(html), cancellationToken);
 
-            var rows = document.QuerySelectorAll("table.table tr");
+            var table = document.QuerySelector("#holidays-table");
+            if (table == null)
+                return Result<IReadOnlyList<HolidayEntryDto>, Error>.Failure(
+                    new Error("HOLIDAY_PARSE_ERROR", "Could not find #holidays-table in the response"));
+
+            var rows = table.QuerySelectorAll("tr");
             var results = new List<HolidayEntryDto>();
-            var formats = new[] { "MMM d", "d MMM", "MMM dd", "dd MMM" };
 
             foreach (var row in rows)
             {
-                if (row.ClassList.Contains("noshow") || row.ClassList.Contains("js-holiday-private"))
+                if (!row.ClassList.Contains("showrow"))
                     continue;
 
-                var cells = row.QuerySelectorAll("td");
-                if (cells.Length < 2) continue;
+                var dateText = row.QuerySelector("th")?.TextContent.Trim();
+                if (string.IsNullOrWhiteSpace(dateText))
+                    continue;
 
-                var dateText = cells[0].TextContent.Trim();
-                var nameCell = row.QuerySelector("td.ce") ?? cells[1];
-                var name = nameCell.TextContent.Trim();
+                var tds = row.QuerySelectorAll("td");
+                if (tds.Length < 3)
+                    continue;
 
-                if (string.IsNullOrWhiteSpace(dateText) || string.IsNullOrWhiteSpace(name))
+                var name = tds[1].QuerySelector("a")?.TextContent.Trim()
+                    ?? tds[1].TextContent.Trim();
+                var type = tds[2].TextContent.Trim();
+
+                if (!type.Contains("National Holiday") || string.IsNullOrWhiteSpace(name))
                     continue;
 
                 DateOnly date;
                 try
                 {
-                    var parsed = DateOnly.ParseExact(dateText, formats,
-                        CultureInfo.InvariantCulture, DateTimeStyles.None);
+                    var parsed = DateTime.ParseExact(dateText, "d MMM", CultureInfo.InvariantCulture);
                     date = new DateOnly(year, parsed.Month, parsed.Day);
                 }
                 catch
@@ -73,14 +81,14 @@ internal sealed class TimeAndDateHolidayScraper : IHolidayImporter
 
             if (results.Count == 0)
                 return Result<IReadOnlyList<HolidayEntryDto>, Error>.Failure(
-                    new Error("NO_HOLIDAYS_FOUND", $"No holidays found for year {year}"));
+                    new Error("HOLIDAY_NOT_FOUND", $"No national holidays found for year {year}"));
 
             return Result<IReadOnlyList<HolidayEntryDto>, Error>.Success(results);
         }
         catch (Exception ex)
         {
             return Result<IReadOnlyList<HolidayEntryDto>, Error>.Failure(
-                new Error("PARSE_FAILED", $"Failed to parse holidays: {ex.Message}"));
+                new Error("HOLIDAY_PARSE_ERROR", $"Failed to parse holidays: {ex.Message}"));
         }
     }
 }
