@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Rentier.Application/Rentier.Application.csproj" />
+    <Project Path="src/Rentier.Desktop/Rentier.Desktop.csproj" />
+    <Project Path="src/Rentier.Domain/Rentier.Domain.csproj" />
+    <Project Path="src/Rentier.Infrastructure/Rentier.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Rentier.Application.Tests/Rentier.Application.Tests.csproj" />
+    <Project Path="tests/Rentier.Desktop.Tests/Rentier.Desktop.Tests.csproj" />
+    <Project Path="tests/Rentier.Domain.Tests/Rentier.Domain.Tests.csproj" />
+    <Project Path="tests/Rentier.Infrastructure.Tests/Rentier.Infrastructure.Tests.csproj" />
+  </Folder>
+</Solution>

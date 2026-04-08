@@ -1,0 +1,49 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Rentier.Desktop.ViewModels"
+             xmlns:res="using:Rentier.Desktop.Resources"
+             xmlns:local="using:Rentier.Desktop.Converters"
+             x:Class="Rentier.Desktop.Views.SyncView"
+             x:CompileBindings="False">
+  <Grid RowDefinitions="Auto,*,Auto" Margin="16">
+
+    <!-- Header buttons -->
+    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="0,0,0,12">
+      <Button Content="{x:Static res:Strings.Sync_StartButton}"
+              Command="{Binding SyncCommand}"
+              IsEnabled="{Binding !IsRunning}" />
+      <Button Content="{x:Static res:Strings.Sync_CancelButton}"
+              Command="{Binding CancelCommand}"
+              IsEnabled="{Binding IsRunning}" />
+    </StackPanel>
+
+    <!-- Progress log -->
+    <Border Grid.Row="1" BorderBrush="Gray" BorderThickness="1" CornerRadius="4">
+      <ScrollViewer Name="LogScrollViewer">
+        <ItemsControl ItemsSource="{Binding LogEntries}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <StackPanel Orientation="Horizontal" Spacing="8" Margin="4,2">
+                <TextBlock Text="{Binding Timestamp}" Foreground="Gray" Width="60" />
+                <TextBlock Text="{Binding Icon}" Width="16" />
+                <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
+              </StackPanel>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+    </Border>
+
+    <!-- Summary + error panel -->
+    <StackPanel Grid.Row="2" Margin="0,12,0,0" Spacing="8">
+      <ProgressBar IsVisible="{Binding IsRunning}" IsIndeterminate="True" />
+      <TextBlock Text="{Binding SummaryMessage}"
+                 IsVisible="{Binding SummaryMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+      <Border Background="#FFEEEE" Padding="8" CornerRadius="4"
+              IsVisible="{Binding HasErrors}">
+        <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" TextWrapping="Wrap" />
+      </Border>
+    </StackPanel>
+
+  </Grid>
+</UserControl>
