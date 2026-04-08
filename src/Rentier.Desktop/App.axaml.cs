@@ -28,7 +28,7 @@ public partial class App : Avalonia.Application
         System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(dbPath)!);
 
         var services = new ServiceCollection();
-        services.AddInfrastructureServices(dbPath);
+        await services.AddInfrastructureServicesAsync(dbPath);
         services.AddDesktopServices();
         var provider = services.BuildServiceProvider();
 

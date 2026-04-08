@@ -1,3 +1,5 @@
+using Rentier.Application.Common;
+
 namespace Rentier.Application.Interfaces;
 
 /// <summary>
@@ -7,7 +9,21 @@ namespace Rentier.Application.Interfaces;
 /// </summary>
 public interface ICredentialStore
 {
-    Task SaveCredentialAsync(string key, string secret, CancellationToken ct = default);
-    Task<string?> GetCredentialAsync(string key, CancellationToken ct = default);
-    Task DeleteCredentialAsync(string key, CancellationToken ct = default);
+    /// <summary>Saves (or overwrites) a credential in the OS credential store.</summary>
+    Task<Result<VoidResult, Error>> SaveCredentialAsync(
+        string key, string secret, CancellationToken ct = default);
+
+    /// <summary>
+    /// Retrieves a credential from the OS credential store.
+    /// Returns <see cref="Error.CredentialNotFound"/> when the key is absent.
+    /// </summary>
+    Task<Result<string, Error>> GetCredentialAsync(
+        string key, CancellationToken ct = default);
+
+    /// <summary>
+    /// Deletes a credential from the OS credential store.
+    /// Idempotent — succeeds even if the key does not exist.
+    /// </summary>
+    Task<Result<VoidResult, Error>> DeleteCredentialAsync(
+        string key, CancellationToken ct = default);
 }
