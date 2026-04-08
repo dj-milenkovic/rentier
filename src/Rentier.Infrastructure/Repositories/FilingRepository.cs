@@ -113,4 +113,35 @@ public sealed class FilingRepository : IFilingRepository
         _db.Filings.RemoveRange(filings);
         await _db.SaveChangesAsync(ct);
     }
+
+    public async Task<IReadOnlyList<Filing>> GetUpcomingAsync(DateOnly today, int days, CancellationToken ct = default)
+    {
+        var limit = today.AddDays(days);
+        var list = await _db.Filings.AsNoTracking()
+            .Where(f => (f.Status == FilingStatus.Init || f.Status == FilingStatus.Filed)
+                     && f.FilingDeadline >= today
+                     && f.FilingDeadline <= limit)
+            .OrderBy(f => f.FilingDeadline)
+            .ToListAsync(ct);
+        return list.AsReadOnly();
+    }
+
+    public async Task<IReadOnlyList<Filing>> GetOverdueAsync(DateOnly today, CancellationToken ct = default)
+    {
+        var list = await _db.Filings.AsNoTracking()
+            .Where(f => f.Status != FilingStatus.Paid && f.FilingDeadline < today)
+            .OrderBy(f => f.FilingDeadline)
+            .ToListAsync(ct);
+        return list.AsReadOnly();
+    }
+
+    public async Task<(int InitCount, int FiledCount, int PaidCount, decimal TotalUnpaidRsd)> GetFilingStatsAsync(CancellationToken ct = default)
+    {
+        var filings = await _db.Filings.AsNoTracking().ToListAsync(ct);
+        var initCount = filings.Count(f => f.Status == FilingStatus.Init);
+        var filedCount = filings.Count(f => f.Status == FilingStatus.Filed);
+        var paidCount = filings.Count(f => f.Status == FilingStatus.Paid);
+        var totalUnpaid = filings.Where(f => f.Status != FilingStatus.Paid).Sum(f => f.TaxPayableRsd);
+        return (initCount, filedCount, paidCount, totalUnpaid);
+    }
 }
