@@ -1,4 +1,4 @@
-using System.Reactive.Concurrency;
+﻿using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using FluentAssertions;
 using NSubstitute;
@@ -87,8 +87,8 @@ public sealed class ImporterSettingsViewModelTests
     [Fact]
     public void WhenActivated_LoadsAvailableMailboxes()
     {
-        var dto1 = new MailboxDto(Guid.NewGuid(), "imap1.example.com", 993, "user1@example.com", new DateOnly(2024, 1, 1), null, null);
-        var dto2 = new MailboxDto(Guid.NewGuid(), "imap2.example.com", 993, "user2@example.com", new DateOnly(2024, 1, 1), null, null);
+        var dto1 = new MailboxDto(Guid.NewGuid(), "imap1.example.com", 993, "user1@example.com", null, null);
+        var dto2 = new MailboxDto(Guid.NewGuid(), "imap2.example.com", 993, "user2@example.com", null, null);
 
         var getMailboxes = MockGetMailboxes();
         getMailboxes.HandleAsync(Arg.Any<GetMailboxesQuery>(), Arg.Any<CancellationToken>())

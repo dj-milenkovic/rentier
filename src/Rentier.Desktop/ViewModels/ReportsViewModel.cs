@@ -1,9 +1,10 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
 using ReactiveUI;
 using Rentier.Application.Commands;
+using Rentier.Domain.ValueObjects;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
@@ -202,7 +203,7 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
                 SyncStatusMessage = p.CurrentFile;
         });
 
-        var result = await _syncHandler.HandleAsync(new SyncMailboxCommand(progress), ct);
+        var result = await _syncHandler.HandleAsync(new SyncMailboxCommand(SyncParameters.Default, progress), ct);
 
         if (result.IsSuccess)
         {

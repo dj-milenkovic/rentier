@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
@@ -25,7 +25,6 @@ public sealed class MailboxSettingsViewModel : ReactiveObject, IActivatableViewM
     private int _port = 993;
     private string _username = string.Empty;
     private string _password = string.Empty;
-    private DateOnly _initialSyncDate = DateOnly.FromDateTime(DateTime.Today);
     private MailboxItemViewModel? _selectedMailbox;
     private bool _isLoading;
     private string? _errorMessage;
@@ -54,27 +53,6 @@ public sealed class MailboxSettingsViewModel : ReactiveObject, IActivatableViewM
     {
         get => _password;
         set => this.RaiseAndSetIfChanged(ref _password, value);
-    }
-
-    public DateOnly InitialSyncDate
-    {
-        get => _initialSyncDate;
-        set
-        {
-            this.RaiseAndSetIfChanged(ref _initialSyncDate, value);
-            this.RaisePropertyChanged(nameof(InitialSyncDateOffset));
-        }
-    }
-
-    public DateTimeOffset? InitialSyncDateOffset
-    {
-        get => new DateTimeOffset(_initialSyncDate.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
-        set
-        {
-            InitialSyncDate = value.HasValue
-                ? DateOnly.FromDateTime(value.Value.DateTime)
-                : DateOnly.FromDateTime(DateTime.Today);
-        }
     }
 
     public MailboxItemViewModel? SelectedMailbox
@@ -144,7 +122,6 @@ public sealed class MailboxSettingsViewModel : ReactiveObject, IActivatableViewM
                     Host = selected.Host;
                     Port = selected.Port;
                     Username = selected.Username;
-                    InitialSyncDate = selected.InitialSyncDate;
                     Password = string.Empty;
                     IsEditMode = true;
                 }
@@ -170,7 +147,6 @@ public sealed class MailboxSettingsViewModel : ReactiveObject, IActivatableViewM
         Port = 993;
         Username = string.Empty;
         Password = string.Empty;
-        InitialSyncDate = DateOnly.FromDateTime(DateTime.Today);
         IsEditMode = false;
         ErrorMessage = null;
         SuccessMessage = null;
@@ -185,15 +161,12 @@ public sealed class MailboxSettingsViewModel : ReactiveObject, IActivatableViewM
         {
             if (IsEditMode && SelectedMailbox != null)
             {
-                var cmd = new UpdateMailboxCommand(
-                    SelectedMailbox.Id, Host, Port, Username, Password, InitialSyncDate);
+                var cmd = new UpdateMailboxCommand(SelectedMailbox.Id, Host, Port, Username, Password);
                 var result = await _updateHandler.HandleAsync(cmd, ct);
                 if (result.IsSuccess)
                 {
                     await ReloadAsync(ct);
-                    var dto = new Application.DTOs.MailboxDto(
-                        SelectedMailbox.Id, Host, Port, Username, InitialSyncDate,
-                        SelectedMailbox.LastSyncDate, SelectedMailbox.LastUid);
+                    var dto = new Application.DTOs.MailboxDto(SelectedMailbox.Id, Host, Port, Username, SelectedMailbox.LastSyncDate, SelectedMailbox.LastUid);
                     SelectedMailbox?.UpdateFrom(dto);
                     Password = string.Empty;
                     SuccessMessage = Strings.Mailboxes_SuccessMessage_Label;
@@ -205,7 +178,7 @@ public sealed class MailboxSettingsViewModel : ReactiveObject, IActivatableViewM
             }
             else
             {
-                var cmd = new AddMailboxCommand(Host, Port, Username, Password, InitialSyncDate);
+                var cmd = new AddMailboxCommand(Host, Port, Username, Password);
                 var result = await _addHandler.HandleAsync(cmd, ct);
                 if (result.IsSuccess)
                 {

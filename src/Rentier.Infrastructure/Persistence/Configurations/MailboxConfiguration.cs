@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Rentier.Domain.Entities;
 
@@ -13,7 +13,6 @@ public sealed class MailboxConfiguration : IEntityTypeConfiguration<Mailbox>
         builder.Property(m => m.Host).IsRequired().HasMaxLength(253);
         builder.Property(m => m.Port).IsRequired();
         builder.Property(m => m.Username).IsRequired().HasMaxLength(320);
-        builder.Property(m => m.InitialSyncDate).IsRequired();
         builder.OwnsOne(m => m.Cursor, cursor =>
         {
             cursor.Property(c => c.LastSyncDate)

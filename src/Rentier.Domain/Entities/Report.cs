@@ -16,6 +16,7 @@ public sealed class Report
     public string ReportName { get; private set; } = string.Empty;
     public byte[]? AttachmentContent { get; private set; }
     public long? MailboxMessageId { get; private set; }
+    public Guid? OriginalReportId { get; private set; }
 
     // EF Core parameterless constructor
     private Report() { }
@@ -48,5 +49,28 @@ public sealed class Report
     public void SetStatus(ReportStatus status)
     {
         Status = status;
+    }
+
+    /// <summary>Creates a new revision of an existing report linked via OriginalReportId.</summary>
+    public static Report CreateRevision(Report original, byte[]? newContent)
+    {
+        ArgumentNullException.ThrowIfNull(original);
+        var suffix = $"_rev{DateTime.UtcNow:yyyyMMddHHmmss}";
+        var baseName = original.ReportName.Length + suffix.Length > 500
+            ? original.ReportName[..(500 - suffix.Length)]
+            : original.ReportName;
+        var revName = baseName + suffix;
+
+        return new Report
+        {
+            Id = Guid.NewGuid(),
+            ImporterId = original.ImporterId,
+            ImportDate = DateOnly.FromDateTime(DateTime.UtcNow),
+            Status = ReportStatus.Init,
+            ReportName = revName,
+            AttachmentContent = newContent,
+            MailboxMessageId = original.MailboxMessageId,
+            OriginalReportId = original.Id
+        };
     }
 }

@@ -25,7 +25,7 @@ public sealed class AddMailboxCommandHandler
         try
         {
             mailbox = Domain.Entities.Mailbox.Create(
-                command.Host, command.Port, command.Username, command.InitialSyncDate);
+                command.Host, command.Port, command.Username);
         }
         catch (DomainException ex)
         {

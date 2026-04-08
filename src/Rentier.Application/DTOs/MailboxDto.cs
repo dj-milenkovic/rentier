@@ -5,6 +5,5 @@ public sealed record MailboxDto(
     string Host,
     int Port,
     string Username,
-    DateOnly InitialSyncDate,
     DateOnly? LastSyncDate,
     long? LastUid);

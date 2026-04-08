@@ -22,6 +22,12 @@ namespace Rentier.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("TEXT");
 
+                    b.Property<DateOnly?>("ExchangeRateSourceDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("ExchangeRateSourceType")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateOnly>("FilingDeadline")
                         .HasColumnType("TEXT");
 
@@ -162,9 +168,6 @@ namespace Rentier.Infrastructure.Persistence.Migrations
                         .HasMaxLength(253)
                         .HasColumnType("TEXT");
 
-                    b.Property<DateOnly>("InitialSyncDate")
-                        .HasColumnType("TEXT");
-
                     b.Property<int>("Port")
                         .HasColumnType("INTEGER");
 
@@ -219,6 +222,9 @@ namespace Rentier.Infrastructure.Persistence.Migrations
                     b.Property<long?>("MailboxMessageId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<Guid?>("OriginalReportId")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("ReportName")
                         .IsRequired()
                         .HasMaxLength(500)
@@ -232,6 +238,8 @@ namespace Rentier.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ImporterId");
+
+                    b.HasIndex("OriginalReportId");
 
                     b.HasIndex("ImporterId", "ReportName")
                         .IsUnique();
@@ -360,6 +368,11 @@ namespace Rentier.Infrastructure.Persistence.Migrations
                         .HasForeignKey("ImporterId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("Rentier.Domain.Entities.Report", null)
+                        .WithMany()
+                        .HasForeignKey("OriginalReportId")
+                        .OnDelete(DeleteBehavior.SetNull);
                 });
 #pragma warning restore 612, 618
         }
