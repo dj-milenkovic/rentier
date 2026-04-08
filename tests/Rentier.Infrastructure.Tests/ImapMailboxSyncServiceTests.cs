@@ -1,8 +1,9 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using NSubstitute;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
+using Rentier.Domain.ValueObjects;
 using Rentier.Infrastructure.Sync;
 using Xunit;
 
@@ -11,7 +12,7 @@ namespace Rentier.Infrastructure.Tests;
 public class ImapMailboxSyncServiceTests
 {
     private static Mailbox MakeMailbox()
-        => Mailbox.Create("imap.example.com", 993, "user@example.com", new DateOnly(2024, 1, 1));
+        => Mailbox.Create("imap.example.com", 993, "user@example.com");
 
     [Fact]
     public async Task SyncAsync_NoPassword_ReturnsFailure()
@@ -26,7 +27,7 @@ public class ImapMailboxSyncServiceTests
             credStore);
 
         var mailbox = MakeMailbox();
-        var result = await svc.SyncAsync(mailbox, Array.Empty<Importer>(), null, CancellationToken.None);
+        var result = await svc.SyncAsync(mailbox, Array.Empty<Importer>(), SyncParameters.Default, null, CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Message.Should().Contain("No password found");
@@ -45,7 +46,7 @@ public class ImapMailboxSyncServiceTests
             credStore);
 
         var mailbox = MakeMailbox();
-        var result = await svc.SyncAsync(mailbox, Array.Empty<Importer>(), null, CancellationToken.None);
+        var result = await svc.SyncAsync(mailbox, Array.Empty<Importer>(), SyncParameters.Default, null, CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("INFRASTRUCTURE_ERROR");
@@ -59,7 +60,7 @@ public class ImapMailboxSyncServiceTests
             Substitute.For<IMailboxRepository>(),
             Substitute.For<ICredentialStore>());
 
-        var act = async () => await svc.SyncAsync(null!, Array.Empty<Importer>(), null, CancellationToken.None);
+        var act = async () => await svc.SyncAsync(null!, Array.Empty<Importer>(), SyncParameters.Default, null, CancellationToken.None);
 
         await act.Should().ThrowAsync<ArgumentNullException>();
     }
@@ -73,7 +74,7 @@ public class ImapMailboxSyncServiceTests
             Substitute.For<ICredentialStore>());
 
         var mailbox = MakeMailbox();
-        var act = async () => await svc.SyncAsync(mailbox, null!, null, CancellationToken.None);
+        var act = async () => await svc.SyncAsync(mailbox, null!, SyncParameters.Default, null, CancellationToken.None);
 
         await act.Should().ThrowAsync<ArgumentNullException>();
     }
