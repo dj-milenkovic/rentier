@@ -34,6 +34,17 @@ public sealed class MainWindowViewModel : ReactiveObject
         IServiceProvider provider,
         SettingsViewModel settingsVm)
     {
+        // Wire navigateToFilings delegate for DashboardViewModel (Action — no Guid)
+        Action navigateToDashboardFilings = () =>
+        {
+            var filingsEntry = NavigationEntries?.FirstOrDefault(e => e.ViewModel is FilingsViewModel);
+            if (filingsEntry is not null)
+                SelectedEntry = filingsEntry;
+        };
+
+        var dashboardVm = ActivatorUtilities.CreateInstance<DashboardViewModel>(
+            provider, navigateToDashboardFilings);
+
         // Wire the navigateToFilings delegate — closes over filingsVm and this.SelectedEntry
         Action<Guid> navigateToFilings = reportId =>
         {
@@ -46,14 +57,27 @@ public sealed class MainWindowViewModel : ReactiveObject
         var reportsVm = ActivatorUtilities.CreateInstance<ReportsViewModel>(
             provider, navigateToFilings);
 
+        // Wire the navigateToFilings delegate for SyncViewModel — no report ID filter needed
+        Action navigateToFilings_sync = () =>
+        {
+            var filingsEntry = NavigationEntries?.FirstOrDefault(e => e.ViewModel is FilingsViewModel);
+            if (filingsEntry is not null)
+                SelectedEntry = filingsEntry;
+        };
+
+        var syncVm = ActivatorUtilities.CreateInstance<SyncViewModel>(
+            provider, navigateToFilings_sync);
+
         NavigationEntries = new List<NavigationEntry>
         {
+            new(Strings.Nav_Dashboard, dashboardVm),
             new(Strings.Nav_Filings, filingsVm),
             new(Strings.Nav_Reports, reportsVm),
+            new(Strings.Nav_Sync, syncVm),
             new(Strings.Nav_Settings, settingsVm)
         };
 
         _selectedEntry = NavigationEntries[0];
-        _currentViewModel = filingsVm;
+        _currentViewModel = dashboardVm;
     }
 }
