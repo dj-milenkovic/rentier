@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Rentier.Infrastructure\Rentier.Infrastructure.csproj" />
+    <ProjectReference Include="..\Rentier.Tests.Common\Rentier.Tests.Common.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -27,6 +28,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Parsers\Fixtures\*.csv" />
+    <EmbeddedResource Include="Parsers\Fixtures\*.txt" />
   </ItemGroup>
 
 </Project>
