@@ -26,6 +26,7 @@ public static class CompositionRoot
         services.AddTransient<
             IQueryHandler<GetTaxpayerProfileQuery, Result<TaxpayerProfileDto?, Error>>,
             GetTaxpayerProfileQueryHandler>();
+        services.AddTransient<ISyncAllCommandHandler, SyncAllCommandHandler>();
 
         // ViewModels
         services.AddTransient<ProfileSettingsViewModel>();
@@ -134,6 +135,11 @@ public static class CompositionRoot
                 throw;
             }
         });
+
+        // Dashboard handler
+        services.AddTransient<
+            IQueryHandler<GetDashboardQuery, Result<DashboardDto, Error>>,
+            GetDashboardQueryHandler>();
 
         // Reports handlers
         services.AddTransient<
