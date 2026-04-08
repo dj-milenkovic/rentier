@@ -19,11 +19,17 @@ public sealed class ReportConfiguration : IEntityTypeConfiguration<Report>
             .HasConversion<int>()
             .HasDefaultValue(ReportStatus.Init);
         builder.Property(r => r.MailboxMessageId).IsRequired(false);
+        builder.Property(r => r.OriginalReportId).IsRequired(false);
         builder.HasIndex(r => r.ImporterId);
         builder.HasIndex(new[] { "ImporterId", "ReportName" }).IsUnique();
+        builder.HasIndex(r => r.OriginalReportId);
         builder.HasOne<Importer>()
             .WithMany()
             .HasForeignKey(r => r.ImporterId)
             .OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne<Report>()
+            .WithMany()
+            .HasForeignKey(r => r.OriginalReportId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

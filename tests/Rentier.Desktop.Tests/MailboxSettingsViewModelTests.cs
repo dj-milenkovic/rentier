@@ -1,4 +1,4 @@
-using System.Reactive.Concurrency;
+﻿using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using FluentAssertions;
 using NSubstitute;
@@ -41,7 +41,7 @@ public class MailboxSettingsViewModelTests
             ImmediateScheduler.Instance);
 
     private static MailboxDto MakeDto(string host = "imap.example.com", int port = 993, string username = "user@example.com")
-        => new(Guid.NewGuid(), host, port, username, TestDate, null, null);
+        => new(Guid.NewGuid(), host, port, username, null, null);
 
     [Fact]
     public void WhenActivated_NoMailboxes_MailboxesCollectionIsEmpty()
@@ -94,7 +94,6 @@ public class MailboxSettingsViewModelTests
         vm.Host.Should().Be("imap.test.com");
         vm.Port.Should().Be(143);
         vm.Username.Should().Be("test@example.com");
-        vm.InitialSyncDate.Should().Be(TestDate);
         vm.Password.Should().BeEmpty();
         vm.IsEditMode.Should().BeTrue();
     }
@@ -124,7 +123,7 @@ public class MailboxSettingsViewModelTests
     public async Task SaveCommand_NewMode_CallsAddHandlerAndRefreshesList()
     {
         var newId = Guid.NewGuid();
-        var addedDto = new MailboxDto(newId, "imap.new.com", 993, "new@example.com", TestDate, null, null);
+        var addedDto = new MailboxDto(newId, "imap.new.com", 993, "new@example.com", null, null);
 
         var query = MockQuery();
         query.HandleAsync(Arg.Any<GetMailboxesQuery>(), Arg.Any<CancellationToken>())

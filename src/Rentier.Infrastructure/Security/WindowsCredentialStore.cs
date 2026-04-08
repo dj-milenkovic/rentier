@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Text;
+using Rentier.Application.Common;
 using Rentier.Application.Interfaces;
 
 namespace Rentier.Infrastructure.Security;
@@ -10,7 +11,7 @@ namespace Rentier.Infrastructure.Security;
 /// Windows Credential Manager implementation for secure credential storage.
 /// </summary>
 [SupportedOSPlatform("windows")]
-public sealed class OsCredentialStore : ICredentialStore
+public sealed class WindowsCredentialStore : ICredentialStore
 {
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     private struct CREDENTIALW
@@ -41,14 +42,25 @@ public sealed class OsCredentialStore : ICredentialStore
     private static extern bool CredReadW(string target, uint type, uint reservedFlag, out IntPtr credentialPtr);
 
     [DllImport("advapi32.dll")]
-    private static extern void CredFreeW(IntPtr credentialPtr);
+    private static extern void CredFree(IntPtr credentialPtr);
 
     [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern bool CredDeleteW(string target, uint type, uint reservedFlag);
 
-    public Task SaveCredentialAsync(string key, string secret, CancellationToken ct = default)
+    public Task<Result<VoidResult, Error>> SaveCredentialAsync(
+        string key, string secret, CancellationToken ct = default)
     {
-        return Task.Run(() =>
+        if (string.IsNullOrEmpty(key))
+            return Task.FromResult(
+                Result<VoidResult, Error>.Failure(
+                    Error.CredentialWriteFailed("Key must not be empty")));
+
+        if (string.IsNullOrEmpty(secret))
+            return Task.FromResult(
+                Result<VoidResult, Error>.Failure(
+                    Error.CredentialWriteFailed("Secret must not be empty")));
+
+        return Task.Run<Result<VoidResult, Error>>(() =>
         {
             byte[] blob = Encoding.UTF8.GetBytes(secret);
             IntPtr ptr = Marshal.AllocHGlobal(blob.Length);
@@ -65,7 +77,12 @@ public sealed class OsCredentialStore : ICredentialStore
                     UserName = key
                 };
                 if (!CredWriteW(ref cred, 0))
-                    throw new Win32Exception(Marshal.GetLastPInvokeError());
+                {
+                    var ex = new Win32Exception(Marshal.GetLastPInvokeError());
+                    return Result<VoidResult, Error>.Failure(
+                        Error.CredentialWriteFailed(ex.Message));
+                }
+                return Result<VoidResult, Error>.Success(VoidResult.Value);
             }
             finally
             {
@@ -74,15 +91,18 @@ public sealed class OsCredentialStore : ICredentialStore
         }, ct);
     }
 
-    public Task<string?> GetCredentialAsync(string key, CancellationToken ct = default)
+    public Task<Result<string, Error>> GetCredentialAsync(
+        string key, CancellationToken ct = default)
     {
-        return Task.Run<string?>(() =>
+        return Task.Run<Result<string, Error>>(() =>
         {
             if (!CredReadW(key, CRED_TYPE_GENERIC, 0, out IntPtr ptr))
             {
-                if (Marshal.GetLastPInvokeError() == ERROR_NOT_FOUND)
-                    return null;
-                throw new Win32Exception(Marshal.GetLastPInvokeError());
+                var err = Marshal.GetLastPInvokeError();
+                return err == ERROR_NOT_FOUND
+                    ? Result<string, Error>.Failure(Error.CredentialNotFound(key))
+                    : Result<string, Error>.Failure(
+                        Error.CredentialWriteFailed(new Win32Exception(err).Message));
             }
 
             try
@@ -90,25 +110,29 @@ public sealed class OsCredentialStore : ICredentialStore
                 var cred = Marshal.PtrToStructure<CREDENTIALW>(ptr);
                 byte[] blob = new byte[cred.CredentialBlobSize];
                 Marshal.Copy(cred.CredentialBlob, blob, 0, blob.Length);
-                return Encoding.UTF8.GetString(blob);
+                return Result<string, Error>.Success(Encoding.UTF8.GetString(blob));
             }
             finally
             {
-                CredFreeW(ptr);
+                CredFree(ptr);
             }
         }, ct);
     }
 
-    public Task DeleteCredentialAsync(string key, CancellationToken ct = default)
+    public Task<Result<VoidResult, Error>> DeleteCredentialAsync(
+        string key, CancellationToken ct = default)
     {
-        return Task.Run(() =>
+        return Task.Run<Result<VoidResult, Error>>(() =>
         {
             if (!CredDeleteW(key, CRED_TYPE_GENERIC, 0))
             {
-                if (Marshal.GetLastPInvokeError() != ERROR_NOT_FOUND)
-                    throw new Win32Exception(Marshal.GetLastPInvokeError());
+                var err = Marshal.GetLastPInvokeError();
+                if (err == ERROR_NOT_FOUND)
+                    return Result<VoidResult, Error>.Success(VoidResult.Value); // idempotent
+                return Result<VoidResult, Error>.Failure(
+                    Error.CredentialDeleteFailed(new Win32Exception(err).Message));
             }
+            return Result<VoidResult, Error>.Success(VoidResult.Value);
         }, ct);
     }
 }
-

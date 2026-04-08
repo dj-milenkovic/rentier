@@ -39,18 +39,20 @@ public class ImapMailboxSyncService : IMailboxSyncService
     public async Task<Result<SyncResult, Error>> SyncAsync(
         Mailbox mailbox,
         IReadOnlyList<Importer> importers,
+        SyncParameters parameters,
         IProgress<SyncProgress>? progress,
         CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(mailbox);
         ArgumentNullException.ThrowIfNull(importers);
 
-        var password = await _credentialStore.GetCredentialAsync(
-            $"Rentier/Mailbox/{mailbox.Id}/password", ct);
+        var credResult = await _credentialStore.GetCredentialAsync(
+            CredentialKeys.MailboxPassword(mailbox.Id), ct);
 
-        if (string.IsNullOrEmpty(password))
-            return Result<SyncResult, Error>.Failure(
-                Error.Infrastructure($"No password found for mailbox {mailbox.Id}"));
+        if (!credResult.IsSuccess)
+            return Result<SyncResult, Error>.Failure(credResult.Error);
+
+        var password = credResult.Value;
 
         var errors = new List<string>();
         var reportsCreated = 0;
@@ -67,8 +69,8 @@ public class ImapMailboxSyncService : IMailboxSyncService
             var cursor = mailbox.Cursor;
             long? maxUid = null;
 
-            // Build base time/uid search query
-            var baseQuery = BuildBaseQuery(cursor, mailbox);
+            // Build base time/uid search query using SyncParameters
+            var baseQuery = BuildBaseQuery(cursor, parameters);
 
             // Process each importer within this mailbox
             foreach (var importer in importers)
@@ -162,19 +164,27 @@ public class ImapMailboxSyncService : IMailboxSyncService
         }
     }
 
-    private static SearchQuery BuildBaseQuery(MailboxCursor cursor, Mailbox mailbox)
+    private static SearchQuery BuildBaseQuery(MailboxCursor cursor, SyncParameters parameters)
     {
-        if (cursor.LastUid == null)
+        var effectiveDate = parameters.GetEffectiveStartDate(cursor);
+
+        // For FullReplay mode with no date, fetch all
+        if (effectiveDate == null && parameters.Mode == Domain.Enums.SyncMode.FullReplay)
+            return SearchQuery.All;
+
+        // For Incremental mode: prefer UID filter if available
+        if (parameters.Mode == Domain.Enums.SyncMode.Incremental && cursor.LastUid != null)
         {
-            var sinceDate = cursor.LastSyncDate?.ToDateTime(TimeOnly.MinValue)
-                ?? mailbox.InitialSyncDate.ToDateTime(TimeOnly.MinValue);
-            return SearchQuery.DeliveredAfter(sinceDate);
+            return SearchQuery.Uids(
+                new UniqueIdRange(
+                    new UniqueId((uint)(cursor.LastUid.Value + 1)),
+                    UniqueId.MaxValue));
         }
 
-        return SearchQuery.Uids(
-            new UniqueIdRange(
-                new UniqueId((uint)(cursor.LastUid.Value + 1)),
-                UniqueId.MaxValue));
+        // Otherwise: use date filter
+        var sinceDate = effectiveDate?.ToDateTime(TimeOnly.MinValue)
+            ?? DateTime.UtcNow.AddDays(-90);
+        return SearchQuery.DeliveredAfter(sinceDate);
     }
 
     private static SearchQuery ComposeImporterQuery(SearchQuery baseQuery, Importer importer)

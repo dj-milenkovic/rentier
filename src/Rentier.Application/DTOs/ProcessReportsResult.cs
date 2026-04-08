@@ -1,7 +1,8 @@
-namespace Rentier.Application.DTOs;
+﻿namespace Rentier.Application.DTOs;
 
 public sealed record ProcessReportsResult(
     int FilingsCreated,
     int ReportsProcessed,
     int ReportsErrored,
-    IReadOnlyList<string> Errors);
+    IReadOnlyList<FilingCreationError> EventErrors,
+    int ReportsPartialError = 0);

@@ -1,4 +1,4 @@
-using Rentier.Domain.Enums;
+﻿using Rentier.Domain.Enums;
 using Rentier.Domain.Exceptions;
 
 namespace Rentier.Domain.Entities;
@@ -34,6 +34,8 @@ public sealed class Filing
     public DateOnly FilingDeadline { get; private set; }
     public Guid? ReportId { get; private set; }
     public string? PaymentReference { get; private set; }
+    public DateOnly? ExchangeRateSourceDate { get; private set; }
+    public ExchangeRateSourceType? ExchangeRateSourceType { get; private set; }
 
     // EF Core parameterless constructor
     private Filing() { }
@@ -57,7 +59,9 @@ public sealed class Filing
         decimal grossTaxPayableRsd,
         decimal taxPayableRsd,
         DateOnly filingDeadline,
-        Guid? reportId = null)
+        Guid? reportId = null,
+        DateOnly? exchangeRateSourceDate = null,
+        Rentier.Domain.Enums.ExchangeRateSourceType? exchangeRateSourceType = null)
     {
         if (string.IsNullOrWhiteSpace(payingEntity))
             throw new DomainException("PayingEntity must not be empty");
@@ -86,7 +90,9 @@ public sealed class Filing
             GrossTaxPayableRsd = grossTaxPayableRsd,
             TaxPayableRsd = taxPayableRsd,
             FilingDeadline = filingDeadline,
-            ReportId = reportId
+            ReportId = reportId,
+            ExchangeRateSourceDate = exchangeRateSourceDate,
+            ExchangeRateSourceType = exchangeRateSourceType,
         };
     }
 
