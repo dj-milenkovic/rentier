@@ -1,4 +1,4 @@
-using Rentier.Application.Common;
+﻿using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
@@ -25,7 +25,6 @@ public sealed class GetMailboxesQueryHandler
             m.Host,
             m.Port,
             m.Username,
-            m.InitialSyncDate,
             m.Cursor.LastSyncDate,
             m.Cursor.LastUid)).ToList();
         return Result<IReadOnlyList<MailboxDto>, Error>.Success(list.AsReadOnly());

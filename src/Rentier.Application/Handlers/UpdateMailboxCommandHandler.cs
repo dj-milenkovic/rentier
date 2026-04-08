@@ -28,7 +28,7 @@ public sealed class UpdateMailboxCommandHandler
 
         try
         {
-            mailbox.UpdateDetails(command.Host, command.Port, command.Username, command.InitialSyncDate);
+            mailbox.UpdateDetails(command.Host, command.Port, command.Username);
         }
         catch (DomainException ex)
         {
@@ -38,7 +38,12 @@ public sealed class UpdateMailboxCommandHandler
         await _repository.UpdateAsync(mailbox, ct);
 
         if (!string.IsNullOrEmpty(command.Password))
-            await _credentials.SaveCredentialAsync($"Rentier/Mailbox/{mailbox.Id}", command.Password, ct);
+        {
+            var credResult = await _credentials.SaveCredentialAsync(
+                CredentialKeys.MailboxPassword(mailbox.Id), command.Password, ct);
+            if (!credResult.IsSuccess)
+                return Result<VoidResult, Error>.Failure(credResult.Error);
+        }
 
         return Result<VoidResult, Error>.Success(VoidResult.Value);
     }

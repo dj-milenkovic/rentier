@@ -1,4 +1,4 @@
-using Rentier.Application.Commands;
+﻿using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
@@ -36,7 +36,7 @@ public sealed class SyncAllCommandHandler : ISyncAllCommandHandler
                 SyncProgressSeverity.Info)));
 
         var syncResult = await _syncMailboxHandler.HandleAsync(
-            new SyncMailboxCommand(Progress: internalProgress), ct);
+            new SyncMailboxCommand(command.Parameters, Progress: internalProgress), ct);
 
         if (syncResult.IsSuccess)
         {
@@ -65,15 +65,16 @@ public sealed class SyncAllCommandHandler : ISyncAllCommandHandler
         {
             filingsCreated = processResult.Value.FilingsCreated;
             reportsProcessed = processResult.Value.ReportsProcessed;
-            foreach (var e in processResult.Value.Errors)
+            foreach (var e in processResult.Value.EventErrors)
             {
-                errors.Add(e);
-                progress.Report(new SyncProgressEntry(DateTimeOffset.Now, e, SyncProgressSeverity.Warning));
+                var eventMsg = $"{e.EntityName} {e.IncomeDate:yyyy-MM-dd}: {e.ErrorCode} - {e.Message}";
+                errors.Add(eventMsg);
+                progress.Report(new SyncProgressEntry(DateTimeOffset.Now, eventMsg, SyncProgressSeverity.Warning));
             }
-            var msg = reportsProcessed == 0
+            var statusMsg = reportsProcessed == 0
                 ? "No new reports to process."
                 : $"Processed {reportsProcessed} report(s), created {filingsCreated} filing(s).";
-            progress.Report(new SyncProgressEntry(DateTimeOffset.Now, msg, SyncProgressSeverity.Info));
+            progress.Report(new SyncProgressEntry(DateTimeOffset.Now, statusMsg, SyncProgressSeverity.Info));
         }
         else
         {

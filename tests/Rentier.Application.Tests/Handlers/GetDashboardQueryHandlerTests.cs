@@ -53,9 +53,9 @@ public class GetDashboardQueryHandlerTests
 
     private static Mailbox MakeMailbox(DateOnly? lastSyncDate = null)
     {
-        var m = Mailbox.Create("imap.test.com", 993, "user@test.com", new DateOnly(2024, 1, 1));
-        if (lastSyncDate.HasValue)
-            m.UpdateCursor(new MailboxCursor(lastSyncDate, 999L));
+        var m = Mailbox.Create("imap.test.com", 993, "user@test.com");
+        // Always set cursor to ensure LastSyncDate is controlled by test (null means no sync)
+        m.UpdateCursor(new MailboxCursor(lastSyncDate, lastSyncDate.HasValue ? 999L : null));
         return m;
     }
 

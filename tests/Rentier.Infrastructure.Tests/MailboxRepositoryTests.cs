@@ -35,7 +35,7 @@ public class MailboxRepositoryTests : IAsyncLifetime
     }
 
     private static Mailbox MakeMailbox(string host = "imap.example.com")
-        => Mailbox.Create(host, 993, "user@example.com", new DateOnly(2024, 1, 1));
+        => Mailbox.Create(host, 993, "user@example.com");
 
     [Fact]
     public async Task GetAllAsync_EmptyDb_ReturnsEmptyList()
@@ -80,7 +80,7 @@ public class MailboxRepositoryTests : IAsyncLifetime
         var mailbox = MakeMailbox("imap.old.com");
         await _repository.AddAsync(mailbox);
 
-        mailbox.UpdateDetails("imap.new.com", 143, "new@example.com", new DateOnly(2024, 6, 1));
+        mailbox.UpdateDetails("imap.new.com", 143, "new@example.com");
         await _repository.UpdateAsync(mailbox);
 
         var retrieved = await _repository.GetByIdAsync(mailbox.Id);

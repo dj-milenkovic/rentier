@@ -478,4 +478,34 @@
   <data name="Dashboard_LoadError" xml:space="preserve">
     <value>Failed to load dashboard data.</value>
   </data>
+  <data name="Sync_Mode_Incremental" xml:space="preserve">
+    <value>Incremental</value>
+  </data>
+  <data name="Sync_Mode_ReplayFromDate" xml:space="preserve">
+    <value>Replay from Date</value>
+  </data>
+  <data name="Sync_Mode_FullReplay" xml:space="preserve">
+    <value>Full Replay</value>
+  </data>
+  <data name="Sync_Strategy_SkipExisting" xml:space="preserve">
+    <value>Skip Existing</value>
+  </data>
+  <data name="Sync_Strategy_CreateNewRevision" xml:space="preserve">
+    <value>Create New Revision</value>
+  </data>
+  <data name="Sync_Strategy_ReprocessInPlace" xml:space="preserve">
+    <value>Reprocess in Place</value>
+  </data>
+  <data name="Sync_ReplayDate_Watermark" xml:space="preserve">
+    <value>Select replay start date</value>
+  </data>
+  <data name="Sync_Validation_DateRequired" xml:space="preserve">
+    <value>Replay date is required for this mode</value>
+  </data>
+  <data name="Sync_Validation_DateNotFuture" xml:space="preserve">
+    <value>Replay date cannot be in the future</value>
+  </data>
+  <data name="Sync_FullReplay_Warning" xml:space="preserve">
+    <value>⚠ Full Replay will re-process ALL emails in the mailbox. This may take a long time.</value>
+  </data>
 </root>
