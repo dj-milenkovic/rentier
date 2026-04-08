@@ -52,7 +52,7 @@ public class AddMailboxCommandHandlerTests
     [Fact]
     public async Task HandleAsync_WithPassword_UsesCredentialKeysFormat()
     {
-        var cmd = new AddMailboxCommand("imap.example.com", 993, "user@example.com", "secret123", TestDate);
+        var cmd = new AddMailboxCommand("imap.example.com", 993, "user@example.com", "secret123");
 
         var result = await _handler.HandleAsync(cmd);
 
@@ -104,7 +104,7 @@ public class AddMailboxCommandHandlerTests
             .Returns(Result<VoidResult, Error>.Failure(Error.CredentialWriteFailed("OS store failure")));
 
         var handler = new AddMailboxCommandHandler(_repo, failingCredentials);
-        var cmd = new AddMailboxCommand("imap.example.com", 993, "user@example.com", "pass", TestDate);
+        var cmd = new AddMailboxCommand("imap.example.com", 993, "user@example.com", "pass");
 
         var result = await handler.HandleAsync(cmd);
 
