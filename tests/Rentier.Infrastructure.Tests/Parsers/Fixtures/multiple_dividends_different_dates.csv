@@ -1,0 +1,4 @@
+Dividends,Header,Currency,Date,Description,Amount
+Dividends,Data,USD,2024-01-15,"AAPL(US0378331005) Cash Dividend",12.00
+Dividends,Data,USD,2024-04-15,"AAPL(US0378331005) Cash Dividend",13.00
+Dividends,Total,USD,,Total,25.00

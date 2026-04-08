@@ -1,0 +1,139 @@
+<reactive:ReactiveUserControl
+    x:TypeArguments="vm:FilingsViewModel"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:reactive="http://reactiveui.net"
+    xmlns:vm="using:Rentier.Desktop.ViewModels"
+    xmlns:res="using:Rentier.Desktop.Resources"
+    xmlns:local="using:Rentier.Desktop.Converters"
+    x:Class="Rentier.Desktop.Views.FilingsView"
+    x:CompileBindings="False">
+  <DockPanel>
+
+    <!-- Filter toggle bar -->
+    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="8,8,8,4">
+      <ToggleButton IsChecked="{Binding ShowAll, Converter={x:Static local:InvertBoolConverter.Instance}}"
+                    Content="{x:Static res:Strings.Filings_Filter_Unpaid}" />
+      <ToggleButton IsChecked="{Binding ShowAll}"
+                    Content="{x:Static res:Strings.Filings_Filter_All}" />
+    </StackPanel>
+
+    <!-- Loading indicator -->
+    <ProgressBar DockPanel.Dock="Top" IsIndeterminate="True"
+                 IsVisible="{Binding IsLoading}" Height="4" />
+
+    <!-- Error banner -->
+    <Grid DockPanel.Dock="Top" Margin="8,0"
+          IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
+      <TextBlock Grid.Column="0" Text="{Binding ErrorMessage}"
+                 Foreground="Red" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,4" />
+      <Button Grid.Column="1" Content="{x:Static res:Strings.Filings_Error_Dismiss}"
+              Command="{Binding ClearErrorCommand}" VerticalAlignment="Center" Margin="4,0,0,0" />
+    </Grid>
+
+    <!-- Pagination bar -->
+    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="8"
+                Margin="8" HorizontalAlignment="Center">
+      <Button Content="{x:Static res:Strings.Filings_Page_Previous}"
+              Command="{Binding PreviousPageCommand}" />
+      <TextBlock Text="{Binding PageIndicator}" VerticalAlignment="Center" />
+      <Button Content="{x:Static res:Strings.Filings_Page_Next}"
+              Command="{Binding NextPageCommand}" />
+    </StackPanel>
+
+    <!-- Empty state -->
+    <TextBlock DockPanel.Dock="Top"
+               IsVisible="{Binding IsEmpty}"
+               Text="{x:Static res:Strings.Filings_Empty}"
+               HorizontalAlignment="Center" VerticalAlignment="Center"
+               Margin="0,40" />
+
+    <!-- Filings DataGrid -->
+    <DataGrid ItemsSource="{Binding Rows}"
+              AutoGenerateColumns="False"
+              IsVisible="{Binding HasItems}"
+              CanUserReorderColumns="False"
+              CanUserResizeColumns="True"
+              CanUserSortColumns="False">
+      <DataGrid.Columns>
+
+        <!-- Status column: ComboBox showing valid next statuses -->
+        <DataGridTemplateColumn Header="{x:Static res:Strings.Filings_Col_Status}" Width="120">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <ComboBox ItemsSource="{Binding AvailableNextStatuses}"
+                        SelectedItem="{Binding Status, Mode=OneTime}"
+                        SelectionChanged="StatusComboBox_SelectionChanged"
+                        HorizontalAlignment="Stretch">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate>
+                    <TextBlock Text="{Binding Converter={x:Static local:FilingStatusDisplayConverter.Instance}}" />
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+
+        <!-- Income Type column -->
+        <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_IncomeType}" Width="110"
+          Binding="{Binding IncomeType, Converter={x:Static local:IncomeTypeDisplayConverter.Instance}}" />
+
+        <!-- Paying Entity column -->
+        <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_PayingEntity}" Width="*"
+          Binding="{Binding PayingEntity}" />
+
+        <!-- Filing Deadline column -->
+        <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_Deadline}" Width="130"
+          Binding="{Binding DeadlineDisplay}" />
+
+        <!-- Tax Payable column -->
+        <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_TaxPayable}" Width="140"
+          Binding="{Binding TaxPayableDisplay}" />
+
+        <!-- Payment Reference column: editable TextBox for Filed rows only -->
+        <DataGridTemplateColumn Header="{x:Static res:Strings.Filings_Col_PaymentRef}" Width="180">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <TextBox Text="{Binding PaymentReference}"
+                       IsReadOnly="{Binding IsPaymentReferenceEditable, Converter={x:Static local:InvertBoolConverter.Instance}}"
+                       LostFocus="PaymentRef_LostFocus"
+                       BorderThickness="0"
+                       Background="Transparent" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+
+        <!-- Export action column -->
+        <DataGridTemplateColumn Header="{x:Static res:Strings.Filings_Export_Button}" Width="80">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <Button Content="{x:Static res:Strings.Filings_Export_Button}"
+                      Tag="{Binding Id}"
+                      Click="ExportButton_Click"
+                      HorizontalAlignment="Center" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+
+        <!-- Delete action column -->
+        <DataGridTemplateColumn Width="80">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <Button Content="{x:Static res:Strings.Filings_Delete_Action_Button}"
+                      Tag="{Binding Id}"
+                      Click="DeleteButton_Click"
+                      HorizontalAlignment="Center" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+
+      </DataGrid.Columns>
+    </DataGrid>
+
+  </DockPanel>
+</reactive:ReactiveUserControl>

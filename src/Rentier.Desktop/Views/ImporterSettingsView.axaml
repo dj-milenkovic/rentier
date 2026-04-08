@@ -1,0 +1,103 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Rentier.Desktop.ViewModels"
+             xmlns:res="using:Rentier.Desktop.Resources"
+             xmlns:local="using:Rentier.Desktop.Converters"
+             x:Class="Rentier.Desktop.Views.ImporterSettingsView"
+             x:CompileBindings="False"
+             x:DataType="vm:ImporterSettingsViewModel">
+  <Grid ColumnDefinitions="250,*">
+    <!-- Left panel: importer list -->
+    <DockPanel Grid.Column="0">
+      <Button DockPanel.Dock="Bottom"
+              Command="{Binding AddNewCommand}"
+              Content="{x:Static res:Strings.Importers_AddNew_Button}"
+              HorizontalAlignment="Stretch"
+              Margin="4" />
+      <ListBox ItemsSource="{Binding ImporterItems}"
+               SelectedItem="{Binding SelectedImporter, Mode=TwoWay}">
+        <ListBox.ItemTemplate>
+          <DataTemplate>
+            <StackPanel>
+              <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" />
+              <TextBlock Text="{Binding ReportTypeDisplay}" FontSize="11" Opacity="0.7" />
+            </StackPanel>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </DockPanel>
+
+    <!-- Right panel: form -->
+    <ScrollViewer Grid.Column="1">
+      <StackPanel Margin="16" Spacing="8">
+        <TextBlock Text="{x:Static res:Strings.Importers_DisplayName_Label}" />
+        <TextBox Text="{Binding DisplayName}" />
+
+        <TextBlock Text="{x:Static res:Strings.Importers_ReportType_Label}" />
+        <ComboBox ItemsSource="{Binding AvailableReportTypes}"
+                  SelectedItem="{Binding ReportType, Mode=TwoWay}">
+          <ComboBox.ItemTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding Converter={x:Static local:ReportTypeDisplayConverter.Instance}}" />
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+
+        <TextBlock Text="{x:Static res:Strings.Importers_TaxpayerProfile_Label}" />
+        <ComboBox ItemsSource="{Binding AvailableProfiles}"
+                  SelectedItem="{Binding SelectedProfile, Mode=TwoWay}"
+                  PlaceholderText="{x:Static res:Strings.Importers_NoProfile_Placeholder}">
+          <ComboBox.ItemTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding FullName}" />
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+
+        <TextBlock Text="{x:Static res:Strings.Importers_Mailbox_Label}" />
+        <ComboBox ItemsSource="{Binding AvailableMailboxes}"
+                  SelectedItem="{Binding SelectedMailbox, Mode=TwoWay}"
+                  PlaceholderText="{x:Static res:Strings.Importers_NoMailbox_Placeholder}">
+          <ComboBox.ItemTemplate>
+            <DataTemplate>
+              <TextBlock>
+                <Run Text="{Binding Username}" /><Run Text=" @ " /><Run Text="{Binding Host}" />
+              </TextBlock>
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+
+        <TextBlock Text="{x:Static res:Strings.Importers_FromFilter_Label}" />
+        <TextBox Text="{Binding FromFilter}" />
+
+        <TextBlock Text="{x:Static res:Strings.Importers_SubjectFilter_Label}" />
+        <TextBox Text="{Binding SubjectFilter}" />
+
+        <TextBlock Text="{x:Static res:Strings.Importers_AttachmentRegex_Label}" />
+        <TextBox Text="{Binding AttachmentRegex}" />
+
+        <TextBlock Text="{x:Static res:Strings.Importers_PaymentNotes_Label}" />
+        <TextBox Text="{Binding PaymentNotes}"
+                 AcceptsReturn="True"
+                 MinLines="3" />
+
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <Button Command="{Binding SaveCommand}"
+                  Content="{x:Static res:Strings.Importers_Save_Button}" />
+          <Button Command="{Binding DeleteCommand}"
+                  Content="{x:Static res:Strings.Importers_Delete_Button}" />
+        </StackPanel>
+
+        <TextBlock Text="{Binding ErrorMessage}"
+                   Foreground="Red"
+                   IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        <TextBlock Text="{Binding SuccessMessage}"
+                   Foreground="Green"
+                   IsVisible="{Binding SuccessMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        <ProgressBar IsIndeterminate="True"
+                     IsVisible="{Binding IsLoading}"
+                     Height="4" />
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

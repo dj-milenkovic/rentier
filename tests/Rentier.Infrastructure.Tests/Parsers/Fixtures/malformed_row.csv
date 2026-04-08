@@ -1,0 +1,4 @@
+Dividends,Header,Currency,Date,Description,Amount
+Dividends,Data,USD,2024-01-15,"AAPL(US0378331005) Cash Dividend",NOT_A_NUMBER
+Dividends,Data,USD,2024-01-20,"MSFT(US5949181045) Cash Dividend",48.00
+Dividends,Total,USD,,Total,48.00

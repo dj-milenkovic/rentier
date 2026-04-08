@@ -1,0 +1,45 @@
+# .NET build artefacts
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstats
+
+# IDE files
+.vs/
+.idea/
+.vscode/
+*.DotSettings.user
+*.DotSettings
+
+# OS metadata
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# NuGet
+packages/
+*.nupkg
+*.snupkg
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Ll]og/
+
+# Test results
+TestResults/
+coverage/
+*.trx
+
+# Environment
+.env
+.env.*
+*.tmp
+*.swp
