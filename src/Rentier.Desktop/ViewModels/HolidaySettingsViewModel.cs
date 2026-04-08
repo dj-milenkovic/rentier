@@ -29,53 +29,17 @@ public sealed class HolidaySettingsViewModel : ReactiveObject, IActivatableViewM
     private HolidayEntryViewModel? _selectedEntry;
     private bool _hasUnsavedChanges;
 
-    public int StartYear
-    {
-        get => _startYear;
-        set => this.RaiseAndSetIfChanged(ref _startYear, value);
-    }
+    public int StartYear { get => _startYear; set => this.RaiseAndSetIfChanged(ref _startYear, value); }
+    public int EndYear { get => _endYear; set => this.RaiseAndSetIfChanged(ref _endYear, value); }
+    public bool IsLoading { get => _isLoading; private set => this.RaiseAndSetIfChanged(ref _isLoading, value); }
+    public string? ErrorMessage { get => _errorMessage; private set => this.RaiseAndSetIfChanged(ref _errorMessage, value); }
+    public string? SuccessMessage { get => _successMessage; private set => this.RaiseAndSetIfChanged(ref _successMessage, value); }
+    public int ImportYear { get => _importYear; set => this.RaiseAndSetIfChanged(ref _importYear, value); }
+    public HolidayEntryViewModel? SelectedEntry { get => _selectedEntry; set => this.RaiseAndSetIfChanged(ref _selectedEntry, value); }
+    public bool HasUnsavedChanges { get => _hasUnsavedChanges; private set => this.RaiseAndSetIfChanged(ref _hasUnsavedChanges, value); }
 
-    public int EndYear
-    {
-        get => _endYear;
-        set => this.RaiseAndSetIfChanged(ref _endYear, value);
-    }
-
-    public bool IsLoading
-    {
-        get => _isLoading;
-        private set => this.RaiseAndSetIfChanged(ref _isLoading, value);
-    }
-
-    public string? ErrorMessage
-    {
-        get => _errorMessage;
-        private set => this.RaiseAndSetIfChanged(ref _errorMessage, value);
-    }
-
-    public string? SuccessMessage
-    {
-        get => _successMessage;
-        private set => this.RaiseAndSetIfChanged(ref _successMessage, value);
-    }
-
-    public int ImportYear
-    {
-        get => _importYear;
-        set => this.RaiseAndSetIfChanged(ref _importYear, value);
-    }
-
-    public HolidayEntryViewModel? SelectedEntry
-    {
-        get => _selectedEntry;
-        set => this.RaiseAndSetIfChanged(ref _selectedEntry, value);
-    }
-
-    public bool HasUnsavedChanges
-    {
-        get => _hasUnsavedChanges;
-        private set => this.RaiseAndSetIfChanged(ref _hasUnsavedChanges, value);
-    }
+    /// <summary>Returns true when the Entries collection is non-empty.</summary>
+    public bool HasItems => Entries.Count > 0;
 
     public ObservableCollection<HolidayEntryViewModel> Entries { get; } = new();
 
@@ -97,13 +61,20 @@ public sealed class HolidaySettingsViewModel : ReactiveObject, IActivatableViewM
         _importHandler = importHandler;
         _scheduler = scheduler ?? RxApp.MainThreadScheduler;
 
+        // Raise HasItems when collection size changes
+        Entries.CollectionChanged += (_, _) => this.RaisePropertyChanged(nameof(HasItems));
+
+        var notLoading = this.WhenAnyValue(x => x.IsLoading).Select(l => !l);
+
         AddRowCommand = ReactiveCommand.Create(() =>
         {
             Entries.Add(new HolidayEntryViewModel());
             HasUnsavedChanges = true;
-        });
+        }, notLoading);
 
-        var canDelete = this.WhenAnyValue(x => x.SelectedEntry).Select(e => e != null);
+        var canDelete = this.WhenAnyValue(x => x.SelectedEntry)
+            .Select(e => e != null)
+            .CombineLatest(notLoading, (hasEntry, nl) => hasEntry && nl);
         DeleteRowCommand = ReactiveCommand.Create<HolidayEntryViewModel>(entry =>
         {
             Entries.Remove(entry);
@@ -117,26 +88,13 @@ public sealed class HolidaySettingsViewModel : ReactiveObject, IActivatableViewM
             SuccessMessage = null;
             try
             {
-                var cmd = new SaveHolidayConfCommand(
-                    Entries.Select(e => e.ToDto()).ToList(),
-                    StartYear,
-                    EndYear);
+                var cmd = new SaveHolidayConfCommand(Entries.Select(e => e.ToDto()).ToList(), StartYear, EndYear);
                 var result = await _saveHandler.HandleAsync(cmd, ct);
-                if (result.IsSuccess)
-                {
-                    SuccessMessage = Strings.Holidays_Saved_Confirmation;
-                    HasUnsavedChanges = false;
-                }
-                else
-                {
-                    ErrorMessage = result.Error.Message;
-                }
+                if (result.IsSuccess) { SuccessMessage = Strings.Holidays_Saved_Confirmation; HasUnsavedChanges = false; }
+                else { ErrorMessage = result.Error.Message; }
             }
-            finally
-            {
-                IsLoading = false;
-            }
-        });
+            finally { IsLoading = false; }
+        }, notLoading);
 
         ImportCommand = ReactiveCommand.CreateFromTask<int>(async (int year, CancellationToken ct) =>
         {
@@ -150,19 +108,13 @@ public sealed class HolidaySettingsViewModel : ReactiveObject, IActivatableViewM
                 if (result.IsSuccess)
                 {
                     Entries.Clear();
-                    foreach (var dto in result.Value)
-                        Entries.Add(HolidayEntryViewModel.FromDto(dto));
+                    foreach (var dto in result.Value) Entries.Add(HolidayEntryViewModel.FromDto(dto));
+                    HasUnsavedChanges = true;
                 }
-                else
-                {
-                    ErrorMessage = $"{Strings.Holidays_ImportError_Prefix}{result.Error.Message}";
-                }
+                else { ErrorMessage = $"{Strings.Holidays_ImportError_Prefix}{result.Error.Message}"; }
             }
-            finally
-            {
-                IsLoading = false;
-            }
-        });
+            finally { IsLoading = false; }
+        }, notLoading);
 
         this.WhenActivated(disposables =>
         {
@@ -183,20 +135,13 @@ public sealed class HolidaySettingsViewModel : ReactiveObject, IActivatableViewM
             if (result.IsSuccess)
             {
                 Entries.Clear();
-                foreach (var dto in result.Value.Holidays)
-                    Entries.Add(HolidayEntryViewModel.FromDto(dto));
+                foreach (var dto in result.Value.Holidays) Entries.Add(HolidayEntryViewModel.FromDto(dto));
                 StartYear = result.Value.StartYear;
                 EndYear = result.Value.EndYear;
                 HasUnsavedChanges = false;
             }
-            else
-            {
-                ErrorMessage = result.Error.Message;
-            }
+            else { ErrorMessage = result.Error.Message; }
         }
-        finally
-        {
-            IsLoading = false;
-        }
+        finally { IsLoading = false; }
     }
 }

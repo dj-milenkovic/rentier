@@ -37,12 +37,13 @@ public class ImportHolidaysFromWebCommandHandlerTests
     public async Task ImporterFailure_ReturnsFailureResult()
     {
         _importer.ImportAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
-            .Returns(Result<IReadOnlyList<HolidayEntryDto>, Error>.Failure(new Error("FETCH_FAILED", "HTTP 503")));
+            .Returns(Result<IReadOnlyList<HolidayEntryDto>, Error>.Failure(new Error("HOLIDAY_IMPORT_FAILED", "HTTP 503")));
 
         var result = await _handler.HandleAsync(new ImportHolidaysFromWebCommand(2025));
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("FETCH_FAILED");
+        result.Error.Code.Should().Be("HOLIDAY_IMPORT_FAILED");
         result.Error.Message.Should().Be("HTTP 503");
     }
 }
+
