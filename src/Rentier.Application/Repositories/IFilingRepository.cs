@@ -50,4 +50,10 @@ public interface IFilingRepository
     /// Returns aggregate counts by status and the total unpaid tax amount.
     /// </summary>
     Task<(int InitCount, int FiledCount, int PaidCount, decimal TotalUnpaidRsd)> GetFilingStatsAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns the earliest IncomeDate among filings linked to the given Report, or null if no filings exist.
+    /// Used by GetReportsQueryHandler to derive a human-readable display name.
+    /// </summary>
+    Task<DateOnly?> GetEarliestIncomeDateByReportIdAsync(Guid reportId, CancellationToken ct = default);
 }

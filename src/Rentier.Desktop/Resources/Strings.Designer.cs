@@ -162,4 +162,7 @@ public static class Strings
     public static string Sync_Validation_DateRequired => "Replay date is required for this mode";
     public static string Sync_Validation_DateNotFuture => "Replay date cannot be in the future";
     public static string Sync_FullReplay_Warning => "⚠ Full Replay will re-process ALL emails in the mailbox. This may take a long time.";
+    public static string Reports_Sync_Subtitle => "Sync downloads new statements from your configured mailboxes and processes them into reports. For per-mailbox status and history, visit the Sync page.";
+    public static string Holidays_YearRange_HelperText => "Showing holidays for the selected year range. The range also determines which years are pre-seeded on first run.";
+    public static string Holidays_EmptyForRange => "No holidays configured for this range.";
 }

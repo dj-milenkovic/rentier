@@ -508,4 +508,13 @@
   <data name="Sync_FullReplay_Warning" xml:space="preserve">
     <value>⚠ Full Replay will re-process ALL emails in the mailbox. This may take a long time.</value>
   </data>
+  <data name="Reports_Sync_Subtitle" xml:space="preserve">
+    <value>Sync downloads new statements from your configured mailboxes and processes them into reports. For per-mailbox status and history, visit the Sync page.</value>
+  </data>
+  <data name="Holidays_YearRange_HelperText" xml:space="preserve">
+    <value>Showing holidays for the selected year range. The range also determines which years are pre-seeded on first run.</value>
+  </data>
+  <data name="Holidays_EmptyForRange" xml:space="preserve">
+    <value>No holidays configured for this range.</value>
+  </data>
 </root>

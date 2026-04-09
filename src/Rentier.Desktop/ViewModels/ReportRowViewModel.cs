@@ -15,6 +15,8 @@ public sealed class ReportRowViewModel
     public string       ImporterName { get; }
     public ReportStatus Status       { get; }
     public int          FilingCount  { get; }
+    /// <summary>Friendly display name: "&lt;ImporterName&gt; – &lt;EarliestIncomeDate&gt;" or import date fallback.</summary>
+    public string       DisplayName  { get; }
 
     /// <summary>Import date formatted as yyyy-MM-dd.</summary>
     public string ImportDateDisplay => ImportDate.ToString("yyyy-MM-dd");
@@ -27,6 +29,7 @@ public sealed class ReportRowViewModel
         ImporterName = dto.ImporterName;
         Status       = dto.Status;
         FilingCount  = dto.FilingCount;
+        DisplayName  = dto.DisplayName;
     }
 
     /// <summary>Creates a ReportRowViewModel from a ReportRowDto.</summary>

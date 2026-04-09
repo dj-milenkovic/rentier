@@ -53,9 +53,11 @@ public class GetReportsQueryHandlerTests
     {
         var importer = MakeImporter("IBKR EU");
         var report   = MakeReport(importer.Id, "stmt_2024.csv");
+        var earliest = new DateOnly(2024, 3, 15);
         _reportRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([report]);
         _importerRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([importer]);
         _filingRepo.GetFilingCountByReportIdAsync(report.Id, Arg.Any<CancellationToken>()).Returns(7);
+        _filingRepo.GetEarliestIncomeDateByReportIdAsync(report.Id, Arg.Any<CancellationToken>()).Returns(earliest);
 
         var result = await _sut.HandleAsync(new GetReportsQuery());
 
@@ -66,6 +68,25 @@ public class GetReportsQueryHandlerTests
         dto.ImporterName.Should().Be("IBKR EU");
         dto.Status.Should().Be(ReportStatus.Init);
         dto.FilingCount.Should().Be(7);
+        dto.EarliestIncomeDate.Should().Be(earliest);
+        dto.DisplayName.Should().Be("IBKR EU \u2013 2024-03-15");
+    }
+
+    [Fact]
+    public async Task HandleAsync_DisplayName_FallsBackToImportDateWhenNoFilings()
+    {
+        var importer = MakeImporter("My Broker");
+        var report   = MakeReport(importer.Id, "stmt.csv");
+        _reportRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([report]);
+        _importerRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([importer]);
+        _filingRepo.GetFilingCountByReportIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(0);
+        _filingRepo.GetEarliestIncomeDateByReportIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((DateOnly?)null);
+
+        var result = await _sut.HandleAsync(new GetReportsQuery());
+
+        var dto = result.Value[0];
+        dto.EarliestIncomeDate.Should().BeNull();
+        dto.DisplayName.Should().Be($"My Broker \u2013 {report.ImportDate:yyyy-MM-dd}");
     }
 
     [Fact]
@@ -76,6 +97,7 @@ public class GetReportsQueryHandlerTests
         _reportRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([report]);
         _importerRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([importer]);
         _filingRepo.GetFilingCountByReportIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(0);
+        _filingRepo.GetEarliestIncomeDateByReportIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((DateOnly?)null);
 
         var result = await _sut.HandleAsync(new GetReportsQuery());
 
@@ -89,6 +111,7 @@ public class GetReportsQueryHandlerTests
         _reportRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([report]);
         _importerRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(Array.Empty<Importer>());
         _filingRepo.GetFilingCountByReportIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(0);
+        _filingRepo.GetEarliestIncomeDateByReportIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((DateOnly?)null);
 
         var result = await _sut.HandleAsync(new GetReportsQuery());
 
@@ -105,6 +128,7 @@ public class GetReportsQueryHandlerTests
         _importerRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([importer]);
         _filingRepo.GetFilingCountByReportIdAsync(r1.Id, Arg.Any<CancellationToken>()).Returns(5);
         _filingRepo.GetFilingCountByReportIdAsync(r2.Id, Arg.Any<CancellationToken>()).Returns(2);
+        _filingRepo.GetEarliestIncomeDateByReportIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((DateOnly?)null);
 
         var result = await _sut.HandleAsync(new GetReportsQuery());
 
