@@ -90,6 +90,8 @@ public sealed class DashboardViewModel : ReactiveObject, IActivatableViewModel
         private set => this.RaiseAndSetIfChanged(ref _lastSyncDisplay, value);
     }
 
+    public bool HasOverdueFilings => _overdueFilings.Count > 0;
+
     public ReactiveCommand<Unit, Unit> LoadCommand { get; }
     public ReactiveCommand<Unit, Unit> NavigateToFilingsCommand { get; }
 
@@ -140,6 +142,7 @@ public sealed class DashboardViewModel : ReactiveObject, IActivatableViewModel
                 ? dto.LastSyncDate.Value.ToString("yyyy-MM-dd")
                 : "Never";
             HasData = true;
+            this.RaisePropertyChanged(nameof(HasOverdueFilings));
         }
 
         IsLoading = false;

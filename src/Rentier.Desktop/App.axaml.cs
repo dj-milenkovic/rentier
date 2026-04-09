@@ -2,6 +2,9 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Rentier.Application.Commands;
+using Rentier.Application.Common;
+using Rentier.Application.Interfaces;
 using Rentier.Desktop.Composition;
 using Rentier.Desktop.ViewModels;
 using Rentier.Desktop.Views;
@@ -22,26 +25,54 @@ public partial class App : Avalonia.Application
 
     public override async void OnFrameworkInitializationCompleted()
     {
-        var dbPath = System.IO.Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "Rentier", "rentier.db");
-        System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(dbPath)!);
-
-        var services = new ServiceCollection();
-        await services.AddInfrastructureServicesAsync(dbPath);
-        services.AddDesktopServices();
-        var provider = services.BuildServiceProvider();
-
-        // Apply EF migrations on startup
-        await using var dbContext = provider.GetRequiredService<AppDbContext>();
-        await dbContext.Database.MigrateAsync();
-
-        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        try
         {
-            var mainVm = provider.GetRequiredService<MainWindowViewModel>();
-            desktop.MainWindow = new MainWindow(mainVm);
-        }
+            var dbPath = System.IO.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "Rentier", "rentier.db");
+            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(dbPath)!);
 
-        base.OnFrameworkInitializationCompleted();
+            var services = new ServiceCollection();
+            await services.AddInfrastructureServicesAsync(dbPath);
+            services.AddDesktopServices();
+            var provider = services.BuildServiceProvider();
+
+            // Apply EF migrations on startup
+            await using var dbContext = provider.GetRequiredService<AppDbContext>();
+            await dbContext.Database.MigrateAsync();
+
+            // Seed holiday defaults if the database has no holiday configuration yet
+            var seedHandler = provider.GetRequiredService<
+                ICommandHandler<EnsureHolidaysSeededCommand, Result<bool, Error>>>();
+            await seedHandler.HandleAsync(new EnsureHolidaysSeededCommand());
+
+            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            {
+                var mainVm = provider.GetRequiredService<MainWindowViewModel>();
+                desktop.MainWindow = new MainWindow(mainVm);
+            }
+
+            base.OnFrameworkInitializationCompleted();
+        }
+        catch (Exception ex)
+        {
+            // Startup failure — show a minimal error window so the user has actionable information
+            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            {
+                var errorWindow = new Avalonia.Controls.Window
+                {
+                    Title = "Startup Error",
+                    Content = new Avalonia.Controls.TextBlock
+                    {
+                        Text = $"Rentier failed to start:\n\n{ex.Message}",
+                        Margin = new Avalonia.Thickness(16),
+                        TextWrapping = Avalonia.Media.TextWrapping.Wrap
+                    },
+                    Width = 480,
+                    Height = 200
+                };
+                desktop.MainWindow = errorWindow;
+            }
+        }
     }
 }

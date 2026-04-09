@@ -41,11 +41,13 @@ public static class BusinessDayResolver
 
     /// <summary>
     /// Returns date if it is already a business day; otherwise returns the first
-    /// business day found by WalkBackward. Returns date if none found within 10 days.
+    /// business day found by WalkBackward. Throws <see cref="DomainException"/> if none found within 10 days.
     /// </summary>
     public static DateOnly FindPreviousBusinessDay(DateOnly date, HolidayConf holidays)
     {
         if (IsBusinessDay(date, holidays)) return date;
-        return WalkBackward(date.AddDays(1), holidays).FirstOrDefault(date);
+        foreach (var d in WalkBackward(date.AddDays(1), holidays))
+            return d;
+        throw new DomainException($"No business day found within 10 calendar days before {date}");
     }
 }

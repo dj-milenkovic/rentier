@@ -45,16 +45,30 @@ public sealed class Report
         };
     }
 
-    /// <summary>Transitions the report to a new processing status.</summary>
+    /// <summary>
+    /// Transitions the report to a new processing status.
+    /// Only Init → Processed / PartialError / Error are valid.
+    /// </summary>
     public void SetStatus(ReportStatus status)
     {
+        var isValid = (Status, status) switch
+        {
+            (ReportStatus.Init, ReportStatus.Processed)    => true,
+            (ReportStatus.Init, ReportStatus.PartialError) => true,
+            (ReportStatus.Init, ReportStatus.Error)        => true,
+            _ => false
+        };
+
+        if (!isValid)
+            throw new DomainException($"Invalid Report status transition: {Status} → {status}");
+
         Status = status;
     }
 
     /// <summary>Creates a new revision of an existing report linked via OriginalReportId.</summary>
     public static Report CreateRevision(Report original, byte[]? newContent)
     {
-        ArgumentNullException.ThrowIfNull(original);
+        if (original is null) throw new DomainException("Original report must not be null");
         var suffix = $"_rev{DateTime.UtcNow:yyyyMMddHHmmss}";
         var baseName = original.ReportName.Length + suffix.Length > 500
             ? original.ReportName[..(500 - suffix.Length)]

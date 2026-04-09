@@ -10,6 +10,7 @@ using Xunit;
 
 namespace Rentier.Infrastructure.Tests;
 
+[Trait("Category", "Integration")]
 public class ImapMailboxSyncServiceTests
 {
     private static Mailbox MakeMailbox()

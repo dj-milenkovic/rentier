@@ -40,7 +40,10 @@ public sealed class Filing
     // EF Core parameterless constructor
     private Filing() { }
 
-    public Filing(Guid id, Guid taxpayerProfileId, DateOnly taxPeriod, FilingStatus status = FilingStatus.Init)
+    // Internal constructor used for EF Core hydration and test seeding.
+    // Does NOT enforce CreateFromIncome invariants by design — EF hydrates
+    // persisted data that was already validated on creation.
+    internal Filing(Guid id, Guid taxpayerProfileId, DateOnly taxPeriod, FilingStatus status = FilingStatus.Init)
     {
         Id = id;
         TaxpayerProfileId = taxpayerProfileId;

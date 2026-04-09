@@ -1,56 +1,45 @@
 using Xunit;
 using FluentAssertions;
 using Rentier.Domain.Entities;
+using Rentier.Domain.Enums;
 using Rentier.Domain.Exceptions;
 
 namespace Rentier.Domain.Tests;
 
 public class FilingStatusTransitionTests
 {
-    [Fact]
-    public void AdvanceStatus_FromInitToFiled_StatusBecomesFiled()
+    [Theory]
+    [InlineData(FilingStatus.Init,  FilingStatus.Filed, false)]  // Init → Filed: valid
+    [InlineData(FilingStatus.Filed, FilingStatus.Paid,  false)]  // Filed → Paid: valid
+    [InlineData(FilingStatus.Paid,  FilingStatus.Init,  true)]   // Paid → Init: invalid
+    [InlineData(FilingStatus.Init,  FilingStatus.Paid,  true)]   // Init → Paid: invalid (skip Filed)
+    [InlineData(FilingStatus.Filed, FilingStatus.Init,  true)]   // Filed → Init: invalid
+    public void AdvanceStatus_Transition_BehavesCorrectly(
+        FilingStatus fromStatus, FilingStatus toStatus, bool shouldThrow)
     {
-        var filing = new Filing(Guid.NewGuid(), Guid.NewGuid(), DateOnly.FromDateTime(DateTime.UtcNow));
-        filing.AdvanceStatus(FilingStatus.Filed);
-        filing.Status.Should().Be(FilingStatus.Filed);
+        var filing = CreateFilingInState(fromStatus);
+
+        var act = () => filing.AdvanceStatus(toStatus);
+
+        if (shouldThrow)
+            act.Should().Throw<DomainException>();
+        else
+            act.Should().NotThrow();
     }
 
-    [Fact]
-    public void AdvanceStatus_FromFiledToPaid_StatusBecomesPaid()
+    /// <summary>Creates a Filing already advanced to the given status via the public factory.</summary>
+    private static Filing CreateFilingInState(FilingStatus status)
     {
-        var filing = new Filing(Guid.NewGuid(), Guid.NewGuid(), DateOnly.FromDateTime(DateTime.UtcNow));
-        filing.AdvanceStatus(FilingStatus.Filed);
-        filing.AdvanceStatus(FilingStatus.Paid);
-        filing.Status.Should().Be(FilingStatus.Paid);
-    }
+        var filing = Filing.CreateFromIncome(
+            Guid.NewGuid(), IncomeType.Dividend, "ACME Corp",
+            new DateOnly(2025, 1, 1), 1000m, 150m, 150m, 0m,
+            new DateOnly(2025, 2, 1));
 
-    [Fact]
-    public void AdvanceStatus_FromPaidToInit_ThrowsDomainException()
-    {
-        var filing = new Filing(Guid.NewGuid(), Guid.NewGuid(), DateOnly.FromDateTime(DateTime.UtcNow));
-        filing.AdvanceStatus(FilingStatus.Filed);
-        filing.AdvanceStatus(FilingStatus.Paid);
+        if (status is FilingStatus.Filed or FilingStatus.Paid)
+            filing.AdvanceStatus(FilingStatus.Filed);
+        if (status is FilingStatus.Paid)
+            filing.AdvanceStatus(FilingStatus.Paid);
 
-        var act = () => filing.AdvanceStatus(FilingStatus.Init);
-        act.Should().Throw<DomainException>();
-    }
-
-    [Fact]
-    public void AdvanceStatus_FromInitToPaid_ThrowsDomainException()
-    {
-        var filing = new Filing(Guid.NewGuid(), Guid.NewGuid(), DateOnly.FromDateTime(DateTime.UtcNow));
-
-        var act = () => filing.AdvanceStatus(FilingStatus.Paid);
-        act.Should().Throw<DomainException>();
-    }
-
-    [Fact]
-    public void AdvanceStatus_FromFiledToInit_ThrowsDomainException()
-    {
-        var filing = new Filing(Guid.NewGuid(), Guid.NewGuid(), DateOnly.FromDateTime(DateTime.UtcNow));
-        filing.AdvanceStatus(FilingStatus.Filed);
-
-        var act = () => filing.AdvanceStatus(FilingStatus.Init);
-        act.Should().Throw<DomainException>();
+        return filing;
     }
 }

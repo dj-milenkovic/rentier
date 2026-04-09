@@ -21,7 +21,8 @@ public sealed class ImporterRepository : IImporterRepository
 
     public async Task<IReadOnlyList<Importer>> GetAllAsync(CancellationToken ct = default)
     {
-        return await _db.Importers.AsNoTracking().ToListAsync(ct);
+        var list = await _db.Importers.AsNoTracking().ToListAsync(ct);
+        return list.AsReadOnly();
     }
 
     public async Task AddAsync(Importer importer, CancellationToken ct = default)

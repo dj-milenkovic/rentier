@@ -1,10 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace Rentier.Infrastructure.Persistence.Migrations
 {
-    public partial class _0010_FilingRateProvenance : Migration
+    public partial class _0011_FilingRateProvenance : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {

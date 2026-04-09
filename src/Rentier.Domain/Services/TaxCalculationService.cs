@@ -51,7 +51,7 @@ public static class TaxCalculationService
         decimal whtPaidRsd = 0m;
         if (whtAmount > 0)
         {
-            var whtRate = await rateProvider(incomeDate, upperWht);
+            var whtRate = (upperWht == upperIncome) ? incomeRate : await rateProvider(incomeDate, upperWht);
             ct.ThrowIfCancellationRequested();
             whtPaidRsd = Round(whtAmount * whtRate.RateToRsd);
         }

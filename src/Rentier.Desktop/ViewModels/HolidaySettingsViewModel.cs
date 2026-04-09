@@ -122,6 +122,12 @@ public sealed class HolidaySettingsViewModel : ReactiveObject, IActivatableViewM
                 .ObserveOn(_scheduler)
                 .Subscribe()
                 .DisposeWith(disposables);
+            SaveCommand.ThrownExceptions
+                .Subscribe(ex => ErrorMessage = ex.Message)
+                .DisposeWith(disposables);
+            ImportCommand.ThrownExceptions
+                .Subscribe(ex => ErrorMessage = ex.Message)
+                .DisposeWith(disposables);
         });
     }
 

@@ -20,7 +20,7 @@ public class ImportHolidaysFromWebCommandHandlerTests
     }
 
     [Fact]
-    public async Task ImporterSuccess_ReturnsHolidayList()
+    public async Task HandleAsync_ImporterSuccess_ReturnsHolidayList()
     {
         var holidays = new List<HolidayEntryDto> { new(new DateOnly(2025, 1, 1), "New Year") };
         _importer.ImportAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
@@ -34,7 +34,7 @@ public class ImportHolidaysFromWebCommandHandlerTests
     }
 
     [Fact]
-    public async Task ImporterFailure_ReturnsFailureResult()
+    public async Task HandleAsync_ImporterFailure_ReturnsFailureResult()
     {
         _importer.ImportAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
             .Returns(Result<IReadOnlyList<HolidayEntryDto>, Error>.Failure(new Error("HOLIDAY_IMPORT_FAILED", "HTTP 503")));

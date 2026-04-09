@@ -119,10 +119,10 @@ public class MailboxTests
     }
 
     [Fact]
-    public void UpdateCursor_NullCursor_ThrowsArgumentNullException()
+    public void UpdateCursor_NullCursor_ThrowsDomainException()
     {
         var mailbox = Mailbox.Create("imap.example.com", 993, "user@example.com");
         var act = () => mailbox.UpdateCursor(null!);
-        act.Should().Throw<ArgumentNullException>();
+        act.Should().Throw<DomainException>();
     }
 }

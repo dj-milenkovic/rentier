@@ -116,8 +116,12 @@ public sealed class NbsExchangeRateFetcher : IExchangeRateFetcher
                 new Error("RATE_NOT_FOUND",
                     $"No NBS exchange rate published for {date:yyyy-MM-dd}."));
 
-        // Step 9: Batch cache all rates for this date — swallow cache errors so fetch still succeeds
-        try { await _cache.SaveBatchAsync(allRates, ct); } catch { /* cache write failure is non-fatal */ }
+        // Step 9: Batch cache all rates for this date — non-fatal if write fails
+        try { await _cache.SaveBatchAsync(allRates, ct); }
+        catch (Exception ex) when (ex is Microsoft.EntityFrameworkCore.DbUpdateException or InvalidOperationException)
+        {
+            // Cache write failure is non-fatal; the fetched rates are still returned below
+        }
 
         // Step 10: Return requested rate from parsed batch (not re-queried from DB)
         var result = allRates.FirstOrDefault(r =>

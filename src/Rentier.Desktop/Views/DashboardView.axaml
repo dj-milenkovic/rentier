@@ -45,7 +45,7 @@
 
     <!-- Overdue Filings -->
     <StackPanel Grid.Row="2"
-                IsVisible="{Binding OverdueFilings.Count, Converter={x:Static ObjectConverters.IsNotNull}}">
+                IsVisible="{Binding HasOverdueFilings}">
       <Border Background="#FFEEEE" CornerRadius="6" Padding="8,6" Margin="0,0,0,6">
         <TextBlock Text="{x:Static res:Strings.Dashboard_OverdueFilings}" FontWeight="Bold" Foreground="#CC0000" />
       </Border>

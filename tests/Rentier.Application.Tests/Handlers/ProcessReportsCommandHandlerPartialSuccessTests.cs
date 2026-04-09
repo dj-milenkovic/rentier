@@ -18,13 +18,13 @@ namespace Rentier.Application.Tests.Handlers;
 
 public class ProcessReportsCommandHandlerPartialSuccessTests
 {
-    private static readonly Guid ProfileId = Guid.NewGuid();
+    private readonly Guid ProfileId = Guid.NewGuid();
     private static readonly DateOnly TestDate = new(2024, 6, 17); // Monday
 
     private static HolidayConfDto MakeHolidayDto()
         => new HolidayConfDto([], 2024, 2024);
 
-    private static Importer MakeImporter()
+    private Importer MakeImporter()
     {
         var importer = Importer.Create("Test Importer");
         importer.UpdateDetails("Test Importer", ReportType.IbkrCsv, ProfileId, null, "", "", "", "");

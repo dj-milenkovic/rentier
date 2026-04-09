@@ -8,6 +8,7 @@ using Xunit;
 
 namespace Rentier.Infrastructure.Tests.Serialization;
 
+[Trait("Category", "Integration")]
 public class PpOpoXmlSerializerTests
 {
     private readonly PpOpoXmlSerializer _sut = new();

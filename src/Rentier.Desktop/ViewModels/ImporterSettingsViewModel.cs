@@ -175,6 +175,12 @@ public sealed class ImporterSettingsViewModel : ReactiveObject, IActivatableView
                 .ObserveOn(_scheduler)
                 .Subscribe()
                 .DisposeWith(disposables);
+            SaveCommand.ThrownExceptions
+                .Subscribe(ex => ErrorMessage = ex.Message)
+                .DisposeWith(disposables);
+            DeleteCommand.ThrownExceptions
+                .Subscribe(ex => ErrorMessage = ex.Message)
+                .DisposeWith(disposables);
         });
     }
 

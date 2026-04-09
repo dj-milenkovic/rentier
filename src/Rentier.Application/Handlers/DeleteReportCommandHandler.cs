@@ -37,6 +37,10 @@ public sealed class DeleteReportCommandHandler
 
             return Result<VoidResult, Error>.Success(VoidResult.Value);
         }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             return Result<VoidResult, Error>.Failure(

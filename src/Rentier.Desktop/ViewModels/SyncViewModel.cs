@@ -188,9 +188,14 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
                 .Subscribe(v => IsRunning = v)
                 .DisposeWith(disposables);
 
-            // Swallow unhandled exceptions — errors are surfaced via SummaryMessage
+            // Surface unhandled exceptions from SyncCommand via ErrorMessage
             SyncCommand.ThrownExceptions
-                .Subscribe(_ => { })
+                .Subscribe(ex =>
+                {
+                    ErrorMessage = ex.Message;
+                    HasErrors = true;
+                    SummaryMessage = $"Sync failed unexpectedly: {ex.Message}";
+                })
                 .DisposeWith(disposables);
         });
     }

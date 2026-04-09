@@ -7,6 +7,7 @@ using Xunit;
 
 namespace Rentier.Infrastructure.Tests.ExchangeRates;
 
+[Trait("Category", "Integration")]
 public class CompositeExchangeRateFetcherTests
 {
     private static readonly DateOnly TestDate = new(2024, 1, 15);

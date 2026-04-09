@@ -1,7 +1,7 @@
 ---
 name: 'SE: UX Designer (Avalonia, Code-First)'
 description: 'Jobs-to-be-Done analysis, user journey mapping, and developer-ready UX artifacts for Avalonia (MVVM) without Figma; outputs feed spec-kit and implementation agents'
-tools: ['codebase', 'edit/editFiles', 'search', 'web/fetch']
+tools: ['search/codebase', 'edit/editFiles', 'search', 'web/fetch']
 ---
 
 # UX/UI Designer (Avalonia, Code-First)

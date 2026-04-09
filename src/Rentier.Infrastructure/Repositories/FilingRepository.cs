@@ -137,11 +137,22 @@ public sealed class FilingRepository : IFilingRepository
 
     public async Task<(int InitCount, int FiledCount, int PaidCount, decimal TotalUnpaidRsd)> GetFilingStatsAsync(CancellationToken ct = default)
     {
-        var filings = await _db.Filings.AsNoTracking().ToListAsync(ct);
-        var initCount = filings.Count(f => f.Status == FilingStatus.Init);
-        var filedCount = filings.Count(f => f.Status == FilingStatus.Filed);
-        var paidCount = filings.Count(f => f.Status == FilingStatus.Paid);
-        var totalUnpaid = filings.Where(f => f.Status != FilingStatus.Paid).Sum(f => f.TaxPayableRsd);
+        var counts = await _db.Filings.AsNoTracking()
+            .GroupBy(f => f.Status)
+            .Select(g => new { Status = g.Key, Count = g.Count() })
+            .ToListAsync(ct);
+
+        // SQLite cannot SUM decimal columns server-side; fetch only the relevant
+        // values and aggregate in memory.
+        var unpaidAmounts = await _db.Filings.AsNoTracking()
+            .Where(f => f.Status != FilingStatus.Paid)
+            .Select(f => f.TaxPayableRsd)
+            .ToListAsync(ct);
+
+        var initCount   = counts.FirstOrDefault(g => g.Status == FilingStatus.Init)?.Count  ?? 0;
+        var filedCount  = counts.FirstOrDefault(g => g.Status == FilingStatus.Filed)?.Count ?? 0;
+        var paidCount   = counts.FirstOrDefault(g => g.Status == FilingStatus.Paid)?.Count  ?? 0;
+        var totalUnpaid = unpaidAmounts.Sum();
         return (initCount, filedCount, paidCount, totalUnpaid);
     }
 }

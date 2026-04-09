@@ -44,6 +44,10 @@ public sealed class GetReportsQueryHandler
 
             return Result<IReadOnlyList<ReportRowDto>, Error>.Success(dtos.AsReadOnly());
         }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             return Result<IReadOnlyList<ReportRowDto>, Error>.Failure(

@@ -114,9 +114,9 @@ public class ReportTests
     }
 
     [Fact]
-    public void CreateRevision_NullOriginal_ThrowsArgumentNullException()
+    public void CreateRevision_NullOriginal_ThrowsDomainException()
     {
         var act = () => Report.CreateRevision(null!, null);
-        act.Should().Throw<ArgumentNullException>();
+        act.Should().Throw<DomainException>();
     }
 }

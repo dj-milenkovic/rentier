@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using FluentAssertions;
 using Rentier.Application.Common;
@@ -7,16 +6,15 @@ using Xunit;
 
 namespace Rentier.Infrastructure.Tests.Security;
 
+[Trait("Category", "Integration")]
 [SupportedOSPlatform("windows")]
 public class WindowsCredentialStoreTests
 {
     private static string MakeTestKey() => $"Rentier/Test/{Guid.NewGuid()}/password";
 
-    [Fact]
+    [Fact(Skip = "Requires Windows")]
     public async Task SaveAndGet_RoundTrip_ReturnsSameSecret()
     {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) return;
-
         var store = new WindowsCredentialStore();
         var key = MakeTestKey();
         const string secret = "my-s3cr3t-value";
@@ -36,11 +34,9 @@ public class WindowsCredentialStoreTests
         }
     }
 
-    [Fact]
+    [Fact(Skip = "Requires Windows")]
     public async Task Save_Overwrites_ExistingCredential()
     {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) return;
-
         var store = new WindowsCredentialStore();
         var key = MakeTestKey();
 
@@ -59,11 +55,9 @@ public class WindowsCredentialStoreTests
         }
     }
 
-    [Fact]
+    [Fact(Skip = "Requires Windows")]
     public async Task Get_AbsentKey_ReturnsCredentialNotFound()
     {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) return;
-
         var store = new WindowsCredentialStore();
         var key = MakeTestKey();
 
@@ -73,11 +67,9 @@ public class WindowsCredentialStoreTests
         result.Error.Code.Should().Be("CREDENTIAL_NOT_FOUND");
     }
 
-    [Fact]
+    [Fact(Skip = "Requires Windows")]
     public async Task Delete_ExistingCredential_RemovesIt()
     {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) return;
-
         var store = new WindowsCredentialStore();
         var key = MakeTestKey();
 
@@ -90,11 +82,9 @@ public class WindowsCredentialStoreTests
         getResult.Error.Code.Should().Be("CREDENTIAL_NOT_FOUND");
     }
 
-    [Fact]
+    [Fact(Skip = "Requires Windows")]
     public async Task Delete_AbsentKey_ReturnsSuccess()
     {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) return;
-
         var store = new WindowsCredentialStore();
         var key = MakeTestKey();
 
@@ -103,11 +93,9 @@ public class WindowsCredentialStoreTests
         result.IsSuccess.Should().BeTrue();
     }
 
-    [Fact]
+    [Fact(Skip = "Requires Windows")]
     public async Task Save_EmptyKey_ReturnsCredentialWriteFailed()
     {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) return;
-
         var store = new WindowsCredentialStore();
 
         var result = await store.SaveCredentialAsync("", "someValue");
@@ -117,11 +105,9 @@ public class WindowsCredentialStoreTests
         result.Error.Message.Should().Be("Key must not be empty");
     }
 
-    [Fact]
+    [Fact(Skip = "Requires Windows")]
     public async Task Save_EmptySecret_ReturnsCredentialWriteFailed()
     {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) return;
-
         var store = new WindowsCredentialStore();
 
         var result = await store.SaveCredentialAsync("Rentier/Test/key", "");
@@ -131,11 +117,9 @@ public class WindowsCredentialStoreTests
         result.Error.Message.Should().Be("Secret must not be empty");
     }
 
-    [Fact]
+    [Fact(Skip = "Requires Windows")]
     public async Task Save_UnicodeSecret_RoundTripsCorrectly()
     {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) return;
-
         var store = new WindowsCredentialStore();
         var key = MakeTestKey();
         const string secret = "pässwörd-日本語-🔐";

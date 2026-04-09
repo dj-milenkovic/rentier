@@ -1,3 +1,4 @@
+using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using ReactiveUI;
 using Rentier.Application.Commands;
@@ -10,8 +11,9 @@ using Rentier.Desktop.Resources;
 
 namespace Rentier.Desktop.ViewModels;
 
-public sealed class ProfileSettingsViewModel : ReactiveObject
+public sealed class ProfileSettingsViewModel : ReactiveObject, IActivatableViewModel
 {
+    public ViewModelActivator Activator { get; } = new();
     private readonly ICommandHandler<SaveTaxpayerProfileCommand, Result<VoidResult, Error>> _saveHandler;
     private readonly IQueryHandler<GetTaxpayerProfileQuery, Result<TaxpayerProfileDto?, Error>> _getHandler;
 
@@ -104,6 +106,17 @@ public sealed class ProfileSettingsViewModel : ReactiveObject
             .DistinctUntilChanged();
 
         SaveCommand = ReactiveCommand.CreateFromTask(ExecuteSaveAsync, canSave);
+
+        this.WhenActivated(disposables =>
+        {
+            Observable.FromAsync(ct => LoadAsync(ct))
+                .ObserveOn(RxApp.MainThreadScheduler)
+                .Subscribe()
+                .DisposeWith(disposables);
+            SaveCommand.ThrownExceptions
+                .Subscribe(ex => ErrorMessage = ex.Message)
+                .DisposeWith(disposables);
+        });
     }
 
     private async Task ExecuteSaveAsync()

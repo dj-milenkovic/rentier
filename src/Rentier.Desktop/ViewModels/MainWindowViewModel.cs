@@ -79,5 +79,9 @@ public sealed class MainWindowViewModel : ReactiveObject
 
         _selectedEntry = NavigationEntries[0];
         _currentViewModel = dashboardVm;
+
+        // Keep CurrentViewModel in sync with SelectedEntry — belongs in ViewModel, not code-behind
+        this.WhenAnyValue(x => x.SelectedEntry)
+            .Subscribe(entry => { if (entry is not null) CurrentViewModel = entry.ViewModel; });
     }
 }

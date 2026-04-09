@@ -10,6 +10,7 @@ using Xunit;
 
 namespace Rentier.Infrastructure.Tests;
 
+[Trait("Category", "Integration")]
 public class FilingRepositoryTests : IAsyncLifetime
 {
     private SqliteConnection _connection = null!;

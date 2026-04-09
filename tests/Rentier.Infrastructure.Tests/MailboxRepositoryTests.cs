@@ -8,6 +8,7 @@ using Xunit;
 
 namespace Rentier.Infrastructure.Tests;
 
+[Trait("Category", "Integration")]
 public class MailboxRepositoryTests : IAsyncLifetime
 {
     private SqliteConnection _connection = null!;

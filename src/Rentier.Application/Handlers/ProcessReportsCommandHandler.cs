@@ -91,6 +91,10 @@ public sealed class ProcessReportsCommandHandler
                     "Report {ReportId}: {Total} events, {Created} filings, {Failed} failed -> {Status}",
                     report.Id, succeeded + failed, created, failed, status);
             }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
                 report.SetStatus(ReportStatus.Error);
@@ -135,13 +139,20 @@ public sealed class ProcessReportsCommandHandler
         foreach (var div in parsed.Dividends)
         {
             ct.ThrowIfCancellationRequested();
-            RateResolution? resolution = null;
             try
             {
                 var wht = parsed.Withholdings.FirstOrDefault(w =>
                     w.Date == div.Date && w.EntityName == div.EntityName && w.Currency == div.Currency);
 
-                resolution = await rateProvider(div.Date, div.Currency);
+                var rateResult = await rateProvider(div.Date, div.Currency);
+                if (!rateResult.IsSuccess)
+                {
+                    errors.Add(new FilingCreationError(div.EntityName, div.Date, div.Currency, div.Amount,
+                        rateResult.Error.Code, rateResult.Error.Message));
+                    failed++;
+                    continue;
+                }
+                var resolution = rateResult.Value;
 
                 var info = await TaxCalculationService.CalculateAsync(
                     IncomeType.Dividend, div.EntityName, div.Date, div.Amount, div.Currency,
@@ -164,10 +175,13 @@ public sealed class ProcessReportsCommandHandler
                 }
                 succeeded++;
             }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
-                var (code, message) = ParseErrorFromException(ex);
-                errors.Add(new FilingCreationError(div.EntityName, div.Date, div.Currency, div.Amount, code, message));
+                errors.Add(new FilingCreationError(div.EntityName, div.Date, div.Currency, div.Amount, "DOMAIN_ERROR", ex.Message));
                 failed++;
             }
         }
@@ -176,13 +190,20 @@ public sealed class ProcessReportsCommandHandler
         foreach (var interest in parsed.Interest.Where(i => i.Type == InterestType.Credit))
         {
             ct.ThrowIfCancellationRequested();
-            RateResolution? resolution = null;
             try
             {
                 var wht = parsed.Withholdings.FirstOrDefault(w =>
                     w.Date == interest.Date && w.EntityName == interest.EntityName);
 
-                resolution = await rateProvider(interest.Date, interest.Currency);
+                var rateResult = await rateProvider(interest.Date, interest.Currency);
+                if (!rateResult.IsSuccess)
+                {
+                    errors.Add(new FilingCreationError(interest.EntityName, interest.Date, interest.Currency, interest.Amount,
+                        rateResult.Error.Code, rateResult.Error.Message));
+                    failed++;
+                    continue;
+                }
+                var resolution = rateResult.Value;
 
                 var info = await TaxCalculationService.CalculateAsync(
                     IncomeType.Interest, interest.EntityName, interest.Date, interest.Amount, interest.Currency,
@@ -205,10 +226,13 @@ public sealed class ProcessReportsCommandHandler
                 }
                 succeeded++;
             }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
-                var (code, message) = ParseErrorFromException(ex);
-                errors.Add(new FilingCreationError(interest.EntityName, interest.Date, interest.Currency, interest.Amount, code, message));
+                errors.Add(new FilingCreationError(interest.EntityName, interest.Date, interest.Currency, interest.Amount, "DOMAIN_ERROR", ex.Message));
                 failed++;
             }
         }
@@ -216,14 +240,14 @@ public sealed class ProcessReportsCommandHandler
         return (created, succeeded, failed, errors);
     }
 
-    private Func<DateOnly, string, Task<RateResolution>> BuildRateProvider(
+    private Func<DateOnly, string, Task<Result<RateResolution, Error>>> BuildRateProvider(
         StatementParseResult parsed, HolidayConf holidays, CancellationToken ct)
     {
         return async (date, currency) =>
         {
             var result = await _exchangeRateResolver.ResolveAsync(date, currency, holidays, ct: ct);
             if (result.IsSuccess)
-                return result.Value;
+                return Result<RateResolution, Error>.Success(result.Value);
 
             // Cross-rate fallback: find IBKR rate for this currency to USD
             var ibkrRate = parsed.EmbeddedRates
@@ -235,24 +259,12 @@ public sealed class ProcessReportsCommandHandler
                 {
                     var syntheticRate = new ExchangeRate(usdResult.Value.SourceDate, currency,
                         ibkrRate.Rate * usdResult.Value.Rate.RateToRsd);
-                    return new RateResolution(syntheticRate, usdResult.Value.SourceDate, usdResult.Value.SourceType);
+                    return Result<RateResolution, Error>.Success(
+                        new RateResolution(syntheticRate, usdResult.Value.SourceDate, usdResult.Value.SourceType));
                 }
             }
 
-            throw new InvalidOperationException($"{result.Error.Code}|{result.Error.Message}");
+            return Result<RateResolution, Error>.Failure(result.Error);
         };
-    }
-
-    private static (string code, string message) ParseErrorFromException(Exception ex)
-    {
-        var msg = ex.Message;
-        var pipeIdx = msg.IndexOf('|');
-        if (pipeIdx > 0)
-        {
-            var code = msg[..pipeIdx];
-            var message = msg[(pipeIdx + 1)..];
-            return (code, message);
-        }
-        return ("DOMAIN_ERROR", msg);
     }
 }

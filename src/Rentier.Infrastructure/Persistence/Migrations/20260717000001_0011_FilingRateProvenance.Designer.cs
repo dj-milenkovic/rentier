@@ -11,8 +11,8 @@ using Rentier.Infrastructure.Persistence;
 namespace Rentier.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260717000001_0010_FilingRateProvenance")]
-    partial class _0010_FilingRateProvenance
+    [Migration("20260717000001_0011_FilingRateProvenance")]
+    partial class _0011_FilingRateProvenance
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
