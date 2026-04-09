@@ -8,6 +8,16 @@
     xmlns:local="using:Rentier.Desktop.Converters"
     x:Class="Rentier.Desktop.Views.FilingsView"
     x:CompileBindings="False">
+  <reactive:ReactiveUserControl.Styles>
+    <Style Selector="ToggleButton:checked">
+      <Setter Property="Background" Value="{DynamicResource SystemAccentColor}" />
+      <Setter Property="Foreground" Value="White" />
+    </Style>
+    <Style Selector="ToggleButton:checked:pointerover">
+      <Setter Property="Background" Value="{DynamicResource SystemAccentColorLight1}" />
+      <Setter Property="Foreground" Value="White" />
+    </Style>
+  </reactive:ReactiveUserControl.Styles>
   <DockPanel>
 
     <!-- Filter toggle bar -->
@@ -20,7 +30,7 @@
 
     <!-- Loading indicator -->
     <ProgressBar DockPanel.Dock="Top" IsIndeterminate="True"
-                 IsVisible="{Binding IsLoading}" Height="4" />
+                 IsVisible="{Binding IsLoading}" Height="6" MinHeight="6" />
 
     <!-- Error banner -->
     <Grid DockPanel.Dock="Top" Margin="8,0"
@@ -60,6 +70,22 @@
               CanUserResizeColumns="True"
               CanUserSortColumns="False">
       <DataGrid.Columns>
+
+        <!-- Status badge: read-only coloured pill showing current filing status -->
+        <DataGridTemplateColumn Width="90">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <Border Background="{Binding Status, Converter={x:Static local:FilingStatusBrushConverter.Instance}}"
+                      CornerRadius="10" Padding="8,2"
+                      IsHitTestVisible="False"
+                      HorizontalAlignment="Center" VerticalAlignment="Center" Margin="4,2">
+                <TextBlock Text="{Binding StatusDisplayText}"
+                           Foreground="White" FontSize="11" FontWeight="SemiBold"
+                           HorizontalAlignment="Center" />
+              </Border>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
 
         <!-- Status column: ComboBox showing valid next statuses -->
         <DataGridTemplateColumn Header="{x:Static res:Strings.Filings_Col_Status}" Width="120">

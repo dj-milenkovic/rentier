@@ -155,4 +155,13 @@ public sealed class FilingRepository : IFilingRepository
         var totalUnpaid = unpaidAmounts.Sum();
         return (initCount, filedCount, paidCount, totalUnpaid);
     }
+
+    public async Task<DateOnly?> GetEarliestIncomeDateByReportIdAsync(Guid reportId, CancellationToken ct = default)
+    {
+        var dates = await _db.Filings.AsNoTracking()
+            .Where(f => f.ReportId == reportId)
+            .Select(f => (DateOnly?)f.IncomeDate)
+            .ToListAsync(ct);
+        return dates.Count == 0 ? null : dates.Min();
+    }
 }

@@ -744,6 +744,163 @@ Add tests:
 
 ---
 
+## Tier 6 — QA Feedback Wave (2026-04-09)
+
+These features capture issues raised by QA after first hands-on testing. All four
+items are UI/UX improvements or minor interaction bugs — no new business logic.
+
+---
+
+### 021 · Filings Page — Filter State & Status Visibility
+
+**What it delivers**: Makes the filing filter buttons (All / Unpaid) visually
+reflect the active selection, and adds a readable status badge to each row so
+the user always knows where a filing stands without having to guess.
+
+**Layers touched**: Desktop (`FilingsViewModel`, `FilingsView.axaml`).
+
+**Depends on**: `012-filings-list`
+
+**Spec-kit prompt**:
+```
+Fix the Filings page filtering and status visibility.
+
+Problems reported by QA:
+1. Clicking "All" and "Unpaid" filter buttons produces no visible feedback —
+   the active filter is not highlighted and the list does not clearly update.
+2. Users cannot tell the current status of a filing row at a glance; they
+   can only change it.
+
+Implement:
+- Visual active-state on the filter toggle buttons (e.g. accent background /
+  border when selected). Bind to a FilingFilterMode observable on the ViewModel.
+- A read-only status badge (pill / coloured tag) on each filing row showing
+  Init / Filed / Paid in human-readable form with a distinct colour per state
+  (e.g. amber → Init, blue → Filed, green → Paid).
+- Ensure the list visibly refreshes when the filter changes (the ViewModel
+  already supports FilingFilterMode; the issue is purely presentation).
+
+All label strings in Strings.resx. No new commands or repository calls needed.
+```
+
+---
+
+### 022 · Reports Page — Smarter Naming & Sync Clarification
+
+**What it delivers**: Replaces the raw file-name report title with a
+human-readable `<ImporterName> – <StatementDate>` label, and adds clear
+inline copy on the Reports page explaining what "Sync mailboxes" does so users
+understand the relationship to the dedicated Sync page.
+
+**Layers touched**: Application (`ReportDto` / mapping), Desktop
+(`ReportsViewModel`, `ReportsView.axaml`).
+
+**Depends on**: `014-reports-list`, `015-one-click-sync`
+
+**Spec-kit prompt**:
+```
+Improve the Reports page naming and sync discoverability.
+
+Problems reported by QA:
+1. Report names are raw file paths / long CSV file names — hard to read.
+2. "Sync mailboxes" button purpose is unclear; users do not understand why
+   the same action exists on the dedicated Sync page.
+
+Implement:
+1. Report display name: derive a friendly label using the pattern
+   "<ImporterDisplayName> – <StatementDate>" where StatementDate is the
+   earliest IncomeDate of the filings belonging to that report (fallback to
+   the import date if no filings exist). Store derived label in ReportDto.
+   Keep the original file name accessible in a tooltip or detail panel.
+2. Sync clarification: add a short descriptive subtitle or info banner below
+   the "Sync mailboxes" button on the Reports page. Text should explain that
+   sync downloads new statements from the configured mailboxes and processes
+   them into reports. Differentiate it from the Sync page (which shows
+   per-mailbox status and history). Text in Strings.resx.
+
+Add unit tests for the display-name derivation logic in Application.
+```
+
+---
+
+### 023 · Importers Settings — Form Reset on Save / Navigation
+
+**What it delivers**: Ensures the importer edit form fully resets (all fields
+cleared or repopulated from the selected item) after a save or when the user
+navigates to a different importer, eliminating stale field values.
+
+**Layers touched**: Desktop (`ImporterSettingsViewModel`).
+
+**Depends on**: `005-importer-configuration`
+
+**Spec-kit prompt**:
+```
+Fix the Importers settings form so it is always consistent with the selected
+importer.
+
+Problem reported by QA:
+After saving changes or switching to a different importer in the list, some
+fields retain stale values from the previous edit. The form is not fully
+reset on save or on selection change.
+
+Implement:
+- On save success: reload the importer list and re-select the saved item by
+  ID; repopulate every bound field from the refreshed DTO (host, port,
+  username, attachment regex, display name — every editable field).
+- On selection change (WhenAnyValue): populate all fields from the newly
+  selected item, clearing any unsaved edits.
+- On deselect (selected item becomes null): clear all fields to empty /
+  default values.
+- Identify and fix any fields that are currently excluded from the reset
+  path (compare the populate method against all bound properties).
+
+Add ViewModel unit tests covering save → re-select and select-different-item
+scenarios for all editable fields.
+```
+
+---
+
+### 024 · Holidays Settings — Year-Range Filter & UX Improvements
+
+**What it delivers**: Makes the Start Year / End Year selectors on the
+Holidays settings page filter the displayed holiday rows, clarifies their
+purpose with labels, and improves the overall layout so the intent of the
+controls is obvious.
+
+**Layers touched**: Desktop (`HolidaySettingsViewModel`, `HolidaySettingsView.axaml`).
+
+**Depends on**: `003-holiday-configuration`, `020-holidays-settings-repair`
+
+**Spec-kit prompt**:
+```
+Fix the Holidays settings year-range controls and improve page UX.
+
+Problems reported by QA:
+1. Changing Start Year or End Year has no visible effect on the holidays
+   table — users do not understand what the selectors do.
+2. The purpose of the year range is not communicated in the UI.
+
+Implement:
+1. Filtering: when Start Year or End Year changes, filter the DataGrid to
+   show only holidays whose Date.Year falls within [StartYear, EndYear].
+   The full list remains in the ViewModel; the grid binds to a filtered
+   derived collection (ObservableCollection or derived IObservable). Do not
+   re-query the database on every change — filter in memory.
+2. Label clarification: add a short helper text below the year selectors
+   (e.g. "Showing holidays for the selected year range. The range also
+   determines which years are pre-seeded on first run.").
+3. Layout: ensure year selector labels ("Start year" / "End year") are
+   visible and aligned; add a subtle separator between the year controls and
+   the holiday grid.
+4. Empty state: if no holidays exist for the selected range, show a
+   "No holidays configured for this range" placeholder.
+
+All strings in Strings.resx. No new repository calls — filter client-side.
+Add ViewModel unit tests for the filtering logic.
+```
+
+---
+
 ## Feature Dependency Graph
 
 ```
@@ -765,11 +922,17 @@ Add tests:
  │              └── 014-reports-list
  ├── 015-one-click-sync ◄── 010, 011
  │    ├── 018-sync-replay-controls
- │    └── 019-filing-reliability-fixes ◄── 006
+ │    ├── 019-filing-reliability-fixes ◄── 006
+ │    └── 022-reports-naming-sync-ux ◄── 014
+ ├── 012-filings-list
+ │    └── 021-filings-filter-status ◄── 012
  ├── 004-mailbox-configuration
  │    └── 017-cross-platform-credential-store
+ ├── 005-importer-configuration
+ │    └── 023-importers-form-reset ◄── 005
  └── 003-holiday-configuration
-   └── 020-holidays-settings-repair ◄── 006
+   ├── 020-holidays-settings-repair ◄── 006
+   └── 024-holidays-year-filter ◄── 020
 ```
 
 ---
@@ -783,6 +946,7 @@ Add tests:
 | **C — Integration** | 010 → 011 (needs A+B) | Email sync + filing pipeline |
 | **D — UI** | 012 → 013 → 014 → 015 → 016 (needs C) | User-facing screens |
 | **E — Reliability** | 017 → 018 → 019 → 020 | Cross-platform + bugfix wave |
+| **F — QA Fixes** | 021 → 022 → 023 → 024 | UX polish from QA feedback |
 
 Lanes A and B can run in parallel from day one. Lane C starts when both
 converge. Lane D follows C. Lane E starts after 011 (with 017 partially in

@@ -43,6 +43,12 @@ public sealed class HolidaySettingsViewModel : ReactiveObject, IActivatableViewM
 
     public ObservableCollection<HolidayEntryViewModel> Entries { get; } = new();
 
+    /// <summary>Entries filtered to the current StartYear–EndYear range. The DataGrid binds to this.</summary>
+    public ObservableCollection<HolidayEntryViewModel> FilteredEntries { get; } = new();
+
+    /// <summary>True when FilteredEntries is empty (no holidays in the selected range).</summary>
+    public bool IsFilteredEmpty => FilteredEntries.Count == 0;
+
     public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> AddRowCommand { get; }
     public ReactiveCommand<HolidayEntryViewModel, System.Reactive.Unit> DeleteRowCommand { get; }
     public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> SaveCommand { get; }
@@ -61,8 +67,20 @@ public sealed class HolidaySettingsViewModel : ReactiveObject, IActivatableViewM
         _importHandler = importHandler;
         _scheduler = scheduler ?? RxApp.MainThreadScheduler;
 
-        // Raise HasItems when collection size changes
-        Entries.CollectionChanged += (_, _) => this.RaisePropertyChanged(nameof(HasItems));
+        // Raise HasItems when collection size changes; also rebuild the filtered view
+        Entries.CollectionChanged += (_, _) =>
+        {
+            this.RaisePropertyChanged(nameof(HasItems));
+            RebuildFilteredEntries();
+        };
+
+        // Keep IsFilteredEmpty in sync with FilteredEntries
+        FilteredEntries.CollectionChanged += (_, _) =>
+            this.RaisePropertyChanged(nameof(IsFilteredEmpty));
+
+        // Rebuild when year range changes
+        this.WhenAnyValue(x => x.StartYear, x => x.EndYear)
+            .Subscribe(_ => RebuildFilteredEntries());
 
         var notLoading = this.WhenAnyValue(x => x.IsLoading).Select(l => !l);
 
@@ -131,8 +149,19 @@ public sealed class HolidaySettingsViewModel : ReactiveObject, IActivatableViewM
         });
     }
 
-    private async Task LoadAsync(CancellationToken ct = default)
+    private void RebuildFilteredEntries()
     {
+        FilteredEntries.Clear();
+        foreach (var entry in Entries)
+        {
+            // Always include newly-added rows (DateOnly.MinValue = not yet set)
+            if (entry.Date == DateOnly.MinValue ||
+                (entry.Date.Year >= StartYear && entry.Date.Year <= EndYear))
+                FilteredEntries.Add(entry);
+        }
+    }
+
+    private async Task LoadAsync(CancellationToken ct = default)    {
         IsLoading = true;
         ErrorMessage = null;
         try
