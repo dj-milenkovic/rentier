@@ -9,4 +9,6 @@ public sealed record ReportRowDto(
     DateOnly     ImportDate,
     string       ImporterName,
     ReportStatus Status,
-    int          FilingCount);
+    int          FilingCount,
+    string       DisplayName,
+    DateOnly?    EarliestIncomeDate);

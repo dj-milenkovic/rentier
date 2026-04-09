@@ -37,9 +37,12 @@ public sealed class GetReportsQueryHandler
             foreach (var r in reports)
             {
                 ct.ThrowIfCancellationRequested();
-                var count = await _filings.GetFilingCountByReportIdAsync(r.Id, ct);
+                var count        = await _filings.GetFilingCountByReportIdAsync(r.Id, ct);
+                var earliest     = await _filings.GetEarliestIncomeDateByReportIdAsync(r.Id, ct);
                 var importerName = importerNames.GetValueOrDefault(r.ImporterId, "Unknown");
-                dtos.Add(new ReportRowDto(r.Id, r.ReportName, r.ImportDate, importerName, r.Status, count));
+                var datePart     = (earliest ?? r.ImportDate).ToString("yyyy-MM-dd");
+                var displayName  = $"{importerName} \u2013 {datePart}";
+                dtos.Add(new ReportRowDto(r.Id, r.ReportName, r.ImportDate, importerName, r.Status, count, displayName, earliest));
             }
 
             return Result<IReadOnlyList<ReportRowDto>, Error>.Success(dtos.AsReadOnly());

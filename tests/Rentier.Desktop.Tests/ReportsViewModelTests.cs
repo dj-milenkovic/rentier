@@ -60,7 +60,8 @@ public class ReportsViewModelTests
 
     private static ReportRowDto MakeDto(string name = "report.csv") =>
         new(Guid.NewGuid(), name, new DateOnly(2024, 3, 1), "My Importer",
-            ReportStatus.Processed, 3);
+            ReportStatus.Processed, 3,
+            $"My Importer \u2013 2024-03-01", null);
 
     private static ReportsViewModel CreateVm(
         ICommandHandler<SyncMailboxCommand, Result<SyncResult, Error>>? syncHandler = null,
