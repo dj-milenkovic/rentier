@@ -1,5 +1,7 @@
 using System.Globalization;
 using Rentier.Application.DTOs;
+using Rentier.Desktop.Extensions;
+using Rentier.Desktop.Resources;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 
@@ -28,6 +30,9 @@ public sealed class FilingRowViewModel
     /// </summary>
     public string TaxPayableDisplay =>
         TaxPayable.ToString("N2", CultureInfo.InvariantCulture) + " RSD";
+
+    /// <summary>Localised display label for the current status (used by the read-only badge).</summary>
+    public string StatusDisplayText => Status.ToDisplayString();
 
     /// <summary>Payment reference is only editable when the filing has been Filed.</summary>
     public bool IsPaymentReferenceEditable => Status == FilingStatus.Filed;

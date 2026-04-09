@@ -24,6 +24,14 @@
       <TextBlock Text="{x:Static res:Strings.Holidays_EndYear_Label}" VerticalAlignment="Center" />
       <NumericUpDown Value="{Binding EndYear}" Minimum="2020" Maximum="2099" MinWidth="120" FormatString="0" />
     </StackPanel>
+    <TextBlock DockPanel.Dock="Top"
+               Text="{x:Static res:Strings.Holidays_YearRange_HelperText}"
+               Margin="8,0,8,4" Opacity="0.6" FontSize="11" TextWrapping="Wrap" />
+    <Separator DockPanel.Dock="Top" Margin="8,4" />
+    <TextBlock DockPanel.Dock="Top"
+               Text="{x:Static res:Strings.Holidays_EmptyForRange}"
+               IsVisible="{Binding IsFilteredEmpty}"
+               HorizontalAlignment="Center" Opacity="0.6" Margin="8,16" />
     <StackPanel DockPanel.Dock="Bottom" Margin="8,4">
       <TextBlock Text="{Binding ErrorMessage}" IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" Foreground="Red" />
       <TextBlock Text="{Binding SuccessMessage}" IsVisible="{Binding SuccessMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" Foreground="Green" />
@@ -34,7 +42,7 @@
                IsVisible="{Binding !HasItems}"
                HorizontalAlignment="Center" VerticalAlignment="Center"
                Opacity="0.6" Margin="8,16" />
-    <DataGrid x:Name="HolidaysGrid" ItemsSource="{Binding Entries}" SelectedItem="{Binding SelectedEntry, Mode=TwoWay}" AutoGenerateColumns="False" Margin="8,4">
+    <DataGrid x:Name="HolidaysGrid" ItemsSource="{Binding FilteredEntries}" SelectedItem="{Binding SelectedEntry, Mode=TwoWay}" AutoGenerateColumns="False" Margin="8,4">
       <DataGrid.Columns>
         <DataGridTemplateColumn Header="{x:Static res:Strings.Holidays_Date_Column}" Width="*">
           <DataGridTemplateColumn.CellTemplate>

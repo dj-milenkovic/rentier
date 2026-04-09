@@ -96,17 +96,9 @@ public sealed class ImporterSettingsViewModel : ReactiveObject, IActivatableView
         {
             this.RaiseAndSetIfChanged(ref _selectedImporter, value);
             if (value != null)
-            {
-                DisplayName = value.Dto.DisplayName;
-                ReportType = value.Dto.ReportType;
-                SelectedProfile = AvailableProfiles.FirstOrDefault(p => p.Id == value.Dto.TaxpayerProfileId);
-                SelectedMailbox = AvailableMailboxes.FirstOrDefault(m => m.Id == value.Dto.MailboxId);
-                FromFilter = value.Dto.FromFilter;
-                SubjectFilter = value.Dto.SubjectFilter;
-                AttachmentRegex = value.Dto.AttachmentRegex;
-                PaymentNotes = value.Dto.PaymentNotes;
-                IsEditMode = true;
-            }
+                PopulateFormFromDto(value.Dto);
+            else
+                ClearForm();
         }
     }
 
@@ -184,21 +176,39 @@ public sealed class ImporterSettingsViewModel : ReactiveObject, IActivatableView
         });
     }
 
+    private void PopulateFormFromDto(ImporterDto dto)
+    {
+        DisplayName     = dto.DisplayName;
+        ReportType      = dto.ReportType;
+        SelectedProfile = AvailableProfiles.FirstOrDefault(p => p.Id == dto.TaxpayerProfileId);
+        SelectedMailbox = AvailableMailboxes.FirstOrDefault(m => m.Id == dto.MailboxId);
+        FromFilter      = dto.FromFilter;
+        SubjectFilter   = dto.SubjectFilter;
+        AttachmentRegex = dto.AttachmentRegex;
+        PaymentNotes    = dto.PaymentNotes;
+        IsEditMode      = true;
+    }
+
+    private void ClearForm()
+    {
+        DisplayName     = string.Empty;
+        ReportType      = ReportType.IbkrCsv;
+        SelectedProfile = null;
+        SelectedMailbox = null;
+        FromFilter      = string.Empty;
+        SubjectFilter   = string.Empty;
+        AttachmentRegex = string.Empty;
+        PaymentNotes    = string.Empty;
+        IsEditMode      = false;
+        ErrorMessage    = null;
+        SuccessMessage  = null;
+    }
+
     private void OnAddNew()
     {
         _selectedImporter = null;
         this.RaisePropertyChanged(nameof(SelectedImporter));
-        DisplayName = string.Empty;
-        ReportType = ReportType.IbkrCsv;
-        SelectedProfile = null;
-        SelectedMailbox = null;
-        FromFilter = string.Empty;
-        SubjectFilter = string.Empty;
-        AttachmentRegex = string.Empty;
-        PaymentNotes = string.Empty;
-        IsEditMode = false;
-        ErrorMessage = null;
-        SuccessMessage = null;
+        ClearForm();
     }
 
     private async Task OnSaveAsync(CancellationToken ct)
@@ -228,6 +238,10 @@ public sealed class ImporterSettingsViewModel : ReactiveObject, IActivatableView
                     await ReloadImportersAsync(ct);
                     _selectedImporter = ImporterItems.FirstOrDefault(i => i.Id == savedId);
                     this.RaisePropertyChanged(nameof(SelectedImporter));
+                    if (_selectedImporter != null)
+                        PopulateFormFromDto(_selectedImporter.Dto);
+                    else
+                        ClearForm();
                     SuccessMessage = Strings.Importers_Saved_Confirmation;
                 }
                 else
@@ -254,7 +268,10 @@ public sealed class ImporterSettingsViewModel : ReactiveObject, IActivatableView
                     await ReloadImportersAsync(ct);
                     _selectedImporter = ImporterItems.FirstOrDefault(i => i.Id == newId);
                     this.RaisePropertyChanged(nameof(SelectedImporter));
-                    IsEditMode = true;
+                    if (_selectedImporter != null)
+                        PopulateFormFromDto(_selectedImporter.Dto);
+                    else
+                        ClearForm();
                     SuccessMessage = Strings.Importers_Saved_Confirmation;
                 }
                 else
