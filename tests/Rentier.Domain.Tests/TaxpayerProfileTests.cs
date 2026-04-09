@@ -7,7 +7,7 @@ namespace Rentier.Domain.Tests;
 
 public class TaxpayerProfileTests
 {
-    private static readonly Guid TestId = Guid.NewGuid();
+    private readonly Guid TestId = Guid.NewGuid();
     private const string ValidJmbg = "1234567890123";
     private const string ValidFullName = "Marko Marković";
     private const string ValidAddress = "Knez Mihailova 1, Beograd";

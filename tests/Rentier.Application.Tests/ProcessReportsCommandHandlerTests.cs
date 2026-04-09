@@ -18,7 +18,7 @@ namespace Rentier.Application.Tests;
 
 public class ProcessReportsCommandHandlerTests
 {
-    private static readonly Guid ProfileId = Guid.NewGuid();
+    private readonly Guid ProfileId = Guid.NewGuid();
     private static readonly DateOnly TestDate = new(2024, 6, 17);
 
     private static HolidayConfDto MakeHolidayDto()
@@ -27,7 +27,7 @@ public class ProcessReportsCommandHandlerTests
     private static StatementParseResult MakeEmptyParseResult()
         => new StatementParseResult([], [], [], [], []);
 
-    private static Importer MakeImporter(Guid? profileId = null)
+    private Importer MakeImporter(Guid? profileId = null)
     {
         var importer = Importer.Create("Test Importer");
         importer.UpdateDetails("Test Importer", ReportType.IbkrCsv, profileId ?? ProfileId, null, "", "", "", "");

@@ -8,7 +8,7 @@ namespace Rentier.Domain.Tests;
 
 public class FilingCreateFromIncomeTests
 {
-    private static readonly Guid ProfileId = Guid.NewGuid();
+    private readonly Guid ProfileId = Guid.NewGuid();
     private static readonly DateOnly TestDate = new(2024, 6, 15);
     private static readonly DateOnly Deadline = new(2024, 7, 15);
 

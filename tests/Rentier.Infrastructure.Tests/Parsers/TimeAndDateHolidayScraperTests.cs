@@ -5,6 +5,7 @@ using Xunit;
 
 namespace Rentier.Infrastructure.Tests.Parsers;
 
+[Trait("Category", "Integration")]
 public class TimeAndDateHolidayScraperTests
 {
     private static string LoadFixtureHtml()

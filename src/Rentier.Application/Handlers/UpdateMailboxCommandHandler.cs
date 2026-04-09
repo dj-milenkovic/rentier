@@ -35,8 +35,8 @@ public sealed class UpdateMailboxCommandHandler
             return Result<VoidResult, Error>.Failure(new Error("DOMAIN_VALIDATION", ex.Message));
         }
 
-        await _repository.UpdateAsync(mailbox, ct);
-
+        // Save credential before persisting to DB so a credential failure does not
+        // leave the DB with updated connection details but no matching password.
         if (!string.IsNullOrEmpty(command.Password))
         {
             var credResult = await _credentials.SaveCredentialAsync(
@@ -45,6 +45,7 @@ public sealed class UpdateMailboxCommandHandler
                 return Result<VoidResult, Error>.Failure(credResult.Error);
         }
 
+        await _repository.UpdateAsync(mailbox, ct);
         return Result<VoidResult, Error>.Success(VoidResult.Value);
     }
 }

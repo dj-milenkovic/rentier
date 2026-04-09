@@ -19,11 +19,11 @@ public sealed class MacOsCredentialStore : ICredentialStore
     public Task<Result<VoidResult, Error>> SaveCredentialAsync(
         string key, string secret, CancellationToken ct = default)
     {
-        return Task.Run<Result<VoidResult, Error>>(() =>
+        return Task.Run<Result<VoidResult, Error>>(async () =>
         {
-            // -U: update if exists (upsert semantics)
-            var (exitCode, _, stderr) = RunSecurity(
-                $"add-generic-password -a \"{AccountName}\" -s \"{key}\" -w \"{secret}\" -U");
+            // ArgumentList prevents shell injection — each argument is passed verbatim
+            var (exitCode, _, stderr) = await RunSecurityAsync(
+                ["add-generic-password", "-a", AccountName, "-s", key, "-w", secret, "-U"]);
 
             return exitCode == 0
                 ? Result<VoidResult, Error>.Success(VoidResult.Value)
@@ -36,10 +36,10 @@ public sealed class MacOsCredentialStore : ICredentialStore
     public Task<Result<string, Error>> GetCredentialAsync(
         string key, CancellationToken ct = default)
     {
-        return Task.Run<Result<string, Error>>(() =>
+        return Task.Run<Result<string, Error>>(async () =>
         {
-            var (exitCode, stdout, stderr) = RunSecurity(
-                $"find-generic-password -a \"{AccountName}\" -s \"{key}\" -w");
+            var (exitCode, stdout, stderr) = await RunSecurityAsync(
+                ["find-generic-password", "-a", AccountName, "-s", key, "-w"]);
 
             if (exitCode == 0)
                 return Result<string, Error>.Success(stdout.Trim());
@@ -48,7 +48,7 @@ public sealed class MacOsCredentialStore : ICredentialStore
                 return Result<string, Error>.Failure(Error.CredentialNotFound(key));
 
             return Result<string, Error>.Failure(
-                Error.CredentialWriteFailed(
+                Error.CredentialReadFailed(
                     $"security find-generic-password failed (exit {exitCode}): {stderr.Trim()}"));
         }, ct);
     }
@@ -56,10 +56,10 @@ public sealed class MacOsCredentialStore : ICredentialStore
     public Task<Result<VoidResult, Error>> DeleteCredentialAsync(
         string key, CancellationToken ct = default)
     {
-        return Task.Run<Result<VoidResult, Error>>(() =>
+        return Task.Run<Result<VoidResult, Error>>(async () =>
         {
-            var (exitCode, _, stderr) = RunSecurity(
-                $"delete-generic-password -a \"{AccountName}\" -s \"{key}\"");
+            var (exitCode, _, stderr) = await RunSecurityAsync(
+                ["delete-generic-password", "-a", AccountName, "-s", key]);
 
             // Idempotent: treat "not found" as success
             if (exitCode == 0 || exitCode == ExitCodeNotFound)
@@ -71,25 +71,29 @@ public sealed class MacOsCredentialStore : ICredentialStore
         }, ct);
     }
 
-    private static (int ExitCode, string Stdout, string Stderr) RunSecurity(string arguments)
+    private static async Task<(int ExitCode, string Stdout, string Stderr)> RunSecurityAsync(
+        string[] args)
     {
-        using var process = new Process
+        var startInfo = new ProcessStartInfo
         {
-            StartInfo = new ProcessStartInfo
-            {
-                FileName = SecurityBinary,
-                Arguments = arguments,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            }
+            FileName = SecurityBinary,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
         };
+        foreach (var arg in args)
+            startInfo.ArgumentList.Add(arg);
 
+        using var process = new Process { StartInfo = startInfo };
         process.Start();
-        var stdout = process.StandardOutput.ReadToEnd();
-        var stderr = process.StandardError.ReadToEnd();
-        process.WaitForExit();
-        return (process.ExitCode, stdout, stderr);
+
+        // Read stdout and stderr concurrently to prevent deadlock when either buffer fills
+        var stdoutTask = process.StandardOutput.ReadToEndAsync();
+        var stderrTask = process.StandardError.ReadToEndAsync();
+        await Task.WhenAll(stdoutTask, stderrTask);
+        await process.WaitForExitAsync();
+
+        return (process.ExitCode, stdoutTask.Result, stderrTask.Result);
     }
 }

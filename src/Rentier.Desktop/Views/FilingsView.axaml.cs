@@ -31,6 +31,9 @@ public partial class FilingsView : ReactiveUserControl<FilingsViewModel>
         if (sender is not TextBox tb) return;
         if (tb.DataContext is not FilingRowViewModel row) return;
 
+        // Skip the DB write when the text hasn't actually changed since the row was loaded.
+        if (tb.Text == row.PaymentReference) return;
+
         ViewModel?.SavePaymentRefCommand.Execute((row.Id, tb.Text)).Subscribe();
     }
 

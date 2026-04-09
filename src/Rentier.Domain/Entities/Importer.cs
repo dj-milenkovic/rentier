@@ -51,7 +51,7 @@ public sealed class Importer
         if ((paymentNotes ?? string.Empty).Length > 4000)
             throw new DomainException("PaymentNotes must not exceed 4000 characters");
 
-        DisplayName = displayName;
+        DisplayName = displayName.Trim();
         ReportType = reportType;
         TaxpayerProfileId = taxpayerProfileId;
         MailboxId = mailboxId;

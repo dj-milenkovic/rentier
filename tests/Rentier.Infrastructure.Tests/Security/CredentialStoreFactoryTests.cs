@@ -6,6 +6,7 @@ using Xunit;
 
 namespace Rentier.Infrastructure.Tests.Security;
 
+[Trait("Category", "Integration")]
 public class CredentialStoreFactoryTests
 {
     [Fact]

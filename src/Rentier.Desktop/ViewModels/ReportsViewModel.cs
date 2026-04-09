@@ -115,6 +115,18 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
         this.WhenActivated(disposables =>
         {
             LoadReportsCommand.Execute().Subscribe().DisposeWith(disposables);
+            LoadReportsCommand.ThrownExceptions
+                .Subscribe(ex => ErrorMessage = ex.Message)
+                .DisposeWith(disposables);
+            SyncCommand.ThrownExceptions
+                .Subscribe(ex => ErrorMessage = ex.Message)
+                .DisposeWith(disposables);
+            ImportCommand.ThrownExceptions
+                .Subscribe(ex => ErrorMessage = ex.Message)
+                .DisposeWith(disposables);
+            DeleteCommand.ThrownExceptions
+                .Subscribe(ex => ErrorMessage = ex.Message)
+                .DisposeWith(disposables);
         });
     }
 

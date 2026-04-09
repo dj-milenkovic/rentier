@@ -21,7 +21,7 @@ public class GetHolidayConfQueryHandlerTests
     }
 
     [Fact]
-    public async Task FirstRun_NoYearRange_SeedsAndReturnsDto()
+    public async Task HandleAsync_FirstRun_NoYearRange_ReturnsDto_WithoutSeeding()
     {
         var currentYear = DateOnly.FromDateTime(DateTime.Today).Year;
         var seedDto = new HolidayConfDto(
@@ -34,14 +34,16 @@ public class GetHolidayConfQueryHandlerTests
         var result = await _handler.HandleAsync(new GetHolidayConfQuery());
 
         result.IsSuccess.Should().BeTrue();
-        await _repo.Received(1).SaveHolidaysAsync(
-            Arg.Is<IReadOnlyList<PublicHoliday>>(list => list.Count > 0),
-            Arg.Is<HolidayYearRange>(r => r.StartYear == currentYear),
+        result.Value.Holidays.Count.Should().Be(1);
+        // Seeding is handled by EnsureHolidaysSeededCommandHandler, not the query handler.
+        await _repo.DidNotReceive().SaveHolidaysAsync(
+            Arg.Any<IReadOnlyList<PublicHoliday>>(),
+            Arg.Any<HolidayYearRange>(),
             Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task EmptyDatabase_AfterSeed_ReturnsPopulatedDto()
+    public async Task HandleAsync_EmptyDatabase_ReturnsPopulatedDto()
     {
         var currentYear = DateOnly.FromDateTime(DateTime.Today).Year;
         var populatedDto = new HolidayConfDto(
@@ -52,7 +54,6 @@ public class GetHolidayConfQueryHandlerTests
             },
             currentYear, currentYear + 3);
 
-        _repo.GetYearRangeAsync(Arg.Any<CancellationToken>()).Returns((HolidayYearRange?)null);
         _repo.GetHolidayConfAsync(Arg.Any<CancellationToken>()).Returns(populatedDto);
 
         var result = await _handler.HandleAsync(new GetHolidayConfQuery());
@@ -62,7 +63,7 @@ public class GetHolidayConfQueryHandlerTests
     }
 
     [Fact]
-    public async Task PopulatedDatabase_ReturnsMappedDto()
+    public async Task HandleAsync_PopulatedDatabase_ReturnsMappedDto()
     {
         var existingRange = new HolidayYearRange(2025, 2028);
         var existingDto = new HolidayConfDto(

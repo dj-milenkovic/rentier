@@ -40,14 +40,20 @@ public sealed class ExchangeRateCacheRepository : IExchangeRateCacheRepository
 
     public async Task SaveBatchAsync(IReadOnlyList<ExchangeRate> rates, CancellationToken ct = default)
     {
+        if (rates.Count == 0) return;
+
+        // Single query to fetch all existing rows for this date, avoiding N round-trips
+        var date = rates[0].Date;
+        var currencies = rates.Select(r => r.Currency.ToUpperInvariant()).ToList();
+        var existing = await _db.ExchangeRateCache
+            .Where(e => e.Date == date && currencies.Contains(e.Currency))
+            .ToDictionaryAsync(e => e.Currency, ct);
+
         foreach (var rate in rates)
         {
             var upper = rate.Currency.ToUpperInvariant();
-            var existing = await _db.ExchangeRateCache
-                .FindAsync(new object[] { rate.Date, upper }, ct);
-            if (existing is not null)
-                _db.Entry(existing).CurrentValues.SetValues(
-                    new ExchangeRate(rate.Date, upper, rate.RateToRsd));
+            if (existing.TryGetValue(upper, out var tracked))
+                _db.Entry(tracked).CurrentValues.SetValues(new ExchangeRate(rate.Date, upper, rate.RateToRsd));
             else
                 _db.ExchangeRateCache.Add(new ExchangeRate(rate.Date, upper, rate.RateToRsd));
         }

@@ -86,6 +86,8 @@ public sealed class WindowsCredentialStore : ICredentialStore
             }
             finally
             {
+                // Zero the blob before freeing to avoid leaving the secret in unmanaged memory
+                Array.Clear(blob, 0, blob.Length);
                 Marshal.FreeHGlobal(ptr);
             }
         }, ct);
@@ -102,7 +104,7 @@ public sealed class WindowsCredentialStore : ICredentialStore
                 return err == ERROR_NOT_FOUND
                     ? Result<string, Error>.Failure(Error.CredentialNotFound(key))
                     : Result<string, Error>.Failure(
-                        Error.CredentialWriteFailed(new Win32Exception(err).Message));
+                        Error.CredentialReadFailed(new Win32Exception(err).Message));
             }
 
             try

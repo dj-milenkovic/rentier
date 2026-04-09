@@ -12,6 +12,6 @@ public record HolidayConf
 
     public HolidayConf(IReadOnlyList<DateOnly> holidays)
     {
-        Holidays = holidays ?? throw new DomainException("Holidays list must not be null");
+        Holidays = (holidays ?? throw new DomainException("Holidays list must not be null")).ToArray();
     }
 }

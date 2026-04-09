@@ -137,6 +137,15 @@ public sealed class MailboxSettingsViewModel : ReactiveObject, IActivatableViewM
                 .ObserveOn(_scheduler)
                 .Subscribe()
                 .DisposeWith(disposables);
+            AddNewCommand.ThrownExceptions
+                .Subscribe(ex => ErrorMessage = ex.Message)
+                .DisposeWith(disposables);
+            SaveCommand.ThrownExceptions
+                .Subscribe(ex => ErrorMessage = ex.Message)
+                .DisposeWith(disposables);
+            DeleteCommand.ThrownExceptions
+                .Subscribe(ex => ErrorMessage = ex.Message)
+                .DisposeWith(disposables);
         });
     }
 
@@ -161,13 +170,15 @@ public sealed class MailboxSettingsViewModel : ReactiveObject, IActivatableViewM
         {
             if (IsEditMode && SelectedMailbox != null)
             {
+                // Capture the ID before ReloadAsync: Clear() causes the ListBox to deselect,
+                // setting SelectedMailbox to null, so we cannot read it afterwards.
+                var editedId = SelectedMailbox.Id;
                 var cmd = new UpdateMailboxCommand(SelectedMailbox.Id, Host, Port, Username, Password);
                 var result = await _updateHandler.HandleAsync(cmd, ct);
                 if (result.IsSuccess)
                 {
                     await ReloadAsync(ct);
-                    var dto = new Application.DTOs.MailboxDto(SelectedMailbox.Id, Host, Port, Username, SelectedMailbox.LastSyncDate, SelectedMailbox.LastUid);
-                    SelectedMailbox?.UpdateFrom(dto);
+                    SelectedMailbox = Mailboxes.FirstOrDefault(m => m.Id == editedId);
                     Password = string.Empty;
                     SuccessMessage = Strings.Mailboxes_SuccessMessage_Label;
                 }

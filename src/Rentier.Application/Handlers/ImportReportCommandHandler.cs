@@ -59,6 +59,10 @@ public sealed class ImportReportCommandHandler
 
             return Result<Guid, Error>.Success(report.Id);
         }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             return Result<Guid, Error>.Failure(new Error("IMPORT_FAILED", ex.Message));

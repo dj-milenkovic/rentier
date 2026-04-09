@@ -9,6 +9,7 @@ using Xunit;
 
 namespace Rentier.Infrastructure.Tests;
 
+[Trait("Category", "Integration")]
 public class HolidayRepositoryTests : IAsyncLifetime
 {
     private SqliteConnection _connection = null!;
@@ -36,7 +37,7 @@ public class HolidayRepositoryTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task GetHolidayConf_EmptyDatabase_ReturnsEmptyDto()
+    public async Task GetHolidayConfAsync_EmptyDatabase_ReturnsEmptyDto()
     {
         var dto = await _repository.GetHolidayConfAsync();
 
@@ -46,7 +47,7 @@ public class HolidayRepositoryTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task GetHolidayConf_WithData_ReturnsSortedDtoAndRange()
+    public async Task GetHolidayConfAsync_WithData_ReturnsSortedDtoAndRange()
     {
         var yearRange = new HolidayYearRange(2025, 2028);
         var h1 = PublicHoliday.Create(new DateOnly(2025, 6, 28), "Vidovdan");
@@ -66,7 +67,7 @@ public class HolidayRepositoryTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task SaveHolidays_ReplacesAllExistingRows()
+    public async Task SaveHolidaysAsync_WithExistingRows_ReplacesAll()
     {
         var yearRange1 = new HolidayYearRange(2025, 2028);
         var h1 = PublicHoliday.Create(new DateOnly(2025, 1, 1), "Nova godina");
@@ -84,7 +85,7 @@ public class HolidayRepositoryTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task GetYearRange_WhenExists_ReturnsSingleton()
+    public async Task GetYearRangeAsync_WhenExists_ReturnsSingleton()
     {
         var yearRange = new HolidayYearRange(2024, 2027);
         await _repository.SaveHolidaysAsync(Array.Empty<PublicHoliday>(), yearRange);

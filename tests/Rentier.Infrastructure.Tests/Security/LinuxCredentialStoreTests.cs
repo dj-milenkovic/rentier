@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using FluentAssertions;
 using Rentier.Infrastructure.Security;
@@ -6,17 +5,16 @@ using Xunit;
 
 namespace Rentier.Infrastructure.Tests.Security;
 
+[Trait("Category", "Integration")]
 [SupportedOSPlatform("linux")]
 public class LinuxCredentialStoreTests
 {
     // These tests guard with a runtime platform check and are skipped on non-Linux CI.
     // On Linux CI without a Secret Service daemon, all tests skip via the platform guard.
 
-    [Fact]
+    [Fact(Skip = "Requires Linux")]
     public async Task SaveAndGet_RoundTrip_ReturnsSameSecret()
     {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) return;
-
         var factoryResult = await TryGetLinuxStoreAsync();
         if (!factoryResult.IsSuccess) return; // daemon not available — skip gracefully
 
@@ -39,10 +37,9 @@ public class LinuxCredentialStoreTests
         }
     }
 
-    [Fact]
+    [Fact(Skip = "Requires Linux")]
     public async Task Save_Overwrites_ExistingCredential()
     {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) return;
         var factoryResult = await TryGetLinuxStoreAsync();
         if (!factoryResult.IsSuccess) return;
 
@@ -64,10 +61,9 @@ public class LinuxCredentialStoreTests
         }
     }
 
-    [Fact]
+    [Fact(Skip = "Requires Linux")]
     public async Task Get_AbsentKey_ReturnsCredentialNotFound()
     {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) return;
         var factoryResult = await TryGetLinuxStoreAsync();
         if (!factoryResult.IsSuccess) return;
 
@@ -80,10 +76,9 @@ public class LinuxCredentialStoreTests
         result.Error.Code.Should().Be("CREDENTIAL_NOT_FOUND");
     }
 
-    [Fact]
+    [Fact(Skip = "Requires Linux")]
     public async Task Delete_ExistingCredential_RemovesIt()
     {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) return;
         var factoryResult = await TryGetLinuxStoreAsync();
         if (!factoryResult.IsSuccess) return;
 
@@ -99,10 +94,9 @@ public class LinuxCredentialStoreTests
         getResult.Error.Code.Should().Be("CREDENTIAL_NOT_FOUND");
     }
 
-    [Fact]
+    [Fact(Skip = "Requires Linux")]
     public async Task Delete_AbsentKey_ReturnsSuccess()
     {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) return;
         var factoryResult = await TryGetLinuxStoreAsync();
         if (!factoryResult.IsSuccess) return;
 

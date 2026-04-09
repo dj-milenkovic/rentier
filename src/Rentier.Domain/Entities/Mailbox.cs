@@ -24,8 +24,7 @@ public sealed class Mailbox
             throw new DomainException($"Port must be in range 1-65535, got {port}");
         if (string.IsNullOrWhiteSpace(username))
             throw new DomainException("Username must not be null or whitespace");
-        ArgumentNullException.ThrowIfNull(cursor);
-
+        if (cursor is null) throw new DomainException("Cursor must not be null");
         Id = id;
         Host = host;
         Port = port;
@@ -60,7 +59,7 @@ public sealed class Mailbox
 
     public void UpdateCursor(MailboxCursor cursor)
     {
-        ArgumentNullException.ThrowIfNull(cursor);
+        if (cursor is null) throw new DomainException("Cursor must not be null");
         Cursor = cursor;
     }
 }

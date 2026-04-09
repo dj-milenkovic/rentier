@@ -21,7 +21,7 @@ public class SaveHolidayConfCommandHandlerTests
     }
 
     [Fact]
-    public async Task ValidCommand_SavesHolidays()
+    public async Task HandleAsync_ValidCommand_SavesHolidays()
     {
         var cmd = new SaveHolidayConfCommand(
             new List<HolidayEntryDto> { new(new DateOnly(2025, 1, 1), "Nova godina") },
@@ -37,7 +37,7 @@ public class SaveHolidayConfCommandHandlerTests
     }
 
     [Fact]
-    public async Task SaveEmptyList_Allowed()
+    public async Task HandleAsync_SaveEmptyList_Allowed()
     {
         var cmd = new SaveHolidayConfCommand(new List<HolidayEntryDto>(), 2025, 2028);
 
@@ -51,7 +51,7 @@ public class SaveHolidayConfCommandHandlerTests
     }
 
     [Fact]
-    public async Task InvalidYearRange_ReturnsDomainError()
+    public async Task HandleAsync_InvalidYearRange_ReturnsDomainError()
     {
         var cmd = new SaveHolidayConfCommand(new List<HolidayEntryDto>(), 2019, 2025);
 
@@ -66,7 +66,7 @@ public class SaveHolidayConfCommandHandlerTests
     }
 
     [Fact]
-    public async Task DuplicateDates_ReturnsDuplicateError()
+    public async Task HandleAsync_DuplicateDates_ReturnsDuplicateError()
     {
         var date = new DateOnly(2025, 1, 1);
         var cmd = new SaveHolidayConfCommand(

@@ -6,6 +6,7 @@ using Xunit;
 
 namespace Rentier.Infrastructure.Tests.Parsers;
 
+[Trait("Category", "Integration")]
 public sealed class IbkrCsvParserTests
 {
     private static Stream LoadFixture(string name)

@@ -5,6 +5,7 @@ using Xunit;
 
 namespace Rentier.Infrastructure.Tests;
 
+[Trait("Category", "Integration")]
 public class AppDbContextSmokeTests
 {
     [Fact]

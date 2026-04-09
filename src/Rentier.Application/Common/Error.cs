@@ -14,6 +14,10 @@ public sealed record Error(string Code, string Message)
     public static Error CredentialWriteFailed(string message) =>
         new("CREDENTIAL_WRITE_FAILED", message);
 
+    /// <summary>A read operation from the OS credential store failed.</summary>
+    public static Error CredentialReadFailed(string message) =>
+        new("CREDENTIAL_READ_FAILED", message);
+
     /// <summary>A delete operation on the OS credential store failed.</summary>
     public static Error CredentialDeleteFailed(string message) =>
         new("CREDENTIAL_DELETE_FAILED", message);

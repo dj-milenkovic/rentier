@@ -8,6 +8,7 @@ using Xunit;
 
 namespace Rentier.Infrastructure.Tests;
 
+[Trait("Category", "Integration")]
 public class ExchangeRateCacheRepositoryTests
 {
     private static async Task<(AppDbContext db, SqliteConnection conn)> CreateDbAsync()

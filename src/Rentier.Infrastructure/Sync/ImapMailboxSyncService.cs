@@ -78,6 +78,11 @@ public class ImapMailboxSyncService : IMailboxSyncService
                 ct.ThrowIfCancellationRequested();
                 try
                 {
+                    // Compile the attachment regex once per importer rather than on every filename check
+                    Regex? attachmentRegex = string.IsNullOrEmpty(importer.AttachmentRegex)
+                        ? null
+                        : new Regex(importer.AttachmentRegex, RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
                     var importerQuery = ComposeImporterQuery(baseQuery, importer);
                     var uids = await inbox.SearchAsync(importerQuery, ct);
                     var total = uids.Count;
@@ -102,11 +107,8 @@ public class ImapMailboxSyncService : IMailboxSyncService
                                 if (string.IsNullOrEmpty(filename))
                                     continue;
 
-                                // Empty AttachmentRegex means skip all attachments
-                                if (string.IsNullOrEmpty(importer.AttachmentRegex))
-                                    continue;
-
-                                if (!Regex.IsMatch(filename, importer.AttachmentRegex))
+                                // attachmentRegex is null when AttachmentRegex is empty → skip all attachments
+                                if (attachmentRegex is null || !attachmentRegex.IsMatch(filename))
                                     continue;
 
                                 var rawName = $"{subject}_{filename}";

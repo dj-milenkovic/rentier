@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using FluentAssertions;
 using Rentier.Infrastructure.Security;
@@ -6,16 +5,15 @@ using Xunit;
 
 namespace Rentier.Infrastructure.Tests.Security;
 
+[Trait("Category", "Integration")]
 [SupportedOSPlatform("osx")]
 public class MacOsCredentialStoreTests
 {
     private static string MakeTestKey() => $"Rentier/Test/{Guid.NewGuid()}/password";
 
-    [Fact]
+    [Fact(Skip = "Requires macOS")]
     public async Task SaveAndGet_RoundTrip_ReturnsSameSecret()
     {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) return;
-
         var store = new MacOsCredentialStore();
         var key = MakeTestKey();
         const string secret = "macos-secret-value";
@@ -35,11 +33,9 @@ public class MacOsCredentialStoreTests
         }
     }
 
-    [Fact]
+    [Fact(Skip = "Requires macOS")]
     public async Task Save_Overwrites_ExistingCredential()
     {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) return;
-
         var store = new MacOsCredentialStore();
         var key = MakeTestKey();
 
@@ -58,11 +54,9 @@ public class MacOsCredentialStoreTests
         }
     }
 
-    [Fact]
+    [Fact(Skip = "Requires macOS")]
     public async Task Get_AbsentKey_ReturnsCredentialNotFound()
     {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) return;
-
         var store = new MacOsCredentialStore();
         var key = MakeTestKey();
 
@@ -72,11 +66,9 @@ public class MacOsCredentialStoreTests
         result.Error.Code.Should().Be("CREDENTIAL_NOT_FOUND");
     }
 
-    [Fact]
+    [Fact(Skip = "Requires macOS")]
     public async Task Delete_ExistingCredential_RemovesIt()
     {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) return;
-
         var store = new MacOsCredentialStore();
         var key = MakeTestKey();
 
@@ -89,11 +81,9 @@ public class MacOsCredentialStoreTests
         getResult.Error.Code.Should().Be("CREDENTIAL_NOT_FOUND");
     }
 
-    [Fact]
+    [Fact(Skip = "Requires macOS")]
     public async Task Delete_AbsentKey_ReturnsSuccess()
     {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) return;
-
         var store = new MacOsCredentialStore();
         var key = MakeTestKey();
 
@@ -102,10 +92,9 @@ public class MacOsCredentialStoreTests
         result.IsSuccess.Should().BeTrue();
     }
 
-    [Fact]
+    [Fact(Skip = "Requires macOS")]
     public async Task Get_NonZeroExitCode_ReturnsCredentialWriteFailed()
     {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) return;
         // On macOS, searching for a key that doesn't exist returns exit code 44 → CREDENTIAL_NOT_FOUND
         // Any other non-zero exit code maps to CREDENTIAL_WRITE_FAILED
         // This is covered by the Get_AbsentKey test above (uses exit 44 path)

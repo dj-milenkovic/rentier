@@ -8,35 +8,35 @@ namespace Rentier.Domain.Tests;
 public class HolidayYearRangeTests
 {
     [Fact]
-    public void ValidRange_NoThrow()
+    public void Constructor_ValidRange_DoesNotThrow()
     {
         var act = () => new HolidayYearRange(2024, 2027);
         act.Should().NotThrow();
     }
 
     [Fact]
-    public void StartYearBelowMinimum_ThrowsDomainException()
+    public void Constructor_StartYearBelowMinimum_ThrowsDomainException()
     {
         var act = () => new HolidayYearRange(2019, 2024);
         act.Should().Throw<DomainException>();
     }
 
     [Fact]
-    public void EndYearExceedsMax_ThrowsDomainException()
+    public void Constructor_EndYearExceedsMax_ThrowsDomainException()
     {
         var act = () => new HolidayYearRange(2024, 2035);
         act.Should().Throw<DomainException>();
     }
 
     [Fact]
-    public void EndYearEqualsStartPlusTen_IsValid()
+    public void Constructor_EndYearEqualsStartPlusTen_DoesNotThrow()
     {
         var act = () => new HolidayYearRange(2024, 2034);
         act.Should().NotThrow();
     }
 
     [Fact]
-    public void EndYearLessThanStartYear_ThrowsDomainException()
+    public void Constructor_EndYearLessThanStartYear_ThrowsDomainException()
     {
         var act = () => new HolidayYearRange(2025, 2024);
         act.Should().Throw<DomainException>();

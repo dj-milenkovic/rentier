@@ -51,6 +51,10 @@ public sealed class GetDashboardQueryHandler
                 stats.InitCount, stats.FiledCount, stats.PaidCount, stats.TotalUnpaidRsd,
                 lastSync));
         }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             return Result<DashboardDto, Error>.Failure(new Error("DASHBOARD_ERROR", ex.Message));

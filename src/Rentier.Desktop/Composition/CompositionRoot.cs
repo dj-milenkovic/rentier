@@ -36,6 +36,9 @@ public static class CompositionRoot
 
         // Holiday handlers
         services.AddTransient<
+            ICommandHandler<EnsureHolidaysSeededCommand, Result<bool, Error>>,
+            EnsureHolidaysSeededCommandHandler>();
+        services.AddTransient<
             IQueryHandler<GetHolidayConfQuery, Result<HolidayConfDto, Error>>,
             GetHolidayConfQueryHandler>();
         services.AddTransient<

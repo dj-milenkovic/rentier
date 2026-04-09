@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
@@ -18,7 +19,7 @@ public class DeleteMailboxCommandHandlerTests
 
     public DeleteMailboxCommandHandlerTests()
     {
-        _handler = new DeleteMailboxCommandHandler(_repo, _fakeCredentials);
+        _handler = new DeleteMailboxCommandHandler(_repo, _fakeCredentials, NullLogger<DeleteMailboxCommandHandler>.Instance);
     }
 
     [Fact]
@@ -73,7 +74,7 @@ public class DeleteMailboxCommandHandlerTests
         _fakeCredentials.StoredKeys.Should().Contain(key);
 
         // Simulate Delete
-        var handler = new DeleteMailboxCommandHandler(_repo, _fakeCredentials);
+        var handler = new DeleteMailboxCommandHandler(_repo, _fakeCredentials, NullLogger<DeleteMailboxCommandHandler>.Instance);
         await handler.HandleAsync(new DeleteMailboxCommand(id));
 
         _fakeCredentials.StoredKeys.Should().NotContain(key);
