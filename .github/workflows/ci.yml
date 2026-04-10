@@ -1,8 +1,3 @@
-# Rentier CI — build + test on Windows & macOS
-# NOTE: Coverage enforcement gate (Domain 100%, Application 90%) MUST be added
-# in the first feature that introduces a real Application-layer use case.
-# Intentionally absent from scaffold CI per spec assumption A-008.
-
 name: CI
 
 on:
