@@ -1,45 +1,147 @@
-# .NET build artefacts
+# .NET build artifacts
 bin/
 obj/
 *.user
 *.suo
 *.userosscache
 *.sln.docstats
+project.lock.json
+project.fragment.lock.json
 
 # IDE files
 .vs/
-.idea/
 .vscode/
+.idea/
 *.DotSettings.user
 *.DotSettings
+*.rider
+*.idea/
+.resharper*
+.resharper/
+*.codeworksession
+*.sln.iml
+
+# ReSharper / Rider
+._*
+.ReSharper*
+*/.ReSharper.user
+*.ReSharper.user
+
+# Visual Studio profiler
+*.psess
+*.vsp
+*.vspx
+*.sap
+.vspx
 
 # OS metadata
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 desktop.ini
+.AppleDouble
+.LSOverride
 
 # NuGet
 packages/
+.nuget/
 *.nupkg
 *.snupkg
 
 # Build results
 [Dd]ebug/
 [Rr]elease/
+[Rr]eleases/
 x64/
 x86/
+[Ww][Ii][Nn]32/
 [Aa][Rr][Mm]/
 [Aa][Rr][Mm]64/
 bld/
+[Bb]in/
+[Oo]bj/
 [Ll]og/
+[Ll]ogs/
+
+# Local database files
+*.db
+*.sqlite
+*.sqlite3
+*.mdb
 
 # Test results
 TestResults/
 coverage/
+*.coverage
+*.coveragexml
 *.trx
+opencover.xml
+CodeCoverage/
+!.github/workflows/*
 
-# Environment
+# Environment & secrets
 .env
 .env.*
+.env.local
+!.env.example
+!.env.*.example
+appsettings.*.json
+!appsettings.Development.json
+!appsettings.json
+launchSettings.json
+
+# Temporary files
 *.tmp
+*.temp
+*.log
 *.swp
+*.swo
+*~
+.#*
+
+# Build artifacts
+artifacts/
+PublishProfiles/
+publish/
+*.publish.xml
+*.publishproj
+
+# EF Core migrations backup
+*.sql.bak
+efpt.config.json
+
+# Documentation
+docs/_build/
+site/
+
+# Diagnostic files
+diag/
+dump/
+*.dmp
+*.stackdump
+
+# Package managers
+/.dotnet/
+/global.json
+
+# Local CI/CD artifacts
+/.github/workflows/local/
+/ci/local/
+
+# IDE temporary files
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
+
+# Platform-specific
+Thumbs.db
+.AppleDouble
+
+# spec-kit
+.specify
+.github/prompts
+.github/agents/speckit.*
