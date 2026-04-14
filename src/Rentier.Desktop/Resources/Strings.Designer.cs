@@ -127,6 +127,7 @@ public static class Strings
     public static string Filings_Export_Success => "Export saved successfully.";
     public static string Reports_Col_Name => "Report Name";
     public static string Reports_Col_ImportDate => "Import Date";
+    public static string Reports_Col_EmailDate => "Email Date";
     public static string Reports_Col_Importer => "Importer";
     public static string Reports_Col_Status => "Status";
     public static string Reports_Col_FilingCount => "Filings";

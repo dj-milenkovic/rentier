@@ -373,6 +373,9 @@
   <data name="Reports_Col_ImportDate" xml:space="preserve">
     <value>Import Date</value>
   </data>
+  <data name="Reports_Col_EmailDate" xml:space="preserve">
+    <value>Email Date</value>
+  </data>
   <data name="Reports_Col_Importer" xml:space="preserve">
     <value>Importer</value>
   </data>

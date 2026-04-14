@@ -111,11 +111,8 @@ public class ImapMailboxSyncService : IMailboxSyncService
                                 if (attachmentRegex is null || !attachmentRegex.IsMatch(filename))
                                     continue;
 
-                                var rawName = $"{subject}_{filename}";
-                                // Truncate to first 500 chars (Report.Create validates max length)
-                                var reportName = rawName.Length > 500
-                                    ? rawName[..500]
-                                    : rawName;
+                                var emailDate = DateOnly.FromDateTime(message.Date.UtcDateTime);
+                                var reportName = BuildReportName(emailDate, subject, filename);
 
                                 var exists = await _reportRepository.ExistsByImporterAndNameAsync(
                                     importer.Id, reportName, ct);
@@ -127,7 +124,6 @@ public class ImapMailboxSyncService : IMailboxSyncService
                                     attachment.Content.DecodeTo(ms);
                                 var content = ms.ToArray();
 
-                                var emailDate = DateOnly.FromDateTime(message.Date.UtcDateTime);
                                 var report = Report.Create(importer.Id, reportName, content, (long)uid.Id, emailDate);
                                 await _reportRepository.AddAsync(report, ct);
                                 reportsCreated++;
@@ -204,12 +200,12 @@ public class ImapMailboxSyncService : IMailboxSyncService
     }
 
     /// <summary>
-    /// Builds a report name from the email subject and attachment filename,
+    /// Builds a report name from the email date, subject and attachment filename,
     /// truncated to 500 characters for the database constraint.
     /// </summary>
-    internal static string BuildReportName(string subject, string filename)
+    internal static string BuildReportName(DateOnly emailDate, string subject, string filename)
     {
-        var raw = $"{subject}_{filename}";
+        var raw = $"{emailDate:yyyy-MM-dd}_{subject}_{filename}";
         return raw.Length > 500 ? raw[..500] : raw;
     }
 }
