@@ -17,6 +17,7 @@ public sealed class Report
     public byte[]? AttachmentContent { get; private set; }
     public long? MailboxMessageId { get; private set; }
     public Guid? OriginalReportId { get; private set; }
+    public DateOnly? EmailDate { get; private set; }
 
     // EF Core parameterless constructor
     private Report() { }
@@ -26,7 +27,8 @@ public sealed class Report
         Guid importerId,
         string reportName,
         byte[]? attachmentContent,
-        long? mailboxMessageId)
+        long? mailboxMessageId,
+        DateOnly? emailDate = null)
     {
         if (string.IsNullOrWhiteSpace(reportName))
             throw new DomainException("ReportName must not be empty");
@@ -41,7 +43,8 @@ public sealed class Report
             Status = ReportStatus.Init,
             ReportName = reportName.Trim(),
             AttachmentContent = attachmentContent,
-            MailboxMessageId = mailboxMessageId
+            MailboxMessageId = mailboxMessageId,
+            EmailDate = emailDate
         };
     }
 
@@ -84,7 +87,8 @@ public sealed class Report
             ReportName = revName,
             AttachmentContent = newContent,
             MailboxMessageId = original.MailboxMessageId,
-            OriginalReportId = original.Id
+            OriginalReportId = original.Id,
+            EmailDate = original.EmailDate
         };
     }
 }

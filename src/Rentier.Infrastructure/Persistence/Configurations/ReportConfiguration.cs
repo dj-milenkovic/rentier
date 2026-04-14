@@ -19,6 +19,7 @@ public sealed class ReportConfiguration : IEntityTypeConfiguration<Report>
             .HasConversion<int>()
             .HasDefaultValue(ReportStatus.Init);
         builder.Property(r => r.MailboxMessageId).IsRequired(false);
+        builder.Property(r => r.EmailDate).IsRequired(false);
         builder.Property(r => r.OriginalReportId).IsRequired(false);
         builder.HasIndex(r => r.ImporterId);
         builder.HasIndex(new[] { "ImporterId", "ReportName" }).IsUnique();

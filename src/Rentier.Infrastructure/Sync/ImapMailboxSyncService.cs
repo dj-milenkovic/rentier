@@ -127,7 +127,8 @@ public class ImapMailboxSyncService : IMailboxSyncService
                                     attachment.Content.DecodeTo(ms);
                                 var content = ms.ToArray();
 
-                                var report = Report.Create(importer.Id, reportName, content, (long)uid.Id);
+                                var emailDate = DateOnly.FromDateTime(message.Date.UtcDateTime);
+                                var report = Report.Create(importer.Id, reportName, content, (long)uid.Id, emailDate);
                                 await _reportRepository.AddAsync(report, ct);
                                 reportsCreated++;
                             }
