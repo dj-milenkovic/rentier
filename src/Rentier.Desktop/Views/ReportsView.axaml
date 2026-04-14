@@ -75,6 +75,9 @@
         <DataGridTextColumn Header="{x:Static res:Strings.Reports_Col_ImportDate}"
                             Binding="{Binding ImportDateDisplay}"
                             Width="110" />
+        <DataGridTextColumn Header="{x:Static res:Strings.Reports_Col_EmailDate}"
+                            Binding="{Binding EmailDateDisplay}"
+                            Width="110" />
         <DataGridTextColumn Header="{x:Static res:Strings.Reports_Col_Importer}"
                             Binding="{Binding ImporterName}"
                             Width="160" />

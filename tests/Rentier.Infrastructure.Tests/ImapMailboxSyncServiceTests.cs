@@ -84,20 +84,23 @@ public class ImapMailboxSyncServiceTests
     [Fact]
     public void BuildReportName_ShortName_ReturnsCombinedName()
     {
-        var result = ImapMailboxSyncService.BuildReportName("Subject", "file.csv");
+        var date = new DateOnly(2024, 3, 15);
 
-        result.Should().Be("Subject_file.csv");
+        var result = ImapMailboxSyncService.BuildReportName(date, "Subject", "file.csv");
+
+        result.Should().Be("2024-03-15_Subject_file.csv");
     }
 
     [Fact]
     public void BuildReportName_LongName_TruncatesTo500()
     {
+        var date = new DateOnly(2024, 3, 15);
         var longSubject = new string('S', 300);
         var longFile = new string('F', 300);
 
-        var result = ImapMailboxSyncService.BuildReportName(longSubject, longFile);
+        var result = ImapMailboxSyncService.BuildReportName(date, longSubject, longFile);
 
         result.Should().HaveLength(500);
-        result.Should().StartWith(longSubject[..300]);
+        result.Should().StartWith("2024-03-15_");
     }
 }

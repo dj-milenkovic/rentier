@@ -12,6 +12,7 @@ public sealed class ReportRowViewModel
     public Guid         Id           { get; }
     public string       ReportName   { get; }
     public DateOnly     ImportDate   { get; }
+    public DateOnly?    EmailDate    { get; }
     public string       ImporterName { get; }
     public ReportStatus Status       { get; }
     public int          FilingCount  { get; }
@@ -21,11 +22,15 @@ public sealed class ReportRowViewModel
     /// <summary>Import date formatted as yyyy-MM-dd.</summary>
     public string ImportDateDisplay => ImportDate.ToString("yyyy-MM-dd");
 
+    /// <summary>Email date formatted as yyyy-MM-dd, or empty string when absent.</summary>
+    public string EmailDateDisplay => EmailDate?.ToString("yyyy-MM-dd") ?? string.Empty;
+
     private ReportRowViewModel(ReportRowDto dto)
     {
         Id           = dto.Id;
         ReportName   = dto.ReportName;
         ImportDate   = dto.ImportDate;
+        EmailDate    = dto.EmailDate;
         ImporterName = dto.ImporterName;
         Status       = dto.Status;
         FilingCount  = dto.FilingCount;

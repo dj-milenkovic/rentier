@@ -901,6 +901,86 @@ Add ViewModel unit tests for the filtering logic.
 
 ---
 
+---
+
+## Tier 7 — Power-User Productivity Wave (2026-04-14)
+
+These features capture requests for bulk data-management operations and surfacing
+richer metadata in the UI. They improve productivity for users managing large sets
+of filings and reports.
+
+---
+
+### 025 · Bulk Delete — Filings & Reports
+
+**What it delivers**: Users can select multiple filings or reports using
+checkboxes in the DataGrid and delete them all in one operation. A "Delete
+Selected (N)" button appears in the toolbar when one or more rows are checked.
+"Select All" and "Clear Selection" toolbar actions allow rapid selection management.
+Bulk-deleting a report cascades to all its linked filings (same behaviour as
+single-item delete). A confirmation dialog summarises the count before any
+records are removed.
+
+**UX contract**:
+- Checkbox column is the first column in both DataGrids (Filings and Reports).
+- "Select All" / "Clear Selection" buttons are always visible when the list has items; they appear in the existing toolbar row.
+- "Delete Selected (N)" button is only visible when `HasSelection = true`; it shows the count inline and uses a destructive (red foreground) style.
+- Confirmation dialog title and message both mention the count and warn that linked filings will also be removed (for reports).
+- After bulk delete, the selection is cleared and the page reloads automatically.
+- `SelectedCount` and `HasSelection` computed properties on both ViewModels update reactively as checkboxes toggle.
+
+**Layers touched**: Application (new `BulkDeleteFilingsCommand`/Handler and
+`BulkDeleteReportsCommand`/Handler; add `DeleteManyAsync` to `IFilingRepository`
+and `IReportRepository`), Infrastructure (implement `DeleteManyAsync` in
+`FilingRepository` and `ReportRepository` using load-then-remove pattern —
+`ExecuteDeleteAsync` is prohibited per constitution), Desktop
+(`FilingRowViewModel` and `ReportRowViewModel` — add reactive `IsSelected` prop;
+`FilingsViewModel` and `ReportsViewModel` — add `SelectAllCommand`,
+`ClearSelectionCommand`, `DeleteSelectedCommand`, `SelectedCount`, `HasSelection`;
+both views — checkbox column, toolbar bulk-action buttons; `Strings.resx` — new
+strings; `CompositionRoot` — register new handlers).
+
+**Depends on**: `012-filings-list`, `014-reports-list`
+
+**Status**: 🗓 Planned
+
+**Spec-kit prompt**:
+```
+Implement bulk delete for both the Filings and Reports pages.
+
+UX requirements:
+1. Add a checkbox column as the first column to both DataGrids (IsSelected TwoWay).
+2. Toolbar: always show "Select All" and "Clear Selection" buttons when HasItems.
+   Show "Delete Selected (N)" button only when HasSelection = true; use a
+   destructive style (red foreground). The count N updates reactively.
+3. Confirmation dialog: summarise count; for reports warn that linked filings
+   are also deleted.
+4. After delete: clear selection, reload list.
+
+Application layer:
+- BulkDeleteFilingsCommand(IReadOnlyList<Guid> FilingIds)
+- BulkDeleteFilingsCommandHandler: calls IFilingRepository.DeleteManyAsync
+- BulkDeleteReportsCommand(IReadOnlyList<Guid> ReportIds)
+- BulkDeleteReportsCommandHandler: for each id calls IFilingRepository.DeleteByReportIdAsync,
+  then IReportRepository.DeleteManyAsync. Empty list is no-op.
+- Add DeleteManyAsync(IEnumerable<Guid>) to IFilingRepository and IReportRepository.
+
+Infrastructure: implement DeleteManyAsync using load-then-RemoveRange-then-SaveChanges
+(no ExecuteDeleteAsync — prohibited by constitution).
+
+Desktop:
+- FilingRowViewModel and ReportRowViewModel: inherit ReactiveObject, add reactive IsSelected.
+- FilingsViewModel / ReportsViewModel: add SelectAllCommand, ClearSelectionCommand,
+  DeleteSelectedCommand; computed SelectedCount and HasSelection that update via
+  WhenAnyValue subscriptions on each row after load.
+- Register new handlers in CompositionRoot.
+- Add unit tests for both bulk delete handlers.
+
+All async. All strings in Strings.resx. No blocking UI.
+```
+
+---
+
 ## Feature Dependency Graph
 
 ```
@@ -918,12 +998,16 @@ Add ViewModel unit tests for the filtering logic.
  │         └── 011-filing-pipeline ◄── 009, 010
  │              ├── 012-filings-list
  │              │    ├── 013-xml-export ◄── 002
- │              │    └── 016-dashboard
+ │              │    ├── 016-dashboard
+ │              │    └── 026-bulk-delete ◄── 014
  │              └── 014-reports-list
+ │                   ├── 025-email-date-surfacing ◄── 022
+ │                   └── 026-bulk-delete
  ├── 015-one-click-sync ◄── 010, 011
  │    ├── 018-sync-replay-controls
  │    ├── 019-filing-reliability-fixes ◄── 006
  │    └── 022-reports-naming-sync-ux ◄── 014
+ │         └── 025-email-date-surfacing
  ├── 012-filings-list
  │    └── 021-filings-filter-status ◄── 012
  ├── 004-mailbox-configuration
@@ -947,6 +1031,7 @@ Add ViewModel unit tests for the filtering logic.
 | **D — UI** | 012 → 013 → 014 → 015 → 016 (needs C) | User-facing screens |
 | **E — Reliability** | 017 → 018 → 019 → 020 | Cross-platform + bugfix wave |
 | **F — QA Fixes** | 021 → 022 → 023 → 024 | UX polish from QA feedback |
+| **G — Productivity** | 025 → 026 | Power-user bulk operations & metadata |
 
 Lanes A and B can run in parallel from day one. Lane C starts when both
 converge. Lane D follows C. Lane E starts after 011 (with 017 partially in

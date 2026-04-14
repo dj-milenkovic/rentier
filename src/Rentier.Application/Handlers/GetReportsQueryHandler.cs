@@ -42,7 +42,7 @@ public sealed class GetReportsQueryHandler
                 var importerName = importerNames.GetValueOrDefault(r.ImporterId, "Unknown");
                 var datePart     = (r.EmailDate ?? earliest ?? r.ImportDate).ToString("yyyy-MM-dd");
                 var displayName  = $"{importerName} \u2013 {datePart}";
-                dtos.Add(new ReportRowDto(r.Id, r.ReportName, r.ImportDate, importerName, r.Status, count, displayName, earliest));
+                dtos.Add(new ReportRowDto(r.Id, r.ReportName, r.ImportDate, r.EmailDate, importerName, r.Status, count, displayName, earliest));
             }
 
             return Result<IReadOnlyList<ReportRowDto>, Error>.Success(dtos.AsReadOnly());

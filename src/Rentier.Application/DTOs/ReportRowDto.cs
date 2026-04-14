@@ -7,6 +7,7 @@ public sealed record ReportRowDto(
     Guid         Id,
     string       ReportName,
     DateOnly     ImportDate,
+    DateOnly?    EmailDate,
     string       ImporterName,
     ReportStatus Status,
     int          FilingCount,
