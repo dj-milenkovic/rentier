@@ -1,6 +1,6 @@
 ---
 description: Generate an actionable, dependency-ordered tasks.md for the feature based on available design artifacts.
-model: claude-sonnet-4.6
+model: Claude Sonnet 4.6 (copilot)
 handoffs: 
   - label: Analyze For Consistency
     agent: speckit.analyze

@@ -14,9 +14,7 @@
       <Button Content="{x:Static res:Strings.Holidays_AddRow_Button}" Command="{Binding AddRowCommand}" />
       <Button Content="{x:Static res:Strings.Holidays_DeleteRow_Button}" Command="{Binding DeleteRowCommand}" CommandParameter="{Binding SelectedEntry}" />
       <Button Content="{x:Static res:Strings.Holidays_Save_Button}" Command="{Binding SaveCommand}" />
-      <TextBlock Text="Year:" VerticalAlignment="Center" />
-      <NumericUpDown Value="{Binding ImportYear}" Minimum="2020" Maximum="2099" MinWidth="120" FormatString="0" />
-      <Button Content="{x:Static res:Strings.Holidays_Import_Button}" Command="{Binding ImportCommand}" CommandParameter="{Binding ImportYear}" />
+      <Button Content="{x:Static res:Strings.Holidays_FetchFromWeb_Button}" Command="{Binding FetchFromWebCommand}" />
     </StackPanel>
     <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="8,4">
       <TextBlock Text="{x:Static res:Strings.Holidays_StartYear_Label}" VerticalAlignment="Center" />
@@ -38,7 +36,7 @@
       <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsLoading}" />
     </StackPanel>
     <TextBlock DockPanel.Dock="Top"
-               Text="No holidays configured. Click Add or Import to get started."
+               Text="No holidays configured. Click Add or Fetch from web to get started."
                IsVisible="{Binding !HasItems}"
                HorizontalAlignment="Center" VerticalAlignment="Center"
                Opacity="0.6" Margin="8,16" />

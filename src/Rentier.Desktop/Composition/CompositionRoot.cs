@@ -47,6 +47,9 @@ public static class CompositionRoot
         services.AddTransient<
             ICommandHandler<ImportHolidaysFromWebCommand, Result<IReadOnlyList<HolidayEntryDto>, Error>>,
             ImportHolidaysFromWebCommandHandler>();
+        services.AddTransient<
+            ICommandHandler<FetchHolidaysFromWebCommand, Result<IReadOnlyList<HolidayEntryDto>, Error>>,
+            FetchHolidaysFromWebCommandHandler>();
         services.AddTransient<HolidaySettingsViewModel>();
 
         // Mailbox handlers
