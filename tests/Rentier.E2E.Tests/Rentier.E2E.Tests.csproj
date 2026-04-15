@@ -1,13 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <!-- FlaUI requires Windows platform for UI Automation -->
+    <TargetFramework>net8.0-windows</TargetFramework>
     <IsPackable>false</IsPackable>
+    <!-- E2E tests are excluded from standard CI runs -->
+    <IsTestProject>true</IsTestProject>
   </PropertyGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\Rentier.Infrastructure\Rentier.Infrastructure.csproj" />
-    <ProjectReference Include="..\Rentier.Tests.Common\Rentier.Tests.Common.csproj" />
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="xunit" Version="2.*" />
@@ -17,19 +16,12 @@
     </PackageReference>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.*" />
     <PackageReference Include="FluentAssertions" Version="6.*" />
-    <PackageReference Include="NSubstitute" Version="5.*" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.*" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.*" />
+    <PackageReference Include="FlaUI.Core" Version="4.*" />
+    <PackageReference Include="FlaUI.UIA3" Version="4.*" />
     <PackageReference Include="coverlet.collector" Version="6.*">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Verify.Xunit" Version="23.*" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Include="Parsers\Fixtures\*.csv" />
-    <EmbeddedResource Include="Parsers\Fixtures\*.txt" />
   </ItemGroup>
 
 </Project>

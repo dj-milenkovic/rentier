@@ -221,10 +221,11 @@ public class NbsExchangeRateFetcherTests
     }
 }
 
-[Trait("Category", "Integration")]
+// Requires live NBS HTTP endpoint — run manually: dotnet test --filter "Category=Live"
+[Trait("Category", "Live")]
 public class NbsIntegrationTests
 {
-    [Fact]
+    [Fact(Skip = "Requires live NBS endpoint — set no env var needed, just remove Skip")]
     public async Task FetchRateAsync_RealNbs_ReturnsEurRate()
     {
         var repo = Substitute.For<IExchangeRateCacheRepository>();
@@ -240,7 +241,7 @@ public class NbsIntegrationTests
         result.Value.RateToRsd.Should().BeGreaterThan(100m);
     }
 
-    [Fact]
+    [Fact(Skip = "Requires live NBS endpoint — set no env var needed, just remove Skip")]
     public async Task FetchRateAsync_RealNbs_ReturnsUsdRate()
     {
         var repo = Substitute.For<IExchangeRateCacheRepository>();
