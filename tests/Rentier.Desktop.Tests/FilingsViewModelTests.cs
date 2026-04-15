@@ -43,6 +43,9 @@ public class FilingsViewModelTests
     private static ICommandHandler<ExportFilingCommand, Result<ExportFilingResult, Error>> MockExport() =>
         Substitute.For<ICommandHandler<ExportFilingCommand, Result<ExportFilingResult, Error>>>();
 
+    private static ICommandHandler<BulkDeleteFilingsCommand, Result<VoidResult, Error>> MockBulkDeleteFilings() =>
+        Substitute.For<ICommandHandler<BulkDeleteFilingsCommand, Result<VoidResult, Error>>>();
+
     private static FilingsViewModel CreateVm(
         IQueryHandler<GetFilingsQuery, Result<FilingsPageResult, Error>>? getFilings = null,
         ICommandHandler<UpdateFilingStatusCommand, Result<VoidResult, Error>>? updateStatus = null,
@@ -56,6 +59,7 @@ public class FilingsViewModelTests
             updateRef    ?? MockUpdateRef(),
             deleteFiling ?? MockDelete(),
             MockExport(),
+            MockBulkDeleteFilings(),
             confirmDelete ?? (_ => Task.FromResult(false)),
             _ => Task.CompletedTask,
             ImmediateScheduler.Instance);

@@ -1,4 +1,5 @@
 using System.Globalization;
+using ReactiveUI;
 using Rentier.Application.DTOs;
 using Rentier.Desktop.Extensions;
 using Rentier.Desktop.Resources;
@@ -8,10 +9,10 @@ using Rentier.Domain.Enums;
 namespace Rentier.Desktop.ViewModels;
 
 /// <summary>
-/// Read-only view model row for a single filing in the filings list.
+/// View model row for a single filing in the filings list.
 /// All display formatting is done here; the view binds to these computed properties.
 /// </summary>
-public sealed class FilingRowViewModel
+public sealed class FilingRowViewModel : ReactiveObject
 {
     public Guid Id { get; }
     public FilingStatus Status { get; }
@@ -20,6 +21,13 @@ public sealed class FilingRowViewModel
     public DateOnly FilingDeadline { get; }
     public decimal TaxPayable { get; }
     public string? PaymentReference { get; }
+
+    private bool _isSelected;
+    public bool IsSelected
+    {
+        get => _isSelected;
+        set => this.RaiseAndSetIfChanged(ref _isSelected, value);
+    }
 
     /// <summary>Filing deadline formatted as yyyy-MM-dd.</summary>
     public string DeadlineDisplay => FilingDeadline.ToString("yyyy-MM-dd");
