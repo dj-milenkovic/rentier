@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<PodaciOPrijavi>
+  <VrstaPrijave>1</VrstaPrijave>
+  <ObracunskiPeriod>2025-03</ObracunskiPeriod>
+  <DatumOstvarivanjaPrihoda>2025-03-15</DatumOstvarivanjaPrihoda>
+  <DatumDospelostiObaveze>2025-04-30</DatumDospelostiObaveze>
+  <PodaciOPoreskomObvezniku>
+    <JMBG>1234567890123</JMBG>
+    <Ime><![CDATA[Jovan Jovanovic]]></Ime>
+    <Adresa><![CDATA[Knez Mihailova 1, Beograd]]></Adresa>
+    <SifraOpstine>11001</SifraOpstine>
+    <Telefon>0612345678</Telefon>
+    <Email>jovan@example.com</Email>
+  </PodaciOPoreskomObvezniku>
+  <PodaciONacinuOstvarivanjaPrihoda>
+    <NacinIsplate>3</NacinIsplate>
+    <Ostalo>IBAN: RS35170006000123456789 Model: 97 Poziv: 2025-0001</Ostalo>
+  </PodaciONacinuOstvarivanjaPrihoda>
+  <DeklarisaniPodaciOVrstamaPrihoda>
+    <SifraVrstePrihoda>111402000</SifraVrstePrihoda>
+    <BrutoPrihod>12345.50</BrutoPrihod>
+    <OsnovicaZaPorez>1234.55</OsnovicaZaPorez>
+    <ObracunatiPorez>1234.55</ObracunatiPorez>
+    <PorezPlacenDrugojDrzavi>123.45</PorezPlacenDrugojDrzavi>
+    <PorezZaUplatu>1111.10</PorezZaUplatu>
+  </DeklarisaniPodaciOVrstamaPrihoda>
+</PodaciOPrijavi>

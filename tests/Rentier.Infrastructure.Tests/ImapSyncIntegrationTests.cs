@@ -2,7 +2,7 @@ using Xunit;
 
 namespace Rentier.Infrastructure.Tests;
 
-[Trait("Category", "Integration")]
+[Trait("Category", "Live")]
 public class ImapSyncIntegrationTests
 {
     [Fact(Skip = "Requires live IMAP server")]
