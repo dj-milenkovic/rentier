@@ -5,6 +5,7 @@
         x:Class="Rentier.Desktop.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Title="{x:Static res:Strings.AppTitle}"
+        Icon="avares://Rentier.Desktop/Assets/Icons/app-icon.png"
         Width="900" Height="600">
   <DockPanel>
     <ListBox DockPanel.Dock="Left"
