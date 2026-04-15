@@ -981,6 +981,113 @@ All async. All strings in Strings.resx. No blocking UI.
 
 ---
 
+## Tier 8 — Data Enrichment Wave (2026-04-14)
+
+Fetch reference data from public internet sources so users no longer need to
+enter it manually.
+
+---
+
+### 026 · Holiday Fetcher — timeanddate.com Scraper
+
+**What it delivers**: A "Fetch from web" button on the Holidays settings page
+lets the user automatically populate Serbian public holidays for a given year
+by scraping `https://www.timeanddate.com/holidays/serbia/{year}?hol=1`.
+The scraper extracts each holiday's date and name, filters to public holidays
+only (`hol=1`), and merges the results into the existing holiday list.
+Dates that already exist are skipped to avoid duplicates. The operation is
+cancellable and shows a loading indicator while in flight.
+
+**UX contract**:
+- A "Fetch from web" button sits next to the "Add" button in the Holidays toolbar.
+- The button is enabled when `IsLoading = false`.
+- The year fetched matches the currently selected year (or current calendar year
+  if no year is selected).
+- After a successful fetch the DataGrid refreshes and shows a brief success
+  message (e.g. "Imported N holidays for {year}").
+- On error (network failure, parse failure, no holidays found) `ErrorMessage`
+  is set and `IsLoading` returns to `false`.
+- `IsBusy` / `IsLoading` are set to `true` for the duration of the request and
+  reset in a `finally` block.
+
+**Layers touched**: Application (new `IHolidayFetcher` interface in
+`Application/Interfaces/`; new `FetchHolidaysFromWebCommand(int Year)` +
+`FetchHolidaysFromWebCommandHandler` that calls `IHolidayFetcher`,
+deduplicates against existing dates via `IHolidayConfRepository`, and persists
+new entries via `SaveHolidayConfCommand`), Infrastructure (new
+`TimeAndDateHolidayFetcher` implementing `IHolidayFetcher` — HTTP GET of the
+public page, HTML scraping with `HtmlAgilityPack` or `AngleSharp`, parse the
+holiday table rows to `(DateOnly Date, string Name)`, return
+`Result<IReadOnlyList<HolidayEntry>, Error>`), Desktop (`HolidaySettingsViewModel`
+— add `FetchFromWebCommand` wired to `FetchHolidaysFromWebCommand`; update
+`HolidaySettingsView.axaml` toolbar).
+
+**Depends on**: `003-holiday-configuration`, `020-holidays-settings-repair`
+
+**Status**: 🗓 Planned
+
+**Spec-kit prompt**:
+```
+Add a "Fetch from web" capability to the Holidays settings page.
+
+The source URL is: https://www.timeanddate.com/holidays/serbia/{year}?hol=1
+where {year} is substituted at runtime. The query parameter hol=1 restricts
+the response to public holidays.
+
+Application layer:
+- Create IHolidayFetcher interface in Application/Interfaces/:
+    Task<Result<IReadOnlyList<HolidayEntry>, Error>> FetchAsync(int year, CancellationToken ct)
+  where HolidayEntry is a record (DateOnly Date, string Name) defined in Domain.
+- Create FetchHolidaysFromWebCommand(int Year) record in Application/Commands/.
+- Create FetchHolidaysFromWebCommandHandler in Application/Handlers/:
+  (1) calls IHolidayFetcher.FetchAsync(command.Year, ct),
+  (2) loads existing holiday dates for the year via IHolidayConfRepository,
+  (3) filters out dates that already exist (deduplication),
+  (4) persists new entries by delegating to SaveHolidayConfCommand,
+  (5) returns Result<int, Error> where the int is the count of newly added holidays.
+  Empty result (0 new) is a success, not an error.
+
+Infrastructure layer:
+- Create TimeAndDateHolidayFetcher implementing IHolidayFetcher.
+- HTTP GET https://www.timeanddate.com/holidays/serbia/{year}?hol=1 using
+  IHttpClientFactory (named client "timeanddate").
+- Parse the HTML response to extract the holiday table. Each row contains the
+  date (month + day, year inferred from the URL parameter) and the holiday name.
+  Use AngleSharp or HtmlAgilityPack for parsing. Handle culture-specific date
+  formats (English locale from timeanddate.com).
+- Map each row to HolidayEntry(DateOnly, string). Skip rows where parsing fails.
+- If no rows are parsed, return Result.Failure with Error.NotFound.
+- Register the named HttpClient in Infrastructure DI with a 30-second timeout
+  and a realistic User-Agent header (timeanddate.com blocks blank user agents).
+- Return Result<IReadOnlyList<HolidayEntry>, Error> — no exceptions as flow control.
+
+Desktop layer:
+- Add FetchFromWebCommand (ReactiveCommand) to HolidaySettingsViewModel.
+- Wire it to FetchHolidaysFromWebCommandHandler.
+- The command is enabled when IsLoading = false.
+- Set IsLoading = true before the call; reset in finally.
+- On success: reload the holiday list and set a transient success message
+  "Imported {N} holidays for {year}" (cleared after 4 seconds).
+- On error: set ErrorMessage from the returned Error.
+- Add "Fetch from web" button to HolidaySettingsView.axaml toolbar, next to
+  the existing "Add" button. Bind IsEnabled to !IsLoading.
+- All new strings in Strings.resx.
+
+Tests:
+- Unit test FetchHolidaysFromWebCommandHandler: mock IHolidayFetcher returning
+  known entries; verify deduplication; verify SaveHolidayConfCommand delegation.
+- Unit test TimeAndDateHolidayFetcher with a captured HTML fixture (copy a real
+  page response into a test fixture file). Verify correct DateOnly parsing for
+  all months. Verify empty-page → NotFound error.
+- ViewModel unit test: FetchFromWebCommand success sets correct message; error
+  sets ErrorMessage; IsLoading is false after both outcomes.
+
+All amounts decimal, all dates DateOnly. All async. No blocking. Result pattern
+throughout. No exceptions as flow control.
+```
+
+---
+
 ## Feature Dependency Graph
 
 ```
@@ -999,15 +1106,13 @@ All async. All strings in Strings.resx. No blocking UI.
  │              ├── 012-filings-list
  │              │    ├── 013-xml-export ◄── 002
  │              │    ├── 016-dashboard
- │              │    └── 026-bulk-delete ◄── 014
+ │              │    └── 025-bulk-delete ◄── 014
  │              └── 014-reports-list
- │                   ├── 025-email-date-surfacing ◄── 022
- │                   └── 026-bulk-delete
+ │                   └── 025-bulk-delete
  ├── 015-one-click-sync ◄── 010, 011
  │    ├── 018-sync-replay-controls
  │    ├── 019-filing-reliability-fixes ◄── 006
  │    └── 022-reports-naming-sync-ux ◄── 014
- │         └── 025-email-date-surfacing
  ├── 012-filings-list
  │    └── 021-filings-filter-status ◄── 012
  ├── 004-mailbox-configuration
@@ -1016,7 +1121,9 @@ All async. All strings in Strings.resx. No blocking UI.
  │    └── 023-importers-form-reset ◄── 005
  └── 003-holiday-configuration
    ├── 020-holidays-settings-repair ◄── 006
-   └── 024-holidays-year-filter ◄── 020
+   │    ├── 024-holidays-year-filter ◄── 020
+   │    └── 026-holiday-fetcher-timeanddate ◄── 020
+   └── 024-holidays-year-filter
 ```
 
 ---
@@ -1031,7 +1138,8 @@ All async. All strings in Strings.resx. No blocking UI.
 | **D — UI** | 012 → 013 → 014 → 015 → 016 (needs C) | User-facing screens |
 | **E — Reliability** | 017 → 018 → 019 → 020 | Cross-platform + bugfix wave |
 | **F — QA Fixes** | 021 → 022 → 023 → 024 | UX polish from QA feedback |
-| **G — Productivity** | 025 → 026 | Power-user bulk operations & metadata |
+| **G — Productivity** | 025 | Power-user bulk operations |
+| **H — Data Enrichment** | 026 (needs 020) | Public holiday web import |
 
 Lanes A and B can run in parallel from day one. Lane C starts when both
 converge. Lane D follows C. Lane E starts after 011 (with 017 partially in
