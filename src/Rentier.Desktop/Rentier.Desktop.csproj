@@ -39,4 +39,19 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.*" />
   </ItemGroup>
 
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <ApplicationIcon>Assets\Icons\rentier.ico</ApplicationIcon>
+    <Win32Icon>Assets\Icons\rentier.ico</Win32Icon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="Assets\Icons\rentier.icns" Pack="true">
+      <PackagePath>Contents/Resources</PackagePath>
+    </None>
+  </ItemGroup>
+
 </Project>
