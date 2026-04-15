@@ -166,4 +166,14 @@ public static class Strings
     public static string Reports_Sync_Subtitle => "Sync downloads new statements from your configured mailboxes and processes them into reports. For per-mailbox status and history, visit the Sync page.";
     public static string Holidays_YearRange_HelperText => "Showing holidays for the selected year range. The range also determines which years are pre-seeded on first run.";
     public static string Holidays_EmptyForRange => "No holidays configured for this range.";
+    public static string BulkDelete_SelectAll_Button => "Select All";
+    public static string BulkDelete_ClearSelection_Button => "Clear Selection";
+    public static string BulkDelete_Button_Template => "Delete Selected ({0})";
+    public static string BulkDelete_Filings_Confirmation_Title => "Delete Selected Filings";
+    public static string BulkDelete_Filings_Confirmation_Message => "Delete {0} filing(s)? This cannot be undone.";
+    public static string BulkDelete_Reports_Confirmation_Title => "Delete Selected Reports";
+    public static string BulkDelete_Reports_Confirmation_Message => "Delete {0} report(s) and all their linked filings? This cannot be undone.";
+    public static string BulkDelete_Confirm_Button => "Delete";
+    public static string BulkDelete_Cancel_Button => "Cancel";
+    public static string BulkDelete_Error_Failed => "Bulk delete failed. Please try again.";
 }

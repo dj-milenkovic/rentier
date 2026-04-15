@@ -1,13 +1,14 @@
+using ReactiveUI;
 using Rentier.Application.DTOs;
 using Rentier.Domain.Enums;
 
 namespace Rentier.Desktop.ViewModels;
 
 /// <summary>
-/// Read-only view model row for a single report in the reports list.
+/// View model row for a single report in the reports list.
 /// All display formatting is done here; the view binds to these computed properties.
 /// </summary>
-public sealed class ReportRowViewModel
+public sealed class ReportRowViewModel : ReactiveObject
 {
     public Guid         Id           { get; }
     public string       ReportName   { get; }
@@ -18,6 +19,13 @@ public sealed class ReportRowViewModel
     public int          FilingCount  { get; }
     /// <summary>Friendly display name: "&lt;ImporterName&gt; – &lt;EarliestIncomeDate&gt;" or import date fallback.</summary>
     public string       DisplayName  { get; }
+
+    private bool _isSelected;
+    public bool IsSelected
+    {
+        get => _isSelected;
+        set => this.RaiseAndSetIfChanged(ref _isSelected, value);
+    }
 
     /// <summary>Import date formatted as yyyy-MM-dd.</summary>
     public string ImportDateDisplay => ImportDate.ToString("yyyy-MM-dd");

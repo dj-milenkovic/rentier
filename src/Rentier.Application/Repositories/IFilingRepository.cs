@@ -37,6 +37,12 @@ public interface IFilingRepository
         CancellationToken ct = default);
 
     /// <summary>
+    /// Deletes all Filing records whose IDs are in the provided list.
+    /// An empty list is a no-op.
+    /// </summary>
+    Task DeleteManyAsync(IReadOnlyList<Guid> ids, CancellationToken ct = default);
+
+    /// <summary>
     /// Returns filings with Status ∈ {Init, Filed} whose FilingDeadline falls within [today, today+days], ordered by FilingDeadline ascending.
     /// </summary>
     Task<IReadOnlyList<Filing>> GetUpcomingAsync(DateOnly today, int days, CancellationToken ct = default);

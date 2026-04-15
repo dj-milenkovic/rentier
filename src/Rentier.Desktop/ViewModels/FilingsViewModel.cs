@@ -24,6 +24,7 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
     private readonly ICommandHandler<UpdatePaymentReferenceCommand, Result<VoidResult, Error>> _updateReference;
     private readonly ICommandHandler<DeleteFilingCommand, Result<VoidResult, Error>> _deleteFiling;
     private readonly ICommandHandler<ExportFilingCommand, Result<ExportFilingResult, Error>> _exportFiling;
+    private readonly ICommandHandler<BulkDeleteFilingsCommand, Result<VoidResult, Error>> _bulkDeleteFilings;
     private readonly Func<string, Task<bool>> _confirmDelete;
     private readonly Func<ExportFilingResult, Task> _saveFile;
     private readonly IScheduler _scheduler;
@@ -35,6 +36,9 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
     private int _totalPages = 1;
     private int _totalCount;
     private Guid? _reportIdFilter;
+    private int _selectedCount;
+    private readonly ObservableAsPropertyHelper<bool> _hasSelection;
+    private readonly ObservableAsPropertyHelper<string> _deleteSelectedLabel;
 
     public bool IsLoading
     {
@@ -90,6 +94,15 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
         private set => this.RaiseAndSetIfChanged(ref _totalCount, value);
     }
 
+    public int SelectedCount
+    {
+        get => _selectedCount;
+        private set => this.RaiseAndSetIfChanged(ref _selectedCount, value);
+    }
+
+    public bool HasSelection => _hasSelection.Value;
+    public string DeleteSelectedLabel => _deleteSelectedLabel.Value;
+
     public bool HasItems => Rows.Count > 0;
     public bool IsEmpty => Rows.Count == 0 && !IsLoading;
     public bool HasPreviousPage => _currentPage > 1 && !IsLoading;
@@ -106,6 +119,11 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
     public ReactiveCommand<(Guid Id, string? Reference), Unit> SavePaymentRefCommand { get; }
     public ReactiveCommand<Guid, Unit> DeleteCommand { get; }
     public ReactiveCommand<Guid, Unit> ExportCommand { get; }
+    public ReactiveCommand<Unit, Unit> SelectAllCommand { get; }
+    public ReactiveCommand<Unit, Unit> ClearSelectionCommand { get; }
+    public ReactiveCommand<Unit, Unit> BulkDeleteCommand { get; }
+
+    private readonly CompositeDisposable _rowSubscriptions = new();
 
     public FilingsViewModel(
         IQueryHandler<GetFilingsQuery, Result<FilingsPageResult, Error>> getFilings,
@@ -113,6 +131,7 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
         ICommandHandler<UpdatePaymentReferenceCommand, Result<VoidResult, Error>> updateReference,
         ICommandHandler<DeleteFilingCommand, Result<VoidResult, Error>> deleteFiling,
         ICommandHandler<ExportFilingCommand, Result<ExportFilingResult, Error>> exportFiling,
+        ICommandHandler<BulkDeleteFilingsCommand, Result<VoidResult, Error>> bulkDeleteFilings,
         Func<string, Task<bool>> confirmDelete,
         Func<ExportFilingResult, Task> saveFile,
         IScheduler? scheduler = null)
@@ -122,9 +141,20 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
         _updateReference = updateReference;
         _deleteFiling = deleteFiling;
         _exportFiling = exportFiling;
+        _bulkDeleteFilings = bulkDeleteFilings;
         _confirmDelete = confirmDelete;
         _saveFile = saveFile;
         _scheduler = scheduler ?? RxApp.MainThreadScheduler;
+
+        _hasSelection = this.WhenAnyValue(x => x.SelectedCount)
+            .Select(c => c > 0)
+            .ToProperty(this, x => x.HasSelection, scheduler: _scheduler);
+
+        _deleteSelectedLabel = this.WhenAnyValue(x => x.SelectedCount)
+            .Select(c => string.Format(Strings.BulkDelete_Button_Template, c))
+            .ToProperty(this, x => x.DeleteSelectedLabel,
+                initialValue: string.Format(Strings.BulkDelete_Button_Template, 0),
+                scheduler: _scheduler);
 
         LoadPageCommand = ReactiveCommand.CreateFromTask(
             LoadPageAsync, outputScheduler: _scheduler);
@@ -156,7 +186,6 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
             {
                 var result = await _updateStatus.HandleAsync(
                     new UpdateFilingStatusCommand(args.Id, args.NewStatus), ct);
-                // Preserve error across reload so the user sees it even after the page refreshes
                 var errorToPreserve = result.IsSuccess ? null : result.Error.Message;
                 await LoadPageAsync(ct);
                 if (errorToPreserve is not null)
@@ -210,6 +239,58 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
             },
             outputScheduler: _scheduler);
 
+        var hasItemsObservable = this.WhenAnyValue(x => x.HasItems);
+        var hasSelectionObservable = this.WhenAnyValue(x => x.HasSelection);
+
+        SelectAllCommand = ReactiveCommand.Create(
+            () =>
+            {
+                foreach (var row in Rows)
+                    row.IsSelected = true;
+            },
+            hasItemsObservable,
+            outputScheduler: _scheduler);
+
+        ClearSelectionCommand = ReactiveCommand.Create(
+            () =>
+            {
+                foreach (var row in Rows)
+                    row.IsSelected = false;
+            },
+            hasSelectionObservable,
+            outputScheduler: _scheduler);
+
+        BulkDeleteCommand = ReactiveCommand.CreateFromTask(
+            async (CancellationToken ct) =>
+            {
+                var selectedIds = Rows
+                    .Where(r => r.IsSelected)
+                    .Select(r => r.Id)
+                    .ToList();
+
+                if (selectedIds.Count == 0) return;
+
+                var message = string.Format(Strings.BulkDelete_Filings_Confirmation_Message, selectedIds.Count);
+                var confirmed = await _confirmDelete(message);
+                if (!confirmed) return;
+
+                var result = await _bulkDeleteFilings.HandleAsync(
+                    new BulkDeleteFilingsCommand(selectedIds), ct);
+
+                if (!result.IsSuccess)
+                {
+                    ErrorMessage = Strings.BulkDelete_Error_Failed;
+                    return;
+                }
+
+                // Decrement page when all visible items on a non-first page are deleted
+                if (selectedIds.Count == Rows.Count && _currentPage > 1)
+                    _currentPage--;
+
+                await LoadPageAsync(ct);
+            },
+            outputScheduler: _scheduler);
+
         this.WhenActivated(disposables =>
         {
             LoadPageCommand.Execute().Subscribe().DisposeWith(disposables);
@@ -228,7 +309,22 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
             ExportCommand.ThrownExceptions
                 .Subscribe(ex => ErrorMessage = ex.Message)
                 .DisposeWith(disposables);
+            BulkDeleteCommand.ThrownExceptions
+                .Subscribe(ex => ErrorMessage = ex.Message)
+                .DisposeWith(disposables);
         });
+    }
+
+    private void RebuildRowSubscriptions()
+    {
+        _rowSubscriptions.Clear();
+        foreach (var row in Rows)
+        {
+            row.WhenAnyValue(r => r.IsSelected)
+                .Subscribe(_ => SelectedCount = Rows.Count(r => r.IsSelected))
+                .DisposeWith(_rowSubscriptions);
+        }
+        SelectedCount = Rows.Count(r => r.IsSelected);
     }
 
     private async Task LoadPageAsync(CancellationToken ct = default)
@@ -268,6 +364,8 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
             this.RaisePropertyChanged(nameof(HasPreviousPage));
             this.RaisePropertyChanged(nameof(HasNextPage));
             this.RaisePropertyChanged(nameof(PageIndicator));
+
+            RebuildRowSubscriptions();
         }
         finally
         {

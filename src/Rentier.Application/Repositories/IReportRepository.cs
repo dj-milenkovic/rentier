@@ -13,4 +13,10 @@ public interface IReportRepository
     Task AddAsync(Report report, CancellationToken ct = default);
     Task UpdateAsync(Report report, CancellationToken ct = default);
     Task DeleteAsync(Guid id, CancellationToken ct = default);
+
+    /// <summary>
+    /// Deletes all Report records whose IDs are in the provided list.
+    /// An empty list is a no-op.
+    /// </summary>
+    Task DeleteManyAsync(IReadOnlyList<Guid> ids, CancellationToken ct = default);
 }

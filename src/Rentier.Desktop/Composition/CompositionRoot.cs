@@ -95,6 +95,9 @@ public static class CompositionRoot
         services.AddTransient<
             ICommandHandler<ExportFilingCommand, Result<ExportFilingResult, Error>>,
             ExportFilingCommandHandler>();
+        services.AddTransient<
+            ICommandHandler<BulkDeleteFilingsCommand, Result<VoidResult, Error>>,
+            BulkDeleteFilingsCommandHandler>();
 
         // Confirmation delegate for delete — must be explicitly registered so FilingsViewModel resolves
         services.AddTransient<Func<string, Task<bool>>>(provider => msg =>
@@ -154,6 +157,9 @@ public static class CompositionRoot
         services.AddTransient<
             ICommandHandler<DeleteReportCommand, Result<VoidResult, Error>>,
             DeleteReportCommandHandler>();
+        services.AddTransient<
+            ICommandHandler<BulkDeleteReportsCommand, Result<VoidResult, Error>>,
+            BulkDeleteReportsCommandHandler>();
 
         // 2-arg confirmation delegate for report delete (distinct type from 1-arg Func<string,Task<bool>>)
         services.AddTransient<Func<string, string, Task<bool>>>(provider => (title, msg) =>
