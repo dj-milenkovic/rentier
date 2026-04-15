@@ -54,7 +54,10 @@ public static class Strings
     public static string Holidays_AddRow_Button => "Add";
     public static string Holidays_DeleteRow_Button => "Delete Selected";
     public static string Holidays_Save_Button => "Save";
-    public static string Holidays_Import_Button => "Import from Web";
+    public static string Holidays_FetchFromWeb_Button => "Fetch from web";
+    public static string Holidays_FetchFromWeb_Success => "Fetched {0} holidays for {1} year(s)";
+    public static string Holidays_FetchFromWeb_PartialFailure => "Fetched {0} holidays; failed to fetch {1} year(s)";
+    public static string Holidays_FetchSuccess => "Added {0} holiday(s). {1} duplicate(s) skipped.";
     public static string Holidays_Date_Column => "Date";
     public static string Holidays_Name_Column => "Name";
     public static string Holidays_StartYear_Label => "Start Year";

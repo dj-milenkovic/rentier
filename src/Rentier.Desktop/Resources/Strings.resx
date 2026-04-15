@@ -154,8 +154,17 @@
   <data name="Holidays_Save_Button" xml:space="preserve">
     <value>Save</value>
   </data>
-  <data name="Holidays_Import_Button" xml:space="preserve">
-    <value>Import from Web</value>
+  <data name="Holidays_FetchFromWeb_Button" xml:space="preserve">
+    <value>Fetch from web</value>
+  </data>
+  <data name="Holidays_FetchFromWeb_Success" xml:space="preserve">
+    <value>Fetched {0} holidays for {1} year(s)</value>
+  </data>
+  <data name="Holidays_FetchFromWeb_PartialFailure" xml:space="preserve">
+    <value>Fetched {0} holidays; failed to fetch {1} year(s)</value>
+  </data>
+  <data name="Holidays_FetchSuccess" xml:space="preserve">
+    <value>Added {0} holiday(s). {1} duplicate(s) skipped.</value>
   </data>
   <data name="Holidays_Date_Column" xml:space="preserve">
     <value>Date</value>

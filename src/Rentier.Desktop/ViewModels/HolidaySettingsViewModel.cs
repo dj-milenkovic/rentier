@@ -17,7 +17,7 @@ public sealed class HolidaySettingsViewModel : ReactiveObject, IActivatableViewM
 {
     private readonly IQueryHandler<GetHolidayConfQuery, Result<HolidayConfDto, Error>> _queryHandler;
     private readonly ICommandHandler<SaveHolidayConfCommand, Result<VoidResult, Error>> _saveHandler;
-    private readonly ICommandHandler<ImportHolidaysFromWebCommand, Result<IReadOnlyList<HolidayEntryDto>, Error>> _importHandler;
+    private readonly ICommandHandler<FetchHolidaysFromWebCommand, Result<IReadOnlyList<HolidayEntryDto>, Error>> _fetchHandler;
     private readonly IScheduler _scheduler;
 
     private int _startYear;
@@ -25,7 +25,6 @@ public sealed class HolidaySettingsViewModel : ReactiveObject, IActivatableViewM
     private bool _isLoading;
     private string? _errorMessage;
     private string? _successMessage;
-    private int _importYear = DateTime.Today.Year;
     private HolidayEntryViewModel? _selectedEntry;
     private bool _hasUnsavedChanges;
 
@@ -34,7 +33,6 @@ public sealed class HolidaySettingsViewModel : ReactiveObject, IActivatableViewM
     public bool IsLoading { get => _isLoading; private set => this.RaiseAndSetIfChanged(ref _isLoading, value); }
     public string? ErrorMessage { get => _errorMessage; private set => this.RaiseAndSetIfChanged(ref _errorMessage, value); }
     public string? SuccessMessage { get => _successMessage; private set => this.RaiseAndSetIfChanged(ref _successMessage, value); }
-    public int ImportYear { get => _importYear; set => this.RaiseAndSetIfChanged(ref _importYear, value); }
     public HolidayEntryViewModel? SelectedEntry { get => _selectedEntry; set => this.RaiseAndSetIfChanged(ref _selectedEntry, value); }
     public bool HasUnsavedChanges { get => _hasUnsavedChanges; private set => this.RaiseAndSetIfChanged(ref _hasUnsavedChanges, value); }
 
@@ -52,19 +50,19 @@ public sealed class HolidaySettingsViewModel : ReactiveObject, IActivatableViewM
     public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> AddRowCommand { get; }
     public ReactiveCommand<HolidayEntryViewModel, System.Reactive.Unit> DeleteRowCommand { get; }
     public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> SaveCommand { get; }
-    public ReactiveCommand<int, System.Reactive.Unit> ImportCommand { get; }
+    public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> FetchFromWebCommand { get; }
 
     public ViewModelActivator Activator { get; } = new();
 
     public HolidaySettingsViewModel(
         IQueryHandler<GetHolidayConfQuery, Result<HolidayConfDto, Error>> queryHandler,
         ICommandHandler<SaveHolidayConfCommand, Result<VoidResult, Error>> saveHandler,
-        ICommandHandler<ImportHolidaysFromWebCommand, Result<IReadOnlyList<HolidayEntryDto>, Error>> importHandler,
+        ICommandHandler<FetchHolidaysFromWebCommand, Result<IReadOnlyList<HolidayEntryDto>, Error>> fetchHandler,
         IScheduler? scheduler = null)
     {
         _queryHandler = queryHandler;
         _saveHandler = saveHandler;
-        _importHandler = importHandler;
+        _fetchHandler = fetchHandler;
         _scheduler = scheduler ?? RxApp.MainThreadScheduler;
 
         // Raise HasItems when collection size changes; also rebuild the filtered view
@@ -114,22 +112,31 @@ public sealed class HolidaySettingsViewModel : ReactiveObject, IActivatableViewM
             finally { IsLoading = false; }
         }, notLoading);
 
-        ImportCommand = ReactiveCommand.CreateFromTask<int>(async (int year, CancellationToken ct) =>
+        FetchFromWebCommand = ReactiveCommand.CreateFromTask(async (CancellationToken ct) =>
         {
             IsLoading = true;
             ErrorMessage = null;
             SuccessMessage = null;
             try
             {
-                var cmd = new ImportHolidaysFromWebCommand(year);
-                var result = await _importHandler.HandleAsync(cmd, ct);
+                var cmd = new FetchHolidaysFromWebCommand(StartYear, EndYear);
+                var result = await _fetchHandler.HandleAsync(cmd, ct);
                 if (result.IsSuccess)
                 {
-                    Entries.Clear();
-                    foreach (var dto in result.Value) Entries.Add(HolidayEntryViewModel.FromDto(dto));
-                    HasUnsavedChanges = true;
+                    var existingDates = Entries.Select(e => e.Date).ToHashSet();
+                    int added = 0;
+                    foreach (var dto in result.Value.OrderBy(d => d.Date))
+                    {
+                        if (existingDates.Add(dto.Date))
+                        {
+                            Entries.Add(HolidayEntryViewModel.FromDto(dto));
+                            added++;
+                        }
+                    }
+                    if (added > 0) HasUnsavedChanges = true;
+                    SuccessMessage = string.Format(Strings.Holidays_FetchFromWeb_Success, added, EndYear - StartYear + 1);
                 }
-                else { ErrorMessage = $"{Strings.Holidays_ImportError_Prefix}{result.Error.Message}"; }
+                else { ErrorMessage = result.Error.Message; }
             }
             finally { IsLoading = false; }
         }, notLoading);
@@ -143,7 +150,7 @@ public sealed class HolidaySettingsViewModel : ReactiveObject, IActivatableViewM
             SaveCommand.ThrownExceptions
                 .Subscribe(ex => ErrorMessage = ex.Message)
                 .DisposeWith(disposables);
-            ImportCommand.ThrownExceptions
+            FetchFromWebCommand.ThrownExceptions
                 .Subscribe(ex => ErrorMessage = ex.Message)
                 .DisposeWith(disposables);
         });
@@ -161,7 +168,8 @@ public sealed class HolidaySettingsViewModel : ReactiveObject, IActivatableViewM
         }
     }
 
-    private async Task LoadAsync(CancellationToken ct = default)    {
+    private async Task LoadAsync(CancellationToken ct = default)
+    {
         IsLoading = true;
         ErrorMessage = null;
         try
