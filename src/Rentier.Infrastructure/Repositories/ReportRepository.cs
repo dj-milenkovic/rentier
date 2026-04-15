@@ -75,4 +75,15 @@ public sealed class ReportRepository : IReportRepository
             await _db.SaveChangesAsync(ct);
         }
     }
+
+    public async Task DeleteManyAsync(IReadOnlyList<Guid> ids, CancellationToken ct = default)
+    {
+        if (ids.Count == 0) return;
+        var reports = await _db.Reports
+            .Where(r => ids.Contains(r.Id))
+            .ToListAsync(ct);
+        if (reports.Count == 0) return;
+        _db.Reports.RemoveRange(reports);
+        await _db.SaveChangesAsync(ct);
+    }
 }

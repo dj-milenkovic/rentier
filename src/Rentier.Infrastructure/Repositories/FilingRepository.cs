@@ -164,4 +164,15 @@ public sealed class FilingRepository : IFilingRepository
             .ToListAsync(ct);
         return dates.Count == 0 ? null : dates.Min();
     }
+
+    public async Task DeleteManyAsync(IReadOnlyList<Guid> ids, CancellationToken ct = default)
+    {
+        if (ids.Count == 0) return;
+        var filings = await _db.Filings
+            .Where(f => ids.Contains(f.Id))
+            .ToListAsync(ct);
+        if (filings.Count == 0) return;
+        _db.Filings.RemoveRange(filings);
+        await _db.SaveChangesAsync(ct);
+    }
 }

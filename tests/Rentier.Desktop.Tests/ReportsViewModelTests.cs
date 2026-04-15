@@ -58,6 +58,9 @@ public class ReportsViewModelTests
         return h;
     }
 
+    private static ICommandHandler<BulkDeleteReportsCommand, Result<VoidResult, Error>> MockBulkDeleteReports() =>
+        Substitute.For<ICommandHandler<BulkDeleteReportsCommand, Result<VoidResult, Error>>>();
+
     private static ReportRowDto MakeDto(string name = "report.csv") =>
         new(Guid.NewGuid(), name, new DateOnly(2024, 3, 1), null, "My Importer",
             ReportStatus.Processed, 3,
@@ -77,6 +80,7 @@ public class ReportsViewModelTests
             getReports       ?? MakeGetReports(),
             importHandler    ?? MakeImportHandler(),
             deleteHandler    ?? MakeDeleteHandler(),
+            MockBulkDeleteReports(),
             confirmDelete    ?? ((_, _) => Task.FromResult(false)),
             showImportDialog ?? (() => Task.FromResult<(Guid, string, byte[])?>(null)),
             navigateToFilings ?? (_ => { }),

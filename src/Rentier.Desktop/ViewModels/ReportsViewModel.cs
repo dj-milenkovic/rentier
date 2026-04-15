@@ -1,7 +1,8 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
+using System.Reactive.Linq;
 using ReactiveUI;
 using Rentier.Application.Commands;
 using Rentier.Domain.ValueObjects;
@@ -21,6 +22,7 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
     private readonly IQueryHandler<GetReportsQuery, Result<IReadOnlyList<ReportRowDto>, Error>> _getReports;
     private readonly ICommandHandler<ImportReportCommand, Result<Guid, Error>> _importReport;
     private readonly ICommandHandler<DeleteReportCommand, Result<VoidResult, Error>> _deleteReport;
+    private readonly ICommandHandler<BulkDeleteReportsCommand, Result<VoidResult, Error>> _bulkDeleteReports;
     private readonly Func<string, string, Task<bool>> _confirmDelete;
     private readonly Func<Task<(Guid ImporterId, string FileName, byte[] Content)?>> _showImportDialog;
     private readonly Action<Guid> _navigateToFilings;
@@ -31,6 +33,9 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
     private string? _errorMessage;
     private string? _syncStatusMessage;
     private int _syncProgressValue;
+    private int _selectedCount;
+    private readonly ObservableAsPropertyHelper<bool> _hasSelection;
+    private readonly ObservableAsPropertyHelper<string> _deleteSelectedLabel;
 
     public bool IsLoading
     {
@@ -62,7 +67,17 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
         private set => this.RaiseAndSetIfChanged(ref _syncProgressValue, value);
     }
 
+    public int SelectedCount
+    {
+        get => _selectedCount;
+        private set => this.RaiseAndSetIfChanged(ref _selectedCount, value);
+    }
+
+    public bool HasSelection => _hasSelection.Value;
+    public string DeleteSelectedLabel => _deleteSelectedLabel.Value;
+
     public bool IsEmpty => Rows.Count == 0 && !IsLoading;
+    public bool HasItems => Rows.Count > 0;
 
     public ObservableCollection<ReportRowViewModel> Rows { get; } = new();
 
@@ -72,12 +87,18 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
     public ReactiveCommand<Guid, Unit> DeleteCommand { get; }
     public ReactiveCommand<Guid, Unit> ViewFilingsCommand { get; }
     public ReactiveCommand<Unit, Unit> ClearErrorCommand { get; }
+    public ReactiveCommand<Unit, Unit> SelectAllCommand { get; }
+    public ReactiveCommand<Unit, Unit> ClearSelectionCommand { get; }
+    public ReactiveCommand<Unit, Unit> BulkDeleteCommand { get; }
+
+    private readonly CompositeDisposable _rowSubscriptions = new();
 
     public ReportsViewModel(
         ICommandHandler<SyncMailboxCommand, Result<SyncResult, Error>> syncHandler,
         IQueryHandler<GetReportsQuery, Result<IReadOnlyList<ReportRowDto>, Error>> getReports,
         ICommandHandler<ImportReportCommand, Result<Guid, Error>> importReport,
         ICommandHandler<DeleteReportCommand, Result<VoidResult, Error>> deleteReport,
+        ICommandHandler<BulkDeleteReportsCommand, Result<VoidResult, Error>> bulkDeleteReports,
         Func<string, string, Task<bool>> confirmDelete,
         Func<Task<(Guid ImporterId, string FileName, byte[] Content)?>> showImportDialog,
         Action<Guid> navigateToFilings,
@@ -87,10 +108,21 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
         _getReports        = getReports;
         _importReport      = importReport;
         _deleteReport      = deleteReport;
+        _bulkDeleteReports = bulkDeleteReports;
         _confirmDelete     = confirmDelete;
         _showImportDialog  = showImportDialog;
         _navigateToFilings = navigateToFilings;
         _scheduler         = scheduler ?? RxApp.MainThreadScheduler;
+
+        _hasSelection = this.WhenAnyValue(x => x.SelectedCount)
+            .Select(c => c > 0)
+            .ToProperty(this, x => x.HasSelection, scheduler: _scheduler);
+
+        _deleteSelectedLabel = this.WhenAnyValue(x => x.SelectedCount)
+            .Select(c => string.Format(Strings.BulkDelete_Button_Template, c))
+            .ToProperty(this, x => x.DeleteSelectedLabel,
+                initialValue: string.Format(Strings.BulkDelete_Button_Template, 0),
+                scheduler: _scheduler);
 
         LoadReportsCommand = ReactiveCommand.CreateFromTask(
             LoadReportsAsync, outputScheduler: _scheduler);
@@ -112,6 +144,56 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
 
         SyncCommand.IsExecuting.Subscribe(v => IsSyncing = v);
 
+        var hasItemsObservable = this.WhenAnyValue(x => x.HasItems);
+        var hasSelectionObservable = this.WhenAnyValue(x => x.HasSelection);
+
+        SelectAllCommand = ReactiveCommand.Create(
+            () =>
+            {
+                foreach (var row in Rows)
+                    row.IsSelected = true;
+            },
+            hasItemsObservable,
+            outputScheduler: _scheduler);
+
+        ClearSelectionCommand = ReactiveCommand.Create(
+            () =>
+            {
+                foreach (var row in Rows)
+                    row.IsSelected = false;
+            },
+            hasSelectionObservable,
+            outputScheduler: _scheduler);
+
+        BulkDeleteCommand = ReactiveCommand.CreateFromTask(
+            async (CancellationToken ct) =>
+            {
+                var selectedIds = Rows
+                    .Where(r => r.IsSelected)
+                    .Select(r => r.Id)
+                    .ToList();
+
+                if (selectedIds.Count == 0) return;
+
+                var message = string.Format(
+                    Strings.BulkDelete_Reports_Confirmation_Message, selectedIds.Count);
+                var confirmed = await _confirmDelete(
+                    Strings.BulkDelete_Reports_Confirmation_Title, message);
+                if (!confirmed) return;
+
+                var result = await _bulkDeleteReports.HandleAsync(
+                    new BulkDeleteReportsCommand(selectedIds), ct);
+
+                if (!result.IsSuccess)
+                {
+                    ErrorMessage = Strings.BulkDelete_Error_Failed;
+                    return;
+                }
+
+                await LoadReportsAsync(ct);
+            },
+            outputScheduler: _scheduler);
+
         this.WhenActivated(disposables =>
         {
             LoadReportsCommand.Execute().Subscribe().DisposeWith(disposables);
@@ -127,7 +209,22 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
             DeleteCommand.ThrownExceptions
                 .Subscribe(ex => ErrorMessage = ex.Message)
                 .DisposeWith(disposables);
+            BulkDeleteCommand.ThrownExceptions
+                .Subscribe(ex => ErrorMessage = ex.Message)
+                .DisposeWith(disposables);
         });
+    }
+
+    private void RebuildRowSubscriptions()
+    {
+        _rowSubscriptions.Clear();
+        foreach (var row in Rows)
+        {
+            row.WhenAnyValue(r => r.IsSelected)
+                .Subscribe(_ => SelectedCount = Rows.Count(r => r.IsSelected))
+                .DisposeWith(_rowSubscriptions);
+        }
+        SelectedCount = Rows.Count(r => r.IsSelected);
     }
 
     private async Task LoadReportsAsync(CancellationToken ct = default)
@@ -148,6 +245,9 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
                 Rows.Add(ReportRowViewModel.From(dto));
 
             this.RaisePropertyChanged(nameof(IsEmpty));
+            this.RaisePropertyChanged(nameof(HasItems));
+
+            RebuildRowSubscriptions();
         }
         finally
         {
@@ -231,4 +331,3 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
         }
     }
 }
-
