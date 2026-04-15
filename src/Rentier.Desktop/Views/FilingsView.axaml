@@ -28,6 +28,20 @@
                     Content="{x:Static res:Strings.Filings_Filter_All}" />
     </StackPanel>
 
+    <!-- Bulk selection toolbar -->
+    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="8,0,8,4">
+      <Button Content="{x:Static res:Strings.BulkDelete_SelectAll_Button}"
+              Command="{Binding SelectAllCommand}"
+              IsVisible="{Binding HasItems}" />
+      <Button Content="{x:Static res:Strings.BulkDelete_ClearSelection_Button}"
+              Command="{Binding ClearSelectionCommand}"
+              IsVisible="{Binding HasItems}" />
+      <Button Content="{Binding DeleteSelectedLabel}"
+              Command="{Binding BulkDeleteCommand}"
+              IsVisible="{Binding HasSelection}"
+              Foreground="Red" />
+    </StackPanel>
+
     <!-- Loading indicator -->
     <ProgressBar DockPanel.Dock="Top" IsIndeterminate="True"
                  IsVisible="{Binding IsLoading}" Height="6" MinHeight="6" />
@@ -70,6 +84,16 @@
               CanUserResizeColumns="True"
               CanUserSortColumns="False">
       <DataGrid.Columns>
+
+        <!-- Selection checkbox column -->
+        <DataGridTemplateColumn Width="40">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                        HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
 
         <!-- Status badge: read-only coloured pill showing current filing status -->
         <DataGridTemplateColumn Width="90">

@@ -53,6 +53,7 @@ public class MainWindowViewModelSmokeTests
             Substitute.For<ICommandHandler<UpdatePaymentReferenceCommand, Result<VoidResult, Error>>>(),
             Substitute.For<ICommandHandler<DeleteFilingCommand, Result<VoidResult, Error>>>(),
             Substitute.For<ICommandHandler<ExportFilingCommand, Result<ExportFilingResult, Error>>>(),
+            Substitute.For<ICommandHandler<BulkDeleteFilingsCommand, Result<VoidResult, Error>>>(),
             _ => Task.FromResult(false),
             _ => Task.CompletedTask,
             ImmediateScheduler.Instance);
@@ -76,6 +77,7 @@ public class MainWindowViewModelSmokeTests
         services.AddSingleton(getDashboard);
         services.AddSingleton(Substitute.For<ICommandHandler<ImportReportCommand, Result<Guid, Error>>>());
         services.AddSingleton(Substitute.For<ICommandHandler<DeleteReportCommand, Result<VoidResult, Error>>>());
+        services.AddSingleton(Substitute.For<ICommandHandler<BulkDeleteReportsCommand, Result<VoidResult, Error>>>());
         services.AddSingleton<Func<string, string, Task<bool>>>((_, _) => Task.FromResult(false));
         services.AddSingleton<Func<Task<(Guid ImporterId, string FileName, byte[] Content)?>>>(
             () => Task.FromResult<(Guid, string, byte[])?>(null));
