@@ -82,7 +82,8 @@
               IsVisible="{Binding HasItems}"
               CanUserReorderColumns="False"
               CanUserResizeColumns="True"
-              CanUserSortColumns="False">
+              CanUserSortColumns="True"
+              Sorting="DataGrid_Sorting">
       <DataGrid.Columns>
 
         <!-- Selection checkbox column -->
@@ -112,41 +113,26 @@
         </DataGridTemplateColumn>
 
         <!-- Status column: ComboBox showing valid next statuses -->
-        <DataGridTemplateColumn Header="{x:Static res:Strings.Filings_Col_Status}" Width="120">
-          <DataGridTemplateColumn.CellTemplate>
-            <DataTemplate>
-              <ComboBox ItemsSource="{Binding AvailableNextStatuses}"
-                        SelectedItem="{Binding Status, Mode=OneTime}"
-                        SelectionChanged="StatusComboBox_SelectionChanged"
-                        HorizontalAlignment="Stretch">
-                <ComboBox.ItemTemplate>
-                  <DataTemplate>
-                    <TextBlock Text="{Binding Converter={x:Static local:FilingStatusDisplayConverter.Instance}}" />
-                  </DataTemplate>
-                </ComboBox.ItemTemplate>
-              </ComboBox>
-            </DataTemplate>
-          </DataGridTemplateColumn.CellTemplate>
-        </DataGridTemplateColumn>
+        <!-- REMOVED: replaced by Actions column icon buttons (feat/030) -->
 
         <!-- Income Type column -->
-        <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_IncomeType}" Width="110"
+        <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_IncomeType}" Width="110" Tag="IncomeType"
           Binding="{Binding IncomeType, Converter={x:Static local:IncomeTypeDisplayConverter.Instance}}" />
 
         <!-- Paying Entity column -->
-        <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_PayingEntity}" Width="*"
+        <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_PayingEntity}" Width="*" Tag="PayingEntity"
           Binding="{Binding PayingEntity}" />
 
         <!-- Filing Deadline column -->
-        <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_Deadline}" Width="130"
+        <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_Deadline}" Width="130" Tag="FilingDeadline"
           Binding="{Binding DeadlineDisplay}" />
 
         <!-- Tax Payable column -->
-        <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_TaxPayable}" Width="140"
+        <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_TaxPayable}" Width="140" Tag="TaxPayable"
           Binding="{Binding TaxPayableDisplay}" />
 
         <!-- Payment Reference column: editable TextBox for Filed rows only -->
-        <DataGridTemplateColumn Header="{x:Static res:Strings.Filings_Col_PaymentRef}" Width="180">
+        <DataGridTemplateColumn Header="{x:Static res:Strings.Filings_Col_PaymentRef}" Width="180" Tag="PaymentReference">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <TextBox Text="{Binding PaymentReference}"
@@ -158,26 +144,32 @@
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
 
-        <!-- Export action column -->
-        <DataGridTemplateColumn Header="{x:Static res:Strings.Filings_Export_Button}" Width="80">
+        <!-- Actions column: Advance Status (chevron-right, Lucide MIT), Export XML (download, Lucide MIT), Delete (trash-2, Lucide MIT) -->
+        <DataGridTemplateColumn Header="{x:Static res:Strings.Filings_Col_Actions}" Width="130">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
-              <Button Content="{x:Static res:Strings.Filings_Export_Button}"
-                      Tag="{Binding Id}"
-                      Click="ExportButton_Click"
-                      HorizontalAlignment="Center" />
-            </DataTemplate>
-          </DataGridTemplateColumn.CellTemplate>
-        </DataGridTemplateColumn>
-
-        <!-- Delete action column -->
-        <DataGridTemplateColumn Width="80">
-          <DataGridTemplateColumn.CellTemplate>
-            <DataTemplate>
-              <Button Content="{x:Static res:Strings.Filings_Delete_Action_Button}"
-                      Tag="{Binding Id}"
-                      Click="DeleteButton_Click"
-                      HorizontalAlignment="Center" />
+              <StackPanel Orientation="Horizontal" Spacing="4"
+                          HorizontalAlignment="Center" VerticalAlignment="Center">
+                <!-- Advance Status: chevron-right (Lucide, MIT) -->
+                <Button Command="{Binding AdvanceStatusCommand}"
+                        ToolTip.Tip="{Binding AdvanceStatusTooltip}"
+                        Padding="6" Background="Transparent" BorderThickness="0">
+                  <PathIcon Data="M9 18l6-6-6-6" Width="16" Height="16" />
+                </Button>
+                <!-- Export XML: download (Lucide, MIT) -->
+                <Button Command="{Binding ExportCommand}"
+                        ToolTip.Tip="{x:Static res:Strings.Filings_Tooltip_Export}"
+                        Padding="6" Background="Transparent" BorderThickness="0">
+                  <PathIcon Data="M12 2v13m0 0l-4-4m4 4l4-4M4 20h16" Width="16" Height="16" />
+                </Button>
+                <!-- Delete: trash-2 (Lucide, MIT) -->
+                <Button Command="{Binding DeleteCommand}"
+                        ToolTip.Tip="{x:Static res:Strings.Filings_Tooltip_Delete}"
+                        Padding="6" Background="Transparent" BorderThickness="0">
+                  <PathIcon Data="M3 6h18M8 6V4h8v2M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6M10 11v6M14 11v6"
+                            Foreground="Red" Width="16" Height="16" />
+                </Button>
+              </StackPanel>
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>

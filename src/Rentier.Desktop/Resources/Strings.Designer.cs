@@ -144,6 +144,9 @@ public static class Strings
     public static string Reports_Delete_Confirmation_Message => "This will permanently delete the report and all linked filings. This action cannot be undone.";
     public static string Reports_Delete_Confirm_Button => "Delete";
     public static string Reports_Delete_Cancel_Button => "Cancel";
+    public static string Reports_Page_Previous => "← Previous";
+    public static string Reports_Page_Next => "Next →";
+    public static string Reports_Page_Indicator => "Page {0} of {1}";
     public static string Reports_Import_Title => "Import Report";
     public static string Reports_Import_NoImporters => "No importers are configured. Please add an importer before importing a report.";
     public static string Reports_Import_FilePickerTitle => "Select CSV File";
@@ -179,4 +182,9 @@ public static class Strings
     public static string BulkDelete_Confirm_Button => "Delete";
     public static string BulkDelete_Cancel_Button => "Cancel";
     public static string BulkDelete_Error_Failed => "Bulk delete failed. Please try again.";
+    public static string Filings_Tooltip_AdvanceStatus => "Mark as {0}";
+    public static string Filings_Tooltip_AdvanceStatus_None => "No further transitions";
+    public static string Filings_Tooltip_Export => "Export PP-OPO XML";
+    public static string Filings_Tooltip_Delete => "Delete filing";
+    public static string Filings_Col_Actions => "Actions";
 }
