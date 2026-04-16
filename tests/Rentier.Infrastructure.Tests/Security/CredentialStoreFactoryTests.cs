@@ -91,7 +91,7 @@ public class CredentialStoreFactoryTests
     }
 
     [Fact]
-    public async Task CreateAsync_UnsupportedPlatform_ErrorIncludesOsDescription()
+    public void CreateAsync_UnsupportedPlatform_ErrorIncludesOsDescription()
     {
         // This test can only fire on a truly unsupported platform.
         // On Windows/macOS/Linux it will return success or PROVIDER_UNAVAILABLE.

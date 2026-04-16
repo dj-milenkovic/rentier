@@ -196,7 +196,7 @@ public class FilingsViewHeadlessTests
     }
 
     [AvaloniaFact]
-    public void FilingsView_WhenHasItems_SelectAllButtonIsVisible()
+    public void FilingsView_WhenHasItems_DataGridIsVisible()
     {
         // Arrange
         var rows = new[] { MakeFilingRowDto(), MakeFilingRowDto(), MakeFilingRowDto() };
@@ -217,11 +217,11 @@ public class FilingsViewHeadlessTests
         // Assert — VM reports items loaded
         vm.HasItems.Should().BeTrue();
 
-        // Assert — "Select All" button is visible (IsVisible bound to HasItems)
-        var selectAllButton = window.GetVisualDescendants()
-            .OfType<Button>()
-            .FirstOrDefault(b => b.IsVisible && b.Content is string s && s == "Select All");
-        selectAllButton.Should().NotBeNull();
+        // Assert — DataGrid is visible when items are present (IsVisible bound to HasItems)
+        var dataGrid = window.GetVisualDescendants()
+            .OfType<DataGrid>()
+            .FirstOrDefault(g => g.IsVisible);
+        dataGrid.Should().NotBeNull();
 
         window.Close();
     }

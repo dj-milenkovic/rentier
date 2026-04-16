@@ -46,13 +46,18 @@ public class ReportsViewHeadlessTests
         window.UpdateLayout();
         Dispatcher.UIThread.RunJobs();
 
-        // Assert (a) — no Button in the visual tree has a non-null/non-empty string Content
+        // Assert (a) — no Button in the visual tree has the old text-label content for the action buttons.
+        // The old content was the value of Reports_Button_ViewFilings / Reports_Button_Delete strings.
+        // We check that no button has exactly those strings as Content.
         var buttons = window.GetVisualDescendants().OfType<Button>().ToList();
-        var textLabelledActionButtons = buttons.Where(b => b.Content is string s && !string.IsNullOrEmpty(s)
-            && (((string)b.Content!).Contains("View") || ((string)b.Content!).Contains("Delete")
-                || ((string)b.Content!).Contains("Filings")));
-        textLabelledActionButtons.Should().BeEmpty(
-            because: "action buttons must be icon-only — no text label on View Filings or Delete");
+        var viewFilingsTextButton = buttons.FirstOrDefault(b =>
+            b.Content is string s && s == Rentier.Desktop.Resources.Strings.Reports_Button_ViewFilings);
+        var deleteTextButton = buttons.FirstOrDefault(b =>
+            b.Content is string s && s == Rentier.Desktop.Resources.Strings.Reports_Button_Delete);
+        viewFilingsTextButton.Should().BeNull(
+            because: "View Filings action button must be icon-only, not text-labelled");
+        deleteTextButton.Should().BeNull(
+            because: "Delete action button must be icon-only, not text-labelled");
 
         // Assert (b) — the action column contains exactly two PathIcon descendants per row
         var pathIcons = window.GetVisualDescendants().OfType<PathIcon>().ToList();

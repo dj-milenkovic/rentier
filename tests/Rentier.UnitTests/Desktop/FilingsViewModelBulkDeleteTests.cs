@@ -184,7 +184,7 @@ public class FilingsViewModelBulkDeleteTests
     }
 
     [Fact]
-    public async Task BulkDeleteCommand_OnSuccess_ReloadsAndClearsSelection()
+    public void BulkDeleteCommand_OnSuccess_ReloadsAndClearsSelection()
     {
         var getFilings = MockGetFilings(MakeDto());
         var vm = CreateVm(

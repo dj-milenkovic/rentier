@@ -112,7 +112,7 @@ public class ReportsViewModelBulkDeleteTests
     }
 
     [Fact]
-    public async Task BulkDeleteCommand_ConfirmMessageContainsCascadeWarning()
+    public void BulkDeleteCommand_ConfirmMessageContainsCascadeWarning()
     {
         string? capturedMessage = null;
         var vm = CreateVm(
