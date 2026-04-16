@@ -82,7 +82,10 @@ public sealed class FilingRepository : IFilingRepository
     }
 
     public async Task<(IReadOnlyList<Filing> Items, int TotalCount)> GetPagedAsync(
-        FilingFilterMode filter, int skip, int take, CancellationToken ct = default)
+        FilingFilterMode filter, int skip, int take,
+        FilingSortColumn sortColumn = FilingSortColumn.FilingDeadline,
+        bool sortDescending = true,
+        CancellationToken ct = default)
     {
         var query = _db.Filings.AsNoTracking();
 
@@ -91,8 +94,26 @@ public sealed class FilingRepository : IFilingRepository
                 f.Status == FilingStatus.Init || f.Status == FilingStatus.Filed);
 
         var total = await query.CountAsync(ct);
-        var items = await query
-            .OrderBy(f => f.FilingDeadline)
+
+        IOrderedQueryable<Filing> ordered = (sortColumn, sortDescending) switch
+        {
+            (FilingSortColumn.FilingDeadline,   true)  => query.OrderByDescending(f => f.FilingDeadline),
+            (FilingSortColumn.FilingDeadline,   false) => query.OrderBy(f => f.FilingDeadline),
+            (FilingSortColumn.Status,           true)  => query.OrderByDescending(f => (int)f.Status),
+            (FilingSortColumn.Status,           false) => query.OrderBy(f => (int)f.Status),
+            (FilingSortColumn.IncomeType,       true)  => query.OrderByDescending(f => (int)f.IncomeType),
+            (FilingSortColumn.IncomeType,       false) => query.OrderBy(f => (int)f.IncomeType),
+            (FilingSortColumn.PayingEntity,     true)  => query.OrderByDescending(f => f.PayingEntity),
+            (FilingSortColumn.PayingEntity,     false) => query.OrderBy(f => f.PayingEntity),
+            (FilingSortColumn.TaxPayable,       true)  => query.OrderByDescending(f => f.TaxPayableRsd),
+            (FilingSortColumn.TaxPayable,       false) => query.OrderBy(f => f.TaxPayableRsd),
+            (FilingSortColumn.PaymentReference, true)  => query.OrderByDescending(f => f.PaymentReference),
+            (FilingSortColumn.PaymentReference, false) => query.OrderBy(f => f.PaymentReference),
+            _ => throw new ArgumentOutOfRangeException(nameof(sortColumn))
+        };
+
+        var items = await ordered
+            .ThenBy(f => f.Id)
             .Skip(skip)
             .Take(take)
             .ToListAsync(ct);

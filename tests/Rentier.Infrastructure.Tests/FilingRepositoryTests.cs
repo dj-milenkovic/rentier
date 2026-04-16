@@ -232,7 +232,7 @@ public class FilingRepositoryTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task GetPagedAsync_ResultsAreSortedByFilingDeadlineAscending()
+    public async Task GetPagedAsync_DefaultSort_ReturnsFilingDeadlineDescending()
     {
         var profile = MakeProfile();
         await _context.TaxpayerProfiles.AddAsync(profile);
@@ -248,8 +248,9 @@ public class FilingRepositoryTests : IAsyncLifetime
 
         var (items, _) = await _repository.GetPagedAsync(FilingFilterMode.All, 0, 100);
 
-        items[0].FilingDeadline.Should().BeBefore(items[1].FilingDeadline);
-        items[1].FilingDeadline.Should().BeBefore(items[2].FilingDeadline);
+        // Default: FilingDeadline DESC
+        items[0].FilingDeadline.Should().BeAfter(items[1].FilingDeadline);
+        items[1].FilingDeadline.Should().BeAfter(items[2].FilingDeadline);
     }
 
     [Fact]
@@ -284,6 +285,112 @@ public class FilingRepositoryTests : IAsyncLifetime
 
         items.Should().HaveCount(2);
         total.Should().Be(5);
+    }
+
+    // ── GetPagedAsync sort tests (feature 027) ──────────────────────────────
+
+    [Fact]
+    public async Task GetPagedAsync_SortByFilingDeadlineDescending_MostRecentFirst()
+    {
+        var profile = MakeProfile();
+        await _context.TaxpayerProfiles.AddAsync(profile);
+        await _context.SaveChangesAsync();
+
+        var f1 = MakeFiling(profile.Id, date: new DateOnly(2024, 1, 1));
+        var f2 = MakeFiling(profile.Id, date: new DateOnly(2024, 6, 1));
+        await _repository.AddAsync(f1);
+        await _repository.AddAsync(f2);
+
+        var (items, _) = await _repository.GetPagedAsync(
+            FilingFilterMode.All, 0, 100,
+            FilingSortColumn.FilingDeadline, sortDescending: true);
+
+        items[0].FilingDeadline.Should().BeAfter(items[1].FilingDeadline);
+    }
+
+    [Fact]
+    public async Task GetPagedAsync_SortByFilingDeadlineAscending_EarliestFirst()
+    {
+        var profile = MakeProfile();
+        await _context.TaxpayerProfiles.AddAsync(profile);
+        await _context.SaveChangesAsync();
+
+        var f1 = MakeFiling(profile.Id, date: new DateOnly(2024, 6, 1));
+        var f2 = MakeFiling(profile.Id, date: new DateOnly(2024, 1, 1));
+        await _repository.AddAsync(f1);
+        await _repository.AddAsync(f2);
+
+        var (items, _) = await _repository.GetPagedAsync(
+            FilingFilterMode.All, 0, 100,
+            FilingSortColumn.FilingDeadline, sortDescending: false);
+
+        items[0].FilingDeadline.Should().BeBefore(items[1].FilingDeadline);
+    }
+
+    [Fact]
+    public async Task GetPagedAsync_SortByPayingEntityDescending_OrdersAlphabeticallyDescending()
+    {
+        var profile = MakeProfile();
+        await _context.TaxpayerProfiles.AddAsync(profile);
+        await _context.SaveChangesAsync();
+
+        var fA = MakeFiling(profile.Id, entity: "Alpha Corp");
+        var fZ = MakeFiling(profile.Id, entity: "Zeta Corp");
+        await _repository.AddAsync(fA);
+        await _repository.AddAsync(fZ);
+
+        var (items, _) = await _repository.GetPagedAsync(
+            FilingFilterMode.All, 0, 100,
+            FilingSortColumn.PayingEntity, sortDescending: true);
+
+        items[0].PayingEntity.Should().Be("Zeta Corp");
+        items[1].PayingEntity.Should().Be("Alpha Corp");
+    }
+
+    [Fact]
+    public async Task GetPagedAsync_SortByTaxPayableDescending_HighestFirst()
+    {
+        var profile = MakeProfile();
+        await _context.TaxpayerProfiles.AddAsync(profile);
+        await _context.SaveChangesAsync();
+
+        // gross=500 => taxPayable is lower; gross=2000 => higher
+        var fLow  = Filing.CreateFromIncome(profile.Id, IncomeType.Dividend, "Low",
+            new DateOnly(2024, 1, 1), 500m, 75m, 75m, 0m, new DateOnly(2024, 2, 1));
+        var fHigh = Filing.CreateFromIncome(profile.Id, IncomeType.Dividend, "High",
+            new DateOnly(2024, 1, 1), 2000m, 300m, 300m, 0m, new DateOnly(2024, 2, 1));
+        await _repository.AddAsync(fLow);
+        await _repository.AddAsync(fHigh);
+
+        var (items, _) = await _repository.GetPagedAsync(
+            FilingFilterMode.All, 0, 100,
+            FilingSortColumn.TaxPayable, sortDescending: true);
+
+        items[0].TaxPayableRsd.Should().BeGreaterThan(items[1].TaxPayableRsd);
+    }
+
+    [Fact]
+    public async Task GetPagedAsync_TieBreaker_DuplicatePrimarySort_SecondaryIdAscIsApplied()
+    {
+        var profile = MakeProfile();
+        await _context.TaxpayerProfiles.AddAsync(profile);
+        await _context.SaveChangesAsync();
+
+        // Two filings with the same deadline: tie-breaker should be Id ASC
+        var f1 = MakeFiling(profile.Id, date: new DateOnly(2024, 3, 1));
+        var f2 = MakeFiling(profile.Id, date: new DateOnly(2024, 3, 1));
+        await _repository.AddAsync(f1);
+        await _repository.AddAsync(f2);
+
+        var (items, _) = await _repository.GetPagedAsync(
+            FilingFilterMode.All, 0, 100,
+            FilingSortColumn.FilingDeadline, sortDescending: true);
+
+        items.Should().HaveCount(2);
+        // Tie-breaker: Id ASC (lower GUID first when deadlines are equal)
+        var ids = items.Select(i => i.Id).ToList();
+        var sorted = ids.OrderBy(id => id).ToList();
+        ids.Should().Equal(sorted);
     }
 
     // ── GetFilingCountByReportIdAsync tests (feature 014) ───────────────────

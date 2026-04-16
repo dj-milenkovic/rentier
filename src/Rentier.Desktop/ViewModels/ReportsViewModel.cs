@@ -19,7 +19,7 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
     public ViewModelActivator Activator { get; } = new();
 
     private readonly ICommandHandler<SyncMailboxCommand, Result<SyncResult, Error>> _syncHandler;
-    private readonly IQueryHandler<GetReportsQuery, Result<IReadOnlyList<ReportRowDto>, Error>> _getReports;
+    private readonly IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>> _getReports;
     private readonly ICommandHandler<ImportReportCommand, Result<Guid, Error>> _importReport;
     private readonly ICommandHandler<DeleteReportCommand, Result<VoidResult, Error>> _deleteReport;
     private readonly ICommandHandler<BulkDeleteReportsCommand, Result<VoidResult, Error>> _bulkDeleteReports;
@@ -34,6 +34,11 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
     private string? _syncStatusMessage;
     private int _syncProgressValue;
     private int _selectedCount;
+    private int _currentPage = 1;
+    private int _totalPages = 1;
+    private int _totalCount;
+    private bool _sortDescending = true;
+    private bool _isUpdatingSelection;
     private readonly ObservableAsPropertyHelper<bool> _hasSelection;
     private readonly ObservableAsPropertyHelper<string> _deleteSelectedLabel;
 
@@ -76,12 +81,80 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
     public bool HasSelection => _hasSelection.Value;
     public string DeleteSelectedLabel => _deleteSelectedLabel.Value;
 
+    public bool? IsAllSelected
+    {
+        get
+        {
+            if (Rows.Count == 0 || _selectedCount == 0) return false;
+            if (_selectedCount == Rows.Count) return true;
+            return null; // indeterminate
+        }
+        set
+        {
+            if (_isUpdatingSelection) return;
+            _isUpdatingSelection = true;
+            try
+            {
+                if (value == true)
+                    SelectAllCommand.Execute().Subscribe();
+                else if (value == false)
+                    ClearSelectionCommand.Execute().Subscribe();
+                // null → ignore; reactive pipeline recomputes
+            }
+            finally
+            {
+                _isUpdatingSelection = false;
+                this.RaisePropertyChanged(nameof(IsAllSelected));
+            }
+        }
+    }
+
     public bool IsEmpty => Rows.Count == 0 && !IsLoading;
     public bool HasItems => Rows.Count > 0;
 
+    public int CurrentPage
+    {
+        get => _currentPage;
+        private set => this.RaiseAndSetIfChanged(ref _currentPage, value);
+    }
+
+    public int TotalPages
+    {
+        get => _totalPages;
+        private set => this.RaiseAndSetIfChanged(ref _totalPages, value);
+    }
+
+    public int TotalCount
+    {
+        get => _totalCount;
+        private set => this.RaiseAndSetIfChanged(ref _totalCount, value);
+    }
+
+    public bool HasPreviousPage => _currentPage > 1 && !IsLoading;
+    public bool HasNextPage => _currentPage < _totalPages && !IsLoading;
+    public string PageIndicator => string.Format(Strings.Reports_Page_Indicator, _currentPage, _totalPages);
+
+    /// <summary>When true, reports are sorted newest-first. Resetting this property resets the page to 1.</summary>
+    public bool SortDescending
+    {
+        get => _sortDescending;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _sortDescending, value);
+            _currentPage = 1;
+            this.RaisePropertyChanged(nameof(CurrentPage));
+            this.RaisePropertyChanged(nameof(HasPreviousPage));
+            this.RaisePropertyChanged(nameof(HasNextPage));
+            this.RaisePropertyChanged(nameof(PageIndicator));
+            LoadPageCommand.Execute().Subscribe();
+        }
+    }
+
     public ObservableCollection<ReportRowViewModel> Rows { get; } = new();
 
-    public ReactiveCommand<Unit, Unit> LoadReportsCommand { get; }
+    public ReactiveCommand<Unit, Unit> LoadPageCommand { get; }
+    public ReactiveCommand<Unit, Unit> PreviousPageCommand { get; }
+    public ReactiveCommand<Unit, Unit> NextPageCommand { get; }
     public ReactiveCommand<Unit, Unit> SyncCommand { get; }
     public ReactiveCommand<Unit, Unit> ImportCommand { get; }
     public ReactiveCommand<Guid, Unit> DeleteCommand { get; }
@@ -91,11 +164,14 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
     public ReactiveCommand<Unit, Unit> ClearSelectionCommand { get; }
     public ReactiveCommand<Unit, Unit> BulkDeleteCommand { get; }
 
+    // Keep LoadReportsCommand as an alias for backward compat with existing AXAML / tests
+    public ReactiveCommand<Unit, Unit> LoadReportsCommand => LoadPageCommand;
+
     private readonly CompositeDisposable _rowSubscriptions = new();
 
     public ReportsViewModel(
         ICommandHandler<SyncMailboxCommand, Result<SyncResult, Error>> syncHandler,
-        IQueryHandler<GetReportsQuery, Result<IReadOnlyList<ReportRowDto>, Error>> getReports,
+        IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>> getReports,
         ICommandHandler<ImportReportCommand, Result<Guid, Error>> importReport,
         ICommandHandler<DeleteReportCommand, Result<VoidResult, Error>> deleteReport,
         ICommandHandler<BulkDeleteReportsCommand, Result<VoidResult, Error>> bulkDeleteReports,
@@ -124,8 +200,26 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
                 initialValue: string.Format(Strings.BulkDelete_Button_Template, 0),
                 scheduler: _scheduler);
 
-        LoadReportsCommand = ReactiveCommand.CreateFromTask(
-            LoadReportsAsync, outputScheduler: _scheduler);
+        LoadPageCommand = ReactiveCommand.CreateFromTask(
+            LoadPageAsync, outputScheduler: _scheduler);
+
+        PreviousPageCommand = ReactiveCommand.CreateFromTask(
+            async (CancellationToken ct) =>
+            {
+                _currentPage--;
+                await LoadPageAsync(ct);
+            },
+            this.WhenAnyValue(x => x.HasPreviousPage),
+            outputScheduler: _scheduler);
+
+        NextPageCommand = ReactiveCommand.CreateFromTask(
+            async (CancellationToken ct) =>
+            {
+                _currentPage++;
+                await LoadPageAsync(ct);
+            },
+            this.WhenAnyValue(x => x.HasNextPage),
+            outputScheduler: _scheduler);
 
         SyncCommand = ReactiveCommand.CreateFromTask(
             HandleSyncAsync, outputScheduler: _scheduler);
@@ -190,14 +284,18 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
                     return;
                 }
 
-                await LoadReportsAsync(ct);
+                // Decrement page when all visible items on a non-first page are deleted
+                if (selectedIds.Count == Rows.Count && _currentPage > 1)
+                    _currentPage--;
+
+                await LoadPageAsync(ct);
             },
             outputScheduler: _scheduler);
 
         this.WhenActivated(disposables =>
         {
-            LoadReportsCommand.Execute().Subscribe().DisposeWith(disposables);
-            LoadReportsCommand.ThrownExceptions
+            LoadPageCommand.Execute().Subscribe().DisposeWith(disposables);
+            LoadPageCommand.ThrownExceptions
                 .Subscribe(ex => ErrorMessage = ex.Message)
                 .DisposeWith(disposables);
             SyncCommand.ThrownExceptions
@@ -221,31 +319,53 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
         foreach (var row in Rows)
         {
             row.WhenAnyValue(r => r.IsSelected)
-                .Subscribe(_ => SelectedCount = Rows.Count(r => r.IsSelected))
+                .Subscribe(_ =>
+                {
+                    SelectedCount = Rows.Count(r => r.IsSelected);
+                    this.RaisePropertyChanged(nameof(IsAllSelected));
+                })
                 .DisposeWith(_rowSubscriptions);
         }
         SelectedCount = Rows.Count(r => r.IsSelected);
+        this.RaisePropertyChanged(nameof(IsAllSelected));
     }
 
-    private async Task LoadReportsAsync(CancellationToken ct = default)
+    private async Task LoadPageAsync(CancellationToken ct = default)
     {
         IsLoading = true;
         ErrorMessage = null;
         try
         {
-            var result = await _getReports.HandleAsync(new GetReportsQuery(), ct);
+            var result = await _getReports.HandleAsync(
+                new GetReportsQuery(_currentPage, 30, _sortDescending), ct);
+
             if (!result.IsSuccess)
             {
                 ErrorMessage = result.Error.Message;
                 return;
             }
 
+            var page = result.Value;
             Rows.Clear();
-            foreach (var dto in result.Value)
+            foreach (var dto in page.Rows)
                 Rows.Add(ReportRowViewModel.From(dto));
+
+            TotalCount = page.TotalCount;
+            TotalPages = page.TotalPages;
+
+            // Clamp current page if data reduced total pages
+            var clampedPage = Math.Min(_currentPage, page.TotalPages);
+            if (clampedPage != _currentPage)
+            {
+                _currentPage = clampedPage;
+                this.RaisePropertyChanged(nameof(CurrentPage));
+            }
 
             this.RaisePropertyChanged(nameof(IsEmpty));
             this.RaisePropertyChanged(nameof(HasItems));
+            this.RaisePropertyChanged(nameof(HasPreviousPage));
+            this.RaisePropertyChanged(nameof(HasNextPage));
+            this.RaisePropertyChanged(nameof(PageIndicator));
 
             RebuildRowSubscriptions();
         }
@@ -268,7 +388,7 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
             var result = await _importReport.HandleAsync(
                 new ImportReportCommand(importerId, fileName, content), ct);
             var errorToPreserve = result.IsSuccess ? null : result.Error.Message;
-            await LoadReportsAsync(ct);
+            await LoadPageAsync(ct);
             if (errorToPreserve is not null)
                 ErrorMessage = errorToPreserve;
         }
@@ -290,10 +410,17 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
         try
         {
             var result = await _deleteReport.HandleAsync(new DeleteReportCommand(reportId), ct);
-            var errorToPreserve = result.IsSuccess ? null : result.Error.Message;
-            await LoadReportsAsync(ct);
-            if (errorToPreserve is not null)
-                ErrorMessage = errorToPreserve;
+            if (!result.IsSuccess)
+            {
+                ErrorMessage = result.Error.Message;
+                return;
+            }
+
+            // Decrement page when last item on a non-first page is deleted
+            if (Rows.Count == 1 && _currentPage > 1)
+                _currentPage--;
+
+            await LoadPageAsync(ct);
         }
         finally
         {

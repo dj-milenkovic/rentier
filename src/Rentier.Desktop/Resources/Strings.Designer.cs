@@ -187,4 +187,6 @@ public static class Strings
     public static string Filings_Tooltip_Export => "Export PP-OPO XML";
     public static string Filings_Tooltip_Delete => "Delete filing";
     public static string Filings_Col_Actions => "Actions";
+    public static string Reports_Tooltip_ViewFilings => "View linked filings";
+    public static string Reports_Tooltip_Delete => "Delete report";
 }

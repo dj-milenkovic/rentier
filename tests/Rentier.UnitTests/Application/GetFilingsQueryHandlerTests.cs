@@ -33,39 +33,40 @@ public class GetFilingsQueryHandlerTests
         return f;
     }
 
+    private void SetupPagedReturns(IReadOnlyList<Filing>? items = null, int total = 0)
+    {
+        _repo.GetPagedAsync(
+                Arg.Any<FilingFilterMode>(), Arg.Any<int>(), Arg.Any<int>(),
+                Arg.Any<FilingSortColumn>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
+            .Returns((items ?? (Array.Empty<Filing>().ToList().AsReadOnly() as IReadOnlyList<Filing>), total));
+    }
+
     [Fact]
     public async Task HandleAsync_WithUnpaidFilter_PassesUnpaidToRepository()
     {
-        _repo.GetPagedAsync(Arg.Any<FilingFilterMode>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
-            .Returns((Array.Empty<Filing>().ToList().AsReadOnly() as IReadOnlyList<Filing>, 0));
-
+        SetupPagedReturns();
         await _sut.HandleAsync(new GetFilingsQuery(FilingFilterMode.Unpaid, 1, 20));
-
         await _repo.Received(1).GetPagedAsync(
-            FilingFilterMode.Unpaid, Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>());
+            FilingFilterMode.Unpaid, Arg.Any<int>(), Arg.Any<int>(),
+            Arg.Any<FilingSortColumn>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task HandleAsync_WithAllFilter_PassesAllToRepository()
     {
-        _repo.GetPagedAsync(Arg.Any<FilingFilterMode>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
-            .Returns((Array.Empty<Filing>().ToList().AsReadOnly() as IReadOnlyList<Filing>, 0));
-
+        SetupPagedReturns();
         await _sut.HandleAsync(new GetFilingsQuery(FilingFilterMode.All, 1, 20));
-
         await _repo.Received(1).GetPagedAsync(
-            FilingFilterMode.All, Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>());
+            FilingFilterMode.All, Arg.Any<int>(), Arg.Any<int>(),
+            Arg.Any<FilingSortColumn>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task HandleAsync_MapsFilingTaxPayableRsdToTaxPayable()
     {
         var filing = MakeFiling();
-        _repo.GetPagedAsync(Arg.Any<FilingFilterMode>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
-            .Returns((new List<Filing> { filing }.AsReadOnly() as IReadOnlyList<Filing>, 1));
-
+        SetupPagedReturns(new List<Filing> { filing }.AsReadOnly() as IReadOnlyList<Filing>, 1);
         var result = await _sut.HandleAsync(new GetFilingsQuery(FilingFilterMode.All, 1, 20));
-
         result.IsSuccess.Should().BeTrue();
         result.Value.Rows[0].TaxPayable.Should().Be(filing.TaxPayableRsd);
     }
@@ -73,23 +74,17 @@ public class GetFilingsQueryHandlerTests
     [Fact]
     public async Task HandleAsync_ComputesCorrectTotalPages()
     {
-        _repo.GetPagedAsync(Arg.Any<FilingFilterMode>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
-            .Returns((Array.Empty<Filing>().ToList().AsReadOnly() as IReadOnlyList<Filing>, 45));
-
+        SetupPagedReturns(total: 45);
         var result = await _sut.HandleAsync(new GetFilingsQuery(FilingFilterMode.All, 1, 20));
-
         result.IsSuccess.Should().BeTrue();
-        result.Value.TotalPages.Should().Be(3); // ceil(45/20) = 3
+        result.Value.TotalPages.Should().Be(3);
     }
 
     [Fact]
     public async Task HandleAsync_WhenNoResults_ReturnsTotalPagesOfOne()
     {
-        _repo.GetPagedAsync(Arg.Any<FilingFilterMode>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
-            .Returns((Array.Empty<Filing>().ToList().AsReadOnly() as IReadOnlyList<Filing>, 0));
-
+        SetupPagedReturns();
         var result = await _sut.HandleAsync(new GetFilingsQuery(FilingFilterMode.All, 1, 20));
-
         result.IsSuccess.Should().BeTrue();
         result.Value.TotalPages.Should().Be(1);
     }
@@ -98,7 +93,6 @@ public class GetFilingsQueryHandlerTests
     public async Task HandleAsync_WhenPageLessThan1_ReturnsFailure()
     {
         var result = await _sut.HandleAsync(new GetFilingsQuery(FilingFilterMode.All, 0, 20));
-
         result.IsSuccess.Should().BeFalse();
         result.Error.Message.Should().Contain("1");
     }
@@ -107,7 +101,6 @@ public class GetFilingsQueryHandlerTests
     public async Task HandleAsync_WhenPageSizeOutOfRange_ReturnsFailure()
     {
         var result = await _sut.HandleAsync(new GetFilingsQuery(FilingFilterMode.All, 1, 0));
-
         result.IsSuccess.Should().BeFalse();
         result.Error.Message.Should().NotBeEmpty();
     }
@@ -115,17 +108,49 @@ public class GetFilingsQueryHandlerTests
     [Fact]
     public async Task HandleAsync_PassesCorrectSkipToRepository()
     {
-        _repo.GetPagedAsync(Arg.Any<FilingFilterMode>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
-            .Returns((Array.Empty<Filing>().ToList().AsReadOnly() as IReadOnlyList<Filing>, 0));
-
+        SetupPagedReturns();
         await _sut.HandleAsync(new GetFilingsQuery(FilingFilterMode.All, 3, 20));
-
-        // page 3, page size 20 => skip = (3-1)*20 = 40
         await _repo.Received(1).GetPagedAsync(
-            Arg.Any<FilingFilterMode>(), 40, 20, Arg.Any<CancellationToken>());
+            Arg.Any<FilingFilterMode>(), 40, 20,
+            Arg.Any<FilingSortColumn>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
     }
 
-    // ── ReportIdFilter branch (added by feature 014) ─────────────────────────
+    // -- Sort parameter tests (feature 027) -----------------------------------
+
+    [Fact]
+    public async Task HandleAsync_DefaultQuery_PassesFilingDeadlineSortColumnDescendingToRepository()
+    {
+        SetupPagedReturns();
+        await _sut.HandleAsync(new GetFilingsQuery());
+        await _repo.Received(1).GetPagedAsync(
+            Arg.Any<FilingFilterMode>(), Arg.Any<int>(), Arg.Any<int>(),
+            FilingSortColumn.FilingDeadline, true,
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_ExplicitSortParams_ForwardsThemUnchangedToRepository()
+    {
+        SetupPagedReturns();
+        await _sut.HandleAsync(new GetFilingsQuery(
+            SortColumn: FilingSortColumn.TaxPayable,
+            SortDescending: false));
+        await _repo.Received(1).GetPagedAsync(
+            Arg.Any<FilingFilterMode>(), Arg.Any<int>(), Arg.Any<int>(),
+            FilingSortColumn.TaxPayable, false,
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_InvalidSortColumn_ReturnsValidationFailure()
+    {
+        var result = await _sut.HandleAsync(new GetFilingsQuery(SortColumn: (FilingSortColumn)999));
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Code.Should().Be("VALIDATION_ERROR");
+        result.Error.Message.Should().Contain("sort column");
+    }
+
+    // -- ReportIdFilter branch (feature 014) ----------------------------------
 
     [Fact]
     public async Task HandleAsync_WhenReportIdFilterSet_CallsGetByReportIdAsyncInsteadOfGetPagedAsync()
@@ -133,25 +158,20 @@ public class GetFilingsQueryHandlerTests
         var reportId = Guid.NewGuid();
         _repo.GetByReportIdAsync(reportId, Arg.Any<CancellationToken>())
             .Returns(Array.Empty<Filing>().ToList().AsReadOnly() as IReadOnlyList<Filing>);
-
         await _sut.HandleAsync(new GetFilingsQuery(FilingFilterMode.Unpaid, 1, 20, reportId));
-
         await _repo.Received(1).GetByReportIdAsync(reportId, Arg.Any<CancellationToken>());
         await _repo.DidNotReceive().GetPagedAsync(
-            Arg.Any<FilingFilterMode>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>());
+            Arg.Any<FilingFilterMode>(), Arg.Any<int>(), Arg.Any<int>(),
+            Arg.Any<FilingSortColumn>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task HandleAsync_WhenReportIdFilterSet_ReturnsAllFilingsAsSinglePage()
     {
         var reportId = Guid.NewGuid();
-        var filing1 = MakeFiling();
-        var filing2 = MakeFiling();
         _repo.GetByReportIdAsync(reportId, Arg.Any<CancellationToken>())
-            .Returns(new List<Filing> { filing1, filing2 }.AsReadOnly() as IReadOnlyList<Filing>);
-
+            .Returns(new List<Filing> { MakeFiling(), MakeFiling() }.AsReadOnly() as IReadOnlyList<Filing>);
         var result = await _sut.HandleAsync(new GetFilingsQuery(FilingFilterMode.Unpaid, 1, 20, reportId));
-
         result.IsSuccess.Should().BeTrue();
         result.Value.TotalPages.Should().Be(1);
         result.Value.Rows.Should().HaveCount(2);
@@ -161,12 +181,9 @@ public class GetFilingsQueryHandlerTests
     public async Task HandleAsync_WhenReportIdFilterSet_ReturnsFilingCountAsTotal()
     {
         var reportId = Guid.NewGuid();
-        var filings = Enumerable.Range(0, 5).Select(_ => MakeFiling()).ToList();
         _repo.GetByReportIdAsync(reportId, Arg.Any<CancellationToken>())
-            .Returns(filings.AsReadOnly() as IReadOnlyList<Filing>);
-
+            .Returns(Enumerable.Range(0, 5).Select(_ => MakeFiling()).ToList().AsReadOnly() as IReadOnlyList<Filing>);
         var result = await _sut.HandleAsync(new GetFilingsQuery(FilingFilterMode.Unpaid, 1, 20, reportId));
-
         result.IsSuccess.Should().BeTrue();
         result.Value.TotalCount.Should().Be(5);
     }
@@ -177,9 +194,7 @@ public class GetFilingsQueryHandlerTests
         var reportId = Guid.NewGuid();
         _repo.GetByReportIdAsync(reportId, Arg.Any<CancellationToken>())
             .Returns(Array.Empty<Filing>().ToList().AsReadOnly() as IReadOnlyList<Filing>);
-
         var result = await _sut.HandleAsync(new GetFilingsQuery(FilingFilterMode.Unpaid, 1, 20, reportId));
-
         result.IsSuccess.Should().BeTrue();
         result.Value.Rows.Should().BeEmpty();
         result.Value.TotalCount.Should().Be(0);

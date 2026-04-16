@@ -19,13 +19,13 @@ public class ReportsViewModelBulkDeleteTests
         new(id ?? Guid.NewGuid(), "report.csv", new DateOnly(2024, 3, 1), null, "Importer",
             ReportStatus.Processed, 2, "Importer – 2024-03-01", null);
 
-    private static IQueryHandler<GetReportsQuery, Result<IReadOnlyList<ReportRowDto>, Error>> MockGetReports(
+    private static IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>> MockGetReports(
         params ReportRowDto[] rows)
     {
-        var mock = Substitute.For<IQueryHandler<GetReportsQuery, Result<IReadOnlyList<ReportRowDto>, Error>>>();
+        var mock = Substitute.For<IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>>>();
+        var page = new ReportsPageResult((IReadOnlyList<ReportRowDto>)rows, rows.Length, rows.Length > 0 ? 1 : 1);
         mock.HandleAsync(Arg.Any<GetReportsQuery>(), Arg.Any<CancellationToken>())
-            .Returns(Result<IReadOnlyList<ReportRowDto>, Error>.Success(
-                (IReadOnlyList<ReportRowDto>)rows));
+            .Returns(Result<ReportsPageResult, Error>.Success(page));
         return mock;
     }
 
@@ -41,7 +41,7 @@ public class ReportsViewModelBulkDeleteTests
     }
 
     private static ReportsViewModel CreateVm(
-        IQueryHandler<GetReportsQuery, Result<IReadOnlyList<ReportRowDto>, Error>>? getReports = null,
+        IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>>? getReports = null,
         ICommandHandler<BulkDeleteReportsCommand, Result<VoidResult, Error>>? bulkDelete = null,
         Func<string, string, Task<bool>>? confirmDelete = null)
     {
@@ -184,6 +184,139 @@ public class ReportsViewModelBulkDeleteTests
         vm.BulkDeleteCommand.Execute().Subscribe();
 
         vm.ErrorMessage.Should().NotBeNullOrEmpty();
+    }
+
+    // ── IsAllSelected tests (Feature 028) ──────────────────────────────────
+
+    [Fact]
+    public void IsAllSelected_WhenNoRowsSelected_ReturnsFalse()
+    {
+        var vm = CreateVm(getReports: MockGetReports(MakeDto(), MakeDto(), MakeDto(), MakeDto(), MakeDto()));
+        using var _ = vm.Activator.Activate();
+
+        vm.IsAllSelected.Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsAllSelected_WhenAllRowsSelected_ReturnsTrue()
+    {
+        var vm = CreateVm(getReports: MockGetReports(MakeDto(), MakeDto(), MakeDto(), MakeDto(), MakeDto()));
+        using var _ = vm.Activator.Activate();
+
+        foreach (var row in vm.Rows) row.IsSelected = true;
+
+        vm.IsAllSelected.Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsAllSelected_WhenSomeRowsSelected_ReturnsNull()
+    {
+        var vm = CreateVm(getReports: MockGetReports(MakeDto(), MakeDto(), MakeDto(), MakeDto(), MakeDto()));
+        using var _ = vm.Activator.Activate();
+
+        vm.Rows[0].IsSelected = true;
+        vm.Rows[1].IsSelected = true;
+
+        vm.IsAllSelected.Should().BeNull();
+    }
+
+    [Fact]
+    public void IsAllSelected_SetTrue_SelectsAllRows()
+    {
+        var vm = CreateVm(getReports: MockGetReports(MakeDto(), MakeDto(), MakeDto(), MakeDto(), MakeDto()));
+        using var _ = vm.Activator.Activate();
+
+        vm.IsAllSelected = true;
+
+        vm.SelectedCount.Should().Be(5);
+        vm.IsAllSelected.Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsAllSelected_SetTrue_FromIndeterminate_SelectsAllRows()
+    {
+        var vm = CreateVm(getReports: MockGetReports(MakeDto(), MakeDto(), MakeDto(), MakeDto(), MakeDto()));
+        using var _ = vm.Activator.Activate();
+
+        vm.Rows[0].IsSelected = true;
+        vm.Rows[1].IsSelected = true;
+
+        vm.IsAllSelected = true;
+
+        vm.SelectedCount.Should().Be(5);
+        vm.IsAllSelected.Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsAllSelected_SetFalse_DeselectsAllRows()
+    {
+        var vm = CreateVm(getReports: MockGetReports(MakeDto(), MakeDto(), MakeDto(), MakeDto(), MakeDto()));
+        using var _ = vm.Activator.Activate();
+
+        foreach (var row in vm.Rows) row.IsSelected = true;
+
+        vm.IsAllSelected = false;
+
+        vm.SelectedCount.Should().Be(0);
+        vm.IsAllSelected.Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsAllSelected_UpdatesWhenRowSelectionChanges()
+    {
+        var vm = CreateVm(getReports: MockGetReports(MakeDto(), MakeDto(), MakeDto(), MakeDto(), MakeDto()));
+        using var _ = vm.Activator.Activate();
+
+        // 0/5 selected → false
+        vm.IsAllSelected.Should().BeFalse();
+
+        // 2/5 selected → null (indeterminate)
+        vm.Rows[0].IsSelected = true;
+        vm.Rows[1].IsSelected = true;
+        vm.IsAllSelected.Should().BeNull();
+
+        // 5/5 selected → true
+        vm.Rows[2].IsSelected = true;
+        vm.Rows[3].IsSelected = true;
+        vm.Rows[4].IsSelected = true;
+        vm.IsAllSelected.Should().BeTrue();
+
+        // back to 0/5 → false
+        foreach (var row in vm.Rows) row.IsSelected = false;
+        vm.IsAllSelected.Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsAllSelected_WhenNoRows_ReturnsFalse()
+    {
+        var vm = CreateVm(getReports: MockGetReports());
+        using var _ = vm.Activator.Activate();
+
+        var ex = Record.Exception(() => vm.IsAllSelected);
+        ex.Should().BeNull();
+        vm.IsAllSelected.Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsAllSelected_RecalculatesAfterRowsReloaded()
+    {
+        var getReports = MockGetReports(MakeDto(), MakeDto(), MakeDto());
+        var vm = CreateVm(getReports: getReports);
+        using var _ = vm.Activator.Activate();
+
+        // Select all
+        foreach (var row in vm.Rows) row.IsSelected = true;
+        vm.IsAllSelected.Should().BeTrue();
+
+        // Simulate reload with fresh unselected rows
+        var freshPage = new ReportsPageResult(
+            new[] { MakeDto(), MakeDto(), MakeDto() }, 3, 1);
+        getReports.HandleAsync(Arg.Any<GetReportsQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<ReportsPageResult, Error>.Success(freshPage));
+        vm.LoadPageCommand.Execute().Subscribe();
+
+        vm.SelectedCount.Should().Be(0);
+        vm.IsAllSelected.Should().BeFalse();
     }
 }
 
