@@ -1088,6 +1088,845 @@ throughout. No exceptions as flow control.
 
 ---
 
+---
+
+## Tier 9 — QA & User Feedback Wave (2026-04-15)
+
+These features address sorting, pagination, selection UX, action column
+consolidation, and column-width alignment feedback raised by QA and end users
+after hands-on testing of the Filings and Reports pages.
+
+---
+
+### 027 · Default Sort & Column Sort for Filings and Reports
+
+**What it delivers**: Both tables default to descending order by the most
+relevant date column (filing deadline for Filings, import date for Reports)
+so the newest entries appear at the top without any interaction. The Filings
+DataGrid additionally gains interactive column sorting for all sortable
+columns (Reports already supports this). Sort direction is applied in the
+query layer so it is consistent across all pages.
+
+**UX contract**:
+- On first load, Filings are sorted by `FilingDeadline` descending (latest first).
+- On first load, Reports are sorted by `ImportDate` descending (latest first).
+- Clicking a sortable column header in the Filings DataGrid toggles
+  ascending → descending → (back to) ascending.
+- `CanUserSortColumns="True"` is set on the Filings DataGrid.
+- Sort state persists across page navigation (current page does not reset to 1
+  when only the sort direction changes).
+- The `GetFilingsQuery` gains `SortColumn` and `SortDescending` parameters;
+  the `GetFilingsQueryHandler` passes them through to `IFilingRepository.GetPagedAsync`.
+- The `GetReportsQuery` gains a `SortDescending` parameter (fixed sort key =
+  ImportDate); `GetReportsQueryHandler` sorts the in-memory list accordingly
+  before returning.
+
+**Layers touched**: Application (`GetFilingsQuery`, `GetReportsQuery`,
+`GetFilingsQueryHandler`, `GetReportsQueryHandler`), Infrastructure
+(`IFilingRepository.GetPagedAsync` — add sort parameters; `FilingRepository`
+— apply `OrderBy`/`OrderByDescending` on the EF query), Desktop
+(`FilingsViewModel` — expose `SortColumn`/`SortDescending` properties and
+wire them to `LoadPageCommand`; `ReportsViewModel` — sort rows descending
+after load; both views — XAML sort configuration).
+
+**Depends on**: `012-filings-list`, `014-reports-list`
+
+**Status**: 🗓 Planned
+
+**Spec-kit prompt**:
+```
+Implement default and interactive column sorting for the Filings and Reports pages.
+
+Filings — Application layer:
+- Extend GetFilingsQuery with two optional parameters:
+    string SortColumn = "FilingDeadline"
+    bool SortDescending = true
+- Extend IFilingRepository.GetPagedAsync signature to accept (sortColumn, sortDescending).
+- In FilingRepository implement sorting:
+    - "FilingDeadline" → order by FilingDeadline
+    - "TaxPayableRsd"  → order by TaxPayableRsd
+    - "PayingEntity"   → order by PayingEntity
+    - "IncomeType"     → order by IncomeType
+    - "Status"         → order by Status
+  Apply descending or ascending based on the flag. Default: FilingDeadline descending.
+- GetFilingsQueryHandler passes sort parameters through to GetPagedAsync.
+
+Filings — Desktop layer:
+- Add SortColumn (string, default "FilingDeadline") and SortDescending (bool, default true)
+  properties to FilingsViewModel. Changing either resets CurrentPage to 1 and executes
+  LoadPageCommand.
+- Set CanUserSortColumns="True" on the Filings DataGrid in FilingsView.axaml. Wire
+  the DataGrid's Sorting event to update SortColumn and SortDescending on the ViewModel.
+- Columns that support sorting: Status, IncomeType, PayingEntity, FilingDeadline, TaxPayable.
+
+Reports — Application layer:
+- Extend GetReportsQuery with: bool SortDescending = true (sort key is always ImportDate).
+- GetReportsQueryHandler sorts the in-memory dtos list by ImportDate descending (or
+  ascending) before returning.
+
+Reports — Desktop layer:
+- Pass SortDescending = true when constructing GetReportsQuery in LoadReportsAsync.
+  No interactive sort change needed for Reports (fixed sort key).
+
+All async. No blocking. Unit-test that GetFilingsQueryHandler forwards sort params
+to repository. Unit-test that GetReportsQueryHandler returns rows in correct order.
+```
+
+---
+
+### 028 · Header Checkbox for Select All / Clear All
+
+**What it delivers**: Replaces the standalone "Select All" and "Clear Selection"
+toolbar buttons on the Filings and Reports pages with a single **tri-state
+checkbox** placed in the header cell of the selection column. Clicking it
+cycles selection: none → all → none. The checkbox reflects the current
+selection state (unchecked / indeterminate / checked).
+
+**UX contract**:
+- The checkbox in the column header shows:
+  - **Checked** — all rows on the current page are selected.
+  - **Unchecked** — no rows are selected.
+  - **Indeterminate** — some (but not all) rows are selected.
+- Clicking the header checkbox when unchecked or indeterminate selects all rows.
+- Clicking it when checked deselects all rows.
+- The existing "Delete Selected (N)" bulk-action button remains in the toolbar.
+- The standalone "Select All" and "Clear Selection" text buttons are removed from
+  the toolbar on both pages.
+- The `SelectAllCommand` and `ClearSelectionCommand` on both ViewModels are kept
+  (they back the header checkbox); only the explicit toolbar buttons are removed
+  from the views.
+
+**Layers touched**: Desktop (`FilingsView.axaml` — replace toolbar buttons with
+header-cell checkbox; `ReportsView.axaml` — same; `FilingsViewModel` and
+`ReportsViewModel` — add `IsAllSelected` (nullable bool) computed property;
+`Strings.resx` — remove or repurpose the removed button strings if no longer used).
+
+**Depends on**: `025-bulk-delete`
+
+**Status**: 🗓 Planned
+
+**Spec-kit prompt**:
+```
+Replace the "Select All" and "Clear Selection" toolbar buttons on Filings and
+Reports with a tri-state header checkbox in the selection column.
+
+ViewModel changes (FilingsViewModel and ReportsViewModel):
+- Add a nullable bool property IsAllSelected:
+    null  → some rows selected (indeterminate)
+    true  → all rows selected
+    false → no rows selected
+- IsAllSelected updates reactively whenever SelectedCount or Rows.Count changes.
+- Setting IsAllSelected = true executes SelectAllCommand; false executes
+  ClearSelectionCommand; null is read-only (the setter ignores null).
+- Expose IsAllSelected as a two-way bindable property (getter returns computed
+  state; setter invokes select-all or clear).
+
+View changes (FilingsView.axaml and ReportsView.axaml):
+- In the selection DataGridTemplateColumn, add a DataGridTemplateColumn.Header
+  containing a CheckBox:
+    IsChecked="{Binding DataContext.IsAllSelected,
+                RelativeSource={RelativeSource AncestorType=DataGrid},
+                Mode=TwoWay}"
+  Set IsThreeState="True" on the header CheckBox so it renders the indeterminate
+  state correctly.
+- Remove the standalone "Select All" and "Clear Selection" Button elements from
+  the toolbar StackPanel on both pages. Keep the "Delete Selected (N)" button.
+- The header CheckBox must be HorizontalAlignment="Center".
+
+Strings: if the removed button strings are used nowhere else, mark them as
+obsolete in Strings.resx (do not delete — they may be referenced by tests).
+
+Unit tests:
+- IsAllSelected is null when 1 of 3 rows is selected.
+- IsAllSelected is true when all rows are selected.
+- IsAllSelected is false when no rows are selected.
+- Setting IsAllSelected = true selects all rows; false deselects all rows.
+All async. No blocking.
+```
+
+---
+
+### 029 · Pagination — 30 Items per Page & Reports Pagination
+
+**What it delivers**: Standardises the page size to **30 items** on the Filings
+page (up from 20) and introduces server-side pagination on the Reports page
+(currently returns all rows in a single call). Navigation controls
+(Previous / page indicator / Next) are added to the bottom of the Reports view,
+mirroring the existing Filings pagination layout.
+
+**UX contract**:
+- Filings page size constant changes from 20 → 30. No other layout changes needed.
+- Reports page size is 30. `GetReportsQuery` gains `Page` and `PageSize`
+  parameters; the handler slices the sorted in-memory list (no new DB index
+  needed — the total row count for reports is expected to be small).
+- `ReportsViewModel` gains `CurrentPage`, `TotalPages`, `TotalCount`,
+  `HasPreviousPage`, `HasNextPage`, `PageIndicator`, `PreviousPageCommand`,
+  and `NextPageCommand` — matching the shape in `FilingsViewModel`.
+- Pagination controls (Previous button / "Page X of Y" label / Next button)
+  appear at the bottom of the Reports view, centred, identical in structure to
+  the Filings view pagination bar.
+- Page resets to 1 when the sort direction or any filter changes.
+
+**Layers touched**: Application (`GetReportsQuery` — add Page/PageSize;
+`GetReportsQueryHandler` — paginate the in-memory result; introduce a
+`ReportsPageResult` DTO mirroring `FilingsPageResult`), Desktop
+(`ReportsViewModel` — add pagination state and commands;
+`ReportsView.axaml` — add Bottom-docked pagination bar;
+`FilingsViewModel` — update page size constant from 20 → 30;
+`GetFilingsQuery` default PageSize → 30; `Strings.resx` — add Reports
+pagination strings).
+
+**Depends on**: `027-sorting-defaults`
+
+**Status**: 🗓 Planned
+
+**Spec-kit prompt**:
+```
+Standardise pagination to 30 items per page and add pagination to the Reports page.
+
+Filings:
+- Change the GetFilingsQuery default PageSize from 20 to 30.
+- Change the page size constant in FilingsViewModel.LoadPageAsync from 20 to 30.
+- No other Filings changes needed.
+
+Reports — Application layer:
+- Add Page (int, default 1) and PageSize (int, default 30) to GetReportsQuery.
+- Create a ReportsPageResult DTO:
+    record ReportsPageResult(IReadOnlyList<ReportRowDto> Rows, int TotalCount, int TotalPages);
+- Update IQueryHandler registration for GetReportsQuery to return
+  Result<ReportsPageResult, Error> instead of Result<IReadOnlyList<ReportRowDto>, Error>.
+- In GetReportsQueryHandler: after sorting, compute totalCount, totalPages, then
+  slice the list: dtos.Skip((page-1)*pageSize).Take(pageSize).
+- Validate Page >= 1 and PageSize in [1, 100]; return failure otherwise.
+
+Reports — Desktop layer:
+- Add to ReportsViewModel:
+    int CurrentPage (private set, starts at 1)
+    int TotalPages  (private set, starts at 1)
+    int TotalCount  (private set)
+    bool HasPreviousPage => CurrentPage > 1 && !IsLoading
+    bool HasNextPage     => CurrentPage < TotalPages && !IsLoading
+    string PageIndicator => string.Format(Strings.Reports_Page_Indicator, CurrentPage, TotalPages)
+    ReactiveCommand PreviousPageCommand — decrements CurrentPage, calls LoadReportsAsync
+    ReactiveCommand NextPageCommand     — increments CurrentPage, calls LoadReportsAsync
+- PreviousPageCommand is enabled when HasPreviousPage; NextPageCommand when HasNextPage.
+- LoadReportsAsync passes (CurrentPage, 30) to GetReportsQuery.
+- After load, clamp CurrentPage if TotalPages shrank (same guard as FilingsViewModel).
+- Add pagination bar to ReportsView.axaml (DockPanel.Dock="Bottom", mirroring the
+  Filings layout):
+    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="8"
+                Margin="8" HorizontalAlignment="Center">
+      <Button Content="..." Command="{Binding PreviousPageCommand}" />
+      <TextBlock Text="{Binding PageIndicator}" VerticalAlignment="Center" />
+      <Button Content="..." Command="{Binding NextPageCommand}" />
+    </StackPanel>
+- Add strings: Reports_Page_Indicator, Reports_Page_Previous, Reports_Page_Next
+  to Strings.resx (following the Filings_ naming pattern).
+
+Unit tests:
+- GetReportsQueryHandler returns correct slice for page 2 of 3.
+- PreviousPageCommand is disabled on page 1; NextPageCommand disabled on last page.
+- Page resets to 1 on sort change.
+All async. No blocking.
+```
+
+---
+
+### 030 · Filings — Action Column Consolidation & Icon-Only Buttons
+
+**What it delivers**: Simplifies the Filings DataGrid by removing the dedicated
+"Change Status" ComboBox column and merging all row-level actions (Advance
+Status, Export XML, Delete) into a single **Actions** column. All three
+action buttons become **icon-only** (no visible text label) and each carries a
+`ToolTip.Tip` so the action is still discoverable.
+
+**UX contract**:
+- The `DataGridTemplateColumn` containing `AvailableNextStatuses` via a
+  `ComboBox` (`StatusComboBox_SelectionChanged`) is removed from `FilingsView.axaml`.
+- A consolidated **Actions** column appears at the far right of the Filings DataGrid
+  containing three icon buttons in a horizontal `StackPanel`:
+  1. **Advance Status** — enabled only when `AvailableNextStatuses.Count > 0`;
+     shows next valid status label as tooltip (e.g. "Mark as Filed", "Mark as Paid").
+  2. **Export XML** — always enabled; tooltip "Export PP-OPO XML".
+  3. **Delete** — always enabled; tooltip "Delete filing"; uses a destructive style.
+- Separate Export and Delete `DataGridTemplateColumn` entries (currently two
+  distinct columns) are removed and replaced by this single Actions column.
+- The read-only status badge column (coloured pill) is kept unchanged.
+- `AvailableNextStatuses` on `FilingRowViewModel` is still used — it now drives the
+  advance-status button's enabled state and tooltip instead of a ComboBox.
+- The `StatusComboBox_SelectionChanged` code-behind handler in `FilingsView.axaml.cs`
+  is removed; the advance-status button uses `AdvanceStatusCommand` with the next
+  valid status as `CommandParameter`.
+
+**Layers touched**: Desktop (`FilingsView.axaml` — remove change-status column and
+separate action columns; add consolidated Actions column with icon buttons;
+`FilingsView.axaml.cs` — remove `StatusComboBox_SelectionChanged`;
+`FilingRowViewModel` — add `NextStatus` helper property (nullable `FilingStatus`),
+add `AdvanceStatusTooltip` display string; `Strings.resx` — add tooltip strings).
+
+**Depends on**: `021-filings-filter-status`, `025-bulk-delete`
+
+**Status**: 🗓 Planned
+
+**Spec-kit prompt**:
+```
+Consolidate Filings DataGrid actions into a single icon-only Actions column.
+
+FilingRowViewModel changes:
+- Add FilingStatus? NextStatus => AvailableNextStatuses.Count > 0
+      ? AvailableNextStatuses[0] : (FilingStatus?)null
+- Add string AdvanceStatusTooltip that returns a localised string like
+  "Mark as Filed" or "Mark as Paid" (or empty when NextStatus is null).
+  Strings go in Strings.resx: Filings_Action_MarkAsFiled, Filings_Action_MarkAsPaid.
+
+FilingsView.axaml changes:
+1. Remove the DataGridTemplateColumn that holds the AvailableNextStatuses ComboBox
+   (the column with Header=Strings.Filings_Col_Status and the SelectionChanged handler).
+2. Remove the separate Export DataGridTemplateColumn.
+3. Remove the separate Delete DataGridTemplateColumn.
+4. Add a single Actions DataGridTemplateColumn (Width="Auto") at the far right:
+   <DataGridTemplateColumn Width="Auto">
+     <DataGridTemplateColumn.CellTemplate>
+       <DataTemplate>
+         <StackPanel Orientation="Horizontal" Spacing="4" Margin="4,2">
+           <!-- Advance status -->
+           <Button ToolTip.Tip="{Binding AdvanceStatusTooltip}"
+                   IsVisible="{Binding NextStatus, Converter={x:Static ObjectConverters.IsNotNull}}"
+                   Tag="{Binding}"
+                   Click="AdvanceStatusButton_Click">
+             <PathIcon Data="{StaticResource ArrowCircleRightIcon}" Width="16" Height="16" />
+           </Button>
+           <!-- Export -->
+           <Button ToolTip.Tip="{x:Static res:Strings.Filings_Action_Export}"
+                   Tag="{Binding Id}"
+                   Click="ExportButton_Click">
+             <PathIcon Data="{StaticResource DownloadIcon}" Width="16" Height="16" />
+           </Button>
+           <!-- Delete -->
+           <Button ToolTip.Tip="{x:Static res:Strings.Filings_Action_Delete}"
+                   Tag="{Binding Id}"
+                   Click="DeleteButton_Click"
+                   Foreground="Red">
+             <PathIcon Data="{StaticResource TrashIcon}" Width="16" Height="16" />
+           </Button>
+         </StackPanel>
+       </DataTemplate>
+     </DataGridTemplateColumn.CellTemplate>
+   </DataGridTemplateColumn>
+5. Add icon path geometry resources (ArrowCircleRightIcon, DownloadIcon, TrashIcon)
+   to App.axaml or a dedicated ResourceDictionary. Use Material Design or Fluent
+   icon path data (open-license SVG paths only).
+
+FilingsView.axaml.cs changes:
+- Remove StatusComboBox_SelectionChanged handler.
+- Add AdvanceStatusButton_Click handler that reads Tag (FilingRowViewModel),
+  calls ViewModel.AdvanceStatusCommand.Execute((row.Id, row.NextStatus!.Value)).
+
+Strings.resx additions:
+  Filings_Action_MarkAsFiled = "Mark as Filed"
+  Filings_Action_MarkAsPaid  = "Mark as Paid"
+  Filings_Action_Export      = "Export PP-OPO XML"
+  Filings_Action_Delete      = "Delete filing"
+
+Keep AdvanceStatusCommand signature unchanged. Keep the existing ExportButton_Click
+and DeleteButton_Click handlers — they do not need modification.
+All strings in Strings.resx. No new ViewModel commands needed.
+```
+
+---
+
+### 031 · Reports — Icon-Only Action Column
+
+**What it delivers**: Converts the Reports DataGrid action buttons ("View Filings"
+and "Delete") to **icon-only** buttons with `ToolTip.Tip` labels, matching the
+style introduced for Filings in feature 030. No behavioural changes.
+
+**UX contract**:
+- The "View Filings" button becomes an icon button (e.g. list/arrow icon);
+  tooltip text "View linked filings".
+- The "Delete" button becomes an icon button (trash icon); tooltip "Delete report";
+  uses a destructive style (red foreground).
+- Button widths shrink to fit icon only; the Actions column uses `Width="Auto"`.
+
+**Layers touched**: Desktop (`ReportsView.axaml` — update Actions column cells;
+`Strings.resx` — add tooltip strings for reports actions).
+
+**Depends on**: `030-filings-action-icons`
+
+**Status**: 🗓 Planned
+
+**Spec-kit prompt**:
+```
+Convert the Reports page action buttons to icon-only with tooltips.
+
+ReportsView.axaml changes:
+- In the existing Actions DataGridTemplateColumn, replace the text Button elements
+  with icon buttons:
+  <StackPanel Orientation="Horizontal" Spacing="4" Margin="4,2">
+    <!-- View filings -->
+    <Button ToolTip.Tip="{x:Static res:Strings.Reports_Action_ViewFilings}"
+            Command="{Binding DataContext.ViewFilingsCommand,
+                      RelativeSource={RelativeSource AncestorType=DataGrid}}"
+            CommandParameter="{Binding Id}">
+      <PathIcon Data="{StaticResource ViewListIcon}" Width="16" Height="16" />
+    </Button>
+    <!-- Delete -->
+    <Button ToolTip.Tip="{x:Static res:Strings.Reports_Action_Delete}"
+            Command="{Binding DataContext.DeleteCommand,
+                      RelativeSource={RelativeSource AncestorType=DataGrid}}"
+            CommandParameter="{Binding Id}"
+            Foreground="Red">
+      <PathIcon Data="{StaticResource TrashIcon}" Width="16" Height="16" />
+    </Button>
+  </StackPanel>
+- The ViewListIcon path geometry should match (or reference) the one used on the
+  Filings navigation sidebar entry. TrashIcon reuses the resource from feature 030.
+- Set the column Width="Auto".
+
+Strings.resx additions:
+  Reports_Action_ViewFilings = "View linked filings"
+  Reports_Action_Delete      = "Delete report"
+
+No ViewModel or Application changes needed.
+```
+
+---
+
+### 032 · Column Width Audit — Filings & Reports Tables
+
+**What it delivers**: Reviews and standardises all column widths across the
+Filings and Reports DataGrids so that content is neither truncated nor
+excessively padded. Establishes consistent padding on cell content and aligns
+the visual weight of both tables.
+
+**UX contract**:
+
+**Filings DataGrid** (after features 027–031 are applied):
+
+| Column | Width | Rationale |
+|---|---|---|
+| Selection (checkbox) | `40` | Fixed — checkbox only |
+| Status badge (pill) | `90` | Fixed — short text in pill |
+| Income Type | `110` | Fixed — "Dividend" / "Interest" |
+| Paying Entity | `*` | Fill — free text, variable length |
+| Filing Deadline | `120` | Fixed — `yyyy-MM-dd` |
+| Tax Payable | `130` | Fixed — `N,NNN.NN RSD` |
+| Payment Reference | `180` | Fixed — user-entered ref number |
+| Actions | `Auto` | Three icon buttons |
+
+**Reports DataGrid** (after features 027–031 are applied):
+
+| Column | Width | Rationale |
+|---|---|---|
+| Selection (checkbox) | `40` | Fixed — checkbox only |
+| Report Name | `*` | Fill — free text |
+| Import Date | `110` | Fixed — `yyyy-MM-dd` |
+| Email Date | `110` | Fixed — `yyyy-MM-dd` or empty |
+| Importer | `160` | Fixed — display name |
+| Status | `100` | Fixed — `Init` / `Processed` / `Error` |
+| Filing Count | `70` | Fixed — small integer |
+| Actions | `Auto` | Two icon buttons |
+
+All cell templates should apply `Margin="4,0"` to their inner `TextBlock` or
+content element for consistent horizontal padding.
+
+**Layers touched**: Desktop (`FilingsView.axaml` — update Width attributes;
+`ReportsView.axaml` — update Width attributes; add `Margin="4,0"` to cell
+content elements where missing).
+
+**Depends on**: `030-filings-action-icons`, `031-reports-action-icons`
+
+**Status**: 🗓 Planned
+
+**Spec-kit prompt**:
+```
+Audit and standardise column widths across the Filings and Reports DataGrids.
+
+Filings DataGrid — apply these exact widths (post features 027-031):
+  Selection column           Width="40"
+  Status badge column        Width="90"
+  Income Type column         Width="110"
+  Paying Entity column       Width="*"
+  Filing Deadline column     Width="120"
+  Tax Payable column         Width="130"
+  Payment Reference column   Width="180"
+  Actions column             Width="Auto"
+
+Reports DataGrid — apply these exact widths (post features 027-031):
+  Selection column           Width="40"
+  Report Name column         Width="*"
+  Import Date column         Width="110"
+  Email Date column          Width="110"
+  Importer column            Width="160"
+  Status column              Width="100"
+  Filing Count column        Width="70"
+  Actions column             Width="Auto"
+
+Cell content padding:
+- For every DataGridTemplateColumn cell template that contains a TextBlock,
+  add Margin="4,0" if not already present.
+- For DataGridTextColumn columns, add the following style once to the DataGrid
+  (or to a shared Style resource) to set consistent cell padding:
+    <DataGrid.Styles>
+      <Style Selector="DataGridCell">
+        <Setter Property="Padding" Value="4,0" />
+      </Style>
+    </DataGrid.Styles>
+- Do not change any ViewModel logic — these are purely XAML width and margin changes.
+
+Verify visually (describe expected outcome in a comment at the top of each view
+file): "Paying Entity and Report Name expand to fill available width; all other
+columns are fixed or auto-sized."
+```
+
+---
+
+## Tier 10 — XML Compliance & Manual Filing (2026-04-15)
+
+These features fix a schema compliance issue in the PP-OPO XML export (the
+produced document does not match the ePorezi portal's expected format) and
+introduce a manual filing creation workflow for users who receive income
+outside of the automated IBKR/email pipeline.
+
+---
+
+### 033 · PP-OPO XML Schema Compliance Fix + Export Filename Convention
+
+**What it delivers**: Corrects the PP-OPO XML output to fully comply with the
+ePorezi portal schema (`http://pid.purs.gov.rs`), fixes a data mapping bug in
+`OsnovicaZaPorez`, updates the suggested export filename to the convention
+`<yyyy>-<MM>-<AssetName>.xml` (e.g. `2025-03-BABA`), and adds a `Ticker`
+field to `Filing` so the asset short-name can survive round-trips.
+
+**Current vs. correct schema — key differences**:
+
+| Area | Current (wrong) | Correct |
+|------|-----------------|---------|
+| Root element | `<PodaciOPrijavi>` (no namespace) | `<ns1:PodaciPoreskeDeklaracije xmlns:ns1="http://pid.purs.gov.rs" …>` |
+| All element names | No prefix | `ns1:` prefix required on every element |
+| `PodaciOPrijavi` | Missing `<ns1:Rok>1</ns1:Rok>` | Must include `Rok` |
+| Taxpayer JMBG element | `<JMBG>` | `<ns1:PoreskiIdentifikacioniBroj>` + `<ns1:JMBGPodnosiocaPrijave>` |
+| Taxpayer name | `<Ime>` | `<ns1:ImePrezimeObveznika>` |
+| Taxpayer address | `<Adresa>` (full address incl. city) | `<ns1:UlicaBrojPoreskogObveznika>` (street + number only) |
+| Municipality code | `<SifraOpstine>` (5-digit postal) | `<ns1:PrebivalisteOpstina>` (3-digit ePorezi municipality code) |
+| Telephone | `<Telefon>` | `<ns1:TelefonKontaktOsobe>` |
+| Email | `<Email>` | `<ns1:ElektronskaPosta>` |
+| Income rows | Flat elements in `DeklarisaniPodaciOVrstamaPrihoda` | Wrapped in `<ns1:PodaciOVrstamaPrihoda>` with `<ns1:RedniBroj>1</ns1:RedniBroj>` |
+| `OsnovicaZaPorez` | Mapped to `GrossTaxPayableRsd` (BUG) | Must be `GrossIncomeRsd` (gross income is the tax base) |
+| Totals section | Missing | `<ns1:Ukupno>` with aggregated monetary fields + zero contribution fields |
+| Interest section | Missing | `<ns1:Kamata>` with all-zero values |
+| Additional interest | Missing | `<ns1:PodaciODodatnojKamati/>` (empty) |
+| Encoding declaration | `utf-8` (lowercase) | `UTF-8` (uppercase) |
+| Export filename | `PP-OPO_{yyyy-MM}_{JMBG}.xml` | `{yyyy}-{MM}-{AssetName}.xml` |
+
+**Domain changes — `TaxpayerProfile`**:
+The current `Address` field stores the full postal address including the city
+(`"др Димитрија Аксића 17, Крагујевац"`). The ePorezi schema requires only the
+street + number in `UlicaBrojPoreskogObveznika`; the municipality is expressed
+separately via `PrebivalisteOpstina`. The current `OpstinaCode` stores what
+appears to be the 5-digit postal code (`34000`), but ePorezi expects a 3-digit
+municipality registry code (`049` for Kragujevac).
+
+Required domain changes:
+- Rename `TaxpayerProfile.Address` → `Street` (stores `"улица Број"` without city).
+- `TaxpayerProfile.OpstinaCode` validator changes: must be **exactly 3 digits** (the ePorezi municipality code).
+- EF Core migration to rename the column and re-validate stored data.
+- `ProfileSettingsView` form labels and validators updated accordingly.
+
+**Domain changes — `Filing.Ticker`**:
+- Add `Ticker` (nullable `string`, max 20 chars) to `Filing`.
+- `Filing.CreateFromIncome` gains an optional `string? ticker` parameter.
+- EF Core migration adds the `Ticker` column.
+- `ExportFilingCommandHandler` builds the suggested filename as:
+  `{incomeDate:yyyy-MM}-{Ticker ?? SanitizePayingEntity(filing.PayingEntity)}.xml`
+  where `SanitizePayingEntity` uppercases, strips non-alphanumeric, and truncates to 20 chars.
+
+**Layers touched**: Domain (`TaxpayerProfile`, `Filing`), Infrastructure
+(`PpOpoXmlSerializer` — full rewrite; EF migrations for profile + filing),
+Application (`ExportFilingCommandHandler` — filename update; `CreateManualFilingCommand`
+gains `Ticker` field), Desktop (`ProfileSettingsView.axaml` — address/municipality
+label/validation updates).
+
+**Depends on**: `013-xml-export`, `002-taxpayer-profile`
+
+**Status**: 🗓 Planned
+
+**Spec-kit prompt**:
+```
+Fix the PP-OPO XML serializer to comply with the ePorezi portal schema and
+update the export filename convention.
+
+--- Domain: TaxpayerProfile ---
+1. Rename property Address → Street. The field stores ONLY the street and
+   house number (e.g. "др Димитрија Аксића 17"), never the city.
+2. Update the OpstinaCode validator: must be exactly 3 ASCII digits
+   (ePorezi municipality code, e.g. "049" for Kragujevac).
+   Throw DomainException("OpstinaCode must be exactly 3 digits") on violation.
+3. Add EF Core migration: rename column Address → Street; add a CHECK constraint
+   for OpstinaCode length. Migrate existing data by stripping any trailing
+   ", <City>" from the old Address value (best-effort). Update
+   ProfileSettingsView.axaml: label "Address" → "Street (no city)", add helper
+   text "Enter street name and number only — e.g. Knez Mihailova 1".
+   Label "Municipality code" → "Municipality code (3-digit ePorezi code)".
+
+--- Domain: Filing ---
+4. Add string? Ticker { get; private set; } to Filing (max 20 chars).
+5. Add optional string? ticker = null parameter to Filing.CreateFromIncome.
+   Validate: if provided, must be 1–20 uppercase alphanumeric characters.
+   Store as uppercase trimmed string. Add EF migration.
+
+--- Infrastructure: PpOpoXmlSerializer ---
+6. Rewrite Serialize() to produce the correct ePorezi schema. Use the
+   following structure exactly (all amounts Fmt() = F2 InvariantCulture):
+
+   XDocument (declaration encoding="UTF-8"):
+   ns1:PodaciPoreskeDeklaracije
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xmlns:ns1="http://pid.purs.gov.rs"
+     ├── ns1:PodaciOPrijavi
+     │     ns1:VrstaPrijave = "1"
+     │     ns1:ObracunskiPeriod = incomeDate.ToString("yyyy-MM")
+     │     ns1:DatumOstvarivanjaPrihoda = incomeDate.ToString("yyyy-MM-dd")
+     │     ns1:Rok = "1"
+     │     ns1:DatumDospelostiObaveze = filingDeadline.ToString("yyyy-MM-dd")
+     ├── ns1:PodaciOPoreskomObvezniku
+     │     ns1:PoreskiIdentifikacioniBroj = profile.Jmbg
+     │     ns1:ImePrezimeObveznika = CDATA(profile.FullName)
+     │     ns1:UlicaBrojPoreskogObveznika = CDATA(profile.Street)
+     │     ns1:PrebivalisteOpstina = profile.OpstinaCode
+     │     ns1:JMBGPodnosiocaPrijave = profile.Jmbg
+     │     ns1:TelefonKontaktOsobe = profile.PhoneNumber ?? ""
+     │     ns1:ElektronskaPosta = profile.Email ?? ""
+     ├── ns1:PodaciONacinuOstvarivanjaPrihoda
+     │     ns1:NacinIsplate = "3"
+     │     ns1:Ostalo = paymentNotes
+     ├── ns1:DeklarisaniPodaciOVrstamaPrihoda
+     │     └── ns1:PodaciOVrstamaPrihoda
+     │           ns1:RedniBroj = "1"
+     │           ns1:SifraVrstePrihoda = sifra (111401000 interest / 111402000 dividend)
+     │           ns1:BrutoPrihod = Fmt(filing.GrossIncomeRsd)
+     │           ns1:OsnovicaZaPorez = Fmt(filing.GrossIncomeRsd)   ← FIX (was GrossTaxPayableRsd)
+     │           ns1:ObracunatiPorez = Fmt(filing.GrossTaxPayableRsd)
+     │           ns1:PorezPlacenDrugojDrzavi = Fmt(filing.WhtPaidRsd)
+     │           ns1:PorezZaUplatu = Fmt(filing.TaxPayableRsd)
+     ├── ns1:Ukupno
+     │     ns1:FondSati = "0.00"
+     │     ns1:BrutoPrihod = Fmt(filing.GrossIncomeRsd)
+     │     ns1:OsnovicaZaPorez = Fmt(filing.GrossIncomeRsd)
+     │     ns1:ObracunatiPorez = Fmt(filing.GrossTaxPayableRsd)
+     │     ns1:PorezPlacenDrugojDrzavi = Fmt(filing.WhtPaidRsd)
+     │     ns1:PorezZaUplatu = Fmt(filing.TaxPayableRsd)
+     │     ns1:OsnovicaZaDoprinose = "0.00"
+     │     ns1:PIO = "0.00"
+     │     ns1:ZDRAVSTVO = "0.00"
+     │     ns1:NEZAPOSLENOST = "0.00"
+     ├── ns1:Kamata
+     │     ns1:PorezZaUplatu = "0"
+     │     ns1:OsnovicaZaDoprinose = "0"
+     │     ns1:PIO = "0"
+     │     ns1:ZDRAVSTVO = "0"
+     │     ns1:NEZAPOSLENOST = "0"
+     └── ns1:PodaciODodatnojKamati  (empty element)
+
+   Use XNamespace ns1 = "http://pid.purs.gov.rs" and build all element names
+   as (ns1 + "ElementName"). Emit the xsi namespace attribute on the root.
+   Encoding declaration must say UTF-8 (uppercase). No BOM.
+
+--- Application: ExportFilingCommandHandler ---
+7. Change suggested filename:
+     var assetName = !string.IsNullOrWhiteSpace(filing.Ticker)
+         ? filing.Ticker
+         : SanitizePayingEntity(filing.PayingEntity);
+     var suggestedFileName = $"{filing.IncomeDate:yyyy-MM}-{assetName}.xml";
+   where SanitizePayingEntity strips non-alphanumeric chars, uppercases,
+   takes first 20 characters. Static helper method in the handler.
+
+--- Tests ---
+8. Rewrite PpOpoXmlSerializerTests and snapshot to match the new schema.
+   Update element name assertions (e.g. use XNamespace in test helpers).
+   Add tests for: Ukupno section values, Kamata all-zero, OsnovicaZaPorez
+   equals GrossIncomeRsd (not GrossTaxPayableRsd), ns1 prefix present,
+   filename sanitization for common IBKR entity strings.
+   Update TaxpayerProfile tests for 3-digit OpstinaCode validation.
+
+All decimal values Fmt(). All dates DateOnly. All async. Result pattern.
+```
+
+---
+
+### 034 · Manual Filing Creation
+
+**What it delivers**: A dedicated form that lets users manually create a PP-OPO
+filing without importing a statement file. The user provides a minimal set of
+inputs — asset ticker, income type, date, currency, gross and net amounts — and
+the system fetches the NBS exchange rate, runs the tax calculation, computes the
+filing deadline, and presents a preview before the user commits.
+
+**User flow**:
+1. User clicks **"New Filing"** (plus icon) on the Filings toolbar.
+2. Form appears (inline panel or navigation to a new view) with input fields:
+   - **Income Type** — Dividend / Interest (radio or dropdown)
+   - **Asset / Ticker** — free text (e.g. `BABA`, `AAPL`); becomes `PayingEntity` and drives the export filename
+   - **Income Date** — date picker (DateOnly)
+   - **Currency** — dropdown of supported NBS currencies (USD, EUR, GBP, CHF, AUD, CAD, etc.)
+   - **Gross Amount** — decimal, the total income before withholding
+   - **Net Received** — decimal, optional; the amount actually credited after withholding. When provided, `WHT = Gross − Net`. When blank, `WHT = 0`.
+3. User clicks **"Calculate"** (or it auto-calculates when all required fields are filled):
+   - System fetches NBS exchange rate for `(IncomeDate, Currency)`.
+   - Runs `TaxCalculationService` to produce `FilingInfo`.
+   - Runs `FilingDeadlineCalculator` to produce `FilingDeadline`.
+   - Preview panel shows (all in RSD): Gross Income, WHT Paid, Gross Tax Payable, Tax Payable, Filing Deadline, and the exchange rate used.
+4. User clicks **"Save Filing"** → `CreateManualFilingCommand` is dispatched.
+   Filing is persisted with `ReportId = null` and `Ticker = asset input value` (uppercase trimmed).
+5. On success, navigate back to Filings list (filter = All so the new row is visible).
+6. Validation errors (blank ticker, zero gross, rate not found, NBS error) surface as inline error messages — no exception pop-ups.
+
+**Layers touched**: Application (new `PreviewManualFilingQuery` + handler,
+new `CreateManualFilingCommand` + handler), Desktop (new `CreateFilingViewModel`,
+new `CreateFilingView.axaml`, navigate-to from `FilingsViewModel`; add "New Filing"
+button to `FilingsView.axaml` toolbar; `Strings.resx` — new strings).
+
+**Depends on**: `012-filings-list`, `006-nbs-exchange-rate-fetcher`,
+`009-filing-deadline-calculator`, `033-xml-schema-fix` (uses `Filing.Ticker`)
+
+**Status**: 🗓 Planned
+
+**Spec-kit prompt**:
+```
+Implement manual filing creation for Rentier — a form-first, preview-then-save
+flow that lets users create a PP-OPO filing without importing a statement file.
+
+--- Application: PreviewManualFilingQuery ---
+Create:
+  record PreviewManualFilingQuery(
+      IncomeType IncomeType,
+      string     Ticker,         // asset short-name / paying entity
+      DateOnly   IncomeDate,
+      string     Currency,       // uppercase ISO code, e.g. "USD"
+      decimal    GrossAmount,
+      decimal?   NetReceived)    // null → WHT assumed 0
+
+Handler (PreviewManualFilingQueryHandler):
+  1. Validate: Ticker not blank, GrossAmount > 0, Currency not blank.
+     NetReceived (if provided) must be >= 0 and <= GrossAmount.
+     Return Result.Failure on any violation.
+  2. whtAmount = GrossAmount - (NetReceived ?? GrossAmount)
+  3. Call IExchangeRateFetcher.FetchRateAsync(IncomeDate, Currency, ct).
+     On failure, return Result.Failure with the exchange-rate error.
+  4. Call TaxCalculationService.CalculateAsync(...) using the fetched rate.
+  5. Load IHolidayConfRepository, call FilingDeadlineCalculator.Calculate(IncomeDate, conf).
+  6. Return Result<ManualFilingPreviewDto, Error>.
+
+ManualFilingPreviewDto record:
+  IncomeType IncomeType, string Ticker, DateOnly IncomeDate, string Currency,
+  decimal GrossAmount, decimal WhtAmount, decimal ExchangeRateUsed,
+  decimal GrossIncomeRsd, decimal WhtPaidRsd, decimal GrossTaxPayableRsd,
+  decimal TaxPayableRsd, DateOnly FilingDeadline, DateOnly ExchangeRateDate
+
+--- Application: CreateManualFilingCommand ---
+Create:
+  record CreateManualFilingCommand(
+      IncomeType IncomeType, string Ticker, DateOnly IncomeDate, string Currency,
+      decimal GrossAmount, decimal? NetReceived)
+
+Handler (CreateManualFilingCommandHandler):
+  1. Call PreviewManualFilingQueryHandler.HandleAsync to compute values.
+     Return failure if preview fails.
+  2. Load taxpayer profile via ITaxpayerProfileRepository; return failure if missing.
+  3. Call Filing.CreateFromIncome(profile.Id, incomeType, dto.Ticker, dto.IncomeDate,
+       dto.GrossIncomeRsd, dto.WhtPaidRsd, dto.GrossTaxPayableRsd, dto.TaxPayableRsd,
+       dto.FilingDeadline, reportId: null, ticker: dto.Ticker.ToUpperInvariant())
+  4. Persist via IFilingRepository.SaveAsync.
+  5. Return Result<Guid, Error> (the new filing ID).
+
+--- Desktop: CreateFilingViewModel ---
+Properties:
+  IncomeType SelectedIncomeType (default Dividend)
+  string Ticker, DateOnly? IncomeDate, string SelectedCurrency (default "USD")
+  string GrossAmountText, string NetReceivedText (empty = not provided)
+  ManualFilingPreviewDto? Preview
+  bool HasPreview => Preview is not null
+  bool IsLoading, string? ErrorMessage, string? ValidationError
+
+Commands:
+  CalculateCommand — ReactiveCommand.CreateFromTask; enabled when Ticker not blank
+    and GrossAmountText is a valid positive decimal and IncomeDate not null.
+    Dispatches PreviewManualFilingQuery and sets Preview or ErrorMessage.
+  SaveCommand — ReactiveCommand.CreateFromTask; enabled when HasPreview.
+    Dispatches CreateManualFilingCommand; on success calls _navigateBack().
+  CancelCommand — ReactiveCommand.Create → calls _navigateBack().
+  ClearErrorCommand, ClearValidationErrorCommand.
+
+Supported currencies list (for dropdown):
+  USD, EUR, GBP, CHF, AUD, CAD, CZK, DKK, HUF, JPY, NOK, PLN, SEK, TRY, AED
+
+--- Desktop: CreateFilingView.axaml ---
+Layout (DockPanel or Grid):
+  Top: error/validation banners
+  Center: two-column form area
+    Left column — input form:
+      Income Type — RadioButton group (Dividend / Interest)
+      Asset / Ticker — TextBox with placeholder "e.g. AAPL"
+      Income Date — DatePicker
+      Currency — ComboBox (supported currencies list)
+      Gross Amount — NumericUpDown or TextBox with decimal input
+      Net Received — TextBox (optional, placeholder "Leave blank if no withholding")
+      [Calculate] button
+    Right column — preview panel (IsVisible=HasPreview):
+      "Calculated Preview" header
+      Exchange Rate: {ExchangeRateUsed} RSD per {Currency} (as of {ExchangeRateDate})
+      Gross Income: {GrossIncomeRsd:N2} RSD
+      WHT Paid: {WhtPaidRsd:N2} RSD
+      Gross Tax (15%): {GrossTaxPayableRsd:N2} RSD
+      Tax Payable: {TaxPayableRsd:N2} RSD (highlighted / bold)
+      Filing Deadline: {FilingDeadline:yyyy-MM-dd}
+  Bottom: [Save Filing] (enabled when HasPreview) and [Cancel] buttons
+
+--- FilingsView.axaml + FilingsViewModel ---
+  Add a "New Filing" icon button (PathIcon with a plus-sign) to the filter/toolbar
+  row on FilingsView.axaml. Bind to a NavigateToCreateFilingCommand on
+  FilingsViewModel (ReactiveCommand.Create → delegates to Func<Action> _navigateToCreate
+  injected via constructor). No modal dialog — navigate to CreateFilingView.
+
+--- Navigation wiring ---
+  Add CreateFilingView to the navigation stack or use a content-area navigation
+  pattern consistent with how FilingsView/ReportsView are navigated. On save or
+  cancel, navigate back to Filings (ShowAll = true so the new row is visible).
+
+--- Strings.resx ---
+  CreateFiling_Title, CreateFiling_Label_IncomeType, CreateFiling_Label_Ticker,
+  CreateFiling_Label_IncomeDate, CreateFiling_Label_Currency,
+  CreateFiling_Label_GrossAmount, CreateFiling_Label_NetReceived,
+  CreateFiling_Placeholder_Ticker, CreateFiling_Placeholder_NetReceived,
+  CreateFiling_Button_Calculate, CreateFiling_Button_Save, CreateFiling_Button_Cancel,
+  CreateFiling_Preview_Header, CreateFiling_Preview_ExchangeRate,
+  CreateFiling_Preview_GrossIncome, CreateFiling_Preview_WhtPaid,
+  CreateFiling_Preview_GrossTax, CreateFiling_Preview_TaxPayable,
+  CreateFiling_Preview_Deadline, CreateFiling_Error_RateNotFound,
+  CreateFiling_Error_ProfileMissing
+
+--- Tests ---
+  Unit test PreviewManualFilingQueryHandler:
+  - Happy path: correct GrossIncomeRsd, WhtPaidRsd, TaxPayableRsd computed.
+  - WHT clamp: when WHT > gross tax, TaxPayableRsd = 0.
+  - Null NetReceived → WHT = 0.
+  - NetReceived > GrossAmount → validation failure.
+  - Rate fetch failure → Result.Failure propagated.
+  Unit test CreateManualFilingCommandHandler:
+  - Success path: repository receives Filing with correct Ticker and TaxPayableRsd.
+  - Missing taxpayer profile → Result.Failure.
+  Unit test CreateFilingViewModel:
+  - CalculateCommand is disabled until Ticker + GrossAmount + IncomeDate are filled.
+  - SaveCommand is disabled until HasPreview = true.
+  - ErrorMessage set on rate-not-found failure.
+  - Successful save calls _navigateBack.
+
+All amounts decimal. All dates DateOnly. All async. Result pattern throughout.
+No exceptions as flow control. All strings in Strings.resx.
+```
+
+---
+
 ## Feature Dependency Graph
 
 ```
@@ -1105,25 +1944,40 @@ throughout. No exceptions as flow control.
  │         └── 011-filing-pipeline ◄── 009, 010
  │              ├── 012-filings-list
  │              │    ├── 013-xml-export ◄── 002
+ │              │    │    └── 033-xml-schema-fix ◄── 002
  │              │    ├── 016-dashboard
+ │              │    ├── 021-filings-filter-status
  │              │    └── 025-bulk-delete ◄── 014
  │              └── 014-reports-list
+ │                   ├── 022-reports-naming-sync-ux ◄── 015
  │                   └── 025-bulk-delete
  ├── 015-one-click-sync ◄── 010, 011
  │    ├── 018-sync-replay-controls
- │    ├── 019-filing-reliability-fixes ◄── 006
- │    └── 022-reports-naming-sync-ux ◄── 014
- ├── 012-filings-list
- │    └── 021-filings-filter-status ◄── 012
+ │    └── 019-filing-reliability-fixes ◄── 006
  ├── 004-mailbox-configuration
  │    └── 017-cross-platform-credential-store
  ├── 005-importer-configuration
  │    └── 023-importers-form-reset ◄── 005
- └── 003-holiday-configuration
-   ├── 020-holidays-settings-repair ◄── 006
-   │    ├── 024-holidays-year-filter ◄── 020
-   │    └── 026-holiday-fetcher-timeanddate ◄── 020
-   └── 024-holidays-year-filter
+ ├── 003-holiday-configuration
+ │    ├── 020-holidays-settings-repair ◄── 006
+ │    │    ├── 024-holidays-year-filter ◄── 020
+ │    │    └── 026-holiday-fetcher-timeanddate ◄── 020
+ │    └── 024-holidays-year-filter
+ ├── 012-filings-list
+ │    ├── 027-sorting-defaults ◄── 014
+ │    └── 034-manual-filing ◄── 006, 009, 033
+ ├── 014-reports-list
+ │    └── 027-sorting-defaults
+ ├── 025-bulk-delete
+ │    └── 028-header-checkbox
+ ├── 027-sorting-defaults
+ │    └── 029-pagination-30-items
+ ├── 021-filings-filter-status
+ │    └── 030-filings-action-consolidation ◄── 025
+ ├── 030-filings-action-consolidation
+ │    └── 031-reports-action-icons ◄── 022
+ └── 030, 031
+      └── 032-column-width-audit
 ```
 
 ---
@@ -1140,10 +1994,15 @@ throughout. No exceptions as flow control.
 | **F — QA Fixes** | 021 → 022 → 023 → 024 | UX polish from QA feedback |
 | **G — Productivity** | 025 | Power-user bulk operations |
 | **H — Data Enrichment** | 026 (needs 020) | Public holiday web import |
+| **I — UX Polish Wave** | 027 → 028 → 029 → 030 → 031 → 032 | Sorting, pagination, icon actions |
+| **J — XML & Manual Filing** | 033 → 034 (needs 006, 009, 033) | Schema compliance + manual entry |
 
 Lanes A and B can run in parallel from day one. Lane C starts when both
 converge. Lane D follows C. Lane E starts after 011 (with 017 partially in
-parallel).
+parallel). Lane I depends on 025 (for 028) and 021/022 (for 030/031); the
+rest of Lane I can start as soon as 012 and 014 are complete. Lane J can
+start independently of Lanes C–I as soon as 006 and 009 are done (feature
+033 only needs 013 and 002; feature 034 needs 033, 006, and 009).
 
 ---
 
@@ -1154,7 +2013,7 @@ parallel).
 - A-002: Single user, single machine. No multi-user or cloud sync.
 - A-003: Current production usage is Windows-heavy, but roadmap feature 017
   removes platform-specific credential assumptions.
-- A-004: The ePorezi XML schema is stable. Schema version changes would need a new feature.
+- A-004: The ePorezi XML schema is versioned under `http://pid.purs.gov.rs`. Feature 033 corrects the implementation to match the current schema. Future schema revisions require another update to `PpOpoXmlSerializer`.
 - A-005: NBS website structure for exchange rate scraping is stable.
 - A-006: Filing status transitions are user-initiated (manual mark as Filed/Paid).
 
