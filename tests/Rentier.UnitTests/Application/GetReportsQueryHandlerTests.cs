@@ -177,4 +177,83 @@ public class GetReportsQueryHandlerTests
 
         await _reportRepo.Received(1).GetAllAsync(false, Arg.Any<CancellationToken>());
     }
+
+    // -- Pagination tests (feature 029) ----------------------------------------
+
+    private void SetupReports(int count)
+    {
+        var importer = MakeImporter();
+        var reports = Enumerable.Range(0, count).Select(_ => MakeReport(importer.Id)).ToArray();
+        _reportRepo.GetAllAsync(Arg.Any<bool>(), Arg.Any<CancellationToken>()).Returns(reports);
+        _importerRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([importer]);
+        _filingRepo.GetFilingCountByReportIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(0);
+        _filingRepo.GetEarliestIncomeDateByReportIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((DateOnly?)null);
+    }
+
+    [Fact]
+    public async Task HandleAsync_PaginationSlicing_Page1Of3Returns30Rows()
+    {
+        SetupReports(75);
+
+        var result = await _sut.HandleAsync(new GetReportsQuery(Page: 1, PageSize: 30));
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Rows.Should().HaveCount(30);
+        result.Value.TotalCount.Should().Be(75);
+        result.Value.TotalPages.Should().Be(3);
+    }
+
+    [Fact]
+    public async Task HandleAsync_PaginationSlicing_LastPageReturnsRemainder()
+    {
+        SetupReports(75);
+
+        var result = await _sut.HandleAsync(new GetReportsQuery(Page: 3, PageSize: 30));
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Rows.Should().HaveCount(15);
+        result.Value.TotalCount.Should().Be(75);
+        result.Value.TotalPages.Should().Be(3);
+    }
+
+    [Fact]
+    public async Task HandleAsync_EmptyCollection_ReturnsTotalPagesOne()
+    {
+        SetupReports(0);
+
+        var result = await _sut.HandleAsync(new GetReportsQuery());
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Rows.Should().BeEmpty();
+        result.Value.TotalCount.Should().Be(0);
+        result.Value.TotalPages.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task HandleAsync_PageZero_ReturnsValidationFailure()
+    {
+        var result = await _sut.HandleAsync(new GetReportsQuery(Page: 0));
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Code.Should().Be("VALIDATION_ERROR");
+        result.Error.Message.Should().Contain("1");
+    }
+
+    [Fact]
+    public async Task HandleAsync_PageSizeZero_ReturnsValidationFailure()
+    {
+        var result = await _sut.HandleAsync(new GetReportsQuery(PageSize: 0));
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Code.Should().Be("VALIDATION_ERROR");
+    }
+
+    [Fact]
+    public async Task HandleAsync_PageSize101_ReturnsValidationFailure()
+    {
+        var result = await _sut.HandleAsync(new GetReportsQuery(PageSize: 101));
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Code.Should().Be("VALIDATION_ERROR");
+    }
 }
