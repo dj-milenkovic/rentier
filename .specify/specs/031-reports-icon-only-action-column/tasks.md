@@ -24,8 +24,8 @@ description: "Task list for feature 031 — Reports Icon-Only Action Column"
 
 **Purpose**: Add shared resources that all user-story phases depend on.
 
-- [ ] T001 Add `Reports_Tooltip_ViewFilings` (value: `"View linked filings"`) and `Reports_Tooltip_Delete` (value: `"Delete report"`) entries to `src/Rentier.Desktop/Resources/Strings.resx`; confirm `Strings.Designer.cs` auto-regenerates two matching `public static string` properties
-- [ ] T002 [P] Add `ViewFilingsIcon` as a named `StreamGeometry` resource to `src/Rentier.Desktop/Assets/Icons.axaml` — use a list/arrow path (24×24 viewport, Lucide-style `ListTree` or equivalent MIT-licensed path): the icon must visually convey "navigate to a related list" at 16×16 logical pixels
+- [X] T001 Add `Reports_Tooltip_ViewFilings` (value: `"View linked filings"`) and `Reports_Tooltip_Delete` (value: `"Delete report"`) entries to `src/Rentier.Desktop/Resources/Strings.resx`; confirm `Strings.Designer.cs` auto-regenerates two matching `public static string` properties
+- [X] T002 [P] Add `ViewFilingsIcon` as a named `StreamGeometry` resource to `src/Rentier.Desktop/Assets/Icons.axaml` — use a list/arrow path (24×24 viewport, Lucide-style `ListTree` or equivalent MIT-licensed path): the icon must visually convey "navigate to a related list" at 16×16 logical pixels
 
 **Checkpoint**: Both string resources compile and `Icons.axaml` exports `ViewFilingsIcon` alongside the existing `TrashIcon` from feature 030.
 
@@ -37,7 +37,7 @@ description: "Task list for feature 031 — Reports Icon-Only Action Column"
 
 **Independent Test**: Open the Reports page with at least one report loaded → action column shows two icon buttons with no visible text labels; hover each button → correct tooltip text appears.
 
-- [ ] T003 [US1] [US2] Replace both text-content `<Button>` elements inside the `Width="Auto"` `DataGridTemplateColumn` CellTemplate in `src/Rentier.Desktop/Views/ReportsView.axaml`:
+- [X] T003 [US1] [US2] Replace both text-content `<Button>` elements inside the `Width="Auto"` `DataGridTemplateColumn` CellTemplate in `src/Rentier.Desktop/Views/ReportsView.axaml`:
   - View Filings button: remove `Content="{x:Static res:Strings.Reports_Button_ViewFilings}"`, set button content to `<PathIcon Data="{StaticResource ViewFilingsIcon}" Width="16" Height="16"/>`, add `ToolTip.Tip="{x:Static res:Strings.Reports_Tooltip_ViewFilings}"`, add `Padding="6" Background="Transparent" BorderThickness="0"`; retain `Command` and `CommandParameter` bindings unchanged
   - Delete button: remove `Content="{x:Static res:Strings.Reports_Button_Delete}"`, set button content to `<PathIcon Data="{StaticResource TrashIcon}" Width="16" Height="16"/>`, add `ToolTip.Tip="{x:Static res:Strings.Reports_Tooltip_Delete}"`, add `Padding="6" Background="Transparent" BorderThickness="0"`; retain `Command` and `CommandParameter` bindings unchanged
 
@@ -51,7 +51,7 @@ description: "Task list for feature 031 — Reports Icon-Only Action Column"
 
 **Independent Test**: Inspect the delete icon button on any report row → icon is rendered in red; View Filings icon uses the default (non-red) foreground.
 
-- [ ] T004 [US3] Add `Foreground="Red"` to the Delete `<Button>` element (or its `<PathIcon>` child) in the action column of `src/Rentier.Desktop/Views/ReportsView.axaml`, matching the destructive-action pattern used by the bulk-delete button on the same page (line 41 of current markup)
+- [X] T004 [US3] Add `Foreground="Red"` to the Delete `<Button>` element (or its `<PathIcon>` child) in the action column of `src/Rentier.Desktop/Views/ReportsView.axaml`, matching the destructive-action pattern used by the bulk-delete button on the same page (line 41 of current markup)
 
 **Checkpoint**: Delete icon button renders red; View Filings icon button uses default theme foreground. Pattern is visually consistent with the bulk-delete button `Foreground="Red"` style already in use on the Reports page.
 
@@ -61,9 +61,9 @@ description: "Task list for feature 031 — Reports Icon-Only Action Column"
 
 **Purpose**: Test coverage, build validation, and cross-page consistency verification.
 
-- [ ] T005 [P] Add headless UI test `ReportsView_ActionColumn_RendersIconOnlyButtons` to `tests/Rentier.UnitTests/Desktop/Views/ReportsViewHeadlessTests.cs`: load a report row, activate the ViewModel, call `window.UpdateLayout()` + `Dispatcher.UIThread.RunJobs()`, then assert (a) no `Button` in the action column has a non-null/non-empty `Content` of type `string`, and (b) the action column contains exactly two `PathIcon` descendants — satisfying CA-006 from the spec
-- [ ] T006 [P] Verify cross-page icon consistency (US4): navigate to the Filings page (feature 030) and then the Reports page; confirm icon button size, `ToolTip.Tip` behaviour, and `Foreground="Red"` destructive styling are visually uniform across both pages — no code change required if consistent; document the verification outcome as a comment in the PR description
-- [ ] T007 Build the solution (`dotnet build Rentier.slnx`) and run all unit tests (`dotnet test Rentier.slnx`) to confirm zero regressions; all existing `ReportsViewModelTests`, `ReportRowViewModelTests`, and `ReportsViewHeadlessTests` must pass without modification
+- [X] T005 [P] Add headless UI test `ReportsView_ActionColumn_RendersIconOnlyButtons` to `tests/Rentier.UnitTests/Desktop/Views/ReportsViewHeadlessTests.cs`: load a report row, activate the ViewModel, call `window.UpdateLayout()` + `Dispatcher.UIThread.RunJobs()`, then assert (a) no `Button` in the action column has a non-null/non-empty `Content` of type `string`, and (b) the action column contains exactly two `PathIcon` descendants — satisfying CA-006 from the spec
+- [X] T006 [P] Verify cross-page icon consistency (US4): navigate to the Filings page (feature 030) and then the Reports page; confirm icon button size, `ToolTip.Tip` behaviour, and `Foreground="Red"` destructive styling are visually uniform across both pages — no code change required if consistent; document the verification outcome as a comment in the PR description
+- [X] T007 Build the solution (`dotnet build Rentier.slnx`) and run all unit tests (`dotnet test Rentier.slnx`) to confirm zero regressions; all existing `ReportsViewModelTests`, `ReportRowViewModelTests`, and `ReportsViewHeadlessTests` must pass without modification
 
 ---
 

@@ -17,7 +17,7 @@
 
 **Purpose**: Confirm working environment — no new projects, migrations, or infrastructure are required for this feature.
 
-- [ ] T001 Confirm branch is `feat/027-031-ux-improvements` and run `dotnet restore Rentier.slnx` to verify the solution builds cleanly before any changes
+- [X] T001 Confirm branch is `feat/027-031-ux-improvements` and run `dotnet restore Rentier.slnx` to verify the solution builds cleanly before any changes
 
 ---
 
@@ -27,7 +27,7 @@
 
 **⚠️ CRITICAL**: US2 and US3 implementation cannot begin until this phase is complete.
 
-- [ ] T002 Create `src/Rentier.Application/DTOs/ReportsPageResult.cs` — sealed record `ReportsPageResult(IReadOnlyList<ReportRowDto> Rows, int TotalCount, int TotalPages)` mirroring the shape of `FilingsPageResult` exactly (see data-model.md §ReportsPageResult)
+- [X] T002 Create `src/Rentier.Application/DTOs/ReportsPageResult.cs` — sealed record `ReportsPageResult(IReadOnlyList<ReportRowDto> Rows, int TotalCount, int TotalPages)` mirroring the shape of `FilingsPageResult` exactly (see data-model.md §ReportsPageResult)
 
 **Checkpoint**: `ReportsPageResult.cs` compiles — US2 and US3 implementation can now proceed.
 
@@ -39,10 +39,10 @@
 
 **Independent Test**: Load the Filings page with > 30 filings; confirm exactly 30 appear on page 1 and the page indicator reads "Page 1 of N" where N = ⌈total/30⌉. Can run independently of US2/US3.
 
-- [ ] T003 [P] [US1] Update `src/Rentier.Application/Queries/GetFilingsQuery.cs` — change `PageSize` default parameter value from `20` to `30` (single-line change in the record declaration)
-- [ ] T004 [P] [US1] Update `src/Rentier.Desktop/ViewModels/FilingsViewModel.cs` — change the explicit `PageSize: 20` argument passed to `GetFilingsQuery` in `LoadPageAsync` to `PageSize: 30`
-- [ ] T005 [P] [US1] Update `tests/Rentier.UnitTests/Application/GetFilingsQueryHandlerTests.cs` — replace all page-size-20 expectations (counts, page totals, slice assertions) with page-size-30 equivalents so existing tests reflect the new default
-- [ ] T006 [P] [US1] Update `tests/Rentier.UnitTests/Desktop/FilingsViewModelTests.cs` — replace all page-size-20 expectations with page-size-30 equivalents; verify test data sets used in arrange steps have more than 30 items where boundary behaviour is tested
+- [X] T003 [P] [US1] Update `src/Rentier.Application/Queries/GetFilingsQuery.cs` — change `PageSize` default parameter value from `20` to `30` (single-line change in the record declaration)
+- [X] T004 [P] [US1] Update `src/Rentier.Desktop/ViewModels/FilingsViewModel.cs` — change the explicit `PageSize: 20` argument passed to `GetFilingsQuery` in `LoadPageAsync` to `PageSize: 30`
+- [X] T005 [P] [US1] Update `tests/Rentier.UnitTests/Application/GetFilingsQueryHandlerTests.cs` — replace all page-size-20 expectations (counts, page totals, slice assertions) with page-size-30 equivalents so existing tests reflect the new default
+- [X] T006 [P] [US1] Update `tests/Rentier.UnitTests/Desktop/FilingsViewModelTests.cs` — replace all page-size-20 expectations with page-size-30 equivalents; verify test data sets used in arrange steps have more than 30 items where boundary behaviour is tested
 
 **Checkpoint**: `dotnet test --filter "FullyQualifiedName~GetFilingsQueryHandler|FullyQualifiedName~FilingsViewModel"` passes — User Story 1 is fully functional and independently testable.
 
@@ -54,14 +54,14 @@
 
 **Independent Test**: Load the Reports page with > 30 reports; confirm 30 appear on page 1 with "Page 1 of N"; click Next to reach page 2 ("Page 2 of N", Previous enabled); reach the last page ("Page N of N", Next disabled). Requires T002 complete first.
 
-- [ ] T007 [P] [US2] Modify `src/Rentier.Application/Queries/GetReportsQuery.cs` — change `public sealed record GetReportsQuery;` to `public sealed record GetReportsQuery(int Page = 1, int PageSize = 30);` (see data-model.md §GetReportsQuery)
-- [ ] T008 [US2] Modify `src/Rentier.Application/Handlers/GetReportsQueryHandler.cs` — (1) add validation guards: throw/return Error if `Page < 1` or `PageSize < 1` or `PageSize > 100`, mirroring `GetFilingsQueryHandler` lines 34–40; (2) after building the full `List<ReportRowDto>`, compute `totalCount`, `totalPages = Math.Max(1, (int)Math.Ceiling((double)totalCount / query.PageSize))`; (3) slice with `.Skip((query.Page - 1) * query.PageSize).Take(query.PageSize).ToList()`; (4) return `Result.Success(new ReportsPageResult(slicedRows, totalCount, totalPages))` — change return type from `Result<IReadOnlyList<ReportRowDto>, Error>` to `Result<ReportsPageResult, Error>` (depends on T002, T007)
-- [ ] T009 [P] [US2] Add three new string entries to `src/Rentier.Desktop/Resources/Strings.resx` — `Reports_Page_Previous` = `← Previous`, `Reports_Page_Next` = `Next →`, `Reports_Page_Indicator` = `Page {0} of {1}` — following the `Reports_*` naming convention (see data-model.md §Localisation and research.md R-003)
-- [ ] T010 [US2] Add pagination state and commands to `src/Rentier.Desktop/ViewModels/ReportsViewModel.cs` — (1) backing fields `_currentPage = 1`, `_totalPages = 1`, `_totalCount = 0`; (2) public properties `CurrentPage`, `TotalPages`, `TotalCount`, computed `HasPreviousPage` (`_currentPage > 1 && !IsLoading`), `HasNextPage` (`_currentPage < _totalPages && !IsLoading`), `PageIndicator` (formatted from `Strings.Reports_Page_Indicator`); (3) `PreviousPageCommand` and `NextPageCommand` as `ReactiveCommand.CreateFromTask` — each decrements/increments `_currentPage` then calls `LoadPageAsync`; enabled via `IObservable<bool>` from `HasPreviousPage`/`HasNextPage`; (4) update `LoadReportsAsync` (rename to `LoadPageAsync`) to pass `_currentPage` and `30` to `GetReportsQuery`, then update `_totalCount`, `_totalPages`, clamp `_currentPage = Math.Min(_currentPage, _totalPages)`, and raise all pagination property-changed notifications — mirror `FilingsViewModel` reactive pattern throughout (depends on T008)
-- [ ] T011 [US2] Add pagination bar to `src/Rentier.Desktop/Views/ReportsView.axaml` — insert `<StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="8" Margin="8" HorizontalAlignment="Center" IsVisible="{Binding HasItems}">` with a Previous `<Button>` bound to `PreviousPageCommand` / `Reports_Page_Previous`, a `<TextBlock>` bound to `PageIndicator`, and a Next `<Button>` bound to `NextPageCommand` / `Reports_Page_Next` — placement and structure identical to the pagination bar in `FilingsView.axaml`; see contracts/ui-pagination-contract.md §AXAML Structure (depends on T009, T010)
-- [ ] T012 [US2] Add delete and bulk-delete page-decrement guards to `src/Rentier.Desktop/ViewModels/ReportsViewModel.cs` — in the `DeleteCommand` handler: `if (Rows.Count == 1 && _currentPage > 1) _currentPage--;` before calling `LoadPageAsync`; in the `BulkDeleteCommand` handler: `if (selectedIds.Count == Rows.Count && _currentPage > 1) _currentPage--;` — mirroring `FilingsViewModel` delete guards exactly (see research.md R-006) (depends on T010)
-- [ ] T013 [P] [US2] Update `tests/Rentier.UnitTests/Application/GetReportsQueryHandlerTests.cs` — (1) update all existing tests for the new `ReportsPageResult` return type (access `.Value.Rows` instead of `.Value`); (2) add: pagination slicing test (75 reports, page 1 of 3 returns 30 rows with TotalCount=75 TotalPages=3), last page test (page 3 returns 15 rows), boundary validation tests (Page=0 returns error, PageSize=0 returns error, PageSize=101 returns error), empty collection test (0 reports returns TotalCount=0 TotalPages=1 Rows empty) (depends on T008)
-- [ ] T014 [P] [US2] Update `tests/Rentier.UnitTests/Desktop/ReportsViewModelTests.cs` — add: (1) initial state (CurrentPage=1, HasPreviousPage=false, HasNextPage based on data); (2) PageIndicator format "Page 1 of 3"; (3) NextPageCommand increments CurrentPage and reloads; (4) PreviousPageCommand decrements CurrentPage and reloads; (5) NextPageCommand disabled on last page; (6) PreviousPageCommand disabled on page 1; (7) commands disabled while IsLoading; (8) delete on single-item last page decrements page; (9) bulk delete of all items on non-first page decrements page (depends on T012)
+- [X] T007 [P] [US2] Modify `src/Rentier.Application/Queries/GetReportsQuery.cs` — change `public sealed record GetReportsQuery;` to `public sealed record GetReportsQuery(int Page = 1, int PageSize = 30);` (see data-model.md §GetReportsQuery)
+- [X] T008 [US2] Modify `src/Rentier.Application/Handlers/GetReportsQueryHandler.cs` — (1) add validation guards: throw/return Error if `Page < 1` or `PageSize < 1` or `PageSize > 100`, mirroring `GetFilingsQueryHandler` lines 34–40; (2) after building the full `List<ReportRowDto>`, compute `totalCount`, `totalPages = Math.Max(1, (int)Math.Ceiling((double)totalCount / query.PageSize))`; (3) slice with `.Skip((query.Page - 1) * query.PageSize).Take(query.PageSize).ToList()`; (4) return `Result.Success(new ReportsPageResult(slicedRows, totalCount, totalPages))` — change return type from `Result<IReadOnlyList<ReportRowDto>, Error>` to `Result<ReportsPageResult, Error>` (depends on T002, T007)
+- [X] T009 [P] [US2] Add three new string entries to `src/Rentier.Desktop/Resources/Strings.resx` — `Reports_Page_Previous` = `← Previous`, `Reports_Page_Next` = `Next →`, `Reports_Page_Indicator` = `Page {0} of {1}` — following the `Reports_*` naming convention (see data-model.md §Localisation and research.md R-003)
+- [X] T010 [US2] Add pagination state and commands to `src/Rentier.Desktop/ViewModels/ReportsViewModel.cs` — (1) backing fields `_currentPage = 1`, `_totalPages = 1`, `_totalCount = 0`; (2) public properties `CurrentPage`, `TotalPages`, `TotalCount`, computed `HasPreviousPage` (`_currentPage > 1 && !IsLoading`), `HasNextPage` (`_currentPage < _totalPages && !IsLoading`), `PageIndicator` (formatted from `Strings.Reports_Page_Indicator`); (3) `PreviousPageCommand` and `NextPageCommand` as `ReactiveCommand.CreateFromTask` — each decrements/increments `_currentPage` then calls `LoadPageAsync`; enabled via `IObservable<bool>` from `HasPreviousPage`/`HasNextPage`; (4) update `LoadReportsAsync` (rename to `LoadPageAsync`) to pass `_currentPage` and `30` to `GetReportsQuery`, then update `_totalCount`, `_totalPages`, clamp `_currentPage = Math.Min(_currentPage, _totalPages)`, and raise all pagination property-changed notifications — mirror `FilingsViewModel` reactive pattern throughout (depends on T008)
+- [X] T011 [US2] Add pagination bar to `src/Rentier.Desktop/Views/ReportsView.axaml` — insert `<StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="8" Margin="8" HorizontalAlignment="Center" IsVisible="{Binding HasItems}">` with a Previous `<Button>` bound to `PreviousPageCommand` / `Reports_Page_Previous`, a `<TextBlock>` bound to `PageIndicator`, and a Next `<Button>` bound to `NextPageCommand` / `Reports_Page_Next` — placement and structure identical to the pagination bar in `FilingsView.axaml`; see contracts/ui-pagination-contract.md §AXAML Structure (depends on T009, T010)
+- [X] T012 [US2] Add delete and bulk-delete page-decrement guards to `src/Rentier.Desktop/ViewModels/ReportsViewModel.cs` — in the `DeleteCommand` handler: `if (Rows.Count == 1 && _currentPage > 1) _currentPage--;` before calling `LoadPageAsync`; in the `BulkDeleteCommand` handler: `if (selectedIds.Count == Rows.Count && _currentPage > 1) _currentPage--;` — mirroring `FilingsViewModel` delete guards exactly (see research.md R-006) (depends on T010)
+- [X] T013 [P] [US2] Update `tests/Rentier.UnitTests/Application/GetReportsQueryHandlerTests.cs` — (1) update all existing tests for the new `ReportsPageResult` return type (access `.Value.Rows` instead of `.Value`); (2) add: pagination slicing test (75 reports, page 1 of 3 returns 30 rows with TotalCount=75 TotalPages=3), last page test (page 3 returns 15 rows), boundary validation tests (Page=0 returns error, PageSize=0 returns error, PageSize=101 returns error), empty collection test (0 reports returns TotalCount=0 TotalPages=1 Rows empty) (depends on T008)
+- [X] T014 [P] [US2] Update `tests/Rentier.UnitTests/Desktop/ReportsViewModelTests.cs` — add: (1) initial state (CurrentPage=1, HasPreviousPage=false, HasNextPage based on data); (2) PageIndicator format "Page 1 of 3"; (3) NextPageCommand increments CurrentPage and reloads; (4) PreviousPageCommand decrements CurrentPage and reloads; (5) NextPageCommand disabled on last page; (6) PreviousPageCommand disabled on page 1; (7) commands disabled while IsLoading; (8) delete on single-item last page decrements page; (9) bulk delete of all items on non-first page decrements page (depends on T012)
 
 **Checkpoint**: `dotnet test --filter "FullyQualifiedName~GetReportsQueryHandler|FullyQualifiedName~ReportsViewModel"` passes — User Story 2 is fully functional and independently testable.
 
@@ -73,8 +73,8 @@
 
 **Independent Test**: Set `CurrentPage` to 3, then change `SortDirection`; verify `CurrentPage` resets to 1 and `LoadPageAsync` is called. Depends on US2 being complete.
 
-- [ ] T015 [US3] Add `SortDirection` reactive property to `src/Rentier.Desktop/ViewModels/ReportsViewModel.cs` — backing field `_sortDirection`, public property setter: assign backing field, set `_currentPage = 1`, raise `PropertyChanged` for `CurrentPage`/`HasPreviousPage`/`HasNextPage`/`PageIndicator`, then invoke `LoadPageCommand`; follow the exact pattern of `FilingsViewModel.ShowAll` setter; add a parallel `Filter` property using the same setter pattern if a filter backing field already exists in the ViewModel (depends on T010)
-- [ ] T016 [P] [US3] Add page reset tests to `tests/Rentier.UnitTests/Desktop/ReportsViewModelTests.cs` — (1) given CurrentPage=3, when SortDirection changes, then CurrentPage resets to 1 and LoadPageAsync is invoked; (2) given CurrentPage=2, when Filter property changes, then CurrentPage resets to 1 and LoadPageAsync is invoked (depends on T015)
+- [X] T015 [US3] Add `SortDirection` reactive property to `src/Rentier.Desktop/ViewModels/ReportsViewModel.cs` — backing field `_sortDirection`, public property setter: assign backing field, set `_currentPage = 1`, raise `PropertyChanged` for `CurrentPage`/`HasPreviousPage`/`HasNextPage`/`PageIndicator`, then invoke `LoadPageCommand`; follow the exact pattern of `FilingsViewModel.ShowAll` setter; add a parallel `Filter` property using the same setter pattern if a filter backing field already exists in the ViewModel (depends on T010)
+- [X] T016 [P] [US3] Add page reset tests to `tests/Rentier.UnitTests/Desktop/ReportsViewModelTests.cs` — (1) given CurrentPage=3, when SortDirection changes, then CurrentPage resets to 1 and LoadPageAsync is invoked; (2) given CurrentPage=2, when Filter property changes, then CurrentPage resets to 1 and LoadPageAsync is invoked (depends on T015)
 
 **Checkpoint**: All US3 tests pass — page-reset pipeline is wired and ready for future sort/filter UI controls.
 
@@ -84,11 +84,11 @@
 
 **Purpose**: Final validation across all changed files.
 
-- [ ] T017 [P] Verify `src/Rentier.Desktop/Resources/Strings.Designer.cs` reflects the three new `Reports_Page_*` properties added in T009 — if MSBuild has not auto-regenerated it, manually add the three public static string properties following the existing generated pattern
-- [ ] T018 [P] Run `dotnet build Rentier.slnx` and confirm zero build errors and zero new warnings on all modified files
-- [ ] T019 [P] Run `dotnet test tests/Rentier.UnitTests --filter "FullyQualifiedName~GetReportsQueryHandler|FullyQualifiedName~GetFilingsQueryHandler|FullyQualifiedName~ReportsViewModel|FullyQualifiedName~FilingsViewModel"` and confirm all tests pass
-- [ ] T020 [P] Run the full test suite `dotnet test Rentier.slnx` and confirm no regressions outside the changed test files
-- [ ] T021 Verify SC-006: grep for hardcoded `"← Previous"`, `"Next →"`, and `"Page"` display literals in `ReportsView.axaml` and `ReportsViewModel.cs` — confirm zero hits (all strings sourced from `Strings.resx`)
+- [X] T017 [P] Verify `src/Rentier.Desktop/Resources/Strings.Designer.cs` reflects the three new `Reports_Page_*` properties added in T009 — if MSBuild has not auto-regenerated it, manually add the three public static string properties following the existing generated pattern
+- [X] T018 [P] Run `dotnet build Rentier.slnx` and confirm zero build errors and zero new warnings on all modified files
+- [X] T019 [P] Run `dotnet test tests/Rentier.UnitTests --filter "FullyQualifiedName~GetReportsQueryHandler|FullyQualifiedName~GetFilingsQueryHandler|FullyQualifiedName~ReportsViewModel|FullyQualifiedName~FilingsViewModel"` and confirm all tests pass
+- [X] T020 [P] Run the full test suite `dotnet test Rentier.slnx` and confirm no regressions outside the changed test files
+- [X] T021 Verify SC-006: grep for hardcoded `"← Previous"`, `"Next →"`, and `"Page"` display literals in `ReportsView.axaml` and `ReportsViewModel.cs` — confirm zero hits (all strings sourced from `Strings.resx`)
 
 ---
 
@@ -187,3 +187,4 @@ T001 → T002 → T003 → T004 → T005 → T006
 - `Strings.Designer.cs` (T017) is auto-generated by MSBuild from `Strings.resx`; verify it after build rather than editing manually
 - Commit after each phase checkpoint to keep the branch bisectable
 - Run `dotnet test Rentier.slnx` (T020) as the final gate before raising a PR
+
