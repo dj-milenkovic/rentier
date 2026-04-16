@@ -64,7 +64,7 @@ public class ImapMailboxSyncService : IMailboxSyncService
             await client.AuthenticateAsync(mailbox.Username, password, ct);
 
             var inbox = client.Inbox;
-            await inbox.OpenAsync(FolderAccess.ReadOnly, ct);
+            await inbox!.OpenAsync(FolderAccess.ReadOnly, ct);
 
             var cursor = mailbox.Cursor;
             long? maxUid = null;

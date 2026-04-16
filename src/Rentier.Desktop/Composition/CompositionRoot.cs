@@ -152,7 +152,7 @@ public static class CompositionRoot
 
         // Reports handlers
         services.AddTransient<
-            IQueryHandler<GetReportsQuery, Result<IReadOnlyList<ReportRowDto>, Error>>,
+            IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>>,
             GetReportsQueryHandler>();
         services.AddTransient<
             ICommandHandler<ImportReportCommand, Result<Guid, Error>>,

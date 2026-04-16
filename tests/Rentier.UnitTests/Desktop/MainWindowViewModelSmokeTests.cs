@@ -63,9 +63,9 @@ public class MainWindowViewModelSmokeTests
     {
         var services = new ServiceCollection();
 
-        var getReports = Substitute.For<IQueryHandler<GetReportsQuery, Result<IReadOnlyList<ReportRowDto>, Error>>>();
+        var getReports = Substitute.For<IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>>>();
         getReports.HandleAsync(Arg.Any<GetReportsQuery>(), Arg.Any<CancellationToken>())
-            .Returns(Result<IReadOnlyList<ReportRowDto>, Error>.Success(Array.Empty<ReportRowDto>()));
+            .Returns(Result<ReportsPageResult, Error>.Success(new ReportsPageResult([], 0, 1)));
 
         var getDashboard = Substitute.For<IQueryHandler<GetDashboardQuery, Result<DashboardDto, Error>>>();
         getDashboard.HandleAsync(Arg.Any<GetDashboardQuery>(), Arg.Any<CancellationToken>())

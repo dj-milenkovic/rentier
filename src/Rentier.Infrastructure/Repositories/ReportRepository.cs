@@ -18,11 +18,12 @@ public sealed class ReportRepository : IReportRepository
     public async Task<Report?> GetByIdAsync(Guid id, CancellationToken ct = default)
         => await _db.Reports.FindAsync([id], ct);
 
-    public async Task<IReadOnlyList<Report>> GetAllAsync(CancellationToken ct = default)
+    public async Task<IReadOnlyList<Report>> GetAllAsync(bool sortDescending = true, CancellationToken ct = default)
     {
-        var list = await _db.Reports.AsNoTracking()
-            .OrderByDescending(r => r.ImportDate)
-            .ToListAsync(ct);
+        var query = _db.Reports.AsNoTracking();
+        var list = sortDescending
+            ? await query.OrderByDescending(r => r.ImportDate).ThenBy(r => r.Id).ToListAsync(ct)
+            : await query.OrderBy(r => r.ImportDate).ThenBy(r => r.Id).ToListAsync(ct);
         return list.AsReadOnly();
     }
 

@@ -14,9 +14,14 @@ public interface IFilingRepository
     Task UpdateAsync(Filing filing, CancellationToken ct = default);
     Task DeleteAsync(Guid id, CancellationToken ct = default);
 
-    /// <summary>Returns a paged, optionally-filtered list of filings ordered by FilingDeadline ascending.</summary>
+    /// <summary>Returns a paged, optionally-filtered list of filings ordered by the specified column.</summary>
     Task<(IReadOnlyList<Filing> Items, int TotalCount)> GetPagedAsync(
-        FilingFilterMode filter, int skip, int take, CancellationToken ct = default);
+        FilingFilterMode filter,
+        int skip,
+        int take,
+        FilingSortColumn sortColumn = FilingSortColumn.FilingDeadline,
+        bool sortDescending = true,
+        CancellationToken ct = default);
 
     /// <summary>
     /// Returns the count of Filing records linked to the given Report.

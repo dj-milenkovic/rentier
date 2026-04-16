@@ -27,6 +27,47 @@ namespace Rentier.UnitTests;
 public class ReportsViewHeadlessTests
 {
     [AvaloniaFact]
+    public void ReportsView_ActionColumn_RendersIconOnlyButtons()
+    {
+        // Arrange — load a report row so the action column is instantiated
+        IReadOnlyList<ReportRowDto> rows = [MakeReportRowDto()];
+        var getReports = Substitute.For<IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>>>();
+        getReports.HandleAsync(Arg.Any<GetReportsQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<ReportsPageResult, Error>.Success(
+                new ReportsPageResult(rows, rows.Count, 1)));
+
+        var vm = CreateMinimalReportsViewModel(getReports);
+        var view = new ReportsView { DataContext = vm };
+        var window = new Window { Content = view, Width = 800, Height = 600 };
+        window.Show();
+
+        // Act
+        using var activation = vm.Activator.Activate();
+        window.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
+
+        // Assert (a) — no Button in the visual tree has the old text-label content for the action buttons.
+        // The old content was the value of Reports_Button_ViewFilings / Reports_Button_Delete strings.
+        // We check that no button has exactly those strings as Content.
+        var buttons = window.GetVisualDescendants().OfType<Button>().ToList();
+        var viewFilingsTextButton = buttons.FirstOrDefault(b =>
+            b.Content is string s && s == Rentier.Desktop.Resources.Strings.Reports_Button_ViewFilings);
+        var deleteTextButton = buttons.FirstOrDefault(b =>
+            b.Content is string s && s == Rentier.Desktop.Resources.Strings.Reports_Button_Delete);
+        viewFilingsTextButton.Should().BeNull(
+            because: "View Filings action button must be icon-only, not text-labelled");
+        deleteTextButton.Should().BeNull(
+            because: "Delete action button must be icon-only, not text-labelled");
+
+        // Assert (b) — the action column contains exactly two PathIcon descendants per row
+        var pathIcons = window.GetVisualDescendants().OfType<PathIcon>().ToList();
+        pathIcons.Count.Should().BeGreaterThanOrEqualTo(2,
+            because: "each report row should render two PathIcon elements (View Filings + Delete)");
+
+        window.Close();
+    }
+
+    [AvaloniaFact]
     public void ReportsView_WhenCreated_RendersWithoutError()
     {
         // Arrange
@@ -70,9 +111,10 @@ public class ReportsViewHeadlessTests
     {
         // Arrange
         IReadOnlyList<ReportRowDto> rows = [MakeReportRowDto(), MakeReportRowDto(), MakeReportRowDto()];
-        var getReports = Substitute.For<IQueryHandler<GetReportsQuery, Result<IReadOnlyList<ReportRowDto>, Error>>>();
+        var getReports = Substitute.For<IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>>>();
         getReports.HandleAsync(Arg.Any<GetReportsQuery>(), Arg.Any<CancellationToken>())
-            .Returns(Result<IReadOnlyList<ReportRowDto>, Error>.Success(rows));
+            .Returns(Result<ReportsPageResult, Error>.Success(
+                new ReportsPageResult(rows, rows.Count, 1)));
 
         var vm = CreateMinimalReportsViewModel(getReports);
         var view = new ReportsView { DataContext = vm };
@@ -99,9 +141,9 @@ public class ReportsViewHeadlessTests
     public void ReportsView_WhenLoadFails_ErrorMessageIsSet()
     {
         // Arrange
-        var getReports = Substitute.For<IQueryHandler<GetReportsQuery, Result<IReadOnlyList<ReportRowDto>, Error>>>();
+        var getReports = Substitute.For<IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>>>();
         getReports.HandleAsync(Arg.Any<GetReportsQuery>(), Arg.Any<CancellationToken>())
-            .Returns(Result<IReadOnlyList<ReportRowDto>, Error>.Failure(
+            .Returns(Result<ReportsPageResult, Error>.Failure(
                 Error.Infrastructure("Load failed")));
 
         var vm = CreateMinimalReportsViewModel(getReports);
@@ -125,8 +167,8 @@ public class ReportsViewHeadlessTests
     public void ReportsView_WhenIsLoading_ProgressBarIsVisible()
     {
         // Arrange — a stuck TCS keeps LoadReportsAsync suspended so IsLoading stays true
-        var tcs = new TaskCompletionSource<Result<IReadOnlyList<ReportRowDto>, Error>>();
-        var getReports = Substitute.For<IQueryHandler<GetReportsQuery, Result<IReadOnlyList<ReportRowDto>, Error>>>();
+        var tcs = new TaskCompletionSource<Result<ReportsPageResult, Error>>();
+        var getReports = Substitute.For<IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>>>();
         getReports.HandleAsync(Arg.Any<GetReportsQuery>(), Arg.Any<CancellationToken>())
             .Returns(_ => tcs.Task);
 
@@ -177,7 +219,7 @@ public class ReportsViewHeadlessTests
 
     /// <summary>Creates a <see cref="ReportsViewModel"/> with all dependencies mocked.</summary>
     private static ReportsViewModel CreateMinimalReportsViewModel(
-        IQueryHandler<GetReportsQuery, Result<IReadOnlyList<ReportRowDto>, Error>>? getReports = null)
+        IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>>? getReports = null)
     {
         getReports ??= CreateEmptyReportsHandler();
         var syncHandler = Substitute.For<ICommandHandler<SyncMailboxCommand, Result<SyncResult, Error>>>();
@@ -197,11 +239,12 @@ public class ReportsViewHeadlessTests
             scheduler: ImmediateScheduler.Instance);
     }
 
-    private static IQueryHandler<GetReportsQuery, Result<IReadOnlyList<ReportRowDto>, Error>> CreateEmptyReportsHandler()
+    private static IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>> CreateEmptyReportsHandler()
     {
-        var handler = Substitute.For<IQueryHandler<GetReportsQuery, Result<IReadOnlyList<ReportRowDto>, Error>>>();
+        var handler = Substitute.For<IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>>>();
         handler.HandleAsync(Arg.Any<GetReportsQuery>(), Arg.Any<CancellationToken>())
-            .Returns(Result<IReadOnlyList<ReportRowDto>, Error>.Success([]));
+            .Returns(Result<ReportsPageResult, Error>.Success(
+                new ReportsPageResult(Array.Empty<ReportRowDto>(), 0, 1)));
         return handler;
     }
 

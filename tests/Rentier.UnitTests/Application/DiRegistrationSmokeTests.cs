@@ -84,7 +84,7 @@ public class DiRegistrationSmokeTests
         services.AddSingleton(Substitute.For<ICommandHandler<ProcessReportsCommand, Result<ProcessReportsResult, Error>>>());
 
         services.AddTransient<
-            IQueryHandler<GetReportsQuery, Result<IReadOnlyList<ReportRowDto>, Error>>,
+            IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>>,
             GetReportsQueryHandler>();
         services.AddTransient<
             ICommandHandler<ImportReportCommand, Result<Guid, Error>>,
@@ -95,7 +95,7 @@ public class DiRegistrationSmokeTests
 
         var provider = services.BuildServiceProvider();
 
-        provider.GetRequiredService<IQueryHandler<GetReportsQuery, Result<IReadOnlyList<ReportRowDto>, Error>>>()
+        provider.GetRequiredService<IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>>>()
             .Should().NotBeNull();
         provider.GetRequiredService<ICommandHandler<ImportReportCommand, Result<Guid, Error>>>()
             .Should().NotBeNull();
