@@ -230,8 +230,8 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
         DeleteCommand = ReactiveCommand.CreateFromTask<Guid>(
             DeleteAsync, outputScheduler: _scheduler);
 
-        ViewFilingsCommand = ReactiveCommand.CreateFromTask<Guid>(
-            async (id, _) => _navigateToFilings(id), outputScheduler: _scheduler);
+        ViewFilingsCommand = ReactiveCommand.Create<Guid>(
+            id => _navigateToFilings(id), outputScheduler: _scheduler);
 
         ClearErrorCommand = ReactiveCommand.Create(
             () => { ErrorMessage = null; }, outputScheduler: _scheduler);

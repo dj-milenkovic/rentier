@@ -95,7 +95,7 @@ public class DiRegistrationSmokeTests
 
         var provider = services.BuildServiceProvider();
 
-        provider.GetRequiredService<IQueryHandler<GetReportsQuery, Result<IReadOnlyList<ReportRowDto>, Error>>>()
+        provider.GetRequiredService<IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>>>()
             .Should().NotBeNull();
         provider.GetRequiredService<ICommandHandler<ImportReportCommand, Result<Guid, Error>>>()
             .Should().NotBeNull();
