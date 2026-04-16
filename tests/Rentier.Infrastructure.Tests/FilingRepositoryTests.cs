@@ -348,25 +348,29 @@ public class FilingRepositoryTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task GetPagedAsync_SortByTaxPayableDescending_HighestFirst()
+    public async Task GetPagedAsync_SortByStatusDescending_PaidFirst()
     {
         var profile = MakeProfile();
         await _context.TaxpayerProfiles.AddAsync(profile);
         await _context.SaveChangesAsync();
 
-        // gross=500 => taxPayable is lower; gross=2000 => higher
-        var fLow  = Filing.CreateFromIncome(profile.Id, IncomeType.Dividend, "Low",
-            new DateOnly(2024, 1, 1), 500m, 75m, 75m, 0m, new DateOnly(2024, 2, 1));
-        var fHigh = Filing.CreateFromIncome(profile.Id, IncomeType.Dividend, "High",
-            new DateOnly(2024, 1, 1), 2000m, 300m, 300m, 0m, new DateOnly(2024, 2, 1));
-        await _repository.AddAsync(fLow);
-        await _repository.AddAsync(fHigh);
+        var fInit  = MakeFiling(profile.Id, date: new DateOnly(2024, 1, 1));
+        var fFiled = MakeFiling(profile.Id, date: new DateOnly(2024, 2, 1));
+        var fPaid  = MakeFiling(profile.Id, date: new DateOnly(2024, 3, 1));
+        fFiled.AdvanceStatus(FilingStatus.Filed);
+        fPaid.AdvanceStatus(FilingStatus.Filed);
+        fPaid.AdvanceStatus(FilingStatus.Paid);
+        await _repository.AddAsync(fInit);
+        await _repository.AddAsync(fFiled);
+        await _repository.AddAsync(fPaid);
 
         var (items, _) = await _repository.GetPagedAsync(
             FilingFilterMode.All, 0, 100,
-            FilingSortColumn.TaxPayable, sortDescending: true);
+            FilingSortColumn.Status, sortDescending: true);
 
-        items[0].TaxPayableRsd.Should().BeGreaterThan(items[1].TaxPayableRsd);
+        // Descending: Paid (2) → Filed (1) → Init (0)
+        items[0].Status.Should().Be(FilingStatus.Paid);
+        items[2].Status.Should().Be(FilingStatus.Init);
     }
 
     [Fact]
