@@ -210,7 +210,7 @@ public class FilingsViewModelTests
             .Returns(Result<VoidResult, Error>.Success(VoidResult.Value));
 
         // Seed one row so Rows.Count == 1 after load on page 2
-        var page = new FilingsPageResult([MakeDto()], 21, 2);
+        var page = new FilingsPageResult([MakeDto()], 31, 2);
         var getFilings = MockGetFilings(page);
         var vm = CreateVm(
             getFilings: getFilings,
@@ -249,5 +249,111 @@ public class FilingsViewModelTests
             Arg.Is<GetFilingsQuery>(q =>
                 q.Filter == Application.Enums.FilingFilterMode.All && q.Page == 1),
             Arg.Any<CancellationToken>());
+    }
+
+    // -- Sort state tests (feature 027) ---------------------------------------
+
+    [Fact]
+    public void InitialSortState_IsFilingDeadlineDescending()
+    {
+        var vm = CreateVm();
+
+        vm.SortColumn.Should().Be(Application.Enums.FilingSortColumn.FilingDeadline);
+        vm.SortDescending.Should().BeTrue();
+    }
+
+    [Fact]
+    public void LoadPage_ConstructsQueryWithCurrentSortState()
+    {
+        var getFilings = MockGetFilings();
+        var vm = CreateVm(getFilings: getFilings);
+        using var _ = vm.Activator.Activate();
+
+        // Default state: FilingDeadline DESC
+        getFilings.Received(1).HandleAsync(
+            Arg.Is<GetFilingsQuery>(q =>
+                q.SortColumn == Application.Enums.FilingSortColumn.FilingDeadline &&
+                q.SortDescending == true),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public void ApplySortCommand_SameColumn_TogglesDirectionKeepsPage()
+    {
+        var getFilings = MockGetFilings(new FilingsPageResult([MakeDto()], 40, 2));
+        var vm = CreateVm(getFilings: getFilings);
+        using var _ = vm.Activator.Activate();
+
+        // Initial state: FilingDeadline DESC, page 1
+        // Simulate being on page 2 by updating getFilings to return page 2 state
+        getFilings.HandleAsync(Arg.Any<GetFilingsQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<FilingsPageResult, Error>.Success(
+                new FilingsPageResult([MakeDto()], 40, 2)));
+
+        // Execute ApplySortCommand with the same column (FilingDeadline)
+        vm.ApplySortCommand.Execute(("FilingDeadline", true)).Subscribe();
+
+        // Direction should be toggled to ascending
+        vm.SortDescending.Should().BeFalse();
+        vm.SortColumn.Should().Be(Application.Enums.FilingSortColumn.FilingDeadline);
+
+        // Query sent after toggle should use the new direction
+        getFilings.Received().HandleAsync(
+            Arg.Is<GetFilingsQuery>(q =>
+                q.SortColumn == Application.Enums.FilingSortColumn.FilingDeadline &&
+                q.SortDescending == false),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public void ApplySortCommand_SameColumn_DoesNotResetCurrentPage()
+    {
+        // Set up mock to return page with multiple pages so CurrentPage can be > 1
+        var getFilings = MockGetFilings(new FilingsPageResult([MakeDto()], 40, 2));
+        var vm = CreateVm(getFilings: getFilings);
+        using var _ = vm.Activator.Activate();
+
+        // Navigate to page 2
+        vm.NextPageCommand.Execute().Subscribe();
+        vm.CurrentPage.Should().Be(2);
+
+        // Toggle same column — page should stay at 2
+        vm.ApplySortCommand.Execute(("FilingDeadline", true)).Subscribe();
+
+        vm.CurrentPage.Should().Be(2);
+    }
+
+    [Fact]
+    public void ApplySortCommand_DifferentColumn_SetsNewColumnAscendingResetsPage()
+    {
+        var getFilings = MockGetFilings(new FilingsPageResult([MakeDto()], 40, 2));
+        var vm = CreateVm(getFilings: getFilings);
+        using var _ = vm.Activator.Activate();
+
+        // Navigate to page 2
+        vm.NextPageCommand.Execute().Subscribe();
+        vm.CurrentPage.Should().Be(2);
+
+        // Click a different column (TaxPayable)
+        vm.ApplySortCommand.Execute(("TaxPayable", null)).Subscribe();
+
+        vm.SortColumn.Should().Be(Application.Enums.FilingSortColumn.TaxPayable);
+        vm.SortDescending.Should().BeFalse(); // ascending when changing column
+        vm.CurrentPage.Should().Be(1);        // page reset to 1
+    }
+
+    [Fact]
+    public void ApplySortCommand_UnknownColumnTag_IsNoOp()
+    {
+        var getFilings = MockGetFilings();
+        var vm = CreateVm(getFilings: getFilings);
+        using var _ = vm.Activator.Activate();
+
+        // "UnknownColumn" doesn't map to FilingSortColumn
+        vm.ApplySortCommand.Execute(("UnknownColumn", null)).Subscribe();
+
+        // Sort state unchanged
+        vm.SortColumn.Should().Be(Application.Enums.FilingSortColumn.FilingDeadline);
+        vm.SortDescending.Should().BeTrue();
     }
 }

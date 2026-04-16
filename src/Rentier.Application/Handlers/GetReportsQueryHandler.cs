@@ -6,9 +6,9 @@ using Rentier.Application.Repositories;
 
 namespace Rentier.Application.Handlers;
 
-/// <summary>Returns all reports as display rows with resolved importer name and filing count.</summary>
+/// <summary>Returns a paged list of reports as display rows with resolved importer name and filing count.</summary>
 public sealed class GetReportsQueryHandler
-    : IQueryHandler<GetReportsQuery, Result<IReadOnlyList<ReportRowDto>, Error>>
+    : IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>>
 {
     private readonly IReportRepository _reports;
     private readonly IImporterRepository _importers;
@@ -24,12 +24,20 @@ public sealed class GetReportsQueryHandler
         _filings = filings;
     }
 
-    public async Task<Result<IReadOnlyList<ReportRowDto>, Error>> HandleAsync(
+    public async Task<Result<ReportsPageResult, Error>> HandleAsync(
         GetReportsQuery query, CancellationToken ct = default)
     {
+        if (query.Page < 1)
+            return Result<ReportsPageResult, Error>.Failure(
+                new Error("VALIDATION_ERROR", "Page must be >= 1."));
+
+        if (query.PageSize < 1 || query.PageSize > 100)
+            return Result<ReportsPageResult, Error>.Failure(
+                new Error("VALIDATION_ERROR", "PageSize must be between 1 and 100."));
+
         try
         {
-            var reports = await _reports.GetAllAsync(ct);
+            var reports = await _reports.GetAllAsync(query.SortDescending, ct);
             var importerList = await _importers.GetAllAsync(ct);
             var importerNames = importerList.ToDictionary(i => i.Id, i => i.DisplayName);
 
@@ -45,7 +53,16 @@ public sealed class GetReportsQueryHandler
                 dtos.Add(new ReportRowDto(r.Id, r.ReportName, r.ImportDate, r.EmailDate, importerName, r.Status, count, displayName, earliest));
             }
 
-            return Result<IReadOnlyList<ReportRowDto>, Error>.Success(dtos.AsReadOnly());
+            var totalCount = dtos.Count;
+            var totalPages = Math.Max(1, (int)Math.Ceiling((double)totalCount / query.PageSize));
+            var slicedRows = (IReadOnlyList<ReportRowDto>)dtos
+                .Skip((query.Page - 1) * query.PageSize)
+                .Take(query.PageSize)
+                .ToList()
+                .AsReadOnly();
+
+            return Result<ReportsPageResult, Error>.Success(
+                new ReportsPageResult(slicedRows, totalCount, totalPages));
         }
         catch (OperationCanceledException)
         {
@@ -53,7 +70,7 @@ public sealed class GetReportsQueryHandler
         }
         catch (Exception ex)
         {
-            return Result<IReadOnlyList<ReportRowDto>, Error>.Failure(
+            return Result<ReportsPageResult, Error>.Failure(
                 new Error("GET_REPORTS_FAILED", ex.Message));
         }
     }

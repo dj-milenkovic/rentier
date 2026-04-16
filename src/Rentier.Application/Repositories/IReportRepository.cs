@@ -6,7 +6,7 @@ namespace Rentier.Application.Repositories;
 public interface IReportRepository
 {
     Task<Report?> GetByIdAsync(Guid id, CancellationToken ct = default);
-    Task<IReadOnlyList<Report>> GetAllAsync(CancellationToken ct = default);
+    Task<IReadOnlyList<Report>> GetAllAsync(bool sortDescending = true, CancellationToken ct = default);
     Task<IReadOnlyList<Report>> GetByImporterAsync(Guid importerId, CancellationToken ct = default);
     Task<IReadOnlyList<Report>> GetByStatusAsync(ReportStatus status, CancellationToken ct = default);
     Task<bool> ExistsByImporterAndNameAsync(Guid importerId, string reportName, CancellationToken ct = default);

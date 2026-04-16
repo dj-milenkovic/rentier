@@ -37,6 +37,9 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
     private int _totalCount;
     private Guid? _reportIdFilter;
     private int _selectedCount;
+    private FilingSortColumn _sortColumn = FilingSortColumn.FilingDeadline;
+    private bool _sortDescending = true;
+    private bool _isUpdatingSelection;
     private readonly ObservableAsPropertyHelper<bool> _hasSelection;
     private readonly ObservableAsPropertyHelper<string> _deleteSelectedLabel;
 
@@ -100,8 +103,48 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
         private set => this.RaiseAndSetIfChanged(ref _selectedCount, value);
     }
 
+    public FilingSortColumn SortColumn
+    {
+        get => _sortColumn;
+        private set => this.RaiseAndSetIfChanged(ref _sortColumn, value);
+    }
+
+    public bool SortDescending
+    {
+        get => _sortDescending;
+        private set => this.RaiseAndSetIfChanged(ref _sortDescending, value);
+    }
+
     public bool HasSelection => _hasSelection.Value;
     public string DeleteSelectedLabel => _deleteSelectedLabel.Value;
+
+    public bool? IsAllSelected
+    {
+        get
+        {
+            if (Rows.Count == 0 || _selectedCount == 0) return false;
+            if (_selectedCount == Rows.Count) return true;
+            return null; // indeterminate
+        }
+        set
+        {
+            if (_isUpdatingSelection) return;
+            _isUpdatingSelection = true;
+            try
+            {
+                if (value == true)
+                    SelectAllCommand.Execute().Subscribe();
+                else if (value == false)
+                    ClearSelectionCommand.Execute().Subscribe();
+                // null → ignore; reactive pipeline recomputes
+            }
+            finally
+            {
+                _isUpdatingSelection = false;
+                this.RaisePropertyChanged(nameof(IsAllSelected));
+            }
+        }
+    }
 
     public bool HasItems => Rows.Count > 0;
     public bool IsEmpty => Rows.Count == 0 && !IsLoading;
@@ -122,6 +165,7 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
     public ReactiveCommand<Unit, Unit> SelectAllCommand { get; }
     public ReactiveCommand<Unit, Unit> ClearSelectionCommand { get; }
     public ReactiveCommand<Unit, Unit> BulkDeleteCommand { get; }
+    public ReactiveCommand<(string ColumnTag, bool? CurrentDirection), Unit> ApplySortCommand { get; }
 
     private readonly CompositeDisposable _rowSubscriptions = new();
 
@@ -291,6 +335,36 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
             },
             outputScheduler: _scheduler);
 
+        // FR-009 / FR-010: Server-side column sort command.
+        // Same column  → toggle direction, keep page.
+        // New column   → set ascending, reset to page 1.
+        ApplySortCommand = ReactiveCommand.CreateFromTask<(string ColumnTag, bool? CurrentDirection)>(
+            async (args, ct) =>
+            {
+                if (!Enum.TryParse<FilingSortColumn>(args.ColumnTag, out var newColumn))
+                    return;
+
+                if (newColumn == _sortColumn)
+                {
+                    // FR-009: same column → toggle direction, keep current page
+                    _sortDescending = !_sortDescending;
+                    this.RaisePropertyChanged(nameof(SortDescending));
+                }
+                else
+                {
+                    // FR-010: different column → ascending, reset to page 1
+                    _sortColumn = newColumn;
+                    _sortDescending = false;
+                    _currentPage = 1;
+                    this.RaisePropertyChanged(nameof(SortColumn));
+                    this.RaisePropertyChanged(nameof(SortDescending));
+                    this.RaisePropertyChanged(nameof(CurrentPage));
+                }
+
+                await LoadPageAsync(ct);
+            },
+            outputScheduler: _scheduler);
+
         this.WhenActivated(disposables =>
         {
             LoadPageCommand.Execute().Subscribe().DisposeWith(disposables);
@@ -312,6 +386,9 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
             BulkDeleteCommand.ThrownExceptions
                 .Subscribe(ex => ErrorMessage = ex.Message)
                 .DisposeWith(disposables);
+            ApplySortCommand.ThrownExceptions
+                .Subscribe(ex => ErrorMessage = ex.Message)
+                .DisposeWith(disposables);
         });
     }
 
@@ -321,10 +398,15 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
         foreach (var row in Rows)
         {
             row.WhenAnyValue(r => r.IsSelected)
-                .Subscribe(_ => SelectedCount = Rows.Count(r => r.IsSelected))
+                .Subscribe(_ =>
+                {
+                    SelectedCount = Rows.Count(r => r.IsSelected);
+                    this.RaisePropertyChanged(nameof(IsAllSelected));
+                })
                 .DisposeWith(_rowSubscriptions);
         }
         SelectedCount = Rows.Count(r => r.IsSelected);
+        this.RaisePropertyChanged(nameof(IsAllSelected));
     }
 
     private async Task LoadPageAsync(CancellationToken ct = default)
@@ -335,7 +417,7 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
         {
             var filter = _showAll ? FilingFilterMode.All : FilingFilterMode.Unpaid;
             var result = await _getFilings.HandleAsync(
-                new GetFilingsQuery(filter, _currentPage, 20, _reportIdFilter), ct);
+                new GetFilingsQuery(filter, _currentPage, 30, _reportIdFilter, _sortColumn, _sortDescending), ct);
 
             if (!result.IsSuccess)
             {
@@ -346,7 +428,11 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
             var page = result.Value;
             Rows.Clear();
             foreach (var dto in page.Rows)
-                Rows.Add(FilingRowViewModel.From(dto));
+                Rows.Add(FilingRowViewModel.From(
+                    dto,
+                    args => AdvanceStatusCommand.Execute(args).Subscribe(),
+                    id => ExportCommand.Execute(id).Subscribe(),
+                    id => DeleteCommand.Execute(id).Subscribe()));
 
             TotalCount = page.TotalCount;
             TotalPages = page.TotalPages;

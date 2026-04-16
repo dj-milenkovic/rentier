@@ -1,4 +1,6 @@
 using System.Globalization;
+using System.Reactive;
+using System.Reactive.Linq;
 using ReactiveUI;
 using Rentier.Application.DTOs;
 using Rentier.Desktop.Extensions;
@@ -53,7 +55,28 @@ public sealed class FilingRowViewModel : ReactiveObject
         _ => []
     };
 
-    private FilingRowViewModel(FilingRowDto dto)
+    /// <summary>True when there is at least one valid next status to advance to.</summary>
+    public bool HasNextStatus => AvailableNextStatuses.Count > 0;
+
+    /// <summary>Tooltip text for the advance-status button.</summary>
+    public string AdvanceStatusTooltip => HasNextStatus
+        ? string.Format(Strings.Filings_Tooltip_AdvanceStatus, AvailableNextStatuses[0].ToDisplayString())
+        : Strings.Filings_Tooltip_AdvanceStatus_None;
+
+    /// <summary>Per-row command to advance this filing to its next status.</summary>
+    public ReactiveCommand<Unit, Unit> AdvanceStatusCommand { get; }
+
+    /// <summary>Per-row command to export this filing as PP-OPO XML.</summary>
+    public ReactiveCommand<Unit, Unit> ExportCommand { get; }
+
+    /// <summary>Per-row command to delete this filing.</summary>
+    public ReactiveCommand<Unit, Unit> DeleteCommand { get; }
+
+    private FilingRowViewModel(
+        FilingRowDto dto,
+        Action<(Guid Id, FilingStatus NewStatus)> advanceStatus,
+        Action<Guid> export,
+        Action<Guid> delete)
     {
         Id = dto.Id;
         Status = dto.Status;
@@ -62,8 +85,18 @@ public sealed class FilingRowViewModel : ReactiveObject
         FilingDeadline = dto.FilingDeadline;
         TaxPayable = dto.TaxPayable;
         PaymentReference = dto.PaymentReference;
+
+        AdvanceStatusCommand = ReactiveCommand.Create(
+            () => advanceStatus((Id, AvailableNextStatuses[0])),
+            Observable.Return(HasNextStatus));
+        ExportCommand = ReactiveCommand.Create(() => export(Id));
+        DeleteCommand = ReactiveCommand.Create(() => delete(Id));
     }
 
-    /// <summary>Creates a FilingRowViewModel from a FilingRowDto.</summary>
-    public static FilingRowViewModel From(FilingRowDto dto) => new(dto);
+    /// <summary>Creates a FilingRowViewModel from a FilingRowDto with action delegates for row-level commands.</summary>
+    public static FilingRowViewModel From(
+        FilingRowDto dto,
+        Action<(Guid Id, FilingStatus NewStatus)> advanceStatus,
+        Action<Guid> export,
+        Action<Guid> delete) => new(dto, advanceStatus, export, delete);
 }
