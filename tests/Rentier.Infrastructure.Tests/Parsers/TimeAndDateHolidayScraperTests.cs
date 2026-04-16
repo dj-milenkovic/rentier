@@ -20,11 +20,12 @@ public class TimeAndDateHolidayScraperTests
         => new(new HttpClient(new FakeHttpMessageHandler(html, status)));
 
     [Fact]
-    public async Task ImportAsync_WithRealFixture_Returns13NationalHolidays()
+    public async Task ImportAsync_WithRealFixture_Returns11UniqueNationalHolidays()
     {
         var result = await CreateScraper(LoadFixtureHtml()).ImportAsync(2016);
         result.IsSuccess.Should().BeTrue();
-        result.Value.Should().HaveCount(13);
+        result.Value.Should().HaveCount(11);
+        result.Value.Select(e => e.Date).Should().OnlyHaveUniqueItems();
     }
 
     [Fact]
@@ -71,5 +72,20 @@ public class TimeAndDateHolidayScraperTests
         var result = await CreateScraper(html).ImportAsync(2016);
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("HOLIDAY_NOT_FOUND");
+    }
+
+    [Fact]
+    public async Task ImportAsync_DuplicateDates_OnlyFirstEntryKept()
+    {
+        var html = """
+            <html><body><table id="holidays-table">
+              <tr class="showrow"><th>1 Jan</th><td>Fri</td><td><a>Western New Year's Day</a></td><td>National Holiday</td></tr>
+              <tr class="showrow"><th>1 Jan</th><td>Fri</td><td><a>Duplicate Holiday</a></td><td>National Holiday</td></tr>
+            </table></body></html>
+            """;
+        var result = await CreateScraper(html).ImportAsync(2016);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().HaveCount(1);
+        result.Value[0].Name.Should().Be("Western New Year's Day");
     }
 }
