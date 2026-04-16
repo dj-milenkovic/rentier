@@ -23,7 +23,11 @@ internal sealed class TimeAndDateHolidayScraper : IHolidayImporter
         try
         {
             var url = $"https://www.timeanddate.com/holidays/serbia/{year}?hol=1";
-            html = await _http.GetStringAsync(url, cancellationToken);
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.AcceptLanguage.ParseAdd("en-US");
+            using var response = await _http.SendAsync(request, cancellationToken);
+            response.EnsureSuccessStatusCode();
+            html = await response.Content.ReadAsStringAsync(cancellationToken);
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
@@ -44,6 +48,7 @@ internal sealed class TimeAndDateHolidayScraper : IHolidayImporter
 
             var rows = table.QuerySelectorAll("tr");
             var results = new List<HolidayEntryDto>();
+            var seenDates = new HashSet<DateOnly>();
 
             foreach (var row in rows)
             {
@@ -66,15 +71,11 @@ internal sealed class TimeAndDateHolidayScraper : IHolidayImporter
                     continue;
 
                 DateOnly date;
-                try
-                {
-                    var parsed = DateTime.ParseExact(dateText, "d MMM", CultureInfo.InvariantCulture);
-                    date = new DateOnly(year, parsed.Month, parsed.Day);
-                }
-                catch
-                {
+                if (!TryParseHolidayDate(dateText, year, out date))
                     continue;
-                }
+
+                if (!seenDates.Add(date))
+                    continue;
 
                 results.Add(new HolidayEntryDto(date, name));
             }
@@ -90,5 +91,17 @@ internal sealed class TimeAndDateHolidayScraper : IHolidayImporter
             return Result<IReadOnlyList<HolidayEntryDto>, Error>.Failure(
                 new Error("HOLIDAY_PARSE_ERROR", $"Failed to parse holidays: {ex.Message}"));
         }
+    }
+
+    private static bool TryParseHolidayDate(string text, int year, out DateOnly date)
+    {
+        if (DateTime.TryParseExact(text, ["d MMM", "dd MMM"], CultureInfo.InvariantCulture,
+                DateTimeStyles.None, out var parsed))
+        {
+            date = new DateOnly(year, parsed.Month, parsed.Day);
+            return true;
+        }
+        date = default;
+        return false;
     }
 }
