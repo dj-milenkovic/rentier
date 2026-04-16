@@ -26,13 +26,14 @@ public class ReportsViewModelTests
         return h;
     }
 
-    private static IQueryHandler<GetReportsQuery, Result<IReadOnlyList<ReportRowDto>, Error>> MakeGetReports(
+    private static IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>> MakeGetReports(
         IReadOnlyList<ReportRowDto>? rows = null)
     {
-        var h = Substitute.For<IQueryHandler<GetReportsQuery, Result<IReadOnlyList<ReportRowDto>, Error>>>();
+        var h = Substitute.For<IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>>>();
+        var rowList = rows ?? Array.Empty<ReportRowDto>();
+        var page = new ReportsPageResult(rowList, rowList.Count, rowList.Count > 0 ? 1 : 1);
         h.HandleAsync(Arg.Any<GetReportsQuery>(), Arg.Any<CancellationToken>())
-            .Returns(Result<IReadOnlyList<ReportRowDto>, Error>.Success(
-                rows ?? Array.Empty<ReportRowDto>()));
+            .Returns(Result<ReportsPageResult, Error>.Success(page));
         return h;
     }
 
@@ -68,7 +69,7 @@ public class ReportsViewModelTests
 
     private static ReportsViewModel CreateVm(
         ICommandHandler<SyncMailboxCommand, Result<SyncResult, Error>>? syncHandler = null,
-        IQueryHandler<GetReportsQuery, Result<IReadOnlyList<ReportRowDto>, Error>>? getReports = null,
+        IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>>? getReports = null,
         ICommandHandler<ImportReportCommand, Result<Guid, Error>>? importHandler = null,
         ICommandHandler<DeleteReportCommand, Result<VoidResult, Error>>? deleteHandler = null,
         Func<string, string, Task<bool>>? confirmDelete = null,
@@ -95,7 +96,7 @@ public class ReportsViewModelTests
         var getReports = MakeGetReports();
         var vm = CreateVm(getReports: getReports);
 
-        using var _ = vm.Activator.Activate();
+        using var _activation = vm.Activator.Activate();
 
         getReports.Received(1).HandleAsync(
             Arg.Any<GetReportsQuery>(), Arg.Any<CancellationToken>());
@@ -107,7 +108,7 @@ public class ReportsViewModelTests
         var dto = MakeDto();
         var vm = CreateVm(getReports: MakeGetReports([dto]));
 
-        using var _ = vm.Activator.Activate();
+        using var _activation = vm.Activator.Activate();
 
         vm.Rows.Should().HaveCount(1);
         vm.Rows[0].ReportName.Should().Be(dto.ReportName);
@@ -117,14 +118,14 @@ public class ReportsViewModelTests
     [Fact]
     public void LoadReports_WhenQueryFails_SetsErrorMessageAndLeavesRowsEmpty()
     {
-        var failingHandler = Substitute.For<IQueryHandler<GetReportsQuery, Result<IReadOnlyList<ReportRowDto>, Error>>>();
+        var failingHandler = Substitute.For<IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>>>();
         failingHandler.HandleAsync(Arg.Any<GetReportsQuery>(), Arg.Any<CancellationToken>())
-            .Returns(Result<IReadOnlyList<ReportRowDto>, Error>.Failure(
+            .Returns(Result<ReportsPageResult, Error>.Failure(
                 new Error("GET_REPORTS_FAILED", "DB error")));
 
         var vm = CreateVm(getReports: failingHandler);
 
-        using var _ = vm.Activator.Activate();
+        using var _activation = vm.Activator.Activate();
 
         vm.ErrorMessage.Should().Be("DB error");
         vm.Rows.Should().BeEmpty();
@@ -135,7 +136,7 @@ public class ReportsViewModelTests
     {
         var vm = CreateVm(getReports: MakeGetReports([]));
 
-        using var _ = vm.Activator.Activate();
+        using var _activation = vm.Activator.Activate();
 
         vm.IsEmpty.Should().BeTrue();
     }
@@ -272,6 +273,194 @@ public class ReportsViewModelTests
         await vm.SyncCommand.Execute().FirstAsync();
 
         vm.SyncStatusMessage.Should().Be("IMAP timeout");
+    }
+
+    // ── T014/T016: Pagination (feature 029) ─────────────────────────────────
+
+    private static IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>> MakePagedGetReports(
+        int totalCount, int totalPages, IReadOnlyList<ReportRowDto>? rows = null)
+    {
+        var h = Substitute.For<IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>>>();
+        var rowList = rows ?? Array.Empty<ReportRowDto>();
+        var page = new ReportsPageResult(rowList, totalCount, totalPages);
+        h.HandleAsync(Arg.Any<GetReportsQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<ReportsPageResult, Error>.Success(page));
+        return h;
+    }
+
+    [Fact]
+    public void Pagination_InitialState_CurrentPage1HasPreviousPageFalse()
+    {
+        // 3 pages of data
+        var vm = CreateVm(getReports: MakePagedGetReports(75, 3, [MakeDto()]));
+        using var _activation = vm.Activator.Activate();
+
+        vm.CurrentPage.Should().Be(1);
+        vm.TotalPages.Should().Be(3);
+        vm.HasPreviousPage.Should().BeFalse();
+        vm.HasNextPage.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Pagination_PageIndicator_FormatsCorrectly()
+    {
+        var vm = CreateVm(getReports: MakePagedGetReports(75, 3, [MakeDto()]));
+        using var _activation = vm.Activator.Activate();
+
+        vm.PageIndicator.Should().Be("Page 1 of 3");
+    }
+
+    [Fact]
+    public async Task Pagination_NextPageCommand_IncrementsPageAndReloads()
+    {
+        var getReports = MakePagedGetReports(75, 3, [MakeDto()]);
+        var vm = CreateVm(getReports: getReports);
+        using var _activation = vm.Activator.Activate();
+
+        await vm.NextPageCommand.Execute().FirstAsync();
+
+        vm.CurrentPage.Should().Be(2);
+        // LoadPage: 1 activation + 1 next
+        var __ = getReports.Received(2).HandleAsync(Arg.Any<GetReportsQuery>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Pagination_PreviousPageCommand_DecrementsPageAndReloads()
+    {
+        // Simulate being on page 2 by injecting a handler that always returns page 2 state
+        var getReports = MakePagedGetReports(75, 3, [MakeDto()]);
+        var vm = CreateVm(getReports: getReports);
+        using var _activation = vm.Activator.Activate();
+
+        // Navigate to page 2 first
+        await vm.NextPageCommand.Execute().FirstAsync();
+        vm.CurrentPage.Should().Be(2);
+
+        // Now go back
+        await vm.PreviousPageCommand.Execute().FirstAsync();
+
+        vm.CurrentPage.Should().Be(1);
+    }
+
+    [Fact]
+    public void Pagination_OnLastPage_HasNextPageIsFalse()
+    {
+        // Single page of data
+        var vm = CreateVm(getReports: MakePagedGetReports(5, 1, [MakeDto()]));
+        using var _activation = vm.Activator.Activate();
+
+        vm.HasNextPage.Should().BeFalse();
+        vm.HasPreviousPage.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Pagination_OnFirstPage_PreviousPageCommandDisabled()
+    {
+        var vm = CreateVm(getReports: MakePagedGetReports(75, 3, [MakeDto()]));
+        using var _activation = vm.Activator.Activate();
+
+        // PreviousPage should be disabled when on page 1
+        vm.HasPreviousPage.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Pagination_DeleteLastItemOnNonFirstPage_DecrementsPage()
+    {
+        var deleteHandler = MakeDeleteHandler(success: true);
+
+        // Page 2 contains exactly 1 item
+        var pageFor2 = new ReportsPageResult([MakeDto()], 31, 2);
+        var getReports = Substitute.For<IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>>>();
+        // First call (activation): returns 1-item page 2 result so we're "on page 2"
+        getReports.HandleAsync(Arg.Any<GetReportsQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<ReportsPageResult, Error>.Success(pageFor2));
+
+        var vm = CreateVm(
+            getReports: getReports,
+            deleteHandler: deleteHandler,
+            confirmDelete: (_, _) => Task.FromResult(true));
+        using var _activation = vm.Activator.Activate();
+
+        // Manually put ViewModel on page 2
+        await vm.NextPageCommand.Execute().FirstAsync();
+        vm.CurrentPage.Should().Be(2);
+
+        // Now the handler returns an empty page 1 result after delete
+        var emptyPage = new ReportsPageResult([], 0, 1);
+        getReports.HandleAsync(Arg.Any<GetReportsQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<ReportsPageResult, Error>.Success(emptyPage));
+
+        await vm.DeleteCommand.Execute(Guid.NewGuid()).FirstAsync();
+
+        vm.TotalPages.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Pagination_BulkDeleteAllItemsOnNonFirstPage_DecrementsPage()
+    {
+        var dto = MakeDto();
+        var pageFor2 = new ReportsPageResult([dto], 31, 2);
+        var getReports = Substitute.For<IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>>>();
+        getReports.HandleAsync(Arg.Any<GetReportsQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<ReportsPageResult, Error>.Success(pageFor2));
+
+        var bulkDelete = Substitute.For<ICommandHandler<BulkDeleteReportsCommand, Result<VoidResult, Error>>>();
+        bulkDelete.HandleAsync(Arg.Any<BulkDeleteReportsCommand>(), Arg.Any<CancellationToken>())
+            .Returns(Result<VoidResult, Error>.Success(VoidResult.Value));
+
+        var vm = CreateVm(
+            getReports: getReports,
+            confirmDelete: (_, _) => Task.FromResult(true));
+
+        // Replace the BulkDeleteCommand handler through the factory — use full overload
+        var vm2 = new ReportsViewModel(
+            MakeSyncHandler(),
+            getReports,
+            MakeImportHandler(),
+            MakeDeleteHandler(),
+            bulkDelete,
+            (_, _) => Task.FromResult(true),
+            () => Task.FromResult<(Guid, string, byte[])?>(null),
+            _ => { },
+            ImmediateScheduler.Instance);
+
+        using var activation = vm2.Activator.Activate();
+
+        // Navigate to page 2
+        await vm2.NextPageCommand.Execute().FirstAsync();
+        vm2.CurrentPage.Should().Be(2);
+
+        // Select the row and bulk-delete
+        vm2.Rows.First().IsSelected = true;
+
+        var emptyPage = new ReportsPageResult([], 0, 1);
+        getReports.HandleAsync(Arg.Any<GetReportsQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<ReportsPageResult, Error>.Success(emptyPage));
+
+        await vm2.BulkDeleteCommand.Execute().FirstAsync();
+
+        vm2.TotalPages.Should().Be(1);
+    }
+
+    // ── T016: Page reset on sort change ──────────────────────────────────────
+
+    [Fact]
+    public async Task SortDescending_WhenChanged_ResetsPageTo1AndReloads()
+    {
+        var getReports = MakePagedGetReports(75, 3, [MakeDto()]);
+        var vm = CreateVm(getReports: getReports);
+        using var _activation = vm.Activator.Activate();
+
+        // Navigate to page 2
+        await vm.NextPageCommand.Execute().FirstAsync();
+        vm.CurrentPage.Should().Be(2);
+
+        // Change sort — should reset to page 1
+        vm.SortDescending = false;
+
+        vm.CurrentPage.Should().Be(1);
+        // activation + next + sort change
+        var __ = getReports.Received(3).HandleAsync(Arg.Any<GetReportsQuery>(), Arg.Any<CancellationToken>());
     }
 }
 

@@ -29,12 +29,6 @@
                  Margin="0,0,0,2" />
       <!-- Bulk selection toolbar -->
       <StackPanel Orientation="Horizontal" Spacing="8">
-        <Button Content="{x:Static res:Strings.BulkDelete_SelectAll_Button}"
-                Command="{Binding SelectAllCommand}"
-                IsVisible="{Binding HasItems}" />
-        <Button Content="{x:Static res:Strings.BulkDelete_ClearSelection_Button}"
-                Command="{Binding ClearSelectionCommand}"
-                IsVisible="{Binding HasItems}" />
         <Button Content="{Binding DeleteSelectedLabel}"
                 Command="{Binding BulkDeleteCommand}"
                 IsVisible="{Binding HasSelection}"
@@ -69,14 +63,34 @@
                HorizontalAlignment="Center"
                Margin="0,32" />
 
+    <!-- Pagination bar -->
+    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="8"
+                Margin="8" HorizontalAlignment="Center" IsVisible="{Binding HasItems}">
+      <Button Content="{x:Static res:Strings.Reports_Page_Previous}"
+              Command="{Binding PreviousPageCommand}" />
+      <TextBlock Text="{Binding PageIndicator}" VerticalAlignment="Center" />
+      <Button Content="{x:Static res:Strings.Reports_Page_Next}"
+              Command="{Binding NextPageCommand}" />
+    </StackPanel>
+
     <!-- Reports DataGrid -->
     <DataGrid ItemsSource="{Binding Rows}"
               AutoGenerateColumns="False"
               GridLinesVisibility="Horizontal"
+              CanUserSortColumns="False"
               Margin="8,4">
       <DataGrid.Columns>
         <!-- Selection checkbox column -->
         <DataGridTemplateColumn Width="40">
+          <DataGridTemplateColumn.Header>
+            <CheckBox IsThreeState="True"
+                      IsChecked="{Binding DataContext.IsAllSelected,
+                                  RelativeSource={RelativeSource AncestorType=DataGrid},
+                                  Mode=TwoWay}"
+                      IsEnabled="{Binding DataContext.HasItems,
+                                  RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                      HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </DataGridTemplateColumn.Header>
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}"
@@ -112,12 +126,19 @@
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <StackPanel Orientation="Horizontal" Spacing="4" Margin="4,2">
-                <Button Content="{x:Static res:Strings.Reports_Button_ViewFilings}"
-                        Command="{Binding DataContext.ViewFilingsCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                        CommandParameter="{Binding Id}" />
-                <Button Content="{x:Static res:Strings.Reports_Button_Delete}"
-                        Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                        CommandParameter="{Binding Id}" />
+                <Button Command="{Binding DataContext.ViewFilingsCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                        CommandParameter="{Binding Id}"
+                        ToolTip.Tip="{x:Static res:Strings.Reports_Tooltip_ViewFilings}"
+                        Padding="6" Background="Transparent" BorderThickness="0">
+                  <PathIcon Data="{StaticResource ViewFilingsIcon}" Width="16" Height="16" />
+                </Button>
+                <Button Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                        CommandParameter="{Binding Id}"
+                        ToolTip.Tip="{x:Static res:Strings.Reports_Tooltip_Delete}"
+                        Foreground="Red"
+                        Padding="6" Background="Transparent" BorderThickness="0">
+                  <PathIcon Data="{StaticResource TrashIcon}" Width="16" Height="16" />
+                </Button>
               </StackPanel>
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>

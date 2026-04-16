@@ -39,6 +39,7 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
     private int _selectedCount;
     private FilingSortColumn _sortColumn = FilingSortColumn.FilingDeadline;
     private bool _sortDescending = true;
+    private bool _isUpdatingSelection;
     private readonly ObservableAsPropertyHelper<bool> _hasSelection;
     private readonly ObservableAsPropertyHelper<string> _deleteSelectedLabel;
 
@@ -116,6 +117,34 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
 
     public bool HasSelection => _hasSelection.Value;
     public string DeleteSelectedLabel => _deleteSelectedLabel.Value;
+
+    public bool? IsAllSelected
+    {
+        get
+        {
+            if (Rows.Count == 0 || _selectedCount == 0) return false;
+            if (_selectedCount == Rows.Count) return true;
+            return null; // indeterminate
+        }
+        set
+        {
+            if (_isUpdatingSelection) return;
+            _isUpdatingSelection = true;
+            try
+            {
+                if (value == true)
+                    SelectAllCommand.Execute().Subscribe();
+                else if (value == false)
+                    ClearSelectionCommand.Execute().Subscribe();
+                // null → ignore; reactive pipeline recomputes
+            }
+            finally
+            {
+                _isUpdatingSelection = false;
+                this.RaisePropertyChanged(nameof(IsAllSelected));
+            }
+        }
+    }
 
     public bool HasItems => Rows.Count > 0;
     public bool IsEmpty => Rows.Count == 0 && !IsLoading;
@@ -369,10 +398,15 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
         foreach (var row in Rows)
         {
             row.WhenAnyValue(r => r.IsSelected)
-                .Subscribe(_ => SelectedCount = Rows.Count(r => r.IsSelected))
+                .Subscribe(_ =>
+                {
+                    SelectedCount = Rows.Count(r => r.IsSelected);
+                    this.RaisePropertyChanged(nameof(IsAllSelected));
+                })
                 .DisposeWith(_rowSubscriptions);
         }
         SelectedCount = Rows.Count(r => r.IsSelected);
+        this.RaisePropertyChanged(nameof(IsAllSelected));
     }
 
     private async Task LoadPageAsync(CancellationToken ct = default)

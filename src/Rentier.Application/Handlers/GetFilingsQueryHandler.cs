@@ -39,8 +39,13 @@ public sealed class GetFilingsQueryHandler
             return Result<FilingsPageResult, Error>.Failure(
                 new Error("VALIDATION_ERROR", "PageSize must be between 1 and 100."));
 
+        if (!Enum.IsDefined(typeof(Enums.FilingSortColumn), query.SortColumn))
+            return Result<FilingsPageResult, Error>.Failure(
+                new Error("VALIDATION_ERROR", "Invalid sort column."));
+
         var skip = (query.Page - 1) * query.PageSize;
-        var (items, totalCount) = await _filings.GetPagedAsync(query.Filter, skip, query.PageSize, ct);
+        var (items, totalCount) = await _filings.GetPagedAsync(
+            query.Filter, skip, query.PageSize, query.SortColumn, query.SortDescending, ct);
 
         var dtos = items
             .Select(f => new FilingRowDto(

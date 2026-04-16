@@ -1,0 +1,10 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- Lucide trash-2 (MIT) — 24×24 viewport -->
+  <StreamGeometry x:Key="TrashIcon">M3 6h18M8 6V4h8v2M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6M10 11v6M14 11v6</StreamGeometry>
+
+  <!-- Lucide chevron-right (MIT) — 24×24 viewport -->
+  <StreamGeometry x:Key="ViewFilingsIcon">M9 18 15 12 9 6</StreamGeometry>
+
+</ResourceDictionary>

@@ -583,4 +583,10 @@
   <data name="Filings_Col_Actions" xml:space="preserve">
     <value>Actions</value>
   </data>
+  <data name="Reports_Tooltip_ViewFilings" xml:space="preserve">
+    <value>View linked filings</value>
+  </data>
+  <data name="Reports_Tooltip_Delete" xml:space="preserve">
+    <value>Delete report</value>
+  </data>
 </root>

@@ -30,12 +30,6 @@
 
     <!-- Bulk selection toolbar -->
     <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="8,0,8,4">
-      <Button Content="{x:Static res:Strings.BulkDelete_SelectAll_Button}"
-              Command="{Binding SelectAllCommand}"
-              IsVisible="{Binding HasItems}" />
-      <Button Content="{x:Static res:Strings.BulkDelete_ClearSelection_Button}"
-              Command="{Binding ClearSelectionCommand}"
-              IsVisible="{Binding HasItems}" />
       <Button Content="{Binding DeleteSelectedLabel}"
               Command="{Binding BulkDeleteCommand}"
               IsVisible="{Binding HasSelection}"
@@ -88,6 +82,15 @@
 
         <!-- Selection checkbox column -->
         <DataGridTemplateColumn Width="40">
+          <DataGridTemplateColumn.Header>
+            <CheckBox IsThreeState="True"
+                      IsChecked="{Binding DataContext.IsAllSelected,
+                                  RelativeSource={RelativeSource AncestorType=DataGrid},
+                                  Mode=TwoWay}"
+                      IsEnabled="{Binding DataContext.HasItems,
+                                  RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                      HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </DataGridTemplateColumn.Header>
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}"

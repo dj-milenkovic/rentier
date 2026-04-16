@@ -1,7 +1,6 @@
 namespace Rentier.Application.Queries;
 
 /// <summary>
-/// Returns all Report records as display rows with resolved importer name and filing count.
-/// No pagination — all reports returned in a single call.
+/// Returns a paged list of Report records as display rows with resolved importer name and filing count.
 /// </summary>
-public sealed record GetReportsQuery;
+public sealed record GetReportsQuery(int Page = 1, int PageSize = 30, bool SortDescending = true);

@@ -214,5 +214,139 @@ public class FilingsViewModelBulkDeleteTests
 
         vm.ErrorMessage.Should().NotBeNullOrEmpty();
     }
+
+    // ── IsAllSelected tests (Feature 028) ──────────────────────────────────
+
+    [Fact]
+    public void IsAllSelected_WhenNoRowsSelected_ReturnsFalse()
+    {
+        var vm = CreateVm(getFilings: MockGetFilings(MakeDto(), MakeDto(), MakeDto(), MakeDto(), MakeDto()));
+        using var _ = vm.Activator.Activate();
+
+        vm.IsAllSelected.Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsAllSelected_WhenAllRowsSelected_ReturnsTrue()
+    {
+        var vm = CreateVm(getFilings: MockGetFilings(MakeDto(), MakeDto(), MakeDto(), MakeDto(), MakeDto()));
+        using var _ = vm.Activator.Activate();
+
+        foreach (var row in vm.Rows) row.IsSelected = true;
+
+        vm.IsAllSelected.Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsAllSelected_WhenSomeRowsSelected_ReturnsNull()
+    {
+        var vm = CreateVm(getFilings: MockGetFilings(MakeDto(), MakeDto(), MakeDto(), MakeDto(), MakeDto()));
+        using var _ = vm.Activator.Activate();
+
+        vm.Rows[0].IsSelected = true;
+        vm.Rows[1].IsSelected = true;
+
+        vm.IsAllSelected.Should().BeNull();
+    }
+
+    [Fact]
+    public void IsAllSelected_SetTrue_SelectsAllRows()
+    {
+        var vm = CreateVm(getFilings: MockGetFilings(MakeDto(), MakeDto(), MakeDto(), MakeDto(), MakeDto()));
+        using var _ = vm.Activator.Activate();
+
+        vm.IsAllSelected = true;
+
+        vm.SelectedCount.Should().Be(5);
+        vm.IsAllSelected.Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsAllSelected_SetTrue_FromIndeterminate_SelectsAllRows()
+    {
+        var vm = CreateVm(getFilings: MockGetFilings(MakeDto(), MakeDto(), MakeDto(), MakeDto(), MakeDto()));
+        using var _ = vm.Activator.Activate();
+
+        vm.Rows[0].IsSelected = true;
+        vm.Rows[1].IsSelected = true;
+
+        vm.IsAllSelected = true;
+
+        vm.SelectedCount.Should().Be(5);
+        vm.IsAllSelected.Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsAllSelected_SetFalse_DeselectsAllRows()
+    {
+        var vm = CreateVm(getFilings: MockGetFilings(MakeDto(), MakeDto(), MakeDto(), MakeDto(), MakeDto()));
+        using var _ = vm.Activator.Activate();
+
+        foreach (var row in vm.Rows) row.IsSelected = true;
+
+        vm.IsAllSelected = false;
+
+        vm.SelectedCount.Should().Be(0);
+        vm.IsAllSelected.Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsAllSelected_UpdatesWhenRowSelectionChanges()
+    {
+        var vm = CreateVm(getFilings: MockGetFilings(MakeDto(), MakeDto(), MakeDto(), MakeDto(), MakeDto()));
+        using var _ = vm.Activator.Activate();
+
+        // 0/5 selected → false
+        vm.IsAllSelected.Should().BeFalse();
+
+        // 2/5 selected → null (indeterminate)
+        vm.Rows[0].IsSelected = true;
+        vm.Rows[1].IsSelected = true;
+        vm.IsAllSelected.Should().BeNull();
+
+        // 5/5 selected → true
+        vm.Rows[2].IsSelected = true;
+        vm.Rows[3].IsSelected = true;
+        vm.Rows[4].IsSelected = true;
+        vm.IsAllSelected.Should().BeTrue();
+
+        // back to 0/5 → false
+        foreach (var row in vm.Rows) row.IsSelected = false;
+        vm.IsAllSelected.Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsAllSelected_WhenNoRows_ReturnsFalse()
+    {
+        var vm = CreateVm(getFilings: MockGetFilings());
+        using var _ = vm.Activator.Activate();
+
+        var ex = Record.Exception(() => vm.IsAllSelected);
+        ex.Should().BeNull();
+        vm.IsAllSelected.Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsAllSelected_RecalculatesAfterRowsReloaded()
+    {
+        var getFilings = MockGetFilings(MakeDto(), MakeDto(), MakeDto());
+        var vm = CreateVm(getFilings: getFilings);
+        using var _ = vm.Activator.Activate();
+
+        // Select all
+        foreach (var row in vm.Rows) row.IsSelected = true;
+        vm.IsAllSelected.Should().BeTrue();
+
+        // Simulate reload by reconfiguring the mock with fresh unselected rows
+        getFilings.HandleAsync(Arg.Any<GetFilingsQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<FilingsPageResult, Error>.Success(
+                new FilingsPageResult(
+                    new[] { MakeDto(), MakeDto(), MakeDto() },
+                    3, 1)));
+        vm.LoadPageCommand.Execute().Subscribe();
+
+        vm.SelectedCount.Should().Be(0);
+        vm.IsAllSelected.Should().BeFalse();
+    }
 }
 
