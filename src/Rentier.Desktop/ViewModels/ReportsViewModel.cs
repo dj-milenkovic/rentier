@@ -115,13 +115,24 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
     public int CurrentPage
     {
         get => _currentPage;
-        private set => this.RaiseAndSetIfChanged(ref _currentPage, value);
+        private set
+        {
+            this.RaiseAndSetIfChanged(ref _currentPage, value);
+            this.RaisePropertyChanged(nameof(HasPreviousPage));
+            this.RaisePropertyChanged(nameof(HasNextPage));
+            this.RaisePropertyChanged(nameof(PageIndicator));
+        }
     }
 
     public int TotalPages
     {
         get => _totalPages;
-        private set => this.RaiseAndSetIfChanged(ref _totalPages, value);
+        private set
+        {
+            this.RaiseAndSetIfChanged(ref _totalPages, value);
+            this.RaisePropertyChanged(nameof(HasNextPage));
+            this.RaisePropertyChanged(nameof(PageIndicator));
+        }
     }
 
     public int TotalCount
@@ -140,12 +151,11 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
         get => _sortDescending;
         set
         {
+            if (value == _sortDescending)
+                return;
+
             this.RaiseAndSetIfChanged(ref _sortDescending, value);
-            _currentPage = 1;
-            this.RaisePropertyChanged(nameof(CurrentPage));
-            this.RaisePropertyChanged(nameof(HasPreviousPage));
-            this.RaisePropertyChanged(nameof(HasNextPage));
-            this.RaisePropertyChanged(nameof(PageIndicator));
+            CurrentPage = 1;
             LoadPageCommand.Execute().Subscribe();
         }
     }
@@ -200,25 +210,36 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
                 initialValue: string.Format(Strings.BulkDelete_Button_Template, 0),
                 scheduler: _scheduler);
 
+        var canGoToPreviousPage = this.WhenAnyValue(
+            x => x.CurrentPage,
+            x => x.IsLoading,
+            (currentPage, isLoading) => currentPage > 1 && !isLoading);
+
+        var canGoToNextPage = this.WhenAnyValue(
+            x => x.CurrentPage,
+            x => x.TotalPages,
+            x => x.IsLoading,
+            (currentPage, totalPages, isLoading) => currentPage < totalPages && !isLoading);
+
         LoadPageCommand = ReactiveCommand.CreateFromTask(
             LoadPageAsync, outputScheduler: _scheduler);
 
         PreviousPageCommand = ReactiveCommand.CreateFromTask(
             async (CancellationToken ct) =>
             {
-                _currentPage--;
+                CurrentPage--;
                 await LoadPageAsync(ct);
             },
-            this.WhenAnyValue(x => x.HasPreviousPage),
+            canGoToPreviousPage,
             outputScheduler: _scheduler);
 
         NextPageCommand = ReactiveCommand.CreateFromTask(
             async (CancellationToken ct) =>
             {
-                _currentPage++;
+                CurrentPage++;
                 await LoadPageAsync(ct);
             },
-            this.WhenAnyValue(x => x.HasNextPage),
+            canGoToNextPage,
             outputScheduler: _scheduler);
 
         SyncCommand = ReactiveCommand.CreateFromTask(
@@ -286,7 +307,7 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
 
                 // Decrement page when all visible items on a non-first page are deleted
                 if (selectedIds.Count == Rows.Count && _currentPage > 1)
-                    _currentPage--;
+                    CurrentPage--;
 
                 await LoadPageAsync(ct);
             },
@@ -356,22 +377,18 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
             // Clamp current page if data reduced total pages
             var clampedPage = Math.Min(_currentPage, page.TotalPages);
             if (clampedPage != _currentPage)
-            {
-                _currentPage = clampedPage;
-                this.RaisePropertyChanged(nameof(CurrentPage));
-            }
+                CurrentPage = clampedPage;
 
             this.RaisePropertyChanged(nameof(IsEmpty));
             this.RaisePropertyChanged(nameof(HasItems));
-            this.RaisePropertyChanged(nameof(HasPreviousPage));
-            this.RaisePropertyChanged(nameof(HasNextPage));
-            this.RaisePropertyChanged(nameof(PageIndicator));
 
             RebuildRowSubscriptions();
         }
         finally
         {
             IsLoading = false;
+            this.RaisePropertyChanged(nameof(HasPreviousPage));
+            this.RaisePropertyChanged(nameof(HasNextPage));
         }
     }
 
@@ -418,7 +435,7 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
 
             // Decrement page when last item on a non-first page is deleted
             if (Rows.Count == 1 && _currentPage > 1)
-                _currentPage--;
+                CurrentPage--;
 
             await LoadPageAsync(ct);
         }

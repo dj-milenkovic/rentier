@@ -59,6 +59,24 @@ public class ReportRepositoryTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task GetAllAsync_DefaultSortDescending_OrdersByLatestEmailDateFirst()
+    {
+        var importer = MakeImporter();
+        await _context.Importers.AddAsync(importer);
+        await _context.SaveChangesAsync();
+
+        var older = Report.Create(importer.Id, "older.csv", [1], 100L, new DateOnly(2024, 1, 15));
+        var newer = Report.Create(importer.Id, "newer.csv", [1], 101L, new DateOnly(2024, 3, 15));
+
+        await _repository.AddAsync(older);
+        await _repository.AddAsync(newer);
+
+        var reports = await _repository.GetAllAsync();
+
+        reports.Select(report => report.ReportName).Should().ContainInOrder("newer.csv", "older.csv");
+    }
+
+    [Fact]
     public async Task GetByStatusAsync_InitStatus_ReturnsMatchingReports()
     {
         var importer = MakeImporter();

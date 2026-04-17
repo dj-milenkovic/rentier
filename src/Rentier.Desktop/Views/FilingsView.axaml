@@ -8,6 +8,10 @@
     xmlns:local="using:Rentier.Desktop.Converters"
     x:Class="Rentier.Desktop.Views.FilingsView"
     x:CompileBindings="False">
+  <reactive:ReactiveUserControl.Resources>
+    <StreamGeometry x:Key="AdvanceStatusIcon">M9 18 L15 12 L9 6</StreamGeometry>
+    <StreamGeometry x:Key="ExportPpOpoXmlIcon">M12 3 L12 15 M7 10 L12 15 L17 10 M5 21 L19 21</StreamGeometry>
+  </reactive:ReactiveUserControl.Resources>
   <reactive:ReactiveUserControl.Styles>
     <Style Selector="ToggleButton:checked">
       <Setter Property="Background" Value="{DynamicResource SystemAccentColor}" />
@@ -71,25 +75,32 @@
                Margin="0,40" />
 
     <!-- Filings DataGrid -->
-    <DataGrid ItemsSource="{Binding Rows}"
+    <DataGrid x:Name="FilingsGrid"
+              ItemsSource="{Binding Rows}"
               AutoGenerateColumns="False"
               IsVisible="{Binding HasItems}"
               CanUserReorderColumns="False"
               CanUserResizeColumns="True"
               CanUserSortColumns="True"
+              Margin="8,4"
               Sorting="DataGrid_Sorting">
       <DataGrid.Columns>
 
         <!-- Selection checkbox column -->
-        <DataGridTemplateColumn Width="40">
+        <DataGridTemplateColumn Width="42" CanUserSort="False">
           <DataGridTemplateColumn.Header>
-            <CheckBox IsThreeState="True"
-                      IsChecked="{Binding DataContext.IsAllSelected,
-                                  RelativeSource={RelativeSource AncestorType=DataGrid},
-                                  Mode=TwoWay}"
-                      IsEnabled="{Binding DataContext.HasItems,
-                                  RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                      HorizontalAlignment="Center" VerticalAlignment="Center" />
+            <Grid Width="24" Height="24"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Center">
+              <CheckBox IsThreeState="True"
+                        IsChecked="{Binding DataContext.IsAllSelected,
+                                    RelativeSource={RelativeSource AncestorType=DataGrid},
+                                    Mode=TwoWay}"
+                        IsEnabled="{Binding DataContext.HasItems,
+                                    RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center" />
+            </Grid>
           </DataGridTemplateColumn.Header>
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
@@ -100,12 +111,12 @@
         </DataGridTemplateColumn>
 
         <!-- Status badge: read-only coloured pill showing current filing status -->
-        <DataGridTemplateColumn Width="90">
+        <DataGridTemplateColumn Header="{x:Static res:Strings.Filings_Col_Status}" Width="84" CanUserSort="False">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <Border Background="{Binding Status, Converter={x:Static local:FilingStatusBrushConverter.Instance}}"
-                      CornerRadius="10" Padding="8,2"
-                      IsHitTestVisible="False"
+                       CornerRadius="10" Padding="8,2"
+                       IsHitTestVisible="False"
                       HorizontalAlignment="Center" VerticalAlignment="Center" Margin="4,2">
                 <TextBlock Text="{Binding StatusDisplayText}"
                            Foreground="White" FontSize="11" FontWeight="SemiBold"
@@ -119,7 +130,7 @@
         <!-- REMOVED: replaced by Actions column icon buttons (feat/030) -->
 
         <!-- Income Type column -->
-        <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_IncomeType}" Width="110" Tag="IncomeType"
+        <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_IncomeType}" Width="96" Tag="IncomeType"
           Binding="{Binding IncomeType, Converter={x:Static local:IncomeTypeDisplayConverter.Instance}}" />
 
         <!-- Paying Entity column -->
@@ -127,15 +138,15 @@
           Binding="{Binding PayingEntity}" />
 
         <!-- Filing Deadline column -->
-        <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_Deadline}" Width="130" Tag="FilingDeadline"
+        <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_Deadline}" Width="110" Tag="FilingDeadline"
           Binding="{Binding DeadlineDisplay}" />
 
         <!-- Tax Payable column -->
-        <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_TaxPayable}" Width="140" Tag="TaxPayable"
+        <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_TaxPayable}" Width="120" Tag="TaxPayable"
           Binding="{Binding TaxPayableDisplay}" />
 
         <!-- Payment Reference column: editable TextBox for Filed rows only -->
-        <DataGridTemplateColumn Header="{x:Static res:Strings.Filings_Col_PaymentRef}" Width="180" Tag="PaymentReference">
+        <DataGridTemplateColumn Header="{x:Static res:Strings.Filings_Col_PaymentRef}" Width="140" Tag="PaymentReference" CanUserSort="False">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <TextBox Text="{Binding PaymentReference}"
@@ -148,28 +159,28 @@
         </DataGridTemplateColumn>
 
         <!-- Actions column: Advance Status (chevron-right, Lucide MIT), Export XML (download, Lucide MIT), Delete (trash-2, Lucide MIT) -->
-        <DataGridTemplateColumn Header="{x:Static res:Strings.Filings_Col_Actions}" Width="130">
+        <DataGridTemplateColumn Header="{x:Static res:Strings.Filings_Col_Actions}" Width="108" CanUserSort="False">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
-              <StackPanel Orientation="Horizontal" Spacing="4"
+              <StackPanel Orientation="Horizontal" Spacing="2"
                           HorizontalAlignment="Center" VerticalAlignment="Center">
                 <!-- Advance Status: chevron-right (Lucide, MIT) -->
                 <Button Command="{Binding AdvanceStatusCommand}"
                         ToolTip.Tip="{Binding AdvanceStatusTooltip}"
-                        Padding="6" Background="Transparent" BorderThickness="0">
-                  <PathIcon Data="M9 18l6-6-6-6" Width="16" Height="16" />
+                        Padding="4" Background="Transparent" BorderThickness="0">
+                  <PathIcon Data="{StaticResource AdvanceStatusIcon}" Width="16" Height="16" />
                 </Button>
                 <!-- Export XML: download (Lucide, MIT) -->
                 <Button Command="{Binding ExportCommand}"
                         ToolTip.Tip="{x:Static res:Strings.Filings_Tooltip_Export}"
-                        Padding="6" Background="Transparent" BorderThickness="0">
-                  <PathIcon Data="M12 2v13m0 0l-4-4m4 4l4-4M4 20h16" Width="16" Height="16" />
+                        Padding="4" Background="Transparent" BorderThickness="0">
+                  <PathIcon Data="{StaticResource ExportPpOpoXmlIcon}" Width="16" Height="16" />
                 </Button>
                 <!-- Delete: trash-2 (Lucide, MIT) -->
                 <Button Command="{Binding DeleteCommand}"
                         ToolTip.Tip="{x:Static res:Strings.Filings_Tooltip_Delete}"
-                        Padding="6" Background="Transparent" BorderThickness="0">
-                  <PathIcon Data="M3 6h18M8 6V4h8v2M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6M10 11v6M14 11v6"
+                        Padding="4" Background="Transparent" BorderThickness="0">
+                  <PathIcon Data="{StaticResource TrashIcon}"
                             Foreground="Red" Width="16" Height="16" />
                 </Button>
               </StackPanel>

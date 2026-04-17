@@ -22,8 +22,17 @@ public sealed class ReportRepository : IReportRepository
     {
         var query = _db.Reports.AsNoTracking();
         var list = sortDescending
-            ? await query.OrderByDescending(r => r.ImportDate).ThenBy(r => r.Id).ToListAsync(ct)
-            : await query.OrderBy(r => r.ImportDate).ThenBy(r => r.Id).ToListAsync(ct);
+            ? await query
+                .OrderByDescending(r => r.EmailDate ?? r.ImportDate)
+                .ThenByDescending(r => r.ImportDate)
+                .ThenByDescending(r => r.Id)
+                .ToListAsync(ct)
+            : await query
+                .OrderBy(r => r.EmailDate ?? r.ImportDate)
+                .ThenBy(r => r.ImportDate)
+                .ThenBy(r => r.Id)
+                .ToListAsync(ct);
+
         return list.AsReadOnly();
     }
 
