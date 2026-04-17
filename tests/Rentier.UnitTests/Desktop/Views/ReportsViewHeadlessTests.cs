@@ -107,6 +107,24 @@ public class ReportsViewHeadlessTests
     }
 
     [AvaloniaFact]
+    public void ReportsView_WhenNoReports_PaginationRemainsVisible()
+    {
+        var vm = CreateMinimalReportsViewModel(CreateEmptyReportsHandler());
+        var view = new ReportsView { DataContext = vm };
+        var window = new Window { Content = view, Width = 800, Height = 600 };
+        window.Show();
+
+        using var activation = vm.Activator.Activate();
+        window.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
+
+        FindButton(window, Rentier.Desktop.Resources.Strings.Reports_Page_Previous).IsVisible.Should().BeTrue();
+        FindButton(window, Rentier.Desktop.Resources.Strings.Reports_Page_Next).IsVisible.Should().BeTrue();
+
+        window.Close();
+    }
+
+    [AvaloniaFact]
     public void ReportsView_WhenReportsLoaded_DataGridHasCorrectRowCount()
     {
         // Arrange
@@ -133,6 +151,52 @@ public class ReportsViewHeadlessTests
         // Assert — DataGrid reflects ItemsSource
         var grid = window.GetVisualDescendants().OfType<DataGrid>().First();
         ((IEnumerable)grid.ItemsSource!).Cast<object>().Count().Should().Be(3);
+
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void ReportsView_WhenMultiplePagesExist_NextButtonIsEnabled()
+    {
+        IReadOnlyList<ReportRowDto> rows = [MakeReportRowDto()];
+        var getReports = Substitute.For<IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>>>();
+        getReports.HandleAsync(Arg.Any<GetReportsQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<ReportsPageResult, Error>.Success(
+                new ReportsPageResult(rows, 31, 2)));
+
+        var vm = CreateMinimalReportsViewModel(getReports);
+        var view = new ReportsView { DataContext = vm };
+        var window = new Window { Content = view, Width = 800, Height = 600 };
+        window.Show();
+
+        using var activation = vm.Activator.Activate();
+        window.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
+
+        FindButton(window, Rentier.Desktop.Resources.Strings.Reports_Page_Next).IsEnabled.Should().BeTrue();
+
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void ReportsView_WhenRowsLoaded_HeaderSelectionCheckboxIsRendered()
+    {
+        IReadOnlyList<ReportRowDto> rows = [MakeReportRowDto()];
+        var getReports = Substitute.For<IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>>>();
+        getReports.HandleAsync(Arg.Any<GetReportsQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<ReportsPageResult, Error>.Success(
+                new ReportsPageResult(rows, rows.Count, 1)));
+
+        var vm = CreateMinimalReportsViewModel(getReports);
+        var view = new ReportsView { DataContext = vm };
+        var window = new Window { Content = view, Width = 800, Height = 600 };
+        window.Show();
+
+        using var activation = vm.Activator.Activate();
+        window.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
+
+        window.GetVisualDescendants().OfType<CheckBox>().Should().HaveCountGreaterThan(1);
 
         window.Close();
     }
@@ -258,4 +322,9 @@ public class ReportsViewHeadlessTests
         3,
         "IBKR \u2013 Jan 2025",
         new DateOnly(2025, 1, 10));
+
+    private static Button FindButton(Window window, string content)
+        => window.GetVisualDescendants()
+            .OfType<Button>()
+            .Single(button => button.Content is string text && text == content);
 }

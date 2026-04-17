@@ -11,6 +11,7 @@ using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
+using Rentier.Desktop.Resources;
 using Rentier.Desktop.ViewModels;
 using Rentier.Desktop.Views;
 using Rentier.Domain.Entities;
@@ -222,6 +223,51 @@ public class FilingsViewHeadlessTests
             .OfType<DataGrid>()
             .FirstOrDefault(g => g.IsVisible);
         dataGrid.Should().NotBeNull();
+
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void FilingsView_ActionAndHeaderColumns_RenderQaFixes()
+    {
+        // Arrange
+        var rows = new[] { MakeFilingRowDto() };
+        var getFilings = Substitute.For<IQueryHandler<GetFilingsQuery, Result<FilingsPageResult, Error>>>();
+        getFilings.HandleAsync(Arg.Any<GetFilingsQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<FilingsPageResult, Error>.Success(new FilingsPageResult(rows, 1, 1)));
+
+        var vm = CreateFilingsViewModelWith(getFilings);
+        var view = new FilingsView { DataContext = vm };
+        var window = new Window { Content = view, Width = 1000, Height = 600 };
+        window.Show();
+
+        // Act
+        using var activation = vm.Activator.Activate();
+        window.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
+
+        // Assert
+        var dataGrid = window.GetVisualDescendants().OfType<DataGrid>().First();
+        dataGrid.Columns[1].Header.Should().Be(Strings.Filings_Col_Status);
+
+        var selectAllCheckbox = window.GetVisualDescendants()
+            .OfType<CheckBox>()
+            .FirstOrDefault(checkBox => checkBox.IsThreeState);
+        selectAllCheckbox.Should().NotBeNull();
+        selectAllCheckbox!.IsVisible.Should().BeTrue();
+
+        var exportButton = window.GetVisualDescendants()
+            .OfType<Button>()
+            .FirstOrDefault(button => Avalonia.Controls.ToolTip.GetTip(button) as string == Strings.Filings_Tooltip_Export);
+        exportButton.Should().NotBeNull();
+        var exportIcons = exportButton!.GetVisualDescendants().OfType<PathIcon>().ToList();
+        exportIcons.Should().ContainSingle();
+        exportIcons[0].Data.Should().NotBeNull();
+
+        var advanceButton = window.GetVisualDescendants()
+            .OfType<Button>()
+            .FirstOrDefault(button => Avalonia.Controls.ToolTip.GetTip(button) as string == vm.Rows[0].AdvanceStatusTooltip);
+        advanceButton.Should().NotBeNull();
 
         window.Close();
     }

@@ -65,7 +65,7 @@
 
     <!-- Pagination bar -->
     <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="8"
-                Margin="8" HorizontalAlignment="Center" IsVisible="{Binding HasItems}">
+                Margin="8" HorizontalAlignment="Center">
       <Button Content="{x:Static res:Strings.Reports_Page_Previous}"
               Command="{Binding PreviousPageCommand}" />
       <TextBlock Text="{Binding PageIndicator}" VerticalAlignment="Center" />
@@ -74,21 +74,22 @@
     </StackPanel>
 
     <!-- Reports DataGrid -->
-    <DataGrid ItemsSource="{Binding Rows}"
+    <DataGrid x:Name="ReportsGrid"
+              ItemsSource="{Binding Rows}"
               AutoGenerateColumns="False"
               GridLinesVisibility="Horizontal"
               CanUserSortColumns="False"
               Margin="8,4">
       <DataGrid.Columns>
         <!-- Selection checkbox column -->
-        <DataGridTemplateColumn Width="40">
+        <DataGridTemplateColumn Width="44">
           <DataGridTemplateColumn.Header>
             <CheckBox IsThreeState="True"
                       IsChecked="{Binding DataContext.IsAllSelected,
                                   RelativeSource={RelativeSource AncestorType=DataGrid},
                                   Mode=TwoWay}"
-                      IsEnabled="{Binding DataContext.HasItems,
-                                  RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                      IsHitTestVisible="{Binding DataContext.HasItems,
+                                         RelativeSource={RelativeSource AncestorType=DataGrid}}"
                       HorizontalAlignment="Center" VerticalAlignment="Center" />
           </DataGridTemplateColumn.Header>
           <DataGridTemplateColumn.CellTemplate>
@@ -98,31 +99,31 @@
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
-        <DataGridTemplateColumn Header="{x:Static res:Strings.Reports_Col_Name}" Width="*">
+        <DataGridTemplateColumn Header="{x:Static res:Strings.Reports_Col_Name}" Width="2*">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <TextBlock Text="{Binding DisplayName}"
-                         ToolTip.Tip="{Binding ReportName}"
-                         VerticalAlignment="Center" Margin="4,0" />
+                          ToolTip.Tip="{Binding ReportName}"
+                          VerticalAlignment="Center" Margin="4,0" />
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
         <DataGridTextColumn Header="{x:Static res:Strings.Reports_Col_ImportDate}"
                             Binding="{Binding ImportDateDisplay}"
-                            Width="110" />
+                            Width="96" />
         <DataGridTextColumn Header="{x:Static res:Strings.Reports_Col_EmailDate}"
                             Binding="{Binding EmailDateDisplay}"
-                            Width="110" />
+                            Width="96" />
         <DataGridTextColumn Header="{x:Static res:Strings.Reports_Col_Importer}"
                             Binding="{Binding ImporterName}"
-                            Width="160" />
+                            Width="120" />
         <DataGridTextColumn Header="{x:Static res:Strings.Reports_Col_Status}"
                             Binding="{Binding Status, Converter={x:Static local:ReportStatusDisplayConverter.Instance}}"
-                            Width="100" />
+                            Width="88" />
         <DataGridTextColumn Header="{x:Static res:Strings.Reports_Col_FilingCount}"
                             Binding="{Binding FilingCount}"
-                            Width="70" />
-        <DataGridTemplateColumn Width="Auto">
+                            Width="56" />
+        <DataGridTemplateColumn Width="88">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <StackPanel Orientation="Horizontal" Spacing="4" Margin="4,2">

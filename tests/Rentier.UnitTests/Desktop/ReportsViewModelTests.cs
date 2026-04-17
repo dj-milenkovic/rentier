@@ -325,6 +325,18 @@ public class ReportsViewModelTests
     }
 
     [Fact]
+    public void Pagination_WhenAdditionalPagesExist_NextPageCommandCanExecute()
+    {
+        var vm = CreateVm(getReports: MakePagedGetReports(75, 3, [MakeDto()]));
+        using var _activation = vm.Activator.Activate();
+
+        bool? canExecute = null;
+        using var subscription = vm.NextPageCommand.CanExecute.Subscribe(value => canExecute = value);
+
+        canExecute.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task Pagination_PreviousPageCommand_DecrementsPageAndReloads()
     {
         // Simulate being on page 2 by injecting a handler that always returns page 2 state
@@ -340,6 +352,20 @@ public class ReportsViewModelTests
         await vm.PreviousPageCommand.Execute().FirstAsync();
 
         vm.CurrentPage.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Pagination_WhenOnSecondPage_PreviousPageCommandCanExecute()
+    {
+        var vm = CreateVm(getReports: MakePagedGetReports(75, 3, [MakeDto()]));
+        using var _activation = vm.Activator.Activate();
+
+        bool? canExecute = null;
+        using var subscription = vm.PreviousPageCommand.CanExecute.Subscribe(value => canExecute = value);
+
+        await vm.NextPageCommand.Execute().FirstAsync();
+
+        canExecute.Should().BeTrue();
     }
 
     [Fact]
