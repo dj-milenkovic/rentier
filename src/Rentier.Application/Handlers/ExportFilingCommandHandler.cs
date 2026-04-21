@@ -3,6 +3,7 @@ using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Repositories;
+using Rentier.Domain.Entities;
 
 namespace Rentier.Application.Handlers;
 
@@ -54,10 +55,40 @@ public sealed class ExportFilingCommandHandler
         }
 
         var bytes = _serializer.Serialize(filing, profile, paymentNotes);
-        var suggestedFileName =
-            $"PP-OPO_{filing.IncomeDate:yyyy-MM}_{profile.Jmbg}.xml";
+        var suggestedFileName = BuildFileName(filing);
 
         return Result<ExportFilingResult, Error>.Success(
             new ExportFilingResult(bytes, suggestedFileName));
+    }
+
+    /// <summary>
+    /// Builds the suggested export filename.
+    /// Priority: Ticker → PayingEntity → "filing"
+    /// Pattern: {yyyy}-{MM}-{identifier}.xml
+    /// </summary>
+    private static string BuildFileName(Filing filing)
+    {
+        var raw = !string.IsNullOrWhiteSpace(filing.Ticker)
+            ? filing.Ticker
+            : !string.IsNullOrWhiteSpace(filing.PayingEntity)
+                ? filing.PayingEntity
+                : null;
+
+        var identifier = Sanitize(raw);
+        return $"{filing.IncomeDate:yyyy-MM}-{identifier}.xml";
+    }
+
+    private static readonly char[] UnsafeChars = ['\\', '/', ':', '*', '?', '"', '<', '>', '|', ' '];
+
+    private static string Sanitize(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+            return "filing";
+
+        var result = raw.Trim();
+        foreach (var ch in UnsafeChars)
+            result = result.Replace(ch, '_');
+
+        return string.IsNullOrEmpty(result) ? "filing" : result;
     }
 }

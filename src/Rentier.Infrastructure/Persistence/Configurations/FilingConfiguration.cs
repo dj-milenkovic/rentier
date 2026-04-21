@@ -32,5 +32,6 @@ public sealed class FilingConfiguration : IEntityTypeConfiguration<Filing>
             .HasMaxLength(200);
         builder.Property(f => f.ExchangeRateSourceDate).IsRequired(false);
         builder.Property(f => f.ExchangeRateSourceType).IsRequired(false);
+        builder.Property(f => f.Ticker).IsRequired(false).HasMaxLength(20);
     }
 }

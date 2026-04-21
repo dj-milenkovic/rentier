@@ -1,0 +1,147 @@
+<reactive:ReactiveUserControl
+    x:TypeArguments="vm:ManualFilingViewModel"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:reactive="http://reactiveui.net"
+    xmlns:vm="using:Rentier.Desktop.ViewModels"
+    xmlns:res="using:Rentier.Desktop.Resources"
+    xmlns:local="using:Rentier.Desktop.Converters"
+    x:Class="Rentier.Desktop.Views.ManualFilingView"
+    x:CompileBindings="False">
+
+  <ScrollViewer>
+    <StackPanel Spacing="12" Margin="16" MaxWidth="520">
+
+      <!-- Title -->
+      <TextBlock Text="{x:Static res:Strings.ManualFiling_Title}"
+                 FontSize="20" FontWeight="SemiBold" Margin="0,0,0,8" />
+
+      <!-- Loading indicator -->
+      <ProgressBar IsIndeterminate="True"
+                   IsVisible="{Binding IsLoading}" Height="6" MinHeight="6" />
+
+      <!-- Error banner -->
+      <Grid IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <TextBlock Grid.Column="0" Text="{Binding ErrorMessage}"
+                   Foreground="Red" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,4" />
+        <Button Grid.Column="1" Content="{x:Static res:Strings.Filings_Error_Dismiss}"
+                Command="{Binding ClearErrorCommand}" VerticalAlignment="Center" Margin="4,0,0,0" />
+      </Grid>
+
+      <!-- Income Type -->
+      <StackPanel Spacing="4">
+        <TextBlock Text="{x:Static res:Strings.ManualFiling_IncomeType_Label}" FontWeight="SemiBold" />
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <RadioButton GroupName="IncomeType"
+                       Content="{x:Static res:Strings.ManualFiling_IncomeType_Dividend}"
+                       IsChecked="{Binding IsDividend, Mode=TwoWay}"
+                       IsEnabled="{Binding IsLoading, Converter={x:Static local:InvertBoolConverter.Instance}}" />
+          <RadioButton GroupName="IncomeType"
+                       Content="{x:Static res:Strings.ManualFiling_IncomeType_Interest}"
+                       IsChecked="{Binding IsInterest, Mode=TwoWay}"
+                       IsEnabled="{Binding IsLoading, Converter={x:Static local:InvertBoolConverter.Instance}}" />
+        </StackPanel>
+      </StackPanel>
+
+      <!-- Ticker -->
+      <StackPanel Spacing="4">
+        <TextBlock Text="{x:Static res:Strings.ManualFiling_Ticker_Label}" FontWeight="SemiBold" />
+        <TextBox Text="{Binding Ticker, Mode=TwoWay}"
+                 IsEnabled="{Binding IsLoading, Converter={x:Static local:InvertBoolConverter.Instance}}"
+                 Watermark="e.g. AAPL" />
+      </StackPanel>
+
+      <!-- Income Date -->
+      <StackPanel Spacing="4">
+        <TextBlock Text="{x:Static res:Strings.ManualFiling_IncomeDate_Label}" FontWeight="SemiBold" />
+        <DatePicker SelectedDate="{Binding IncomeDate, Mode=TwoWay}"
+                    IsEnabled="{Binding IsLoading, Converter={x:Static local:InvertBoolConverter.Instance}}" />
+      </StackPanel>
+
+      <!-- Currency -->
+      <StackPanel Spacing="4">
+        <TextBlock Text="{x:Static res:Strings.ManualFiling_Currency_Label}" FontWeight="SemiBold" />
+        <ComboBox ItemsSource="{Binding AvailableCurrencies}"
+                  SelectedItem="{Binding SelectedCurrency, Mode=TwoWay}"
+                  IsEnabled="{Binding IsLoading, Converter={x:Static local:InvertBoolConverter.Instance}}"
+                  MinWidth="120" />
+      </StackPanel>
+
+      <!-- Gross Amount -->
+      <StackPanel Spacing="4">
+        <TextBlock Text="{x:Static res:Strings.ManualFiling_GrossAmount_Label}" FontWeight="SemiBold" />
+        <TextBox Text="{Binding GrossAmountText, Mode=TwoWay}"
+                 IsEnabled="{Binding IsLoading, Converter={x:Static local:InvertBoolConverter.Instance}}"
+                 Watermark="e.g. 100.00" />
+      </StackPanel>
+
+      <!-- Net Received -->
+      <StackPanel Spacing="4">
+        <TextBlock Text="{x:Static res:Strings.ManualFiling_NetReceived_Label}" FontWeight="SemiBold" />
+        <TextBox Text="{Binding NetReceivedText, Mode=TwoWay}"
+                 IsEnabled="{Binding IsLoading, Converter={x:Static local:InvertBoolConverter.Instance}}"
+                 Watermark="e.g. 85.00" />
+      </StackPanel>
+
+      <!-- Action Buttons -->
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Button Content="{x:Static res:Strings.ManualFiling_Calculate_Button}"
+                Command="{Binding CalculateCommand}" />
+        <Button Content="{x:Static res:Strings.ManualFiling_Save_Button}"
+                Command="{Binding SaveCommand}" />
+        <Button Content="{x:Static res:Strings.ManualFiling_Cancel_Button}"
+                Command="{Binding CancelCommand}" />
+      </StackPanel>
+
+      <!-- Preview Panel -->
+      <Border IsVisible="{Binding Preview, Converter={x:Static ObjectConverters.IsNotNull}}"
+              BorderBrush="{DynamicResource SystemAccentColor}"
+              BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,8,0,0">
+        <StackPanel Spacing="6">
+          <TextBlock Text="{x:Static res:Strings.ManualFiling_Preview_Title}"
+                     FontSize="16" FontWeight="SemiBold" Margin="0,0,0,4" />
+
+          <Grid ColumnDefinitions="*,*">
+            <TextBlock Grid.Column="0" Text="{x:Static res:Strings.ManualFiling_Preview_GrossIncome}" FontWeight="SemiBold" />
+            <TextBlock Grid.Column="1" Text="{Binding Preview.GrossIncomeRsd, StringFormat='{}{0:N2} RSD'}" />
+          </Grid>
+
+          <Grid ColumnDefinitions="*,*">
+            <TextBlock Grid.Column="0" Text="{x:Static res:Strings.ManualFiling_Preview_WhtPaid}" FontWeight="SemiBold" />
+            <TextBlock Grid.Column="1" Text="{Binding Preview.WhtPaidRsd, StringFormat='{}{0:N2} RSD'}" />
+          </Grid>
+
+          <Grid ColumnDefinitions="*,*">
+            <TextBlock Grid.Column="0" Text="{x:Static res:Strings.ManualFiling_Preview_GrossTax}" FontWeight="SemiBold" />
+            <TextBlock Grid.Column="1" Text="{Binding Preview.GrossTaxPayableRsd, StringFormat='{}{0:N2} RSD'}" />
+          </Grid>
+
+          <Grid ColumnDefinitions="*,*">
+            <TextBlock Grid.Column="0" Text="{x:Static res:Strings.ManualFiling_Preview_TaxPayable}" FontWeight="SemiBold" />
+            <TextBlock Grid.Column="1" Text="{Binding Preview.TaxPayableRsd, StringFormat='{}{0:N2} RSD'}" />
+          </Grid>
+
+          <Grid ColumnDefinitions="*,*">
+            <TextBlock Grid.Column="0" Text="{x:Static res:Strings.ManualFiling_Preview_Deadline}" FontWeight="SemiBold" />
+            <TextBlock Grid.Column="1" Text="{Binding Preview.FilingDeadline, StringFormat='{}{0:yyyy-MM-dd}'}" />
+          </Grid>
+
+          <Grid ColumnDefinitions="*,*">
+            <TextBlock Grid.Column="0" Text="{x:Static res:Strings.ManualFiling_Preview_ExchangeRate}" FontWeight="SemiBold" />
+            <TextBlock Grid.Column="1" Text="{Binding Preview.ExchangeRateValue, StringFormat='{}{0:N4}'}" />
+          </Grid>
+
+          <Grid ColumnDefinitions="*,*">
+            <TextBlock Grid.Column="0" Text="{x:Static res:Strings.ManualFiling_Preview_RateSource}" FontWeight="SemiBold" />
+            <TextBlock Grid.Column="1" Text="{Binding Preview.ExchangeRateSourceDate, StringFormat='{}{0:yyyy-MM-dd}'}" />
+          </Grid>
+        </StackPanel>
+      </Border>
+
+    </StackPanel>
+  </ScrollViewer>
+</reactive:ReactiveUserControl>

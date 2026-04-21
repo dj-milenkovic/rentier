@@ -145,6 +145,14 @@ public static class CompositionRoot
             }
         });
 
+        // Manual Filing handlers
+        services.AddTransient<
+            ICommandHandler<CalculateManualFilingCommand, Result<ManualFilingPreviewDto, Error>>,
+            CalculateManualFilingCommandHandler>();
+        services.AddTransient<
+            ICommandHandler<CreateManualFilingCommand, Result<Guid, Error>>,
+            CreateManualFilingCommandHandler>();
+
         // Dashboard handler
         services.AddTransient<
             IQueryHandler<GetDashboardQuery, Result<DashboardDto, Error>>,
