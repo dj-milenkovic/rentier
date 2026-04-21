@@ -589,4 +589,94 @@
   <data name="Reports_Tooltip_Delete" xml:space="preserve">
     <value>Delete report</value>
   </data>
+  <data name="ManualFiling_Title" xml:space="preserve">
+    <value>New Filing</value>
+  </data>
+  <data name="ManualFiling_IncomeType_Label" xml:space="preserve">
+    <value>Income Type</value>
+  </data>
+  <data name="ManualFiling_Ticker_Label" xml:space="preserve">
+    <value>Ticker / Asset</value>
+  </data>
+  <data name="ManualFiling_IncomeDate_Label" xml:space="preserve">
+    <value>Income Date</value>
+  </data>
+  <data name="ManualFiling_Currency_Label" xml:space="preserve">
+    <value>Currency</value>
+  </data>
+  <data name="ManualFiling_GrossAmount_Label" xml:space="preserve">
+    <value>Gross Amount</value>
+  </data>
+  <data name="ManualFiling_NetReceived_Label" xml:space="preserve">
+    <value>Net Received (optional)</value>
+  </data>
+  <data name="ManualFiling_Calculate_Button" xml:space="preserve">
+    <value>Calculate</value>
+  </data>
+  <data name="ManualFiling_Save_Button" xml:space="preserve">
+    <value>Save Filing</value>
+  </data>
+  <data name="ManualFiling_Cancel_Button" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="ManualFiling_Preview_Title" xml:space="preserve">
+    <value>Filing Preview</value>
+  </data>
+  <data name="ManualFiling_Preview_GrossIncome" xml:space="preserve">
+    <value>Gross Income</value>
+  </data>
+  <data name="ManualFiling_Preview_WhtPaid" xml:space="preserve">
+    <value>WHT Paid</value>
+  </data>
+  <data name="ManualFiling_Preview_GrossTax" xml:space="preserve">
+    <value>Gross Tax Payable</value>
+  </data>
+  <data name="ManualFiling_Preview_TaxPayable" xml:space="preserve">
+    <value>Tax Payable</value>
+  </data>
+  <data name="ManualFiling_Preview_Deadline" xml:space="preserve">
+    <value>Filing Deadline</value>
+  </data>
+  <data name="ManualFiling_Preview_ExchangeRate" xml:space="preserve">
+    <value>Exchange Rate</value>
+  </data>
+  <data name="ManualFiling_Preview_RateSource" xml:space="preserve">
+    <value>Rate Source</value>
+  </data>
+  <data name="ManualFiling_Error_TickerRequired" xml:space="preserve">
+    <value>Ticker is required</value>
+  </data>
+  <data name="ManualFiling_Error_GrossRequired" xml:space="preserve">
+    <value>Gross amount must be greater than zero</value>
+  </data>
+  <data name="ManualFiling_Error_DateRequired" xml:space="preserve">
+    <value>Income date is required</value>
+  </data>
+  <data name="ManualFiling_Error_NetExceedsGross" xml:space="preserve">
+    <value>Net received cannot exceed gross amount</value>
+  </data>
+  <data name="ManualFiling_Error_RateNotFound" xml:space="preserve">
+    <value>Exchange rate not available for {0} on {1}</value>
+  </data>
+  <data name="ManualFiling_Error_DuplicateFiling" xml:space="preserve">
+    <value>A filing with the same details already exists</value>
+  </data>
+  <data name="ManualFiling_Error_NoProfile" xml:space="preserve">
+    <value>Please configure your taxpayer profile in Settings before creating a filing</value>
+  </data>
+  <data name="ManualFiling_Error_NetworkFailure" xml:space="preserve">
+    <value>Could not reach NBS exchange rate service. Please check your connection.</value>
+  </data>
+  <data name="ManualFiling_IncomeType_Dividend" xml:space="preserve">
+    <value>Dividend</value>
+  </data>
+  <data name="ManualFiling_IncomeType_Interest" xml:space="preserve">
+    <value>Interest</value>
+  </data>
+  <data name="ManualFiling_RateSource_Exact" xml:space="preserve">
+    <value>Exact ({0})</value>
+  </data>
+  <data name="ManualFiling_RateSource_Fallback" xml:space="preserve">
+    <value>Fallback from {0}</value>
+  </data>
 </root>
