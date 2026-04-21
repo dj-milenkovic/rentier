@@ -6,6 +6,7 @@ using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
+using Rentier.Application.Repositories;
 using Rentier.Desktop.ViewModels;
 using System.Reactive.Concurrency;
 using Xunit;
@@ -41,27 +42,13 @@ public class MainWindowViewModelSmokeTests
             Substitute.For<ICommandHandler<UpdateImporterCommand, Result<VoidResult, Error>>>(),
             Substitute.For<ICommandHandler<DeleteImporterCommand, Result<VoidResult, Error>>>());
 
-    private static FilingsViewModel CreateFilingsVm()
-    {
-        var getFilings = Substitute.For<IQueryHandler<GetFilingsQuery, Result<FilingsPageResult, Error>>>();
-        getFilings.HandleAsync(Arg.Any<GetFilingsQuery>(), Arg.Any<CancellationToken>())
-            .Returns(Result<FilingsPageResult, Error>.Success(
-                new FilingsPageResult([], 0, 1)));
-        return new FilingsViewModel(
-            getFilings,
-            Substitute.For<ICommandHandler<UpdateFilingStatusCommand, Result<VoidResult, Error>>>(),
-            Substitute.For<ICommandHandler<UpdatePaymentReferenceCommand, Result<VoidResult, Error>>>(),
-            Substitute.For<ICommandHandler<DeleteFilingCommand, Result<VoidResult, Error>>>(),
-            Substitute.For<ICommandHandler<ExportFilingCommand, Result<ExportFilingResult, Error>>>(),
-            Substitute.For<ICommandHandler<BulkDeleteFilingsCommand, Result<VoidResult, Error>>>(),
-            _ => Task.FromResult(false),
-            _ => Task.CompletedTask,
-            ImmediateScheduler.Instance);
-    }
-
     private static IServiceProvider CreateProvider()
     {
         var services = new ServiceCollection();
+
+        var getFilings = Substitute.For<IQueryHandler<GetFilingsQuery, Result<FilingsPageResult, Error>>>();
+        getFilings.HandleAsync(Arg.Any<GetFilingsQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<FilingsPageResult, Error>.Success(new FilingsPageResult([], 0, 1)));
 
         var getReports = Substitute.For<IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>>>();
         getReports.HandleAsync(Arg.Any<GetReportsQuery>(), Arg.Any<CancellationToken>())
@@ -72,6 +59,22 @@ public class MainWindowViewModelSmokeTests
             .Returns(Result<DashboardDto, Error>.Success(
                 new DashboardDto([], [], 0, 0, 0, 0m, null)));
 
+        // FilingsViewModel deps
+        services.AddSingleton(getFilings);
+        services.AddSingleton(Substitute.For<ICommandHandler<UpdateFilingStatusCommand, Result<VoidResult, Error>>>());
+        services.AddSingleton(Substitute.For<ICommandHandler<UpdatePaymentReferenceCommand, Result<VoidResult, Error>>>());
+        services.AddSingleton(Substitute.For<ICommandHandler<DeleteFilingCommand, Result<VoidResult, Error>>>());
+        services.AddSingleton(Substitute.For<ICommandHandler<ExportFilingCommand, Result<ExportFilingResult, Error>>>());
+        services.AddSingleton(Substitute.For<ICommandHandler<BulkDeleteFilingsCommand, Result<VoidResult, Error>>>());
+        services.AddSingleton<Func<string, Task<bool>>>(_ => Task.FromResult(false));
+        services.AddSingleton<Func<ExportFilingResult, Task>>(_ => Task.CompletedTask);
+
+        // ManualFilingViewModel deps
+        services.AddSingleton(Substitute.For<ICommandHandler<CalculateManualFilingCommand, Result<ManualFilingPreviewDto, Error>>>());
+        services.AddSingleton(Substitute.For<ICommandHandler<CreateManualFilingCommand, Result<Guid, Error>>>());
+        services.AddSingleton(Substitute.For<ITaxpayerProfileRepository>());
+
+        // Other VM deps
         services.AddSingleton(Substitute.For<ICommandHandler<SyncMailboxCommand, Result<SyncResult, Error>>>());
         services.AddSingleton(getReports);
         services.AddSingleton(getDashboard);
@@ -89,9 +92,8 @@ public class MainWindowViewModelSmokeTests
     [Fact]
     public void MainWindowViewModel_Constructed_NavigationEntriesHasFiveItems()
     {
-        var filingsVm  = CreateFilingsVm();
         var settingsVm = new SettingsViewModel(CreateProfileVm(), CreateHolidayVm(), CreateMailboxVm(), CreateImporterVm());
-        var vm = new MainWindowViewModel(filingsVm, CreateProvider(), settingsVm);
+        var vm = new MainWindowViewModel(CreateProvider(), settingsVm);
 
         vm.NavigationEntries.Count.Should().Be(5);
     }
@@ -99,9 +101,8 @@ public class MainWindowViewModelSmokeTests
     [Fact]
     public void MainWindowViewModel_Constructed_InitialViewModelIsDashboardViewModel()
     {
-        var filingsVm  = CreateFilingsVm();
         var settingsVm = new SettingsViewModel(CreateProfileVm(), CreateHolidayVm(), CreateMailboxVm(), CreateImporterVm());
-        var vm = new MainWindowViewModel(filingsVm, CreateProvider(), settingsVm);
+        var vm = new MainWindowViewModel(CreateProvider(), settingsVm);
 
         vm.CurrentViewModel.Should().BeOfType<DashboardViewModel>();
     }

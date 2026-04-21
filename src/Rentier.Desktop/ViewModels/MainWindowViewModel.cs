@@ -6,9 +6,9 @@ namespace Rentier.Desktop.ViewModels;
 
 /// <summary>
 /// Main window ViewModel with sidebar navigation.
-/// For UI-initiated async work, use:
-/// SomeCommand = ReactiveCommand.CreateFromTask(async ct => await _handler.HandleAsync(cmd, ct));
-/// Updates scheduled via RxApp.MainThreadScheduler.
+/// FilingsViewModel and ManualFilingViewModel are created via ActivatorUtilities so that
+/// navigation delegates (closures) can be injected at construction time — the same pattern
+/// used by DashboardViewModel, ReportsViewModel and SyncViewModel.
 /// </summary>
 public sealed class MainWindowViewModel : ReactiveObject
 {
@@ -30,11 +30,10 @@ public sealed class MainWindowViewModel : ReactiveObject
     }
 
     public MainWindowViewModel(
-        FilingsViewModel filingsVm,
         IServiceProvider provider,
         SettingsViewModel settingsVm)
     {
-        // Wire navigateToFilings delegate for DashboardViewModel (Action — no Guid)
+        // ── Dashboard navigation ──────────────────────────────────────────────
         Action navigateToDashboardFilings = () =>
         {
             var filingsEntry = NavigationEntries?.FirstOrDefault(e => e.ViewModel is FilingsViewModel);
@@ -45,7 +44,25 @@ public sealed class MainWindowViewModel : ReactiveObject
         var dashboardVm = ActivatorUtilities.CreateInstance<DashboardViewModel>(
             provider, navigateToDashboardFilings);
 
-        // Wire the navigateToFilings delegate — closes over filingsVm and this.SelectedEntry
+        // ── Manual filing navigation (back to filings) ────────────────────────
+        // Declared here so the closure can reference filingsVm after it is created below.
+        FilingsViewModel? filingsVm = null;
+        Action navigateToManualFiling = () =>
+        {
+            var manualVm = ActivatorUtilities.CreateInstance<ManualFilingViewModel>(
+                provider, (Action)(() =>
+                {
+                    if (filingsVm is not null) filingsVm.ShowAll = true;
+                    var filingsEntry = NavigationEntries?.FirstOrDefault(e => e.ViewModel is FilingsViewModel);
+                    if (filingsEntry is not null) SelectedEntry = filingsEntry;
+                }));
+            CurrentViewModel = manualVm;
+        };
+
+        filingsVm = ActivatorUtilities.CreateInstance<FilingsViewModel>(
+            provider, navigateToManualFiling);
+
+        // ── Reports navigation ────────────────────────────────────────────────
         Action<Guid> navigateToFilings = reportId =>
         {
             filingsVm.ReportIdFilter = reportId;
@@ -57,7 +74,7 @@ public sealed class MainWindowViewModel : ReactiveObject
         var reportsVm = ActivatorUtilities.CreateInstance<ReportsViewModel>(
             provider, navigateToFilings);
 
-        // Wire the navigateToFilings delegate for SyncViewModel — no report ID filter needed
+        // ── Sync navigation ───────────────────────────────────────────────────
         Action navigateToFilings_sync = () =>
         {
             var filingsEntry = NavigationEntries?.FirstOrDefault(e => e.ViewModel is FilingsViewModel);
@@ -67,25 +84,6 @@ public sealed class MainWindowViewModel : ReactiveObject
 
         var syncVm = ActivatorUtilities.CreateInstance<SyncViewModel>(
             provider, navigateToFilings_sync);
-
-        // Wire ManualFilingViewModel navigation
-        Action navigateBackToFilings = () =>
-        {
-            filingsVm.ShowAll = true;
-            CurrentViewModel = filingsVm;
-            var filingsEntry = NavigationEntries?.FirstOrDefault(e => e.ViewModel is FilingsViewModel);
-            if (filingsEntry is not null)
-                SelectedEntry = filingsEntry;
-        };
-
-        Action navigateToManualFiling = () =>
-        {
-            var manualFilingVm = ActivatorUtilities.CreateInstance<ManualFilingViewModel>(
-                provider, navigateBackToFilings);
-            CurrentViewModel = manualFilingVm;
-        };
-
-        filingsVm.NavigateToManualFiling = navigateToManualFiling;
 
         NavigationEntries = new List<NavigationEntry>
         {
@@ -99,7 +97,7 @@ public sealed class MainWindowViewModel : ReactiveObject
         _selectedEntry = NavigationEntries[0];
         _currentViewModel = dashboardVm;
 
-        // Keep CurrentViewModel in sync with SelectedEntry — belongs in ViewModel, not code-behind
+        // Keep CurrentViewModel in sync with SelectedEntry
         this.WhenAnyValue(x => x.SelectedEntry)
             .Subscribe(entry => { if (entry is not null) CurrentViewModel = entry.ViewModel; });
     }

@@ -27,6 +27,7 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
     private readonly ICommandHandler<BulkDeleteFilingsCommand, Result<VoidResult, Error>> _bulkDeleteFilings;
     private readonly Func<string, Task<bool>> _confirmDelete;
     private readonly Func<ExportFilingResult, Task> _saveFile;
+    private readonly Action _navigateToManualFiling;
     private readonly IScheduler _scheduler;
 
     private bool _isLoading;
@@ -170,12 +171,6 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
 
     private readonly CompositeDisposable _rowSubscriptions = new();
 
-    /// <summary>
-    /// Set by MainWindowViewModel after construction to wire the "New Filing" navigation.
-    /// The DI container cannot inject <see cref="Action"/> delegates, so this is set via property.
-    /// </summary>
-    public Action? NavigateToManualFiling { get; set; }
-
     public FilingsViewModel(
         IQueryHandler<GetFilingsQuery, Result<FilingsPageResult, Error>> getFilings,
         ICommandHandler<UpdateFilingStatusCommand, Result<VoidResult, Error>> updateStatus,
@@ -185,6 +180,7 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
         ICommandHandler<BulkDeleteFilingsCommand, Result<VoidResult, Error>> bulkDeleteFilings,
         Func<string, Task<bool>> confirmDelete,
         Func<ExportFilingResult, Task> saveFile,
+        Action navigateToManualFiling,
         IScheduler? scheduler = null)
     {
         _getFilings = getFilings;
@@ -195,6 +191,7 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
         _bulkDeleteFilings = bulkDeleteFilings;
         _confirmDelete = confirmDelete;
         _saveFile = saveFile;
+        _navigateToManualFiling = navigateToManualFiling;
         _scheduler = scheduler ?? RxApp.MainThreadScheduler;
 
         _hasSelection = this.WhenAnyValue(x => x.SelectedCount)
@@ -233,7 +230,7 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
             outputScheduler: _scheduler);
 
         NewFilingCommand = ReactiveCommand.Create(
-            () => NavigateToManualFiling?.Invoke(),
+            () => _navigateToManualFiling(),
             outputScheduler: _scheduler);
 
         AdvanceStatusCommand = ReactiveCommand.CreateFromTask<(Guid Id, FilingStatus NewStatus)>(

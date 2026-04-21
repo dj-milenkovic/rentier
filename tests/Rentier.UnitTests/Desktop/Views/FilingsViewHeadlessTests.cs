@@ -310,6 +310,7 @@ public class FilingsViewHeadlessTests
             bulkDelete,
             confirmDelete: _ => Task.FromResult(false),
             saveFile: _ => Task.CompletedTask,
+            navigateToManualFiling: () => { },
             scheduler: ImmediateScheduler.Instance);
     }
 

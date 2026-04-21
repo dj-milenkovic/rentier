@@ -30,7 +30,6 @@ public static class CompositionRoot
 
         // ViewModels
         services.AddTransient<ProfileSettingsViewModel>();
-        services.AddTransient<FilingsViewModel>();
         services.AddTransient<SettingsViewModel>();
         services.AddSingleton<MainWindowViewModel>();
 
