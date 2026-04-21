@@ -30,6 +30,10 @@
                     Content="{x:Static res:Strings.Filings_Filter_Unpaid}" />
       <ToggleButton IsChecked="{Binding ShowAll}"
                     Content="{x:Static res:Strings.Filings_Filter_All}" />
+      <Button Content="{x:Static res:Strings.ManualFiling_Title}"
+              Command="{Binding NewFilingCommand}"
+              ToolTip.Tip="{x:Static res:Strings.ManualFiling_Title}"
+              HorizontalAlignment="Right" Margin="8,0,0,0" />
     </StackPanel>
 
     <!-- Bulk selection toolbar -->
