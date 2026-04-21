@@ -55,6 +55,7 @@ public class FilingsViewModelBulkDeleteTests
             bulkDelete ?? MockBulkDelete(),
             confirmDelete ?? (_ => Task.FromResult(false)),
             _ => Task.CompletedTask,
+            () => { },
             ImmediateScheduler.Instance);
     }
 

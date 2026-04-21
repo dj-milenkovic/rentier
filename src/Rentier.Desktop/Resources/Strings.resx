@@ -679,4 +679,5 @@
   <data name="ManualFiling_RateSource_Fallback" xml:space="preserve">
     <value>Fallback from {0}</value>
   </data>
+  <data name="Filings_Toolbar_NewFiling" xml:space="preserve"><value>New Filing</value></data>
 </root>

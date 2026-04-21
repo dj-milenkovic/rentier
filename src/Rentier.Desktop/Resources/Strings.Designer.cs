@@ -219,4 +219,5 @@ public static class Strings
     public static string ManualFiling_IncomeType_Interest => "Interest";
     public static string ManualFiling_RateSource_Exact => "Exact ({0})";
     public static string ManualFiling_RateSource_Fallback => "Fallback from {0}";
+    public static string Filings_Toolbar_NewFiling => "New Filing";
 }
