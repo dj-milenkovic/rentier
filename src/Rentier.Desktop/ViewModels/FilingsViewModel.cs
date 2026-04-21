@@ -158,6 +158,7 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
     public ReactiveCommand<Unit, Unit> PreviousPageCommand { get; }
     public ReactiveCommand<Unit, Unit> NextPageCommand { get; }
     public ReactiveCommand<Unit, Unit> ClearErrorCommand { get; }
+    public ReactiveCommand<Unit, Unit> NewFilingCommand { get; }
     public ReactiveCommand<(Guid Id, FilingStatus NewStatus), Unit> AdvanceStatusCommand { get; }
     public ReactiveCommand<(Guid Id, string? Reference), Unit> SavePaymentRefCommand { get; }
     public ReactiveCommand<Guid, Unit> DeleteCommand { get; }
@@ -168,6 +169,12 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
     public ReactiveCommand<(string ColumnTag, bool? CurrentDirection), Unit> ApplySortCommand { get; }
 
     private readonly CompositeDisposable _rowSubscriptions = new();
+
+    /// <summary>
+    /// Set by MainWindowViewModel after construction to wire the "New Filing" navigation.
+    /// The DI container cannot inject <see cref="Action"/> delegates, so this is set via property.
+    /// </summary>
+    public Action? NavigateToManualFiling { get; set; }
 
     public FilingsViewModel(
         IQueryHandler<GetFilingsQuery, Result<FilingsPageResult, Error>> getFilings,
@@ -223,6 +230,10 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
 
         ClearErrorCommand = ReactiveCommand.Create(
             () => { ErrorMessage = null; },
+            outputScheduler: _scheduler);
+
+        NewFilingCommand = ReactiveCommand.Create(
+            () => NavigateToManualFiling?.Invoke(),
             outputScheduler: _scheduler);
 
         AdvanceStatusCommand = ReactiveCommand.CreateFromTask<(Guid Id, FilingStatus NewStatus)>(

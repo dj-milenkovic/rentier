@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using System.Xml;
 using System.Xml.Linq;
 using Rentier.Application.Interfaces;
 using Rentier.Domain.Entities;
@@ -9,39 +10,84 @@ namespace Rentier.Infrastructure.Serialization;
 
 public sealed class PpOpoXmlSerializer : IXmlFilingSerializer
 {
+    private static readonly XNamespace Ns1 = "http://pid.purs.gov.rs";
+
+    /// <summary>
+    /// Custom UTF-8 encoding that reports "UTF-8" (uppercase) in the XML declaration.
+    /// </summary>
+    private sealed class UppercaseUtf8Encoding : UTF8Encoding
+    {
+        internal UppercaseUtf8Encoding() : base(encoderShouldEmitUTF8Identifier: false) { }
+        public override string WebName => "UTF-8";
+        public override string HeaderName => "UTF-8";
+        public override string BodyName => "UTF-8";
+    }
+
     public byte[] Serialize(Filing filing, TaxpayerProfile profile, string paymentNotes)
     {
         var sifra = MapIncomeType(filing.IncomeType);
 
         var doc = new XDocument(
-            new XDeclaration("1.0", "utf-8", null),
-            new XElement("PodaciOPrijavi",
-                new XElement("VrstaPrijave", "1"),
-                new XElement("ObracunskiPeriod", filing.IncomeDate.ToString("yyyy-MM")),
-                new XElement("DatumOstvarivanjaPrihoda", filing.IncomeDate.ToString("yyyy-MM-dd")),
-                new XElement("DatumDospelostiObaveze", filing.FilingDeadline.ToString("yyyy-MM-dd")),
-                new XElement("PodaciOPoreskomObvezniku",
-                    new XElement("JMBG", profile.Jmbg),
-                    new XElement("Ime", new XCData(profile.FullName)),
-                    new XElement("Adresa", new XCData(profile.Address)),
-                    new XElement("SifraOpstine", profile.OpstinaCode),
-                    new XElement("Telefon", profile.PhoneNumber ?? string.Empty),
-                    new XElement("Email", profile.Email ?? string.Empty)),
-                new XElement("PodaciONacinuOstvarivanjaPrihoda",
-                    new XElement("NacinIsplate", "3"),
-                    new XElement("Ostalo", paymentNotes ?? string.Empty)),
-                new XElement("DeklarisaniPodaciOVrstamaPrihoda",
-                    new XElement("SifraVrstePrihoda", sifra),
-                    new XElement("BrutoPrihod", Fmt(filing.GrossIncomeRsd)),
-                    new XElement("OsnovicaZaPorez", Fmt(filing.GrossTaxPayableRsd)),
-                    new XElement("ObracunatiPorez", Fmt(filing.GrossTaxPayableRsd)),
-                    new XElement("PorezPlacenDrugojDrzavi", Fmt(filing.WhtPaidRsd)),
-                    new XElement("PorezZaUplatu", Fmt(filing.TaxPayableRsd)))));
+            new XDeclaration("1.0", "UTF-8", null),
+            new XElement(Ns1 + "PodaciPoreskeDeklaracije",
+                new XAttribute(XNamespace.Xmlns + "ns1", Ns1),
+                new XElement(Ns1 + "PodaciOPrijavi",
+                    new XElement(Ns1 + "VrstaPrijave", "1"),
+                    new XElement(Ns1 + "ObracunskiPeriod", filing.IncomeDate.ToString("yyyy-MM")),
+                    new XElement(Ns1 + "Rok", "1")),
+                new XElement(Ns1 + "PodaciOPoreskomObvezniku",
+                    new XElement(Ns1 + "PoreskiIdentifikacioniBroj",
+                        new XElement(Ns1 + "JMBGPodnosiocaPrijave", profile.Jmbg)),
+                    new XElement(Ns1 + "ImePrezimeObveznika", profile.FullName),
+                    new XElement(Ns1 + "UlicaBrojPoreskogObveznika", profile.Address),
+                    new XElement(Ns1 + "PrebivalisteOpstina", profile.OpstinaCode),
+                    new XElement(Ns1 + "TelefonKontaktOsobe", profile.PhoneNumber ?? string.Empty),
+                    new XElement(Ns1 + "ElektronskaPosta", profile.Email ?? string.Empty)),
+                new XElement(Ns1 + "PodaciONacinuOstvarivanjaPrihoda",
+                    new XElement(Ns1 + "NacinIsplate", "3"),
+                    new XElement(Ns1 + "Ostalo", paymentNotes ?? string.Empty)),
+                new XElement(Ns1 + "PodaciOVrstamaPrihoda",
+                    new XElement(Ns1 + "RedniBroj", "1"),
+                    new XElement(Ns1 + "SifraVrstePrihoda", sifra),
+                    new XElement(Ns1 + "DatumOstvarivanjaPrihoda", filing.IncomeDate.ToString("yyyy-MM-dd")),
+                    new XElement(Ns1 + "DatumDospelostiObaveze", filing.FilingDeadline.ToString("yyyy-MM-dd")),
+                    new XElement(Ns1 + "BrutoPrihod", Fmt(filing.GrossIncomeRsd)),
+                    new XElement(Ns1 + "NormaraniTroskovi", "0.00"),
+                    new XElement(Ns1 + "OsnovicaZaPorez", Fmt(filing.GrossIncomeRsd)),
+                    new XElement(Ns1 + "ObracunatiPorez", Fmt(filing.GrossTaxPayableRsd)),
+                    new XElement(Ns1 + "PorezPlacenDrugojDrzavi", Fmt(filing.WhtPaidRsd)),
+                    new XElement(Ns1 + "PorezZaUplatu", Fmt(filing.TaxPayableRsd)),
+                    new XElement(Ns1 + "OsnovicaZaDoprinose", "0.00"),
+                    new XElement(Ns1 + "ObracunatiDoprinosi", "0.00"),
+                    new XElement(Ns1 + "DoprinosiPlaceniDrugojDrzavi", "0.00"),
+                    new XElement(Ns1 + "DoprinosiZaUplatu", "0.00")),
+                new XElement(Ns1 + "Ukupno",
+                    new XElement(Ns1 + "BrutoPrihod", Fmt(filing.GrossIncomeRsd)),
+                    new XElement(Ns1 + "NormaraniTroskovi", "0.00"),
+                    new XElement(Ns1 + "OsnovicaZaPorez", Fmt(filing.GrossIncomeRsd)),
+                    new XElement(Ns1 + "ObracunatiPorez", Fmt(filing.GrossTaxPayableRsd)),
+                    new XElement(Ns1 + "PorezPlacenDrugojDrzavi", Fmt(filing.WhtPaidRsd)),
+                    new XElement(Ns1 + "PorezZaUplatu", Fmt(filing.TaxPayableRsd)),
+                    new XElement(Ns1 + "OsnovicaZaDoprinose", "0.00"),
+                    new XElement(Ns1 + "ObracunatiDoprinosi", "0.00"),
+                    new XElement(Ns1 + "DoprinosiPlaceniDrugojDrzavi", "0.00"),
+                    new XElement(Ns1 + "DoprinosiZaUplatu", "0.00")),
+                new XElement(Ns1 + "Kamata",
+                    new XElement(Ns1 + "PorezZaUplatu", "0.00"),
+                    new XElement(Ns1 + "DoprinosiZaUplatu", "0.00")),
+                new XElement(Ns1 + "PodaciODodatnojKamati")));
 
         using var ms = new MemoryStream();
-        using var writer = new StreamWriter(ms, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
-        doc.Save(writer);
-        writer.Flush();
+        var settings = new XmlWriterSettings
+        {
+            Encoding = new UppercaseUtf8Encoding(),
+            OmitXmlDeclaration = false,
+            Indent = true,
+        };
+        using (var writer = XmlWriter.Create(ms, settings))
+        {
+            doc.Save(writer);
+        }
         return ms.ToArray();
     }
 
@@ -55,3 +101,4 @@ public sealed class PpOpoXmlSerializer : IXmlFilingSerializer
         _ => throw new ArgumentOutOfRangeException(nameof(t), t, null)
     };
 }
+

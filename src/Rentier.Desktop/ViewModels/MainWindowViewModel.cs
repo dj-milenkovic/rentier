@@ -68,6 +68,25 @@ public sealed class MainWindowViewModel : ReactiveObject
         var syncVm = ActivatorUtilities.CreateInstance<SyncViewModel>(
             provider, navigateToFilings_sync);
 
+        // Wire ManualFilingViewModel navigation
+        Action navigateBackToFilings = () =>
+        {
+            filingsVm.ShowAll = true;
+            CurrentViewModel = filingsVm;
+            var filingsEntry = NavigationEntries?.FirstOrDefault(e => e.ViewModel is FilingsViewModel);
+            if (filingsEntry is not null)
+                SelectedEntry = filingsEntry;
+        };
+
+        Action navigateToManualFiling = () =>
+        {
+            var manualFilingVm = ActivatorUtilities.CreateInstance<ManualFilingViewModel>(
+                provider, navigateBackToFilings);
+            CurrentViewModel = manualFilingVm;
+        };
+
+        filingsVm.NavigateToManualFiling = navigateToManualFiling;
+
         NavigationEntries = new List<NavigationEntry>
         {
             new(Strings.Nav_Dashboard, dashboardVm),
