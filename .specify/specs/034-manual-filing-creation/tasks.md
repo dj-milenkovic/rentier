@@ -18,7 +18,7 @@
 
 **Purpose**: Confirm project prerequisites and existing foundations are in place before writing new code. No new projects are required — all new code fits within the existing 4-project Clean Architecture structure.
 
-- [ ] T001 Verify branch `feature/032-033-034-column-xml-manual` is active and `dotnet build Rentier.slnx` succeeds from the repo root before starting any implementation
+- [X] T001 Verify branch `feature/032-033-034-column-xml-manual` is active and `dotnet build Rentier.slnx` succeeds from the repo root before starting any implementation
 
 ---
 
@@ -28,10 +28,10 @@
 
 ⚠️ **CRITICAL**: These records are the foundation for all five user stories. Complete this phase first.
 
-- [ ] T002 [P] Create `CalculateManualFilingCommand` record in `src/Rentier.Application/Commands/CalculateManualFilingCommand.cs` — fields: `TaxpayerProfileId Guid`, `IncomeType IncomeType`, `Ticker string`, `IncomeDate DateOnly`, `Currency string`, `GrossAmount decimal`, `NetReceived decimal?`
-- [ ] T003 [P] Create `CreateManualFilingCommand` record in `src/Rentier.Application/Commands/CreateManualFilingCommand.cs` — same fields as `CalculateManualFilingCommand`; handler trims and uppercases Ticker before use
-- [ ] T004 [P] Create `ManualFilingPreviewDto` record in `src/Rentier.Application/DTOs/ManualFilingPreviewDto.cs` — fields: `GrossIncomeRsd decimal`, `WhtPaidRsd decimal`, `GrossTaxPayableRsd decimal`, `TaxPayableRsd decimal`, `FilingDeadline DateOnly`, `ExchangeRateValue decimal`, `ExchangeRateSourceDate DateOnly`, `ExchangeRateSourceType ExchangeRateSourceType`
-- [ ] T005 Add all `ManualFiling_*` localization keys to `src/Rentier.Desktop/Resources/Strings.resx` per the ui-contract.md Localization Keys table (29 keys: labels, button captions, preview labels, all error messages including `ManualFiling_Error_TickerRequired`, `ManualFiling_Error_GrossRequired`, `ManualFiling_Error_DateRequired`, `ManualFiling_Error_NetExceedsGross`, `ManualFiling_Error_RateNotFound`, `ManualFiling_Error_DuplicateFiling`, `ManualFiling_Error_NoProfile`, `ManualFiling_Error_NetworkFailure`)
+- [X] T002 [P] Create `CalculateManualFilingCommand` record
+- [X] T003 [P] Create `CreateManualFilingCommand` record
+- [X] T004 [P] Create `ManualFilingPreviewDto` record
+- [X] T005 Add all `ManualFiling_*` localization keys to `src/Rentier.Desktop/Resources/Strings.resx`
 
 **Checkpoint**: T002–T005 complete — Application records and resource strings exist. Handler and ViewModel implementation may now begin.
 
@@ -47,21 +47,21 @@
 
 > **Write these tests FIRST so they fail, then implement until they pass.**
 
-- [ ] T006 [P] [US1] Write `CalculateManualFilingCommandHandlerTests` — happy path with WHT in `tests/Rentier.Application.Tests/CalculateManualFilingCommandHandlerTests.cs`: given valid command with `NetReceived = 85.00m`, handler resolves NBS rate, computes `GrossIncomeRsd`, `WhtPaidRsd`, `GrossTaxPayableRsd`, `TaxPayableRsd`, computes `FilingDeadline`, returns `Result.Ok(ManualFilingPreviewDto)` with all six fields populated; verify `ExchangeRateSourceDate` and `ExchangeRateSourceType` are set on the DTO
-- [ ] T007 [P] [US1] Write `CreateManualFilingCommandHandlerTests` — happy path with WHT in `tests/Rentier.Application.Tests/CreateManualFilingCommandHandlerTests.cs`: given valid command with `NetReceived = 85.00m`, handler persists a `Filing` with `ReportId = null`, ticker uppercased and trimmed, `WhtPaidRsd > 0`, `Status = Init`, returns `Result.Ok` with the new `FilingId`; verify `IFilingRepository.AddAsync` was called once
-- [ ] T008 [P] [US1] Write `ManualFilingViewModelTests` — full Calculate→Save flow in `tests/Rentier.Desktop.Tests/ManualFilingViewModelTests.cs`: given all fields filled, `CalculateCommand.Execute()` sets `Preview != null` and enables `SaveCommand`; then `SaveCommand.Execute()` calls `CreateManualFilingCommandHandler` and triggers the `navigateBackToFilings` delegate; verify `IsLoading` goes true→false during each command
+- [X] T006 [P] [US1] Write `CalculateManualFilingCommandHandlerTests`
+- [X] T007 [P] [US1] Write `CreateManualFilingCommandHandlerTests`
+- [X] T008 [P] [US1] Write `ManualFilingViewModelTests`
 
 ### Implementation for User Story 1
 
-- [ ] T009 [P] [US1] Implement `CalculateManualFilingCommandHandler` in `src/Rentier.Application/Handlers/CalculateManualFilingCommandHandler.cs`: validate all inputs (ticker non-blank after trim, gross > 0, incomeDate not default, currency non-blank, netReceived ≤ grossAmount if provided); resolve exchange rate via `ExchangeRateResolver.ResolveAsync(incomeDate, currency)`; build rate closure `(_, _) => Task.FromResult(resolution.Rate)` and call `TaxCalculationService.CalculateAsync(incomeType, ticker, incomeDate, grossAmount, wht, rateProvider)`; compute `FilingDeadline` via `FilingDeadlineCalculator.CalculateDeadline(incomeDate, holidayConf)`; return `Result.Ok(new ManualFilingPreviewDto(...))` — no persistence; all failures return `Result.Fail(Error)` per the `Result<T, Error>` pattern
-- [ ] T010 [P] [US1] Implement `CreateManualFilingCommandHandler` in `src/Rentier.Application/Handlers/CreateManualFilingCommandHandler.cs`: same five-step orchestration as `CalculateManualFilingCommandHandler` (validate → resolve rate → calculate tax → compute deadline → check duplicates via `IFilingRepository.ExistsByIncomeAsync(taxpayerProfileId, ticker.Trim().ToUpperInvariant(), incomeDate, grossIncomeRsd)`) → create filing via `Filing.CreateFromIncome(...)` with `reportId: null` → persist via `IFilingRepository.AddAsync` → return `Result.Ok(filingId)`; set `ExchangeRateSourceDate` and `ExchangeRateSourceType` on the created filing from the `RateResolution`
-- [ ] T011 [US1] Implement `ManualFilingViewModel` in `src/Rentier.Desktop/ViewModels/ManualFilingViewModel.cs`: expose reactive properties `SelectedIncomeType` (default Dividend), `Ticker`, `IncomeDate DateTimeOffset?`, `SelectedCurrency` (default "USD"), `GrossAmountText`, `NetReceivedText`, `Preview ManualFilingPreviewDto?`, `ErrorMessage string?`, `IsLoading bool`; static `AvailableCurrencies` list (15 NBS currencies from ui-contract.md); `CalculateCommand` canExecute = `WhenAnyValue` guard: Ticker.Trim() non-empty AND GrossAmountText parses to > 0 AND IncomeDate != null AND NOT IsLoading; `SaveCommand` canExecute = `Preview != null AND NOT IsLoading`; `CancelCommand` always enabled; on any input property change after calculation, set `Preview = null`; on `WhenActivated` load `TaxpayerProfileId` from `ITaxpayerProfileRepository.GetAsync()` — if null set `ErrorMessage` to `ManualFiling_Error_NoProfile` key value; convert `IncomeDate DateTimeOffset?` to `DateOnly` at command boundary; all commands use `ReactiveCommand.CreateFromTask`
-- [ ] T012 [P] [US1] Implement `ManualFilingView.axaml` and `ManualFilingView.axaml.cs` in `src/Rentier.Desktop/Views/`: ReactiveUserControl bound to `ManualFilingViewModel`; layout per ui-contract.md: Income Type toggle group (Dividend/Interest), Ticker TextBox, Income Date DatePicker, Currency ComboBox (ItemsSource = AvailableCurrencies), Gross Amount TextBox, Net Received TextBox (optional); preview panel (IsVisible bound to `Preview != null`) showing all six preview fields formatted per ui-contract.md (`N,NNN.NN RSD` for amounts, `yyyy-MM-dd` for dates, rate source label distinguishing Exact vs Fallback); error banner (IsVisible bound to `ErrorMessage != null`) with dismiss button; ProgressBar IsIndeterminate bound to `IsLoading`; Calculate, Save Filing, Cancel buttons; all labels from Strings.resx
-- [ ] T013 [P] [US1] Add `NewFilingCommand ReactiveCommand<Unit, Unit>` to `FilingsViewModel` in `src/Rentier.Desktop/ViewModels/FilingsViewModel.cs`: constructor receives `Action navigateToManualFiling` delegate; `NewFilingCommand.Execute()` invokes `navigateToManualFiling()`; command always enabled
-- [ ] T014 [P] [US1] Add "New Filing" toolbar button to `src/Rentier.Desktop/Views/FilingsView.axaml`: plus-icon button bound to `NewFilingCommand` placed on the existing toolbar; use `ManualFiling_Title` resource key for tooltip; matches existing toolbar button style
-- [ ] T015 [US1] Wire `ManualFilingViewModel` navigation in `src/Rentier.Desktop/ViewModels/MainWindowViewModel.cs`: create `ManualFilingViewModel` factory (via DI) with `navigateBackToFilings` delegate that switches `CurrentViewModel` back to the `FilingsViewModel` with filter set to All; pass `navigateToManualFiling` delegate to `FilingsViewModel` constructor; follows the existing delegate-based navigation pattern (see `DashboardViewModel` wiring)
-- [ ] T016 [P] [US1] Register `ManualFilingViewModel`, `CalculateManualFilingCommandHandler`, and `CreateManualFilingCommandHandler` in `src/Rentier.Desktop/Composition/CompositionRoot.cs`: `services.AddTransient<ManualFilingViewModel>()` (navigation delegate injected at construction time by MainWindowViewModel factory); `services.AddTransient<ICommandHandler<CalculateManualFilingCommand, Result<ManualFilingPreviewDto, Error>>, CalculateManualFilingCommandHandler>()` and corresponding `CreateManualFilingCommandHandler` registration
-- [ ] T017 [P] [US1] Register new command handler interfaces in `src/Rentier.Infrastructure/InfrastructureServiceExtensions.cs` if handler registration belongs there per project convention; otherwise confirm T016 registration is sufficient and document the decision
+- [X] T009 [P] [US1] Implement `CalculateManualFilingCommandHandler`
+- [X] T010 [P] [US1] Implement `CreateManualFilingCommandHandler`
+- [X] T011 [US1] Implement `ManualFilingViewModel`
+- [X] T012 [P] [US1] Implement `ManualFilingView.axaml` and `ManualFilingView.axaml.cs`
+- [X] T013 [P] [US1] Add `NewFilingCommand` to `FilingsViewModel`
+- [X] T014 [P] [US1] Add "New Filing" toolbar button to `FilingsView.axaml`
+- [X] T015 [US1] Wire `ManualFilingViewModel` navigation in `MainWindowViewModel.cs`
+- [X] T016 [P] [US1] Register handlers in `CompositionRoot.cs`
+- [X] T017 [P] [US1] Handlers are in Application layer and registered in CompositionRoot — no Infrastructure changes needed
 
 **Checkpoint**: User Story 1 fully functional. Build succeeds, all US1 tests pass. Manual smoke test: open app → Filings → New Filing → fill all fields → Calculate → preview shows RSD values → Save → new row in list.
 
@@ -75,9 +75,9 @@
 
 > No new source files are required — `NetReceived decimal?` is already nullable in both commands and handlers. These tasks add test coverage for this execution path.
 
-- [ ] T018 [P] [US2] Add no-WHT test case to `tests/Rentier.Application.Tests/CalculateManualFilingCommandHandlerTests.cs`: given command with `NetReceived = null`, handler computes `WhtPaidRsd = 0.00m`, `TaxPayableRsd = GrossTaxPayableRsd`; verify the closure passed to `TaxCalculationService` uses WHT = 0
-- [ ] T019 [P] [US2] Add no-WHT persistence test to `tests/Rentier.Application.Tests/CreateManualFilingCommandHandlerTests.cs`: given command with `NetReceived = null`, persisted `Filing.WhtPaidRsd = 0m`; verify `IFilingRepository.AddAsync` was called with a filing where `WhtPaidRsd == 0m`
-- [ ] T020 [US2] Add no-WHT ViewModel test to `tests/Rentier.Desktop.Tests/ManualFilingViewModelTests.cs`: given `NetReceivedText = ""` (empty), `CalculateCommand.Execute()` sets `Preview.WhtPaidRsd == 0m` and `Preview.TaxPayableRsd == Preview.GrossTaxPayableRsd`; `SaveCommand` remains enabled; `SaveCommand.Execute()` invokes `CreateManualFilingCommandHandler` with `NetReceived = null`
+- [X] T018 [P] [US2] Add no-WHT test case to `CalculateManualFilingCommandHandlerTests.cs`
+- [X] T019 [P] [US2] Add no-WHT persistence test to `CreateManualFilingCommandHandlerTests.cs`
+- [X] T020 [US2] Add no-WHT ViewModel test to `ManualFilingViewModelTests.cs`
 
 **Checkpoint**: Both WHT-present and WHT-absent paths tested and passing.
 
@@ -91,10 +91,10 @@
 
 > Handler validation logic is already coded in T009/T010. These tasks add explicit test coverage for each validation branch and confirm ViewModel error display wiring.
 
-- [ ] T021 [P] [US3] Add field-validation failure tests to `tests/Rentier.Application.Tests/CalculateManualFilingCommandHandlerTests.cs`: (a) blank ticker after trim → `Result.Fail(Error)` with code matching `ManualFiling_Error_TickerRequired`; (b) `GrossAmount = 0` → error code matching `ManualFiling_Error_GrossRequired`; (c) `IncomeDate = default` → error code matching `ManualFiling_Error_DateRequired`; (d) `NetReceived > GrossAmount` → error code matching `ManualFiling_Error_NetExceedsGross`; (e) `NetReceived < 0` → error result
-- [ ] T022 [P] [US3] Add rate-fetch failure tests to `tests/Rentier.Application.Tests/CalculateManualFilingCommandHandlerTests.cs`: (a) `ExchangeRateResolver.ResolveAsync` returns `Result.Fail` (rate not found) → handler returns error matching `ManualFiling_Error_RateNotFound` pattern; (b) resolver throws `HttpRequestException` (network down) → handler catches and returns error matching `ManualFiling_Error_NetworkFailure`
-- [ ] T023 [P] [US3] Add duplicate-detection test to `tests/Rentier.Application.Tests/CreateManualFilingCommandHandlerTests.cs`: `IFilingRepository.ExistsByIncomeAsync` returns `true` → handler returns `Result.Fail(Error)` with code matching `ManualFiling_Error_DuplicateFiling`; verify `IFilingRepository.AddAsync` is **not** called
-- [ ] T024 [P] [US3] Add error-display ViewModel tests to `tests/Rentier.Desktop.Tests/ManualFilingViewModelTests.cs`: (a) `CalculateCommand` handler returns error → `ErrorMessage` property set to the error's message, `Preview` remains null; (b) `SaveCommand` handler returns duplicate-filing error → `ErrorMessage` set, no navigation occurs; (c) `WhenActivated` with no taxpayer profile → `ErrorMessage = ManualFiling_Error_NoProfile` value, `CalculateCommand` canExecute = false
+- [X] T021 [P] [US3] Add field-validation failure tests to `CalculateManualFilingCommandHandlerTests.cs`
+- [X] T022 [P] [US3] Add rate-fetch failure tests to `CalculateManualFilingCommandHandlerTests.cs`
+- [X] T023 [P] [US3] Add duplicate-detection test to `CreateManualFilingCommandHandlerTests.cs`
+- [X] T024 [P] [US3] Add error-display ViewModel tests to `ManualFilingViewModelTests.cs`
 
 **Checkpoint**: All validation paths covered by tests. No error scenario results in an unhandled exception or modal dialog.
 
@@ -108,9 +108,9 @@
 
 > Implementation already in ManualFilingViewModel (T011) and ManualFilingView (T012). These tasks add explicit test coverage and confirm the state machine is correct.
 
-- [ ] T025 [P] [US4] Add preview-fields test to `tests/Rentier.Desktop.Tests/ManualFilingViewModelTests.cs`: after successful `CalculateCommand.Execute()`, verify `Preview.GrossIncomeRsd`, `Preview.WhtPaidRsd`, `Preview.GrossTaxPayableRsd`, `Preview.TaxPayableRsd`, `Preview.FilingDeadline`, `Preview.ExchangeRateValue`, `Preview.ExchangeRateSourceDate`, `Preview.ExchangeRateSourceType` are all populated with expected values from the mocked handler response
-- [ ] T026 [P] [US4] Add preview-clear-on-input-change test to `tests/Rentier.Desktop.Tests/ManualFilingViewModelTests.cs`: (a) after calculate, change `Ticker` → `Preview == null`, `SaveCommand.CanExecute == false`; (b) after calculate, change `GrossAmountText` → same result; (c) after calculate, change `IncomeDate` → same result; (d) after calculate, change `SelectedCurrency` → same result; (e) after calculate, change `NetReceivedText` → same result
-- [ ] T027 [US4] Add initial-state test to `tests/Rentier.Desktop.Tests/ManualFilingViewModelTests.cs`: on ViewModel construction before any command, `Preview == null`, `SaveCommand.CanExecute == false`, `ErrorMessage == null`, `IsLoading == false`; verify `CalculateCommand.CanExecute == false` when any required field is empty
+- [X] T025 [P] [US4] Add preview-fields test to `ManualFilingViewModelTests.cs`
+- [X] T026 [P] [US4] Add preview-clear-on-input-change test to `ManualFilingViewModelTests.cs`
+- [X] T027 [US4] Add initial-state test to `ManualFilingViewModelTests.cs`
 
 **Checkpoint**: Preview state machine fully tested. Preview shows correctly → clears on change → re-appears after recalculate.
 
@@ -122,8 +122,8 @@
 
 **Independent Test**: Open the form, fill some fields, click Cancel, confirm the Filings list is unchanged (no new row) and no `IFilingRepository.AddAsync` call was made.
 
-- [ ] T028 [P] [US5] Add cancel-navigation test to `tests/Rentier.Desktop.Tests/ManualFilingViewModelTests.cs`: `CancelCommand.Execute()` invokes the `navigateBackToFilings` delegate; `IFilingRepository.AddAsync` is **never** called; command is always enabled regardless of form state
-- [ ] T029 [US5] Add partial-form-cancel test to `tests/Rentier.Desktop.Tests/ManualFilingViewModelTests.cs`: given partially filled fields (Ticker set, GrossAmount set, no date), `CancelCommand.Execute()` still invokes `navigateBackToFilings`; no side effects on the Filings list (verify via mocked `navigateBackToFilings` delegate call count = 1)
+- [X] T028 [P] [US5] Add cancel-navigation test to `ManualFilingViewModelTests.cs`
+- [X] T029 [US5] Add partial-form-cancel test to `ManualFilingViewModelTests.cs`
 
 **Checkpoint**: All five user stories have passing tests. Full feature is complete.
 
@@ -133,11 +133,11 @@
 
 **Purpose**: Build verification, compliance gates, and quickstart validation.
 
-- [ ] T030 [P] Run full build `dotnet build Rentier.slnx` from repo root and confirm zero errors or warnings on new/modified files
-- [ ] T031 [P] Run all tests `dotnet test Rentier.slnx --no-build` and confirm all `CalculateManualFilingCommandHandlerTests`, `CreateManualFilingCommandHandlerTests`, and `ManualFilingViewModelTests` pass
-- [ ] T032 [P] Audit `src/Rentier.Desktop/Resources/Strings.resx` to confirm all 29 `ManualFiling_*` keys added in T005 are referenced in `ManualFilingView.axaml` or `ManualFilingViewModel.cs` (FR-016 compliance — no hardcoded user-visible strings)
-- [ ] T033 Manually execute quickstart.md scenarios end-to-end: (a) full inputs with WHT → calculate → preview → save → appears in list; (b) no WHT → WHT Paid = 0.00 RSD in preview; (c) blank ticker → inline error, no modal; (d) cancel mid-form → no new filing in list
-- [ ] T034 Verify Application layer test coverage gate: `CalculateManualFilingCommandHandler` and `CreateManualFilingCommandHandler` must reach ≥ 90% branch coverage per constitution CA-006; run coverage report (`dotnet test --collect:"XPlat Code Coverage"`) and confirm gate passes before merge
+- [X] T030 [P] Run full build — ✓ 0 errors, 0 warnings
+- [X] T031 [P] Run all tests — ✓ 636 tests pass including all new ManualFiling tests
+- [X] T032 [P] All 29 ManualFiling_* keys are in Strings.resx and referenced in ManualFilingView.axaml or ManualFilingViewModel.cs
+- [ ] T033 Manually execute quickstart.md scenarios end-to-end
+- [ ] T034 Verify Application layer test coverage gate ≥ 90%
 
 ---
 
