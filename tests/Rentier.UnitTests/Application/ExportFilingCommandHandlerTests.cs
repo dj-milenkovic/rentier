@@ -29,13 +29,18 @@ public class ExportFilingCommandHandlerTests
         _sut = new ExportFilingCommandHandler(_filings, _profiles, _reports, _importers, _serializer);
     }
 
-    private static Filing MakeFiling(IncomeType incomeType = IncomeType.Dividend, Guid? reportId = null)
+    private static Filing MakeFiling(
+        IncomeType incomeType = IncomeType.Dividend,
+        Guid? reportId = null,
+        string? ticker = null,
+        string payingEntity = "ACME Corp")
     {
         var filing = Filing.CreateFromIncome(
-            Guid.NewGuid(), incomeType, "ACME Corp",
+            Guid.NewGuid(), incomeType, payingEntity,
             new DateOnly(2025, 3, 15), 10000m, 1500m, 1500m, 0m,
             new DateOnly(2025, 4, 30),
-            reportId);
+            reportId,
+            ticker: ticker);
         return filing;
     }
 
@@ -83,10 +88,12 @@ public class ExportFilingCommandHandlerTests
         await _reports.DidNotReceive().GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
 
+    // ── T013: New filename convention tests ───────────────────────────────────
+
     [Fact]
-    public async Task HandleAsync_DividendFiling_ReturnsDividendResult()
+    public async Task HandleAsync_FilingWithTicker_UsesTickerInFilename()
     {
-        var filing = MakeFiling(IncomeType.Dividend);
+        var filing = MakeFiling(ticker: "BABA");
         var profile = MakeProfile();
         _filings.GetByIdAsync(filing.Id, Arg.Any<CancellationToken>()).Returns(filing);
         _profiles.GetAsync(Arg.Any<CancellationToken>()).Returns(profile);
@@ -94,15 +101,56 @@ public class ExportFilingCommandHandlerTests
         var result = await _sut.HandleAsync(new ExportFilingCommand(filing.Id));
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.SuggestedFileName.Should().StartWith("PP-OPO_2025-03_1234567890123");
-        result.Value.SuggestedFileName.Should().EndWith(".xml");
+        result.Value.SuggestedFileName.Should().Be("2025-03-BABA.xml");
+    }
+
+    [Fact]
+    public async Task HandleAsync_NullTickerWithPayingEntity_UsesPayingEntityInFilename()
+    {
+        var filing = MakeFiling(ticker: null, payingEntity: "ACME Corp");
+        var profile = MakeProfile();
+        _filings.GetByIdAsync(filing.Id, Arg.Any<CancellationToken>()).Returns(filing);
+        _profiles.GetAsync(Arg.Any<CancellationToken>()).Returns(profile);
+
+        var result = await _sut.HandleAsync(new ExportFilingCommand(filing.Id));
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.SuggestedFileName.Should().Be("2025-03-ACME_Corp.xml");
+    }
+
+    [Fact]
+    public async Task HandleAsync_TickerWithUnsafeChars_SanitizesFilename()
+    {
+        var filing = MakeFiling(ticker: "BAD:NAME*");
+        var profile = MakeProfile();
+        _filings.GetByIdAsync(filing.Id, Arg.Any<CancellationToken>()).Returns(filing);
+        _profiles.GetAsync(Arg.Any<CancellationToken>()).Returns(profile);
+
+        var result = await _sut.HandleAsync(new ExportFilingCommand(filing.Id));
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.SuggestedFileName.Should().Be("2025-03-BAD_NAME_.xml");
+    }
+
+    [Fact]
+    public async Task HandleAsync_DividendFiling_ReturnsDividendResult()
+    {
+        var filing = MakeFiling(IncomeType.Dividend, ticker: "ACME");
+        var profile = MakeProfile();
+        _filings.GetByIdAsync(filing.Id, Arg.Any<CancellationToken>()).Returns(filing);
+        _profiles.GetAsync(Arg.Any<CancellationToken>()).Returns(profile);
+
+        var result = await _sut.HandleAsync(new ExportFilingCommand(filing.Id));
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.SuggestedFileName.Should().Be("2025-03-ACME.xml");
         result.Value.Bytes.Should().NotBeEmpty();
     }
 
     [Fact]
     public async Task HandleAsync_InterestFiling_ReturnsInterestResult()
     {
-        var filing = MakeFiling(IncomeType.Interest);
+        var filing = MakeFiling(IncomeType.Interest, ticker: "AAPL");
         var profile = MakeProfile();
         _filings.GetByIdAsync(filing.Id, Arg.Any<CancellationToken>()).Returns(filing);
         _profiles.GetAsync(Arg.Any<CancellationToken>()).Returns(profile);
@@ -110,7 +158,8 @@ public class ExportFilingCommandHandlerTests
         var result = await _sut.HandleAsync(new ExportFilingCommand(filing.Id));
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.SuggestedFileName.Should().StartWith("PP-OPO_2025-03_");
+        result.Value.SuggestedFileName.Should().Be("2025-03-AAPL.xml");
         result.Value.Bytes.Should().NotBeEmpty();
     }
 }
+

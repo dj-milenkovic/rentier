@@ -84,10 +84,17 @@
               CanUserSortColumns="True"
               Margin="8,4"
               Sorting="DataGrid_Sorting">
+      <DataGrid.Styles>
+        <!-- Apply 4px horizontal margin to all text-cell content (DataGridTextColumn) -->
+        <Style Selector="DataGridCell TextBlock">
+          <Setter Property="Margin" Value="4,0" />
+          <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+      </DataGrid.Styles>
       <DataGrid.Columns>
 
         <!-- Selection checkbox column -->
-        <DataGridTemplateColumn Width="42" CanUserSort="False">
+        <DataGridTemplateColumn Width="40" CanUserSort="False">
           <DataGridTemplateColumn.Header>
             <Grid Width="24" Height="24"
                   HorizontalAlignment="Center"
@@ -111,13 +118,13 @@
         </DataGridTemplateColumn>
 
         <!-- Status badge: read-only coloured pill showing current filing status -->
-        <DataGridTemplateColumn Header="{x:Static res:Strings.Filings_Col_Status}" Width="84" CanUserSort="False">
+        <DataGridTemplateColumn Header="{x:Static res:Strings.Filings_Col_Status}" Width="90" CanUserSort="False">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <Border Background="{Binding Status, Converter={x:Static local:FilingStatusBrushConverter.Instance}}"
                        CornerRadius="10" Padding="8,2"
                        IsHitTestVisible="False"
-                      HorizontalAlignment="Center" VerticalAlignment="Center" Margin="4,2">
+                      HorizontalAlignment="Center" VerticalAlignment="Center" Margin="4,0">
                 <TextBlock Text="{Binding StatusDisplayText}"
                            Foreground="White" FontSize="11" FontWeight="SemiBold"
                            HorizontalAlignment="Center" />
@@ -130,7 +137,7 @@
         <!-- REMOVED: replaced by Actions column icon buttons (feat/030) -->
 
         <!-- Income Type column -->
-        <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_IncomeType}" Width="96" Tag="IncomeType"
+        <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_IncomeType}" Width="110" Tag="IncomeType"
           Binding="{Binding IncomeType, Converter={x:Static local:IncomeTypeDisplayConverter.Instance}}" />
 
         <!-- Paying Entity column -->
@@ -138,28 +145,29 @@
           Binding="{Binding PayingEntity}" />
 
         <!-- Filing Deadline column -->
-        <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_Deadline}" Width="110" Tag="FilingDeadline"
+        <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_Deadline}" Width="120" Tag="FilingDeadline"
           Binding="{Binding DeadlineDisplay}" />
 
         <!-- Tax Payable column -->
-        <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_TaxPayable}" Width="120" Tag="TaxPayable"
+        <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_TaxPayable}" Width="130" Tag="TaxPayable"
           Binding="{Binding TaxPayableDisplay}" />
 
         <!-- Payment Reference column: editable TextBox for Filed rows only -->
-        <DataGridTemplateColumn Header="{x:Static res:Strings.Filings_Col_PaymentRef}" Width="140" Tag="PaymentReference" CanUserSort="False">
+        <DataGridTemplateColumn Header="{x:Static res:Strings.Filings_Col_PaymentRef}" Width="180" Tag="PaymentReference" CanUserSort="False">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <TextBox Text="{Binding PaymentReference}"
                        IsReadOnly="{Binding IsPaymentReferenceEditable, Converter={x:Static local:InvertBoolConverter.Instance}}"
                        LostFocus="PaymentRef_LostFocus"
                        BorderThickness="0"
-                       Background="Transparent" />
+                       Background="Transparent"
+                       Margin="4,0" />
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
 
         <!-- Actions column: Advance Status (chevron-right, Lucide MIT), Export XML (download, Lucide MIT), Delete (trash-2, Lucide MIT) -->
-        <DataGridTemplateColumn Header="{x:Static res:Strings.Filings_Col_Actions}" Width="108" CanUserSort="False">
+        <DataGridTemplateColumn Header="{x:Static res:Strings.Filings_Col_Actions}" Width="Auto" CanUserSort="False">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <StackPanel Orientation="Horizontal" Spacing="2"

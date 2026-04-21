@@ -168,7 +168,8 @@ public sealed class ProcessReportsCommandHandler
                     var filing = Filing.CreateFromIncome(
                         taxpayerProfileId, IncomeType.Dividend, div.EntityName, div.Date,
                         info.GrossIncomeRsd, info.WhtPaidRsd, info.GrossTaxPayableRsd, info.TaxPayableRsd,
-                        deadline, report.Id, resolution.SourceDate, resolution.SourceType);
+                        deadline, report.Id, resolution.SourceDate, resolution.SourceType,
+                        ticker: div.EntityName);
 
                     await _filingRepository.AddAsync(filing, ct);
                     created++;
@@ -219,7 +220,8 @@ public sealed class ProcessReportsCommandHandler
                     var filing = Filing.CreateFromIncome(
                         taxpayerProfileId, IncomeType.Interest, interest.EntityName, interest.Date,
                         info.GrossIncomeRsd, info.WhtPaidRsd, info.GrossTaxPayableRsd, info.TaxPayableRsd,
-                        deadline, report.Id, resolution.SourceDate, resolution.SourceType);
+                        deadline, report.Id, resolution.SourceDate, resolution.SourceType,
+                        ticker: interest.EntityName);
 
                     await _filingRepository.AddAsync(filing, ct);
                     created++;
