@@ -80,9 +80,16 @@
               GridLinesVisibility="Horizontal"
               CanUserSortColumns="False"
               Margin="8,4">
+      <DataGrid.Styles>
+        <!-- Apply 4px horizontal margin to all text-cell content (DataGridTextColumn) -->
+        <Style Selector="DataGridCell TextBlock">
+          <Setter Property="Margin" Value="4,0" />
+          <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+      </DataGrid.Styles>
       <DataGrid.Columns>
         <!-- Selection checkbox column -->
-        <DataGridTemplateColumn Width="44">
+        <DataGridTemplateColumn Width="40">
           <DataGridTemplateColumn.Header>
             <CheckBox IsThreeState="True"
                       IsChecked="{Binding DataContext.IsAllSelected,
@@ -99,7 +106,7 @@
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
-        <DataGridTemplateColumn Header="{x:Static res:Strings.Reports_Col_Name}" Width="2*">
+        <DataGridTemplateColumn Header="{x:Static res:Strings.Reports_Col_Name}" Width="*">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <TextBlock Text="{Binding DisplayName}"
@@ -110,23 +117,23 @@
         </DataGridTemplateColumn>
         <DataGridTextColumn Header="{x:Static res:Strings.Reports_Col_ImportDate}"
                             Binding="{Binding ImportDateDisplay}"
-                            Width="96" />
+                            Width="110" />
         <DataGridTextColumn Header="{x:Static res:Strings.Reports_Col_EmailDate}"
                             Binding="{Binding EmailDateDisplay}"
-                            Width="96" />
+                            Width="110" />
         <DataGridTextColumn Header="{x:Static res:Strings.Reports_Col_Importer}"
                             Binding="{Binding ImporterName}"
-                            Width="120" />
+                            Width="160" />
         <DataGridTextColumn Header="{x:Static res:Strings.Reports_Col_Status}"
                             Binding="{Binding Status, Converter={x:Static local:ReportStatusDisplayConverter.Instance}}"
-                            Width="88" />
+                            Width="100" />
         <DataGridTextColumn Header="{x:Static res:Strings.Reports_Col_FilingCount}"
                             Binding="{Binding FilingCount}"
-                            Width="56" />
-        <DataGridTemplateColumn Width="88">
+                            Width="70" />
+        <DataGridTemplateColumn Width="Auto">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
-              <StackPanel Orientation="Horizontal" Spacing="4" Margin="4,2">
+              <StackPanel Orientation="Horizontal" Spacing="4" Margin="4,0">
                 <Button Command="{Binding DataContext.ViewFilingsCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                         CommandParameter="{Binding Id}"
                         ToolTip.Tip="{x:Static res:Strings.Reports_Tooltip_ViewFilings}"
