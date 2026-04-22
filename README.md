@@ -4,68 +4,123 @@
 [![.NET 8.0+](https://img.shields.io/badge/.NET-8.0+-512BD4.svg)](https://dotnet.microsoft.com/)
 [![Active Development](https://img.shields.io/badge/Status-Active%20Development-brightgreen.svg)](#project-status)
 
-A modern, efficient desktop application for automated Serbian PP-OPO (passive income from securities) tax filing and management. Built with **.NET 8+** and **Avalonia** using **Clean Architecture principles**.
+**Rentier** is a Windows desktop application that helps Serbian taxpayers prepare **PP-OPO tax filings** for passive income (dividends and interest) received through foreign brokers such as Interactive Brokers (IBKR).
 
-## Overview
+It reads your IBKR Activity Statement, fetches NBS exchange rates for each income date, calculates the 15% Serbian income tax, applies any foreign withholding tax credit, and produces a ready-to-submit PP-OPO XML file — one per income event.
 
-Rentier simplifies the complex process of filing Serbian PP-OPO (passive income from securities) taxes by automating:
+> **Disclaimer:** Rentier is a productivity tool, not a licensed tax advisory service. Always verify your filings with a certified Serbian tax advisor.
 
-- **Statement Parsing**: Direct integration with Interactive Brokers (IBKR) and universal CSV import
-- **Tax Calculation**: Automatic computation of withholding taxes and exchange rate adjustments
-- **Filing Management**: Lifecycle tracking (draft → filed → paid) with deadline automation
-- **Exchange Rates**: Automatic NBS (Serbian National Bank) exchange rate fetching and caching
-- **Email Sync**: Secure mailbox synchronization for automated statement retrieval
+---
+
+## Documentation
+
+| Guide | Description |
+|---|---|
+| [Getting Started](GETTING-STARTED.md) | Install the app, create your taxpayer profile, and import your first statement |
+| [IBKR Activity Statement Setup](IBKR-SETUP.md) | How to generate the right CSV from IBKR and connect it to Rentier |
+| [Serbian PP-OPO Tax Overview](TAX-OVERVIEW.md) | How the Serbian passive income tax works and what Rentier calculates |
+
+---
+
+## How It Works
+
+```
+IBKR Activity Statement (CSV)
+        │
+        ▼
+  Rentier parses Dividends,
+  Interest & Withholding Tax rows
+        │
+        ▼
+  NBS exchange rate fetched
+  for each income date
+        │
+        ▼
+  Tax calculated: 15% of gross
+  income minus foreign WHT credit
+        │
+        ▼
+  PP-OPO XML exported
+  (one file per income event)
+        │
+        ▼
+  You upload to ePorezi portal
+  and mark Filing as Filed/Paid
+```
+
+---
 
 ## Features
 
-✅ **Automated Statement Import** – Parse IBKR CSV exports and custom statement formats  
-✅ **Real-Time Tax Calculations** – Accurate withholding tax & foreign exchange adjustments  
-✅ **Secure Credential Management** – OS-level credential store (no passwords in SQLite)  
-✅ **Multi-Year Filing Support** – Manage filings across multiple tax years  
-✅ **NBS Exchange Rate Integration** – Auto-fetch and cache daily Serbian exchange rates  
-✅ **IMAP Email Sync** – Automated statement retrieval with secure mailbox management  
-✅ **Holiday Calendar** – Serbian public holidays for deadline calculations  
-✅ **Fully Async** – Non-blocking UI with ReactiveCommand architecture  
-✅ **Comprehensive Testing** – xUnit + FluentAssertions coverage  
+✅ **IBKR CSV Import** – Parses Activity Statements: dividends, interest, and withholding tax  
+✅ **Tax Calculation** – 15% Serbian income tax with automatic foreign withholding credit  
+✅ **NBS Exchange Rates** – Auto-fetches and caches Serbian National Bank mid-rates per date  
+✅ **PP-OPO XML Export** – Generates submission-ready XML for the ePorezi portal  
+✅ **Filing Lifecycle** – Tracks each filing through Init → Filed → Paid  
+✅ **Deadline Calculation** – 30-day deadline adjusted for weekends and Serbian public holidays  
+✅ **Email Automation** – Monitors an IMAP mailbox for new IBKR statements and imports automatically  
+✅ **Secure Credentials** – OS-level credential store; no passwords stored in SQLite  
+✅ **Multi-Year Support** – Manage filings across multiple tax years  
 
-## Technology Stack
-
-- **Language**: C# 12+
-- **Framework**: .NET 8.0+
-- **UI**: Avalonia (cross-platform MVVM)
-- **Database**: SQLite with Entity Framework Core
-- **Architecture**: Clean Architecture with CQRS pattern
-- **Async**: Full async/await with no blocking calls
-- **Testing**: xUnit, FluentAssertions, NSubstitute
-- **API Integration**: HttpClient (typed client pattern)
-
-## Architecture
-
-Rentier follows **Clean Architecture** principles with strict layer separation:
-
-```
-Rentier.Domain          → Pure C# records, value objects, domain logic
-  ↑
-Rentier.Application     → CQRS commands/queries, business rules, IRepository interfaces
-  ↑
-Rentier.Infrastructure  → EF Core, API clients, email services, credential store
-  ↑
-Rentier.Desktop        → Avalonia UI, ViewModels, event handling
-```
-
-**Key Patterns:**
-- **CQRS**: Commands (`*Command`) and Queries (`*Query`) with corresponding handlers
-- **Result Pattern**: Infrastructure returns `Result<T, Error>` (no exception-as-control-flow)
-- **Value Objects**: `Money`, `MailboxCursor`, `TaxFilingStatus` enforce domain invariants
-- **Dependency Injection**: Composition root in `Rentier.Desktop/Composition/`
+---
 
 ## Prerequisites
 
-- **.NET 8.0 SDK** or later ([download](https://dotnet.microsoft.com/download))
-- **Windows 10+** (Avalonia supports Linux/macOS, but UI is Windows-optimized)
-- **Visual Studio 2022** or **Rider** (recommended)
+- **Windows 10 or later**
+- **.NET 8.0 Runtime** (or later) — [download](https://dotnet.microsoft.com/download)
+- An **Interactive Brokers** account with activity to report
+- A **Serbian taxpayer identification number** (JMBG)
 
-## Getting Started
+---
+
+## Quick Start
+
+1. **Build and run** the application (see [Getting Started](docs/getting-started.md))
+2. **Create your taxpayer profile** — enter your JMBG, full name, address, and municipality code
+3. **Configure an Importer** — link it to your profile and choose how statements arrive (manual upload or email)
+4. **Import a statement** — upload an IBKR CSV or trigger a mailbox sync
+5. **Process the report** — Rentier calculates taxes and generates filings
+6. **Export PP-OPO XML** for each filing and submit via [ePorezi](https://www.purs.gov.rs/e-porezi.html)
+7. **Mark filings as Filed**, then **Paid** once the tax payment clears
+
+---
+
+## Technology Stack
+
+| Area | Technology |
+|---|---|
+| Language | C# 12+ |
+| Framework | .NET 8.0+ |
+| UI | Avalonia (MVVM, cross-platform) |
+| Database | SQLite via Entity Framework Core |
+| Architecture | Clean Architecture + CQRS |
+| Testing | xUnit, FluentAssertions, NSubstitute |
+| Email | MailKit (IMAP) |
+| HTTP | HttpClient typed client pattern |
+
+---
+
+## Developer Guide
+
+### Architecture
+
+Rentier follows **Clean Architecture** with strict layer separation:
+
+```
+Rentier.Domain          → Pure C# records, value objects, domain logic (no external deps)
+  ↑
+Rentier.Application     → CQRS commands/queries, business rules, IRepository interfaces
+  ↑
+Rentier.Infrastructure  → EF Core, NBS scraper, IMAP sync, credential store
+  ↑
+Rentier.Desktop         → Avalonia UI, ReactiveUI ViewModels
+```
+
+**Key patterns:**
+- **CQRS** – Commands (`*Command`) and Queries (`*Query`) with corresponding handlers
+- **Result pattern** – Infrastructure returns `Result<T, Error>` (no exception-as-control-flow)
+- **Value objects** – `Money`, `MailboxCursor`, `HolidayConf` enforce domain invariants
+- **Dependency injection** – Composition root in `Rentier.Desktop/Composition/`
 
 ### Clone & Build
 
@@ -79,7 +134,6 @@ dotnet build
 ### Run the Application
 
 ```bash
-# From workspace root
 dotnet run --project src/Rentier.Desktop/Rentier.Desktop.csproj
 ```
 
@@ -89,31 +143,24 @@ dotnet run --project src/Rentier.Desktop/Rentier.Desktop.csproj
 # All tests
 dotnet test
 
-# With coverage (if coverlet installed)
+# With coverage (requires coverlet)
 dotnet test /p:CollectCoverage=true /p:CoverageFormat=opencover
 
-# Integration tests only (NBS API tests)
+# Skip external integration tests (NBS API etc.)
 dotnet test --filter "Category!=Integration"
 ```
 
-## Development Workflow
-
-### 1. Create a Feature Branch
-```bash
-git checkout -b feature/your-feature-name
-```
-
-### 2. Implementation Guidelines
+### Implementation Guidelines
 
 **Domain Layer** (`Rentier.Domain/`)
 - Pure C# records, no external dependencies
 - Enforce business rules in value object constructors
-- Define `DomainException` for invalid state transitions
+- Use `DomainException` for invalid state transitions
 
 **Application Layer** (`Rentier.Application/`)
-- Create `*Query`/`*Command` records
-- Implement `*QueryHandler`/`*CommandHandler`
-- Define repository interfaces (`IRepository<T>`)
+- Create `*Query`/`*Command` records in `Commands/` or `Queries/`
+- Implement `*QueryHandler`/`*CommandHandler` in `Handlers/`
+- Define repository interfaces in `Repositories/`
 
 **Infrastructure Layer** (`Rentier.Infrastructure/`)
 - Implement EF Core repositories
@@ -123,16 +170,15 @@ git checkout -b feature/your-feature-name
 **Desktop/UI** (`Rentier.Desktop/`)
 - `*ViewModel` → calls Application use cases via `IMediator.Send()`
 - All async: use `ReactiveCommand.CreateFromTask()`
-- Bind to observables, no event handlers in code-behind
+- Bind to observables only — no event handlers in code-behind
 
-### 3. Monetary Values & Dates
+### Monetary Values & Dates
 
-**Always use**:
-- `decimal` for money, tax rates, exchange rates
-- `DateOnly` (not `DateTime`) for date-only values
-- Convert at infrastructure boundary only
+Always use:
+- `decimal` for all money amounts, tax rates, and exchange rates
+- `DateOnly` (not `DateTime`) for all date-only values; convert at infrastructure boundary
 
-### 4. Async/Await Standards
+### Async/Await Standards
 
 ```csharp
 // ✅ Good
@@ -142,65 +188,58 @@ public async Task<Result<Filing>> ProcessAsync(CancellationToken ct)
     return Result.Ok(filing);
 }
 
-// ❌ Bad
+// ❌ Bad — blocks the thread
 public Task<Filing> Process() => Task.FromResult(_repository.Get(id).Result);
 ```
 
-### 5. Testing
+### Testing Conventions
 
-Create corresponding test file in `tests/Rentier.*.Tests/`:
+Tests live in `tests/Rentier.*.Tests/`. Naming: `MethodName_StateUnderTest_ExpectedBehavior`.
 
-**Domain Tests** (pure logic, no mocks)
+**Domain tests** — pure logic, no mocks:
 ```csharp
 [Fact]
-public void FilingStatus_InitToFiled_Succeeds()
+public void AdvanceStatus_InitToFiled_Succeeds()
 {
-    var filing = new Filing { Status = FilingStatus.Init };
-    var result = filing.MarkAsFiled();
-    result.IsSuccess.Should().BeTrue();
+    var filing = Filing.CreateFromIncome(...);
+    filing.AdvanceStatus(FilingStatus.Filed);
+    filing.Status.Should().Be(FilingStatus.Filed);
 }
 ```
 
-**Application Tests** (mock repositories)
+**Application tests** — mock repositories with NSubstitute:
 ```csharp
 [Fact]
-public async Task ProcessReportsCommandHandler_WithValidReports_UpdatesDatabase()
+public async Task ProcessReportsCommandHandler_WithValidReports_CreatesFilings()
 {
     var mockRepo = Substitute.For<IReportRepository>();
-    var handler = new ProcessReportsCommandHandler(mockRepo);
-    
-    var result = await handler.Handle(new ProcessReportsCommand { ... }, CancellationToken.None);
-    
+    var handler = new ProcessReportsCommandHandler(mockRepo, ...);
+    var result = await handler.Handle(new ProcessReportsCommand(...), CancellationToken.None);
     result.IsSuccess.Should().BeTrue();
-    mockRepo.Received(1).SaveAsync(Arg.Any<Report>(), Arg.Any<CancellationToken>());
 }
 ```
 
-**Integration Tests** (real EF Core InMemory)
+**Integration tests** — real EF Core SQLite in-memory:
 ```csharp
 [Fact, Trait("Category", "Integration")]
 public async Task NbsExchangeRateFetcher_FetchesRates_CachesResults()
 {
-    // Uses real HttpClient + fake handler
+    // Uses real HttpClient with fake handler
 }
 ```
 
-## Commit Message Convention
+### Commit Message Convention
 
 ```
 feat: Add NBS exchange rate fetcher
 fix: Correct holiday deadline calculation
 refactor: Extract MailboxSyncService logic
 test: Add edge cases for filing status transitions
-docs: Update architecture decision for Result pattern
+docs: Update IBKR setup guide
 chore: Update dependencies
 ```
 
-## Documentation
-
-Key architectural decisions and domain knowledge are documented in:
-- [`.github/copilot-instructions.md`](.github/copilot-instructions.md) – Architecture rules, Clean Architecture constraints, CQRS flow
-- [`.github/skills/`](.github/skills/) – Domain-specific implementation guides
+---
 
 ## Contribution Guidelines
 
@@ -208,39 +247,43 @@ We welcome contributions! Before opening a pull request:
 
 1. **Fork** this repository
 2. **Create** a feature branch (`git checkout -b feature/descriptive-name`)
-3. **Follow** the [Development Workflow](#development-workflow)
-4. **Write tests** – Domain, Application, and UI layers all require coverage
-5. **Run tests locally** – `dotnet test`
-6. **Format code** – Follow C# conventions (PascalCase classes, camelCase members)
-7. **Commit** with [conventional messages](#commit-message-convention)
-8. **Push** and open a **Pull Request** with a clear description
+3. **Follow** the implementation guidelines above
+4. **Write tests** — Domain, Application, and UI layers all require coverage
+5. **Run tests locally** — `dotnet test`
+6. **Commit** using conventional commit messages
+7. **Push** and open a **Pull Request** with a clear description
 
 ### Code Review Expectations
 
-- Clean Architecture boundaries preserved
-- No passwords/secrets in code
-- All async methods use `CancellationToken`
+- Clean Architecture layer boundaries are preserved
+- No passwords or secrets in source code
+- All async methods accept and forward `CancellationToken`
 - `decimal` for monetary values, `DateOnly` for dates
-- 100% async (no `.Result`, `.Wait()`, or blocking calls)
+- No `.Result` or `.Wait()` blocking calls
 - Tests follow xUnit + FluentAssertions naming conventions
+
+---
 
 ## Roadmap
 
-- [ ] Multi-account support (multiple IBKR/email accounts)
-- [ ] Web API for headless processing
-- [ ] Bulk filing import/export
-- [ ] Alternative statement format providers (Revolut, Wise, etc.)
+- [ ] Multi-account support (multiple IBKR accounts / taxpayer profiles)
+- [ ] Bulk filing export (all filings for a tax year in one action)
+- [ ] Alternative statement providers (Revolut, Wise, etc.)
 - [ ] Cross-platform desktop (Linux/macOS Avalonia improvements)
+
+---
 
 ## Support & Issues
 
-- **Bug Reports**: Open an [issue](../../issues) with reproduction steps
-- **Feature Requests**: Use [discussions](../../discussions) or file an issue with `enhancement` label
-- **Q&A**: Check existing issues/discussions before asking
+- **Bug reports** — Open an [issue](../../issues) with reproduction steps and the relevant CSV section
+- **Feature requests** — Use [discussions](../../discussions) or file an issue with the `enhancement` label
+- **Questions** — Check existing issues and discussions first
+
+---
 
 ## License
 
-This project is licensed under the **Apache License 2.0** – see [LICENSE](LICENSE) for details.
+This project is licensed under the **Apache License 2.0** — see [LICENSE](LICENSE) for details.
 
 ## Authors
 
@@ -248,7 +291,7 @@ This project is licensed under the **Apache License 2.0** – see [LICENSE](LICE
 
 ## Acknowledgments
 
-- [Avalonia](https://avaloniaui.net/) for cross-platform MVVM framework
+- [Avalonia](https://avaloniaui.net/) for the cross-platform MVVM UI framework
+- [MailKit](https://github.com/jstedfast/MailKit) for IMAP email sync
 - [Entity Framework Core](https://learn.microsoft.com/en-us/ef/core/) for data access
 - [Serbian National Bank (NBS)](https://www.nbs.rs/) for exchange rate services
-- Open source community feedback and contributions
