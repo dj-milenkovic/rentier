@@ -47,7 +47,8 @@ public class ImportCsvAndViewFilingsE2ETest : IDisposable
 
         // Assert
         window.Should().NotBeNull();
-        window.Title.Should().Contain("Rentier");
+        // window is guarded by NotBeNull() above; ! suppresses the nullable warning.
+        window!.Title.Should().Contain("Rentier");
 
         // Cleanup
         window.Close();
