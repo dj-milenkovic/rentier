@@ -1,19 +1,18 @@
 using Avalonia;
 using Avalonia.Data.Converters;
 using Avalonia.Media;
-using Rentier.Domain.Enums;
+using Rentier.Application.DTOs;
 
 namespace Rentier.Desktop.Converters;
 
-public static class FilingStatusBrushConverter
+public static class SyncSeverityBrushConverter
 {
     public static readonly IValueConverter Instance =
-        new FuncValueConverter<FilingStatus, IBrush>(s => s switch
+        new FuncValueConverter<SyncProgressSeverity, IBrush>(s => s switch
         {
-            FilingStatus.Init  => GetBrush("RentierStatusInitBrush"),
-            FilingStatus.Filed => GetBrush("RentierStatusFiledBrush"),
-            FilingStatus.Paid  => GetBrush("RentierStatusPaidBrush"),
-            _                  => Brushes.Transparent
+            SyncProgressSeverity.Error   => GetBrush("RentierDangerForegroundBrush"),
+            SyncProgressSeverity.Warning => GetBrush("RentierWarningForegroundBrush"),
+            _                            => GetBrush("RentierTextSecondaryBrush")
         });
 
     private static IBrush GetBrush(string key)

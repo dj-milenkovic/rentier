@@ -1,3 +1,4 @@
+using Avalonia.Media;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reactive.Disposables;
 using ReactiveUI;
@@ -94,11 +95,11 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
 
         NavigationEntries = new List<NavigationEntry>
         {
-            new(Strings.Nav_Dashboard, dashboardVm),
-            new(Strings.Nav_Filings, filingsVm),
-            new(Strings.Nav_Reports, reportsVm),
-            new(Strings.Nav_Sync, syncVm),
-            new(Strings.Nav_Settings, settingsVm)
+            new(Strings.Nav_Dashboard, dashboardVm, Icon: NavIcon("NavHomeIcon")),
+            new(Strings.Nav_Filings,   filingsVm,   Icon: NavIcon("NavFilingsIcon")),
+            new(Strings.Nav_Reports,   reportsVm,   Icon: NavIcon("NavReportsIcon")),
+            new(Strings.Nav_Sync,      syncVm,      Icon: NavIcon("NavSyncIcon")),
+            new(Strings.Nav_Settings,  settingsVm,  Icon: NavIcon("NavSettingsIcon"))
         };
 
         _selectedEntry = NavigationEntries[0];
@@ -111,5 +112,12 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
                 .Subscribe(entry => { if (entry is not null) CurrentViewModel = entry.ViewModel; })
                 .DisposeWith(disposables);
         });
+    }
+
+    private static StreamGeometry? NavIcon(string key)
+    {
+        if (Avalonia.Application.Current?.TryGetResource(key, Avalonia.Styling.ThemeVariant.Default, out var resource) == true)
+            return resource as StreamGeometry;
+        return null;
     }
 }

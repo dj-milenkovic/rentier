@@ -16,29 +16,38 @@
     <!-- Error banner -->
     <TextBlock Grid.Row="0"
                IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-               Text="{Binding ErrorMessage}" Foreground="Red" TextWrapping="Wrap" Margin="0,4" />
+               Text="{Binding ErrorMessage}"
+               Foreground="{DynamicResource RentierDangerForegroundBrush}"
+               TextWrapping="Wrap" Margin="0,4" />
 
     <!-- Summary Cards -->
-    <Border Grid.Row="1" Background="#F5F5F5" CornerRadius="6" Padding="12" IsVisible="{Binding HasData}">
+    <Border Grid.Row="1"
+            Background="{DynamicResource RentierCardBrush}"
+            BorderBrush="{DynamicResource RentierBorderBrush}"
+            BorderThickness="1"
+            CornerRadius="{StaticResource RentierCardCornerRadius}"
+            Padding="{StaticResource RentierCardPadding}"
+            BoxShadow="{StaticResource RentierCardShadow}"
+            IsVisible="{Binding HasData}">
       <UniformGrid Columns="5">
         <StackPanel Margin="4" HorizontalAlignment="Center">
-          <TextBlock Text="{x:Static res:Strings.Dashboard_PendingCount}" FontSize="11" Foreground="Gray" HorizontalAlignment="Center" />
+          <TextBlock Text="{x:Static res:Strings.Dashboard_PendingCount}" FontSize="11" Foreground="{DynamicResource RentierTextSecondaryBrush}" HorizontalAlignment="Center" />
           <TextBlock Text="{Binding InitCount}" FontSize="22" FontWeight="Bold" HorizontalAlignment="Center" />
         </StackPanel>
         <StackPanel Margin="4" HorizontalAlignment="Center">
-          <TextBlock Text="{x:Static res:Strings.Dashboard_FiledCount}" FontSize="11" Foreground="Gray" HorizontalAlignment="Center" />
+          <TextBlock Text="{x:Static res:Strings.Dashboard_FiledCount}" FontSize="11" Foreground="{DynamicResource RentierTextSecondaryBrush}" HorizontalAlignment="Center" />
           <TextBlock Text="{Binding FiledCount}" FontSize="22" FontWeight="Bold" HorizontalAlignment="Center" />
         </StackPanel>
         <StackPanel Margin="4" HorizontalAlignment="Center">
-          <TextBlock Text="{x:Static res:Strings.Dashboard_PaidCount}" FontSize="11" Foreground="Gray" HorizontalAlignment="Center" />
+          <TextBlock Text="{x:Static res:Strings.Dashboard_PaidCount}" FontSize="11" Foreground="{DynamicResource RentierTextSecondaryBrush}" HorizontalAlignment="Center" />
           <TextBlock Text="{Binding PaidCount}" FontSize="22" FontWeight="Bold" HorizontalAlignment="Center" />
         </StackPanel>
         <StackPanel Margin="4" HorizontalAlignment="Center">
-          <TextBlock Text="{x:Static res:Strings.Dashboard_TotalUnpaid}" FontSize="11" Foreground="Gray" HorizontalAlignment="Center" />
+          <TextBlock Text="{x:Static res:Strings.Dashboard_TotalUnpaid}" FontSize="11" Foreground="{DynamicResource RentierTextSecondaryBrush}" HorizontalAlignment="Center" />
           <TextBlock Text="{Binding TotalUnpaidDisplay}" FontSize="14" FontWeight="SemiBold" HorizontalAlignment="Center" />
         </StackPanel>
         <StackPanel Margin="4" HorizontalAlignment="Center">
-          <TextBlock Text="{x:Static res:Strings.Dashboard_LastSync}" FontSize="11" Foreground="Gray" HorizontalAlignment="Center" />
+          <TextBlock Text="{x:Static res:Strings.Dashboard_LastSync}" FontSize="11" Foreground="{DynamicResource RentierTextSecondaryBrush}" HorizontalAlignment="Center" />
           <TextBlock Text="{Binding LastSyncDisplay}" FontSize="14" HorizontalAlignment="Center" />
         </StackPanel>
       </UniformGrid>
@@ -47,22 +56,29 @@
     <TextBlock Grid.Row="1" IsVisible="{Binding !HasData}"
                Text="{x:Static res:Strings.Dashboard_NoData}"
                HorizontalAlignment="Center" VerticalAlignment="Center"
-               Foreground="Gray" Margin="0,8" />
+               Foreground="{DynamicResource RentierTextSecondaryBrush}" Margin="0,8" />
 
     <!-- Overdue Filings -->
     <StackPanel Grid.Row="2"
                 IsVisible="{Binding HasOverdueFilings}">
-      <Border Background="#FFEEEE" CornerRadius="6" Padding="8,6" Margin="0,0,0,6">
-        <TextBlock Text="{x:Static res:Strings.Dashboard_OverdueFilings}" FontWeight="Bold" Foreground="#CC0000" />
+      <Border Background="{DynamicResource RentierDangerBackgroundBrush}"
+              CornerRadius="{StaticResource RentierControlCornerRadius}"
+              Padding="8,6" Margin="0,0,0,6">
+        <TextBlock Text="{x:Static res:Strings.Dashboard_OverdueFilings}"
+                   FontWeight="Bold"
+                   Foreground="{DynamicResource RentierDangerForegroundBrush}" />
       </Border>
       <ItemsControl ItemsSource="{Binding OverdueFilings}">
         <ItemsControl.ItemTemplate>
           <DataTemplate>
-            <Border Background="#FFF5F5" BorderBrush="#FFCCCC" BorderThickness="1"
-                    CornerRadius="4" Padding="8,4" Margin="0,2">
+            <Border Background="{DynamicResource RentierDangerBackgroundBrush}"
+                    BorderBrush="{DynamicResource RentierDangerForegroundBrush}"
+                    BorderThickness="1"
+                    CornerRadius="{StaticResource RentierControlCornerRadius}"
+                    Padding="8,4" Margin="0,2">
               <Grid ColumnDefinitions="*,Auto,Auto,Auto">
                 <TextBlock Grid.Column="0" Text="{Binding PayingEntity}" FontWeight="SemiBold" />
-                <TextBlock Grid.Column="1" Text="{Binding FilingDeadline, StringFormat={}{0:yyyy-MM-dd}}" Margin="8,0" Foreground="#CC0000" />
+                <TextBlock Grid.Column="1" Text="{Binding FilingDeadline, StringFormat={}{0:yyyy-MM-dd}}" Margin="8,0" Foreground="{DynamicResource RentierDangerForegroundBrush}" />
                 <TextBlock Grid.Column="2" Text="{Binding Status, Converter={x:Static local:FilingStatusDisplayConverter.Instance}}" Margin="8,0" />
                 <TextBlock Grid.Column="3" Text="{Binding TaxPayableRsd, StringFormat={}{0:N2} RSD}" Margin="8,0" />
               </Grid>
@@ -97,7 +113,7 @@
       <TextBlock Grid.Row="1" IsVisible="{Binding !HasUpcomingDeadlines}"
                  Text="{x:Static res:Strings.Dashboard_NoUpcomingDeadlines}"
                  HorizontalAlignment="Center" VerticalAlignment="Center"
-                 Foreground="Gray" Margin="0,16" />
+                 Foreground="{DynamicResource RentierTextSecondaryBrush}" Margin="0,16" />
     </Grid>
   </Grid>
 </reactive:ReactiveUserControl>

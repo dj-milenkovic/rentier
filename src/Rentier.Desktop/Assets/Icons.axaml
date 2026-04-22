@@ -1,10 +1,32 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-  <!-- Lucide trash-2 (MIT) — 24×24 viewport -->
+  <!-- ── Action icons (Lucide MIT) ──────────────────────────────────────── -->
+
+  <!-- Lucide trash-2 — 24×24 viewport -->
   <StreamGeometry x:Key="TrashIcon">M3 6h18M8 6V4h8v2M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6M10 11v6M14 11v6</StreamGeometry>
 
-  <!-- Lucide chevron-right (MIT) — 24×24 viewport -->
+  <!-- Lucide chevron-right — 24×24 viewport -->
   <StreamGeometry x:Key="ViewFilingsIcon">M9 18 15 12 9 6</StreamGeometry>
+
+  <!-- ── Navigation icons (Lucide MIT — 24×24 viewport) ─────────────────── -->
+
+  <!-- App logo — lightning bolt (⚡) -->
+  <StreamGeometry x:Key="AppLogoIcon">M11 3 L4 14 L11 14 L9 21 L20 10 L13 10 Z</StreamGeometry>
+
+  <!-- Lucide home -->
+  <StreamGeometry x:Key="NavHomeIcon">M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z M9 22V12h6v10</StreamGeometry>
+
+  <!-- Document with folded corner + text lines (sharp corners — arc-free for reliable Avalonia parsing) -->
+  <StreamGeometry x:Key="NavFilingsIcon">M13 2H6V22H18V9L13 2Z M13 2V9H18 M8 13H16 M8 17H16 M8 9H10</StreamGeometry>
+
+  <!-- Bar chart — 3 filled columns (fill-compatible) -->
+  <StreamGeometry x:Key="NavReportsIcon">M3 22V15H7V22H3Z M10 22V9H14V22H10Z M17 22V4H21V22H17Z</StreamGeometry>
+
+  <!-- Lucide refresh-cw (sync) -->
+  <StreamGeometry x:Key="NavSyncIcon">M21 2v6h-6 M3 12a9 9 0 0115-6.7L21 8 M3 22v-6h6 M21 12a9 9 0 01-15 6.7L3 16</StreamGeometry>
+
+  <!-- Lucide settings (gear) -->
+  <StreamGeometry x:Key="NavSettingsIcon">M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z M12 15a3 3 0 100-6 3 3 0 000 6z</StreamGeometry>
 
 </ResourceDictionary>

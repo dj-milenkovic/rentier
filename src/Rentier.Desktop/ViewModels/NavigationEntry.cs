@@ -1,3 +1,4 @@
+using Avalonia.Media;
 using ReactiveUI;
 
 namespace Rentier.Desktop.ViewModels;
@@ -9,4 +10,8 @@ namespace Rentier.Desktop.ViewModels;
 /// (e.g. sub-pages such as ManualFiling) that should not appear in the sidebar.
 /// </para>
 /// </summary>
-public record NavigationEntry(string Label, ReactiveObject ViewModel, bool IsVisible = true);
+public record NavigationEntry(
+    string Label,
+    ReactiveObject ViewModel,
+    bool IsVisible = true,
+    StreamGeometry? Icon = null);
