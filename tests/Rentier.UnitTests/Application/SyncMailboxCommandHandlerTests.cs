@@ -164,7 +164,7 @@ public class SyncMailboxCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_PassesProgressToSyncService()
+    public async Task HandleAsync_AlwaysPassesNullProgressToSyncService()
     {
         var mailboxId = Guid.NewGuid();
         var importer = Importer.Create("Importer");
@@ -183,17 +183,16 @@ public class SyncMailboxCommandHandlerTests
             .Returns(Result<SyncResult, Error>.Success(new SyncResult(0, [])));
 
         var handler = new SyncMailboxCommandHandler(importerRepo, mailboxRepo, syncService);
-
-        var progress = Substitute.For<IProgress<SyncProgress>>();
-        var command = new SyncMailboxCommand(SyncParameters.Default, progress);
+        var command = new SyncMailboxCommand(SyncParameters.Default);
 
         await handler.HandleAsync(command);
 
+        // Progress is no longer a command concern — the handler always passes null to the sync service
         await syncService.Received(1).SyncAsync(
             Arg.Any<Mailbox>(),
             Arg.Any<IReadOnlyList<Importer>>(),
             Arg.Any<SyncParameters>(),
-            progress,
+            null,
             Arg.Any<CancellationToken>());
     }
 }

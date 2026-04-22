@@ -3,8 +3,8 @@ using NSubstitute;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Handlers;
-using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
+using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
 using Xunit;
 

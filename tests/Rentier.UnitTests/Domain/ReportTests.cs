@@ -114,7 +114,88 @@ public class ReportTests
     }
 
     [Fact]
-    public void CreateRevision_NullOriginal_ThrowsDomainException()
+    public void SetStatus_ToError_WhenInit_SetsStatusToError()
+    {
+        var report = Report.Create(Guid.NewGuid(), "report.csv", null, null);
+
+        report.SetStatus(ReportStatus.Error);
+
+        report.Status.Should().Be(ReportStatus.Error);
+    }
+
+    [Fact]
+    public void SetStatus_ToPartialError_WhenInit_SetsStatusToPartialError()
+    {
+        var report = Report.Create(Guid.NewGuid(), "report.csv", null, null);
+
+        report.SetStatus(ReportStatus.PartialError);
+
+        report.Status.Should().Be(ReportStatus.PartialError);
+    }
+
+    [Fact]
+    public void SetStatus_WhenProcessed_ThrowsDomainException()
+    {
+        var report = Report.Create(Guid.NewGuid(), "report.csv", null, null);
+        report.SetStatus(ReportStatus.Processed);
+
+        var act = () => report.SetStatus(ReportStatus.Processed);
+
+        act.Should().Throw<DomainException>();
+    }
+
+    [Fact]
+    public void SetStatus_WhenError_ThrowsDomainException()
+    {
+        var report = Report.Create(Guid.NewGuid(), "report.csv", null, null);
+        report.SetStatus(ReportStatus.Error);
+
+        var act = () => report.SetStatus(ReportStatus.Processed);
+
+        act.Should().Throw<DomainException>();
+    }
+
+    [Fact]
+    public void SetStatus_WhenPartialError_ThrowsDomainException()
+    {
+        var report = Report.Create(Guid.NewGuid(), "report.csv", null, null);
+        report.SetStatus(ReportStatus.PartialError);
+
+        var act = () => report.SetStatus(ReportStatus.Processed);
+
+        act.Should().Throw<DomainException>();
+    }
+
+    [Fact]
+    public void Create_WithEmailDate_SetsEmailDate()
+    {
+        var emailDate = new DateOnly(2024, 3, 15);
+
+        var report = Report.Create(Guid.NewGuid(), "report.csv", null, null, emailDate);
+
+        report.EmailDate.Should().Be(emailDate);
+    }
+
+    [Fact]
+    public void Create_WithNameRequiringTrim_TrimsReportName()
+    {
+        var report = Report.Create(Guid.NewGuid(), "  report.csv  ", null, null);
+
+        report.ReportName.Should().Be("report.csv");
+    }
+
+    [Fact]
+    public void Create_WithNameExactly500Chars_Succeeds()
+    {
+        var name = new string('x', 500);
+
+        var act = () => Report.Create(Guid.NewGuid(), name, null, null);
+
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void CreateRevision_WithNullOriginal_ThrowsDomainException()
     {
         var act = () => Report.CreateRevision(null!, null);
         act.Should().Throw<DomainException>();

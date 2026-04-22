@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Rentier.Application.Enums;
 using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
+using Rentier.Domain.Enums;
 using Rentier.Infrastructure.Persistence;
 
 namespace Rentier.Infrastructure.Repositories;

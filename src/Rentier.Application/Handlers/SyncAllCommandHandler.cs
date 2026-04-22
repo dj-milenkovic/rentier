@@ -29,14 +29,8 @@ public sealed class SyncAllCommandHandler : ISyncAllCommandHandler
         // Phase 1: Mailbox sync
         progress.Report(new SyncProgressEntry(DateTimeOffset.Now, "Starting mailbox sync...", SyncProgressSeverity.Info));
 
-        var internalProgress = new Progress<SyncProgress>(p =>
-            progress.Report(new SyncProgressEntry(
-                DateTimeOffset.Now,
-                p.CurrentFile ?? $"Processing {p.Processed}/{p.Total}",
-                SyncProgressSeverity.Info)));
-
         var syncResult = await _syncMailboxHandler.HandleAsync(
-            new SyncMailboxCommand(command.Parameters, Progress: internalProgress), ct);
+            new SyncMailboxCommand(command.Parameters), ct);
 
         if (syncResult.IsSuccess)
         {

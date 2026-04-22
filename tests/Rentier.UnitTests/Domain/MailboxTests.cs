@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Exceptions;
+using Rentier.Domain.ValueObjects;
 using Xunit;
 
 namespace Rentier.UnitTests;
@@ -65,8 +66,8 @@ public class MailboxTests
     {
         var mailbox = Mailbox.Create("imap.example.com", 993, "user@example.com");
 
-        mailbox.Cursor.LastSyncDate.Should().NotBeNull();
-        mailbox.Cursor.LastUid.Should().BeNull();
+        mailbox.Cursor.Should().BeOfType<MailboxCursor.SyncedTo>();
+        ((MailboxCursor.SyncedTo)mailbox.Cursor).Uid.Should().BeNull();
     }
 
     [Fact]
@@ -78,8 +79,20 @@ public class MailboxTests
         m1.Id.Should().NotBe(m2.Id);
     }
 
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void UpdateDetails_WithNullOrWhitespaceUsername_ThrowsDomainException(string username)
+    {
+        var mailbox = Mailbox.Create("imap.example.com", 993, "user@example.com");
+
+        var act = () => mailbox.UpdateDetails("imap.example.com", 993, username);
+
+        act.Should().Throw<DomainException>();
+    }
+
     [Fact]
-    public void UpdateDetails_ValidInputs_UpdatesAllMutableFields()
+    public void UpdateDetails_ValidInputs_UpdatesProperties()
     {
         var mailbox = Mailbox.Create("imap.example.com", 993, "user@example.com");
 
@@ -110,12 +123,13 @@ public class MailboxTests
     public void UpdateCursor_ValidCursor_UpdatesCursor()
     {
         var mailbox = Mailbox.Create("imap.example.com", 993, "user@example.com");
-        var newCursor = new Domain.ValueObjects.MailboxCursor(new DateOnly(2025, 1, 1), 42L);
+        var newCursor = new MailboxCursor.SyncedTo(new DateOnly(2025, 1, 1), 42L);
 
         mailbox.UpdateCursor(newCursor);
 
-        mailbox.Cursor.LastSyncDate.Should().Be(new DateOnly(2025, 1, 1));
-        mailbox.Cursor.LastUid.Should().Be(42L);
+        var synced = mailbox.Cursor.Should().BeOfType<MailboxCursor.SyncedTo>().Subject;
+        synced.Date.Should().Be(new DateOnly(2025, 1, 1));
+        synced.Uid.Should().Be(42L);
     }
 
     [Fact]

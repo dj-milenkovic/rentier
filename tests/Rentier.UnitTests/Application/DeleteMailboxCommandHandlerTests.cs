@@ -79,4 +79,21 @@ public class DeleteMailboxCommandHandlerTests
 
         _fakeCredentials.StoredKeys.Should().NotContain(key);
     }
+
+    [Fact]
+    public async Task HandleAsync_CredentialDeleteFailsWithUnexpectedError_StillDeletesFromDbAndReturnsSuccess()
+    {
+        var id = Guid.NewGuid();
+        var failingCredentials = Substitute.For<ICredentialStore>();
+        failingCredentials.DeleteCredentialAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(Result<VoidResult, Error>.Failure(Error.CredentialDeleteFailed("OS store locked")));
+
+        var handler = new DeleteMailboxCommandHandler(_repo, failingCredentials, NullLogger<DeleteMailboxCommandHandler>.Instance);
+        var cmd = new DeleteMailboxCommand(id);
+
+        var result = await handler.HandleAsync(cmd);
+
+        result.IsSuccess.Should().BeTrue();
+        await _repo.Received(1).DeleteAsync(id, Arg.Any<CancellationToken>());
+    }
 }

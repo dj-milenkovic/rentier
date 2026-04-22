@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using System.Reactive.Disposables;
 using ReactiveUI;
 using Rentier.Desktop.Resources;
 
@@ -10,8 +11,10 @@ namespace Rentier.Desktop.ViewModels;
 /// navigation delegates (closures) can be injected at construction time — the same pattern
 /// used by DashboardViewModel, ReportsViewModel and SyncViewModel.
 /// </summary>
-public sealed class MainWindowViewModel : ReactiveObject
+public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
 {
+    public ViewModelActivator Activator { get; } = new();
+
     private ReactiveObject _currentViewModel;
     private NavigationEntry _selectedEntry;
 
@@ -97,8 +100,12 @@ public sealed class MainWindowViewModel : ReactiveObject
         _selectedEntry = NavigationEntries[0];
         _currentViewModel = dashboardVm;
 
-        // Keep CurrentViewModel in sync with SelectedEntry
-        this.WhenAnyValue(x => x.SelectedEntry)
-            .Subscribe(entry => { if (entry is not null) CurrentViewModel = entry.ViewModel; });
+        // M1: subscription moved into WhenActivated so it is disposed on deactivation
+        this.WhenActivated(disposables =>
+        {
+            this.WhenAnyValue(x => x.SelectedEntry)
+                .Subscribe(entry => { if (entry is not null) CurrentViewModel = entry.ViewModel; })
+                .DisposeWith(disposables);
+        });
     }
 }

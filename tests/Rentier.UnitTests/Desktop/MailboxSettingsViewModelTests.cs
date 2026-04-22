@@ -213,4 +213,80 @@ public class MailboxSettingsViewModelTests
 
         vm.Mailboxes.Count.Should().Be(0);
     }
+
+    [Fact]
+    public async Task SaveCommand_WhenHandlerFailsInEditMode_SetsErrorMessage()
+    {
+        var dto = MakeDto();
+        var query = MockQuery();
+        query.HandleAsync(Arg.Any<GetMailboxesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<IReadOnlyList<MailboxDto>, Error>.Success(new List<MailboxDto> { dto }));
+
+        var update = MockUpdate();
+        update.HandleAsync(Arg.Any<UpdateMailboxCommand>(), Arg.Any<CancellationToken>())
+            .Returns(Result<VoidResult, Error>.Failure(new Error("ERR_UPDATE", "Save failed")));
+
+        var vm = CreateVm(query: query, update: update);
+        using var _ = vm.Activator.Activate();
+        vm.SelectedMailbox = vm.Mailboxes[0];
+
+        await vm.SaveCommand.Execute().FirstAsync();
+
+        vm.ErrorMessage.Should().Be("Save failed");
+    }
+
+    [Fact]
+    public async Task SaveCommand_WhenHandlerFailsInAddMode_SetsErrorMessage()
+    {
+        var add = MockAdd();
+        add.HandleAsync(Arg.Any<AddMailboxCommand>(), Arg.Any<CancellationToken>())
+            .Returns(Result<Guid, Error>.Failure(new Error("ERR_ADD", "Add failed")));
+
+        // LoadAsync fires on activation — give it an empty success so it doesn't throw
+        var query = MockQuery();
+        query.HandleAsync(Arg.Any<GetMailboxesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<IReadOnlyList<MailboxDto>, Error>.Success(new List<MailboxDto>()));
+
+        // No mailbox selected after activation → IsEditMode stays false → add path is taken
+        var vm = CreateVm(query: query, add: add);
+        using var _ = vm.Activator.Activate();
+
+        await vm.SaveCommand.Execute().FirstAsync();
+
+        vm.ErrorMessage.Should().Be("Add failed");
+    }
+
+    [Fact]
+    public async Task DeleteCommand_WhenHandlerFails_SetsErrorMessage()
+    {
+        var dto = MakeDto();
+        var query = MockQuery();
+        query.HandleAsync(Arg.Any<GetMailboxesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<IReadOnlyList<MailboxDto>, Error>.Success(new List<MailboxDto> { dto }));
+
+        var delete = MockDelete();
+        delete.HandleAsync(Arg.Any<DeleteMailboxCommand>(), Arg.Any<CancellationToken>())
+            .Returns(Result<VoidResult, Error>.Failure(new Error("ERR_DELETE", "Delete failed")));
+
+        var vm = CreateVm(query: query, delete: delete);
+        using var _ = vm.Activator.Activate();
+        vm.SelectedMailbox = vm.Mailboxes[0];
+
+        await vm.DeleteCommand.Execute().FirstAsync();
+
+        vm.ErrorMessage.Should().Be("Delete failed");
+    }
+
+    [Fact]
+    public void LoadAsync_WhenHandlerFails_SetsErrorMessage()
+    {
+        var query = MockQuery();
+        query.HandleAsync(Arg.Any<GetMailboxesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<IReadOnlyList<MailboxDto>, Error>.Failure(new Error("ERR_LOAD", "Load failed")));
+
+        var vm = CreateVm(query: query);
+        using var _ = vm.Activator.Activate();
+
+        vm.ErrorMessage.Should().Be("Load failed");
+    }
 }

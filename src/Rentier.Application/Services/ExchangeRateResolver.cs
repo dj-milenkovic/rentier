@@ -8,7 +8,7 @@ using Rentier.Domain.ValueObjects;
 
 namespace Rentier.Application.Services;
 
-public sealed class ExchangeRateResolver
+public sealed class ExchangeRateResolver : IExchangeRateResolver
 {
     private readonly IExchangeRateFetcher _fetcher;
     private readonly ILogger<ExchangeRateResolver> _logger;

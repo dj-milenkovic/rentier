@@ -118,7 +118,37 @@ public sealed class ImporterTests
     }
 
     [Fact]
-    public void UpdateDetails_PaymentNotesExceeds4000_ThrowsDomainException()
+    public void UpdateDetails_WithDisplayNameExceedingMaxLength_ThrowsDomainException()
+    {
+        var importer = Importer.Create("Test");
+        var longName = new string('x', 201);
+
+        var act = () => importer.UpdateDetails(longName, ReportType.IbkrCsv, null, null, "", "", "", "");
+
+        act.Should().Throw<DomainException>();
+    }
+
+    [Fact]
+    public void Create_WithDisplayNameRequiringTrim_TrimsDisplayName()
+    {
+        var importer = Importer.Create("  My Importer  ");
+
+        importer.DisplayName.Should().Be("My Importer");
+    }
+
+    [Fact]
+    public void UpdateDetails_WithPaymentNotesExactly4000Chars_Succeeds()
+    {
+        var importer = Importer.Create("Test");
+        var notes = new string('x', 4000);
+
+        var act = () => importer.UpdateDetails("Test", ReportType.IbkrCsv, null, null, "", "", "", notes);
+
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void UpdateDetails_WithPaymentNotesExceeding4000Chars_ThrowsDomainException()
     {
         var importer = Importer.Create("Test");
         var longNotes = new string('x', 4001);

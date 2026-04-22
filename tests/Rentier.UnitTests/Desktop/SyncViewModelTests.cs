@@ -8,6 +8,7 @@ using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Desktop.ViewModels;
+using Rentier.Domain.Enums;
 using Xunit;
 
 namespace Rentier.UnitTests;
@@ -262,5 +263,208 @@ public class SyncViewModelTests
 
         vm.LogEntries.Should().Contain(e => e.Message == "Step 1");
         vm.LogEntries.Should().Contain(e => e.Message == "Step 2");
+    }
+
+    // ── Sync mode derived property tests ────────────────────────────────────
+
+    [Fact]
+    public void SelectedSyncMode_Default_IsIncremental()
+    {
+        var vm = CreateVm();
+
+        vm.SelectedSyncMode.Should().Be(SyncMode.Incremental);
+    }
+
+    [Fact]
+    public void SelectedSyncMode_ChangeToIncremental_SetsIsReplayModeFalse()
+    {
+        var vm = CreateVm();
+        vm.SelectedSyncMode = SyncMode.FullReplay;
+
+        vm.SelectedSyncMode = SyncMode.Incremental;
+
+        vm.IsReplayMode.Should().BeFalse();
+    }
+
+    [Fact]
+    public void SelectedSyncMode_ChangeToReplayFromDate_SetsIsReplayFromDateModeTrue()
+    {
+        var vm = CreateVm();
+
+        vm.SelectedSyncMode = SyncMode.ReplayFromDate;
+
+        vm.IsReplayFromDateMode.Should().BeTrue();
+    }
+
+    [Fact]
+    public void SelectedSyncMode_ChangeToReplayFromDate_SetsIsReplayModeTrue()
+    {
+        var vm = CreateVm();
+
+        vm.SelectedSyncMode = SyncMode.ReplayFromDate;
+
+        vm.IsReplayMode.Should().BeTrue();
+    }
+
+    [Fact]
+    public void SelectedSyncMode_ChangeToFullReplay_SetsIsFullReplayModeTrue()
+    {
+        var vm = CreateVm();
+
+        vm.SelectedSyncMode = SyncMode.FullReplay;
+
+        vm.IsFullReplayMode.Should().BeTrue();
+    }
+
+    [Fact]
+    public void SelectedSyncMode_ChangeToFullReplay_SetsIsReplayModeTrue()
+    {
+        var vm = CreateVm();
+
+        vm.SelectedSyncMode = SyncMode.FullReplay;
+
+        vm.IsReplayMode.Should().BeTrue();
+    }
+
+    [Fact]
+    public void SelectedSyncMode_ChangeToFullReplay_SetsIsReplayFromDateModeFalse()
+    {
+        var vm = CreateVm();
+
+        vm.SelectedSyncMode = SyncMode.FullReplay;
+
+        vm.IsReplayFromDateMode.Should().BeFalse();
+    }
+
+    // ── ImpactSummary tests ──────────────────────────────────────────────────
+
+    [Fact]
+    public void ImpactSummary_IncrementalSkipExisting_ShowsCorrectText()
+    {
+        var vm = CreateVm();
+        // Default: Incremental + SkipExisting
+
+        vm.ImpactSummary.Should().Be("Fetches new emails since last sync. Duplicates are skipped.");
+    }
+
+    [Fact]
+    public void ImpactSummary_FullReplaySkipExisting_ShowsAllEmailsText()
+    {
+        var vm = CreateVm();
+        vm.SelectedSyncMode = SyncMode.FullReplay;
+        vm.SelectedDuplicateStrategy = DuplicateStrategy.SkipExisting;
+
+        vm.ImpactSummary.Should().Be("Fetches ALL emails in the mailbox. Duplicates are skipped.");
+    }
+
+    [Fact]
+    public void ImpactSummary_ReplayFromDateWithDate_IncludesFormattedDate()
+    {
+        var vm = CreateVm();
+        vm.SelectedSyncMode = SyncMode.ReplayFromDate;
+        vm.ReplayFromDateOffset = new DateTimeOffset(2024, 3, 15, 0, 0, 0, TimeSpan.Zero);
+
+        vm.ImpactSummary.Should().Contain("2024-03-15");
+    }
+
+    // ── ValidationError tests ────────────────────────────────────────────────
+
+    [Fact]
+    public void ValidationError_WhenIncrementalMode_IsNull()
+    {
+        var vm = CreateVm();
+        // Default: Incremental — no date required
+
+        vm.ValidationError.Should().BeNull();
+    }
+
+    [Fact]
+    public void ValidationError_WhenFullReplayMode_IsNull()
+    {
+        var vm = CreateVm();
+
+        vm.SelectedSyncMode = SyncMode.FullReplay;
+
+        vm.ValidationError.Should().BeNull();
+    }
+
+    [Fact]
+    public void ValidationError_WhenReplayFromDateModeAndNoDate_ReturnsError()
+    {
+        var vm = CreateVm();
+        vm.SelectedSyncMode = SyncMode.ReplayFromDate;
+        vm.ReplayFromDateOffset = null;
+
+        vm.ValidationError.Should().Be("Replay date is required for this mode");
+    }
+
+    [Fact]
+    public void ValidationError_WhenReplayFromDateModeAndFutureDate_ReturnsError()
+    {
+        var vm = CreateVm();
+        vm.SelectedSyncMode = SyncMode.ReplayFromDate;
+        vm.ReplayFromDateOffset = DateTimeOffset.UtcNow.AddDays(1);
+
+        vm.ValidationError.Should().Be("Replay date cannot be in the future");
+    }
+
+    [Fact]
+    public void ValidationError_WhenReplayFromDateModeAndValidPastDate_IsNull()
+    {
+        var vm = CreateVm();
+        vm.SelectedSyncMode = SyncMode.ReplayFromDate;
+        vm.ReplayFromDateOffset = DateTimeOffset.UtcNow.AddDays(-1);
+
+        vm.ValidationError.Should().BeNull();
+    }
+
+    // ── SyncCommand.CanExecute tests ─────────────────────────────────────────
+
+    [Fact]
+    public void SyncCommand_CanExecute_FalseWhenValidationError()
+    {
+        var vm = CreateVm();
+        bool? canExecute = null;
+        vm.SyncCommand.CanExecute.Subscribe(v => canExecute = v);
+
+        // Switching to ReplayFromDate with no date set triggers a validation error
+        vm.SelectedSyncMode = SyncMode.ReplayFromDate;
+
+        canExecute.Should().BeFalse();
+    }
+
+    [Fact]
+    public void SyncCommand_CanExecute_TrueWhenNoValidationError()
+    {
+        var vm = CreateVm();
+        // Default: Incremental — no ValidationError
+
+        bool? canExecute = null;
+        vm.SyncCommand.CanExecute.Subscribe(v => canExecute = v);
+
+        canExecute.Should().BeTrue();
+    }
+
+    // ── ReplayFromDate computed property tests ───────────────────────────────
+
+    [Fact]
+    public void ReplayFromDateOffset_WhenSet_UpdatesReplayFromDate()
+    {
+        var vm = CreateVm();
+        var offset = new DateTimeOffset(2024, 6, 15, 0, 0, 0, TimeSpan.Zero);
+
+        vm.ReplayFromDateOffset = offset;
+
+        vm.ReplayFromDate.Should().Be(new DateOnly(2024, 6, 15));
+    }
+
+    [Fact]
+    public void ReplayFromDateOffset_WhenNull_ReplayFromDateIsNull()
+    {
+        var vm = CreateVm();
+
+        vm.ReplayFromDateOffset = null;
+
+        vm.ReplayFromDate.Should().BeNull();
     }
 }

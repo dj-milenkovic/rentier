@@ -31,10 +31,16 @@ public sealed class TaxpayerProfile
             throw new DomainException("JMBG must be exactly 13 digit characters");
         if (string.IsNullOrWhiteSpace(fullName))
             throw new DomainException("FullName must not be null or whitespace");
+        if (fullName.Length > 200)
+            throw new DomainException("FullName must not exceed 200 characters");
         if (string.IsNullOrWhiteSpace(address))
             throw new DomainException("Address must not be null or whitespace");
+        if (address.Length > 500)
+            throw new DomainException("Address must not exceed 500 characters");
         if (string.IsNullOrWhiteSpace(opstinaCode))
             throw new DomainException("OpstinaCode must not be null or whitespace");
+        if (opstinaCode.Length > 20)
+            throw new DomainException("OpstinaCode must not exceed 20 characters");
 
         Id = id;
         Jmbg = jmbg;

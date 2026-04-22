@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Rentier.Application.DTOs;
-using Rentier.Application.Interfaces;
+using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
 using Rentier.Infrastructure.Persistence;
 
@@ -42,26 +42,36 @@ public sealed class HolidayRepository : IHolidayRepository
         HolidayYearRange yearRange,
         CancellationToken cancellationToken = default)
     {
-        await _db.PublicHolidays.ExecuteDeleteAsync(cancellationToken);
-        _db.PublicHolidays.AddRange(holidays);
-
-        var rangeExists = await _db.HolidayYearRange
-            .AnyAsync(r => r.Id == HolidayYearRange.SingletonId, cancellationToken);
-
-        if (rangeExists)
+        await using var tx = await _db.Database.BeginTransactionAsync(cancellationToken);
+        try
         {
-            await _db.HolidayYearRange
-                .Where(r => r.Id == HolidayYearRange.SingletonId)
-                .ExecuteUpdateAsync(s => s
-                    .SetProperty(r => r.StartYear, yearRange.StartYear)
-                    .SetProperty(r => r.EndYear, yearRange.EndYear),
-                    cancellationToken);
-        }
-        else
-        {
-            _db.HolidayYearRange.Add(yearRange);
-        }
+            await _db.PublicHolidays.ExecuteDeleteAsync(cancellationToken);
+            _db.PublicHolidays.AddRange(holidays);
 
-        await _db.SaveChangesAsync(cancellationToken);
+            var rangeExists = await _db.HolidayYearRange
+                .AnyAsync(r => r.Id == HolidayYearRange.SingletonId, cancellationToken);
+
+            if (rangeExists)
+            {
+                await _db.HolidayYearRange
+                    .Where(r => r.Id == HolidayYearRange.SingletonId)
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(r => r.StartYear, yearRange.StartYear)
+                        .SetProperty(r => r.EndYear, yearRange.EndYear),
+                        cancellationToken);
+            }
+            else
+            {
+                _db.HolidayYearRange.Add(yearRange);
+            }
+
+            await _db.SaveChangesAsync(cancellationToken);
+            await tx.CommitAsync(cancellationToken);
+        }
+        catch
+        {
+            await tx.RollbackAsync(cancellationToken);
+            throw;
+        }
     }
 }

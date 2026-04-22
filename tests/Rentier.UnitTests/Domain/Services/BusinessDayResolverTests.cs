@@ -1,4 +1,5 @@
-using FluentAssertions;
+﻿using FluentAssertions;
+using Rentier.Domain.Exceptions;
 using Rentier.Domain.Services;
 using Rentier.Domain.ValueObjects;
 using Xunit;
@@ -109,6 +110,72 @@ public class BusinessDayResolverTests
         var wednesday = new DateOnly(2024, 1, 10);
         var results = BusinessDayResolver.WalkBackward(wednesday, NoHolidays(), maxLookbackDays: 1).ToList();
         results.Should().ContainSingle().Which.Should().Be(new DateOnly(2024, 1, 9));
+    }
+
+    [Fact]
+    public void IsBusinessDay_WhenHolidaysIsNull_ThrowsDomainException()
+    {
+        var act = () => BusinessDayResolver.IsBusinessDay(new DateOnly(2024, 1, 8), null!);
+
+        act.Should().Throw<DomainException>();
+    }
+
+    [Fact]
+    public void WalkBackward_WhenHolidaysIsNull_ThrowsDomainException()
+    {
+        // Enumerate to trigger the guard (lazy method)
+        var act = () => BusinessDayResolver.WalkBackward(new DateOnly(2024, 1, 8), null!).ToList();
+
+        act.Should().Throw<DomainException>();
+    }
+
+    [Fact]
+    public void FindPreviousBusinessDay_WhenHolidaysIsNull_ThrowsDomainException()
+    {
+        var act = () => BusinessDayResolver.FindPreviousBusinessDay(new DateOnly(2024, 1, 8), null!);
+
+        act.Should().Throw<DomainException>();
+    }
+
+    [Fact]
+    public void WalkBackward_WhenMaxLookbackLessThanOne_ThrowsDomainException()
+    {
+        var act = () => BusinessDayResolver.WalkBackward(new DateOnly(2024, 1, 8), NoHolidays(), maxLookbackDays: 0).ToList();
+
+        act.Should().Throw<DomainException>().WithMessage("*maxLookbackDays*");
+    }
+
+    [Fact]
+    public void FindPreviousBusinessDay_OnHolidayWeekday_WalksBackward()
+    {
+        // Monday Jan 8 is a holiday — should walk back to Friday Jan 5
+        var monday = new DateOnly(2024, 1, 8);
+        var holidays = new HolidayConf(new List<DateOnly> { monday });
+
+        var result = BusinessDayResolver.FindPreviousBusinessDay(monday, holidays);
+
+        result.Should().Be(new DateOnly(2024, 1, 5));
+    }
+
+    [Fact]
+    public void FindPreviousBusinessDay_WhenNoBusinessDayFound_ThrowsDomainException()
+    {
+        // Saturday Jan 13 + all weekdays Jan 4-12 blocked → no business day within 10 days
+        var saturday = new DateOnly(2024, 1, 13);
+        var holidays = new HolidayConf(new List<DateOnly>
+        {
+            new(2024, 1, 4),  // Thursday
+            new(2024, 1, 5),  // Friday
+            new(2024, 1, 8),  // Monday
+            new(2024, 1, 9),  // Tuesday
+            new(2024, 1, 10), // Wednesday
+            new(2024, 1, 11), // Thursday
+            new(2024, 1, 12), // Friday
+        });
+
+        var act = () => BusinessDayResolver.FindPreviousBusinessDay(saturday, holidays);
+
+        act.Should().Throw<DomainException>().WithMessage("*No business day found*");
     }
 
     [Fact]

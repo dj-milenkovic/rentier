@@ -6,14 +6,14 @@ namespace Rentier.Infrastructure.ExchangeRates;
 
 public sealed class CompositeExchangeRateFetcher : IExchangeRateFetcher
 {
-    private readonly NbsExchangeRateFetcher _primary;
-    private readonly NbsWebScraper _secondary;
+    private readonly IExchangeRateFetcher _primary;
+    private readonly IExchangeRateFetcher _secondary;
 
     // Error codes that trigger fallback to secondary
     private static readonly HashSet<string> FallbackTriggers =
         new(StringComparer.OrdinalIgnoreCase) { "NBS_HTTP_ERROR", "NBS_PARSE_ERROR" };
 
-    public CompositeExchangeRateFetcher(NbsExchangeRateFetcher primary, NbsWebScraper secondary)
+    public CompositeExchangeRateFetcher(IExchangeRateFetcher primary, IExchangeRateFetcher secondary)
     {
         _primary = primary;
         _secondary = secondary;

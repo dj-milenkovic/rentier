@@ -24,12 +24,13 @@ public sealed class Importer
     {
         if (string.IsNullOrWhiteSpace(displayName))
             throw new DomainException("DisplayName must not be null or whitespace");
+        displayName = displayName.Trim();
         if (displayName.Length > 200)
             throw new DomainException("DisplayName must not exceed 200 characters");
         return new Importer
         {
             Id = Guid.NewGuid(),
-            DisplayName = displayName.Trim(),
+            DisplayName = displayName,
             ReportType = reportType
         };
     }
@@ -46,12 +47,13 @@ public sealed class Importer
     {
         if (string.IsNullOrWhiteSpace(displayName))
             throw new DomainException("DisplayName must not be null or whitespace");
+        displayName = displayName.Trim();
         if (displayName.Length > 200)
             throw new DomainException("DisplayName must not exceed 200 characters");
         if ((paymentNotes ?? string.Empty).Length > 4000)
             throw new DomainException("PaymentNotes must not exceed 4000 characters");
 
-        DisplayName = displayName.Trim();
+        DisplayName = displayName;
         ReportType = reportType;
         TaxpayerProfileId = taxpayerProfileId;
         MailboxId = mailboxId;

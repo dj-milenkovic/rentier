@@ -18,7 +18,15 @@ public class PublicHolidayTests
     }
 
     [Fact]
-    public void Create_EmptyName_ThrowsDomainException()
+    public void Create_WithNullName_ThrowsDomainException()
+    {
+        var act = () => PublicHoliday.Create(new DateOnly(2025, 1, 1), null!);
+
+        act.Should().Throw<DomainException>();
+    }
+
+    [Fact]
+    public void Create_WithWhitespaceName_ThrowsDomainException()
     {
         var act = () => PublicHoliday.Create(new DateOnly(2025, 1, 1), "   ");
         act.Should().Throw<DomainException>();

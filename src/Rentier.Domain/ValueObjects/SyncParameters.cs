@@ -46,10 +46,10 @@ public sealed record SyncParameters
     public DateOnly? GetEffectiveStartDate(MailboxCursor? cursor) =>
         Mode switch
         {
-            SyncMode.Incremental => cursor?.LastSyncDate,
+            SyncMode.Incremental    => cursor is MailboxCursor.SyncedTo s ? s.Date : null,
             SyncMode.ReplayFromDate => ReplayFromDate,
-            SyncMode.FullReplay => null,
-            _ => cursor?.LastSyncDate
+            SyncMode.FullReplay     => null,
+            _                       => cursor is MailboxCursor.SyncedTo s ? s.Date : null
         };
 
     /// <summary>Default incremental sync parameters (SkipExisting duplicate strategy).</summary>

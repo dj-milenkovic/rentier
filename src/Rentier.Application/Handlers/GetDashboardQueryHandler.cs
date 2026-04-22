@@ -3,7 +3,6 @@ using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
 using Rentier.Application.Repositories;
-using Rentier.Domain.Entities;
 
 namespace Rentier.Application.Handlers;
 
@@ -33,7 +32,7 @@ public sealed class GetDashboardQueryHandler
             var mailboxes = await _mailboxRepo.GetAllAsync(ct);
 
             DateOnly? lastSync = mailboxes
-                .Select(m => m.Cursor.LastSyncDate)
+                .Select(m => m.Cursor is Domain.ValueObjects.MailboxCursor.SyncedTo s ? s.Date : (DateOnly?)null)
                 .Where(d => d.HasValue)
                 .Select(d => d!.Value)
                 .OrderByDescending(d => d)

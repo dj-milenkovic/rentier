@@ -100,8 +100,8 @@ public sealed class NbsWebScraper : IExchangeRateFetcher
                     new Error("RATE_NOT_FOUND",
                         $"No exchange rates published for {date:yyyy-MM-dd} (NBS web app)."));
 
-            // Cache all rates - swallow cache write failures
-            try { await _cache.SaveBatchAsync(allRates, ct); } catch { /* non-fatal */ }
+            // Cache all rates - swallow cache write failures (non-fatal), but re-throw cancellation
+            try { await _cache.SaveBatchAsync(allRates, ct); } catch (Exception ex) when (ex is not OperationCanceledException) { /* non-fatal */ }
 
             var result = allRates.FirstOrDefault(r =>
                 string.Equals(r.Currency, upperCurrency, StringComparison.OrdinalIgnoreCase));
@@ -112,7 +112,7 @@ public sealed class NbsWebScraper : IExchangeRateFetcher
                     new Error("RATE_NOT_FOUND",
                         $"Currency '{upperCurrency}' not found in NBS web app for {date:yyyy-MM-dd}."));
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             return Result<ExchangeRate, Error>.Failure(
                 new Error("NBS_SCRAPE_ERROR", $"Failed to parse NBS web app HTML: {ex.Message}"));

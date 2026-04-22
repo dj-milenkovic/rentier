@@ -523,4 +523,181 @@ public class FilingRepositoryTests : IAsyncLifetime
         remaining.Should().HaveCount(1);
         remaining[0].Id.Should().Be(f2.Id);
     }
+
+    // ── GetByTaxPeriodAsync tests ────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetByTaxPeriodAsync_WithMatchingFiling_ReturnsIt()
+    {
+        var profile = MakeProfile();
+        await _context.TaxpayerProfiles.AddAsync(profile);
+        await _context.SaveChangesAsync();
+
+        // TaxPeriod is derived from incomeDate in CreateFromIncome
+        var incomeDate = new DateOnly(2024, 6, 15);
+        var filing = MakeFiling(profile.Id, date: incomeDate);
+        await _repository.AddAsync(filing);
+
+        var result = await _repository.GetByTaxPeriodAsync(profile.Id, incomeDate);
+
+        result.Should().NotBeNull();
+        result!.Id.Should().Be(filing.Id);
+    }
+
+    [Fact]
+    public async Task GetByTaxPeriodAsync_WithNoMatch_ReturnsNull()
+    {
+        var result = await _repository.GetByTaxPeriodAsync(Guid.NewGuid(), new DateOnly(2024, 6, 15));
+
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetByTaxPeriodAsync_MatchesByProfileIdAndTaxPeriod()
+    {
+        // Two profiles with filings on the same date — each should only see their own
+        var profile1 = new TaxpayerProfile(Guid.NewGuid(), "1111111111111", "Alice", "Belgrade", "11001");
+        var profile2 = new TaxpayerProfile(Guid.NewGuid(), "2222222222222", "Bob", "Novi Sad", "21000");
+        await _context.TaxpayerProfiles.AddRangeAsync(profile1, profile2);
+        await _context.SaveChangesAsync();
+
+        var incomeDate = new DateOnly(2024, 6, 15);
+        var f1 = MakeFiling(profile1.Id, date: incomeDate);
+        var f2 = MakeFiling(profile2.Id, date: incomeDate);
+        await _repository.AddAsync(f1);
+        await _repository.AddAsync(f2);
+
+        var result = await _repository.GetByTaxPeriodAsync(profile1.Id, incomeDate);
+
+        result.Should().NotBeNull();
+        result!.Id.Should().Be(f1.Id);
+    }
+
+    // ── GetEarliestIncomeDateByReportIdAsync tests ───────────────────────────
+
+    [Fact]
+    public async Task GetEarliestIncomeDateByReportIdAsync_WithMultipleFilings_ReturnsEarliest()
+    {
+        var (_, report, profile) = await SeedReportAsync();
+
+        var dates = new[] { new DateOnly(2024, 6, 1), new DateOnly(2024, 1, 1), new DateOnly(2024, 3, 1) };
+        foreach (var d in dates)
+        {
+            var f = Filing.CreateFromIncome(profile.Id, IncomeType.Dividend, $"Co-{d.Month}",
+                d, 1000m, 0m, 150m, 150m, d.AddDays(30), report.Id);
+            await _repository.AddAsync(f);
+        }
+
+        var result = await _repository.GetEarliestIncomeDateByReportIdAsync(report.Id);
+
+        result.Should().Be(new DateOnly(2024, 1, 1));
+    }
+
+    [Fact]
+    public async Task GetEarliestIncomeDateByReportIdAsync_WithNoFilings_ReturnsNull()
+    {
+        var result = await _repository.GetEarliestIncomeDateByReportIdAsync(Guid.NewGuid());
+
+        result.Should().BeNull();
+    }
+
+    // ── DeleteManyAsync tests ────────────────────────────────────────────────
+
+    [Fact]
+    public async Task DeleteManyAsync_WithMultipleIds_RemovesAll()
+    {
+        var profile = MakeProfile();
+        await _context.TaxpayerProfiles.AddAsync(profile);
+        await _context.SaveChangesAsync();
+
+        var f1 = MakeFiling(profile.Id, date: new DateOnly(2024, 1, 1));
+        var f2 = MakeFiling(profile.Id, date: new DateOnly(2024, 2, 1));
+        var f3 = MakeFiling(profile.Id, date: new DateOnly(2024, 3, 1));
+        await _repository.AddAsync(f1);
+        await _repository.AddAsync(f2);
+        await _repository.AddAsync(f3);
+
+        await _repository.DeleteManyAsync([f1.Id, f2.Id]);
+
+        var remaining = await _repository.GetAllAsync();
+        remaining.Should().HaveCount(1);
+        remaining[0].Id.Should().Be(f3.Id);
+    }
+
+    [Fact]
+    public async Task DeleteManyAsync_WithEmptyList_NoException()
+    {
+        var act = async () => await _repository.DeleteManyAsync([]);
+
+        await act.Should().NotThrowAsync();
+    }
+
+    // ── GetPagedAsync additional sort column tests ───────────────────────────
+
+    [Fact]
+    public async Task GetPagedAsync_SortByIncomeType_ReturnsCorrectOrder()
+    {
+        var profile = MakeProfile();
+        await _context.TaxpayerProfiles.AddAsync(profile);
+        await _context.SaveChangesAsync();
+
+        // Dividend = 0, Interest = 1; descending puts Interest first
+        var fDividend = Filing.CreateFromIncome(profile.Id, IncomeType.Dividend, "DivCo",
+            new DateOnly(2024, 1, 1), 1000m, 0m, 150m, 150m, new DateOnly(2024, 2, 1));
+        var fInterest = Filing.CreateFromIncome(profile.Id, IncomeType.Interest, "IntCo",
+            new DateOnly(2024, 2, 1), 1000m, 0m, 150m, 150m, new DateOnly(2024, 3, 1));
+        await _repository.AddAsync(fDividend);
+        await _repository.AddAsync(fInterest);
+
+        var (items, _) = await _repository.GetPagedAsync(
+            FilingFilterMode.All, 0, 100,
+            FilingSortColumn.IncomeType, sortDescending: true);
+
+        items[0].IncomeType.Should().Be(IncomeType.Interest);
+        items[1].IncomeType.Should().Be(IncomeType.Dividend);
+    }
+
+    [Fact]
+    public async Task GetPagedAsync_SortByTaxPayable_ReturnsCorrectOrder()
+    {
+        var profile = MakeProfile();
+        await _context.TaxpayerProfiles.AddAsync(profile);
+        await _context.SaveChangesAsync();
+
+        var fLow = Filing.CreateFromIncome(profile.Id, IncomeType.Dividend, "Co1",
+            new DateOnly(2024, 1, 1), 1000m, 0m, 100m, 100m, new DateOnly(2024, 2, 1));
+        var fHigh = Filing.CreateFromIncome(profile.Id, IncomeType.Dividend, "Co2",
+            new DateOnly(2024, 2, 1), 2000m, 0m, 400m, 400m, new DateOnly(2024, 3, 1));
+        await _repository.AddAsync(fLow);
+        await _repository.AddAsync(fHigh);
+
+        var (items, _) = await _repository.GetPagedAsync(
+            FilingFilterMode.All, 0, 100,
+            FilingSortColumn.TaxPayable, sortDescending: true);
+
+        items[0].TaxPayableRsd.Should().Be(400m);
+        items[1].TaxPayableRsd.Should().Be(100m);
+    }
+
+    [Fact]
+    public async Task GetPagedAsync_SortByPaymentReference_ReturnsCorrectOrder()
+    {
+        var profile = MakeProfile();
+        await _context.TaxpayerProfiles.AddAsync(profile);
+        await _context.SaveChangesAsync();
+
+        var fAlpha = MakeFiling(profile.Id, date: new DateOnly(2024, 1, 1));
+        fAlpha.SetPaymentReference("AAA-001");
+        var fZeta = MakeFiling(profile.Id, date: new DateOnly(2024, 2, 1));
+        fZeta.SetPaymentReference("ZZZ-999");
+        await _repository.AddAsync(fAlpha);
+        await _repository.AddAsync(fZeta);
+
+        var (items, _) = await _repository.GetPagedAsync(
+            FilingFilterMode.All, 0, 100,
+            FilingSortColumn.PaymentReference, sortDescending: true);
+
+        items[0].PaymentReference.Should().Be("ZZZ-999");
+        items[1].PaymentReference.Should().Be("AAA-001");
+    }
 }

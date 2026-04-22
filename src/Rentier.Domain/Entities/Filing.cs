@@ -4,16 +4,6 @@ using Rentier.Domain.Exceptions;
 namespace Rentier.Domain.Entities;
 
 /// <summary>
-/// Filing lifecycle status.
-/// </summary>
-public enum FilingStatus
-{
-    Init = 0,
-    Filed = 1,
-    Paid = 2
-}
-
-/// <summary>
 /// Represents a PP-OPO tax filing. Aggregate root.
 /// Enforces the Init → Filed → Paid state machine.
 /// TaxPeriod is DateOnly per constitution Principle III.
@@ -80,6 +70,8 @@ public sealed class Filing
             throw new DomainException("TaxPayableRsd must not be negative");
 
         var trimmedEntity = payingEntity.Trim();
+        if (trimmedEntity.Length > 200)
+            throw new DomainException("PayingEntity must not exceed 200 characters.");
         var trimmedTicker = ticker?.Trim();
         if (string.IsNullOrEmpty(trimmedTicker))
             trimmedTicker = null;

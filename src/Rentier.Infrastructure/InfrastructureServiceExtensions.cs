@@ -1,10 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Rentier.Application.Commands;
-using Rentier.Application.Common;
-using Rentier.Application.DTOs;
-using Rentier.Application.Handlers;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Repositories;
 using Rentier.Application.Services;
@@ -24,6 +19,8 @@ public static class InfrastructureServiceExtensions
     public static async Task AddInfrastructureServicesAsync(
         this IServiceCollection services, string dbPath)
     {
+        // Transient lifetime is intentional: this is a desktop (Avalonia) app with no DI request scope.
+        // Each service gets its own DbContext; callers that need unit-of-work must manage scope explicitly.
         services.AddDbContext<AppDbContext>(
             opt => opt.UseSqlite($"Data Source={dbPath}"),
             ServiceLifetime.Transient);
@@ -50,18 +47,15 @@ public static class InfrastructureServiceExtensions
         services.AddTransient<IExchangeRateCacheRepository, ExchangeRateCacheRepository>();
         services.AddHttpClient<NbsExchangeRateFetcher>();
         services.AddHttpClient<NbsWebScraper>();
-        services.AddTransient<IExchangeRateFetcher, CompositeExchangeRateFetcher>();
-        services.AddTransient<ExchangeRateResolver>();
+        services.AddTransient<IExchangeRateFetcher>(sp =>
+            new CompositeExchangeRateFetcher(
+                sp.GetRequiredService<NbsExchangeRateFetcher>(),
+                sp.GetRequiredService<NbsWebScraper>()));
+        services.AddTransient<IExchangeRateResolver, ExchangeRateResolver>();
         services.AddTransient<IStatementParser, IbkrCsvParser>();
         services.AddTransient<IReportRepository, ReportRepository>();
         services.AddTransient<IFilingRepository, FilingRepository>();
         services.AddTransient<IXmlFilingSerializer, PpOpoXmlSerializer>();
         services.AddTransient<IMailboxSyncService, ImapMailboxSyncService>();
-        services.AddTransient<
-            ICommandHandler<SyncMailboxCommand, Result<SyncResult, Error>>,
-            SyncMailboxCommandHandler>();
-        services.AddTransient<
-            ICommandHandler<ProcessReportsCommand, Result<ProcessReportsResult, Error>>,
-            ProcessReportsCommandHandler>();
     }
 }

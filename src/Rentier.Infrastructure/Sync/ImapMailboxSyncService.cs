@@ -149,7 +149,9 @@ public class ImapMailboxSyncService : IMailboxSyncService
             await client.DisconnectAsync(quit: true, ct);
 
             // Update cursor after all importers processed successfully
-            var newCursor = new MailboxCursor(DateOnly.FromDateTime(DateTime.UtcNow), maxUid ?? cursor.LastUid);
+            var newCursor = new MailboxCursor.SyncedTo(
+                DateOnly.FromDateTime(DateTime.UtcNow),
+                maxUid ?? (cursor is MailboxCursor.SyncedTo s ? s.Uid : null));
             mailbox.UpdateCursor(newCursor);
             await _mailboxRepository.UpdateAsync(mailbox, ct);
 
@@ -172,11 +174,11 @@ public class ImapMailboxSyncService : IMailboxSyncService
             return SearchQuery.All;
 
         // For Incremental mode: prefer UID filter if available
-        if (parameters.Mode == Domain.Enums.SyncMode.Incremental && cursor.LastUid != null)
+        if (parameters.Mode == Domain.Enums.SyncMode.Incremental && cursor is MailboxCursor.SyncedTo { Uid: not null } synced)
         {
             return SearchQuery.Uids(
                 new UniqueIdRange(
-                    new UniqueId((uint)(cursor.LastUid.Value + 1)),
+                    new UniqueId((uint)(synced.Uid!.Value + 1)),
                     UniqueId.MaxValue));
         }
 
