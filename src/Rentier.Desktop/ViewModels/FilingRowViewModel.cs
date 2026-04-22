@@ -5,7 +5,6 @@ using ReactiveUI;
 using Rentier.Application.DTOs;
 using Rentier.Desktop.Extensions;
 using Rentier.Desktop.Resources;
-using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 
 namespace Rentier.Desktop.ViewModels;

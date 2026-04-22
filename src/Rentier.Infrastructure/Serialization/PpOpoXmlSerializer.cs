@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
+using Rentier.Application.Common;
 using Rentier.Application.Interfaces;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
@@ -23,9 +24,13 @@ public sealed class PpOpoXmlSerializer : IXmlFilingSerializer
         public override string BodyName => "UTF-8";
     }
 
-    public byte[] Serialize(Filing filing, TaxpayerProfile profile, string paymentNotes)
+    public Result<byte[], Error> Serialize(Filing filing, TaxpayerProfile profile, string paymentNotes)
     {
         var sifra = MapIncomeType(filing.IncomeType);
+        if (sifra is null)
+            return Result<byte[], Error>.Failure(
+                new Error("UNSUPPORTED_INCOME_TYPE",
+                    $"Income type '{filing.IncomeType}' is not supported by the PP-OPO serializer."));
 
         var doc = new XDocument(
             new XDeclaration("1.0", "UTF-8", null),
@@ -88,17 +93,17 @@ public sealed class PpOpoXmlSerializer : IXmlFilingSerializer
         {
             doc.Save(writer);
         }
-        return ms.ToArray();
+        return Result<byte[], Error>.Success(ms.ToArray());
     }
 
     private static string Fmt(decimal d) =>
         d.ToString("F2", CultureInfo.InvariantCulture);
 
-    private static string MapIncomeType(IncomeType t) => t switch
+    private static string? MapIncomeType(IncomeType t) => t switch
     {
         IncomeType.Interest => "111401000",
         IncomeType.Dividend => "111402000",
-        _ => throw new ArgumentOutOfRangeException(nameof(t), t, null)
+        _ => null
     };
 }
 

@@ -61,7 +61,7 @@ public class SyncParametersTests
     [Fact]
     public void GetEffectiveStartDate_IncrementalWithCursorDate_ReturnsCursorDate()
     {
-        var cursor = new MailboxCursor(new DateOnly(2024, 6, 1), null);
+        var cursor = new MailboxCursor.SyncedTo(new DateOnly(2024, 6, 1), null);
         var p = SyncParameters.Default;
 
         var result = p.GetEffectiveStartDate(cursor);
@@ -73,7 +73,7 @@ public class SyncParametersTests
     public void GetEffectiveStartDate_ReplayFromDateMode_ReturnsReplayDate()
     {
         var replayDate = new DateOnly(2024, 3, 15);
-        var cursor = new MailboxCursor(new DateOnly(2024, 6, 1), 100L);
+        var cursor = new MailboxCursor.SyncedTo(new DateOnly(2024, 6, 1), 100L);
         var p = new SyncParameters(SyncMode.ReplayFromDate, replayFromDate: replayDate);
 
         var result = p.GetEffectiveStartDate(cursor);
@@ -84,7 +84,7 @@ public class SyncParametersTests
     [Fact]
     public void GetEffectiveStartDate_FullReplayMode_ReturnsNull()
     {
-        var cursor = new MailboxCursor(new DateOnly(2024, 6, 1), 100L);
+        var cursor = new MailboxCursor.SyncedTo(new DateOnly(2024, 6, 1), 100L);
         var p = new SyncParameters(SyncMode.FullReplay);
 
         var result = p.GetEffectiveStartDate(cursor);

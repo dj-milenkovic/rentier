@@ -485,4 +485,45 @@ public sealed class ImporterSettingsViewModelTests
         vm.IsEditMode.Should().BeFalse();
         vm.SelectedImporter.Should().BeNull();
     }
+
+    [Fact]
+    public async Task DeleteCommand_WhenSuccessful_RemovesSelectedAndCallsReload()
+    {
+        var deleteHandler = MockDelete();
+        deleteHandler.HandleAsync(Arg.Any<DeleteImporterCommand>(), Arg.Any<CancellationToken>())
+            .Returns(Result<VoidResult, Error>.Success(VoidResult.Value));
+
+        // After deletion, the reload returns an empty list
+        var getImporters = MockGetImporters();
+        getImporters.HandleAsync(Arg.Any<GetImportersQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<IReadOnlyList<ImporterDto>, Error>.Success(new List<ImporterDto>().AsReadOnly()));
+
+        var vm   = CreateVm(getImporters: getImporters, delete: deleteHandler);
+        var item = ImporterItemViewModel.From(MakeImporterDto("To Delete"));
+        vm.ImporterItems.Add(item);
+        vm.SelectedImporter = item; // triggers PopulateFormFromDto → IsEditMode = true
+
+        await vm.DeleteCommand.Execute().FirstAsync();
+
+        await deleteHandler.Received(1).HandleAsync(Arg.Any<DeleteImporterCommand>(), Arg.Any<CancellationToken>());
+        vm.SelectedImporter.Should().BeNull();
+        vm.IsEditMode.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task DeleteCommand_WhenHandlerFails_SetsErrorMessage()
+    {
+        var deleteHandler = MockDelete();
+        deleteHandler.HandleAsync(Arg.Any<DeleteImporterCommand>(), Arg.Any<CancellationToken>())
+            .Returns(Result<VoidResult, Error>.Failure(new Error("ERR_DELETE", "Delete failed")));
+
+        var vm   = CreateVm(delete: deleteHandler);
+        var item = ImporterItemViewModel.From(MakeImporterDto("To Delete"));
+        vm.ImporterItems.Add(item);
+        vm.SelectedImporter = item; // triggers PopulateFormFromDto → IsEditMode = true
+
+        await vm.DeleteCommand.Execute().FirstAsync();
+
+        vm.ErrorMessage.Should().Be("Delete failed");
+    }
 }

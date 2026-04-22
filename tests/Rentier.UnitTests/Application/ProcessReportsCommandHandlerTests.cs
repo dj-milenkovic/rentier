@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Rentier.Application.Commands;
@@ -406,7 +406,97 @@ public class ProcessReportsCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ImporterHasNoTaxpayerProfile_SetsReportToError()
+    public async Task HandleAsync_TwoReportsEachWithOneDividend_AccumulatesFilingsCreatedCounter()
+    {
+        var importer1 = MakeImporter();
+        var importer2 = MakeImporter(profileId: Guid.NewGuid());
+        var report1 = MakeReportWithContent(importer1.Id);
+        var report2 = MakeReportWithContent(importer2.Id);
+
+        var reportRepo = Substitute.For<IReportRepository>();
+        reportRepo.GetByStatusAsync(ReportStatus.Init, Arg.Any<CancellationToken>())
+            .Returns(new[] { report1, report2 });
+
+        var importerRepo = Substitute.For<IImporterRepository>();
+        importerRepo.GetByIdAsync(importer1.Id, Arg.Any<CancellationToken>()).Returns(importer1);
+        importerRepo.GetByIdAsync(importer2.Id, Arg.Any<CancellationToken>()).Returns(importer2);
+
+        var dividends = new[] { new DividendRecord(TestDate, "USD", "ACME Corp", 100m) };
+        var parser = Substitute.For<IStatementParser>();
+        parser.ParseAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
+            .Returns(Result<StatementParseResult, Error>.Success(
+                new StatementParseResult(dividends, [], [], [], [])));
+
+        var rateFetcher = Substitute.For<IExchangeRateFetcher>();
+        rateFetcher.FetchRateAsync(Arg.Any<DateOnly>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(Result<ExchangeRate, Error>.Success(new ExchangeRate(TestDate, "USD", 117m)));
+
+        var filingRepo = Substitute.For<IFilingRepository>();
+        filingRepo.ExistsByIncomeAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<DateOnly>(),
+                Arg.Any<decimal>(), Arg.Any<CancellationToken>())
+            .Returns(false);
+
+        var handler = MakeHandler(
+            reportRepo: reportRepo, importerRepo: importerRepo,
+            filingRepo: filingRepo, rateFetcher: rateFetcher, parser: parser);
+
+        var result = await handler.HandleAsync(new ProcessReportsCommand());
+
+        result.Value.FilingsCreated.Should().Be(2);
+        result.Value.ReportsProcessed.Should().Be(2);
+        result.Value.ReportsErrored.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task HandleAsync_DividendWithMatchingWht_UsesWhtInFiling()
+    {
+        var importer = MakeImporter();
+        var report = MakeReportWithContent(importer.Id);
+
+        var reportRepo = Substitute.For<IReportRepository>();
+        reportRepo.GetByStatusAsync(ReportStatus.Init, Arg.Any<CancellationToken>())
+            .Returns(new[] { report });
+
+        var importerRepo = Substitute.For<IImporterRepository>();
+        importerRepo.GetByIdAsync(importer.Id, Arg.Any<CancellationToken>()).Returns(importer);
+
+        var dividends = new[] { new DividendRecord(TestDate, "USD", "ACME Corp", 100m) };
+        var withholdings = new[]
+        {
+            // Matching WHT: same (Date, EntityName, Currency)
+            new WithholdingTaxRecord(TestDate, "USD", "ACME Corp", 15m),
+            // Non-matching WHT: different EntityName
+            new WithholdingTaxRecord(TestDate, "USD", "OTHER Corp", 20m),
+        };
+        var parseResult = new StatementParseResult(dividends, [], withholdings, [], []);
+        var parser = Substitute.For<IStatementParser>();
+        parser.ParseAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
+            .Returns(Result<StatementParseResult, Error>.Success(parseResult));
+
+        var rateFetcher = Substitute.For<IExchangeRateFetcher>();
+        rateFetcher.FetchRateAsync(Arg.Any<DateOnly>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(Result<ExchangeRate, Error>.Success(new ExchangeRate(TestDate, "USD", 117m)));
+
+        var filingRepo = Substitute.For<IFilingRepository>();
+        filingRepo.ExistsByIncomeAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<DateOnly>(),
+                Arg.Any<decimal>(), Arg.Any<CancellationToken>())
+            .Returns(false);
+
+        var handler = MakeHandler(
+            reportRepo: reportRepo, importerRepo: importerRepo,
+            filingRepo: filingRepo, rateFetcher: rateFetcher, parser: parser);
+
+        await handler.HandleAsync(new ProcessReportsCommand());
+
+        // WHT of 15 USD * 117 RSD/USD = 1755 RSD — verify WHT was applied (not zero)
+        await filingRepo.Received(1).AddAsync(
+            Arg.Is<Filing>(f => f.WhtPaidRsd > 0m),
+            Arg.Any<CancellationToken>());
+    }
+
+
+    [Fact]
+    public async Task HandleAsync_ImporterHasNoTaxpayerProfile_ReportsErrored()
     {
         var importer = Importer.Create("No Profile");
         // TaxpayerProfileId stays null — not set

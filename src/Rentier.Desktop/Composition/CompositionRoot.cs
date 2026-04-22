@@ -5,6 +5,7 @@ using Rentier.Application.DTOs;
 using Rentier.Application.Handlers;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
+using Rentier.Application.Services;
 using Rentier.Desktop.Dialogs;
 using Rentier.Desktop.Resources;
 using Rentier.Desktop.ViewModels;
@@ -19,6 +20,9 @@ public static class CompositionRoot
 {
     public static IServiceCollection AddDesktopServices(this IServiceCollection services)
     {
+        // Application shared services
+        services.AddTransient<ManualFilingCalculator>();
+
         // Application handlers
         services.AddTransient<
             ICommandHandler<SaveTaxpayerProfileCommand, Result<VoidResult, Error>>,
@@ -27,6 +31,14 @@ public static class CompositionRoot
             IQueryHandler<GetTaxpayerProfileQuery, Result<TaxpayerProfileDto?, Error>>,
             GetTaxpayerProfileQueryHandler>();
         services.AddTransient<ISyncAllCommandHandler, SyncAllCommandHandler>();
+
+        // Handlers that depend on Infrastructure services (sync and report processing)
+        services.AddTransient<
+            ICommandHandler<SyncMailboxCommand, Result<SyncResult, Error>>,
+            SyncMailboxCommandHandler>();
+        services.AddTransient<
+            ICommandHandler<ProcessReportsCommand, Result<ProcessReportsResult, Error>>,
+            ProcessReportsCommandHandler>();
 
         // ViewModels
         services.AddTransient<ProfileSettingsViewModel>();

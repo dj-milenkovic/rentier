@@ -7,7 +7,7 @@ using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
-using Rentier.Application.Repositories;
+using Rentier.Application.Queries;
 using Rentier.Desktop.Resources;
 using Rentier.Domain.Enums;
 
@@ -38,7 +38,7 @@ public sealed class ManualFilingViewModel : ReactiveObject, IActivatableViewMode
     private readonly IScheduler _scheduler;
     private readonly ICommandHandler<CalculateManualFilingCommand, Result<ManualFilingPreviewDto, Error>> _calculateHandler;
     private readonly ICommandHandler<CreateManualFilingCommand, Result<Guid, Error>> _createHandler;
-    private readonly ITaxpayerProfileRepository _profileRepository;
+    private readonly IQueryHandler<GetTaxpayerProfileQuery, Result<TaxpayerProfileDto?, Error>> _profileQueryHandler;
     private readonly Action _navigateBackToFilings;
 
     // ── Properties ───────────────────────────────────────────────────────────
@@ -127,13 +127,13 @@ public sealed class ManualFilingViewModel : ReactiveObject, IActivatableViewMode
     public ManualFilingViewModel(
         ICommandHandler<CalculateManualFilingCommand, Result<ManualFilingPreviewDto, Error>> calculateHandler,
         ICommandHandler<CreateManualFilingCommand, Result<Guid, Error>> createHandler,
-        ITaxpayerProfileRepository profileRepository,
+        IQueryHandler<GetTaxpayerProfileQuery, Result<TaxpayerProfileDto?, Error>> profileQueryHandler,
         Action navigateBackToFilings,
         IScheduler? scheduler = null)
     {
         _calculateHandler       = calculateHandler;
         _createHandler          = createHandler;
-        _profileRepository      = profileRepository;
+        _profileQueryHandler    = profileQueryHandler;
         _navigateBackToFilings  = navigateBackToFilings;
         _scheduler              = scheduler ?? RxApp.MainThreadScheduler;
 
@@ -176,6 +176,11 @@ public sealed class ManualFilingViewModel : ReactiveObject, IActivatableViewMode
 
         this.WhenActivated(disposables =>
         {
+            // C3: profile load moved out of constructor to avoid fire-and-forget task
+            Observable.FromAsync(ct => LoadProfileAsync(ct))
+                .ObserveOn(RxApp.MainThreadScheduler)
+                .Subscribe()
+                .DisposeWith(disposables);
             CalculateCommand.ThrownExceptions
                 .Subscribe(ex => ErrorMessage = ex.Message)
                 .DisposeWith(disposables);
@@ -194,22 +199,19 @@ public sealed class ManualFilingViewModel : ReactiveObject, IActivatableViewMode
                 x => x.SelectedIncomeType)
             .Skip(1)
             .Subscribe(_ => Preview = null);
-
-        // Load taxpayer profile (fire-and-forget; works synchronously when tests use ImmediateScheduler)
-        _ = LoadProfileAsync();
     }
 
     // ── Command implementations ───────────────────────────────────────────────
 
-    private async Task LoadProfileAsync()
+    private async Task LoadProfileAsync(CancellationToken ct = default)
     {
         try
         {
-            var profile = await _profileRepository.GetAsync();
-            if (profile == null)
+            var result = await _profileQueryHandler.HandleAsync(new GetTaxpayerProfileQuery(), ct);
+            if (!result.IsSuccess || result.Value is null)
                 ErrorMessage = Strings.ManualFiling_Error_NoProfile;
             else
-                _taxpayerProfileId = profile.Id;
+                _taxpayerProfileId = result.Value.Id;
         }
         catch
         {

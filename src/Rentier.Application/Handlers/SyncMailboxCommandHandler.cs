@@ -52,7 +52,7 @@ public sealed class SyncMailboxCommandHandler
                 mailbox,
                 group.ToList().AsReadOnly(),
                 command.Parameters,
-                command.Progress,
+                progress: null,
                 ct);
 
             if (result.IsSuccess)

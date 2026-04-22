@@ -1,4 +1,4 @@
-using Rentier.Domain.Entities;
+using Rentier.Domain.Enums;
 
 namespace Rentier.Application.Commands;
 

@@ -201,7 +201,7 @@ public class SyncAllCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_PassesProgressViaCommandConstructor_NotAsMethodArg()
+    public async Task HandleAsync_DelegatesMailboxSyncToSyncMailboxCommandHandler()
     {
         var syncHandler = Substitute.For<ICommandHandler<SyncMailboxCommand, Result<SyncResult, Error>>>();
         syncHandler.HandleAsync(Arg.Any<SyncMailboxCommand>(), Arg.Any<CancellationToken>())
@@ -210,9 +210,8 @@ public class SyncAllCommandHandlerTests
         var handler = CreateHandler(syncHandler);
         await handler.HandleAsync(DefaultCommand(), NoProgress());
 
+        // Progress is no longer embedded in SyncMailboxCommand — it's a plain data record now
         await syncHandler.Received(1)
-            .HandleAsync(
-                Arg.Is<SyncMailboxCommand>(c => c.Progress != null),
-                Arg.Any<CancellationToken>());
+            .HandleAsync(Arg.Any<SyncMailboxCommand>(), Arg.Any<CancellationToken>());
     }
 }

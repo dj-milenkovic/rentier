@@ -12,7 +12,6 @@ using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
 using Rentier.Desktop.ViewModels;
 using Rentier.Desktop.Views;
-using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 using Xunit;
 

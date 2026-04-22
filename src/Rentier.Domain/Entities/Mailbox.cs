@@ -12,7 +12,23 @@ public sealed class Mailbox
     public string Host { get; private set; } = string.Empty;
     public int Port { get; private set; }
     public string Username { get; private set; } = string.Empty;
-    public MailboxCursor Cursor { get; private set; } = null!;
+
+    // Private backing fields persisted by EF Core via shadow properties.
+    // EF Core reads/writes these directly; the Cursor property computes the union type.
+#pragma warning disable CS0169, CS0649
+    private DateOnly? _cursorDate;
+    private long? _cursorUid;
+#pragma warning restore CS0169, CS0649
+
+    /// <summary>
+    /// The current synchronization position in the mailbox.
+    /// Returns <see cref="MailboxCursor.SyncedTo"/> when a sync date is recorded,
+    /// or <see cref="MailboxCursor.NeverSynced"/> when no sync has occurred.
+    /// </summary>
+    public MailboxCursor Cursor =>
+        _cursorDate.HasValue
+            ? new MailboxCursor.SyncedTo(_cursorDate.Value, _cursorUid)
+            : MailboxCursor.NeverSynced.Instance;
 
     private Mailbox() { }  // EF Core parameterless constructor
 
@@ -29,7 +45,7 @@ public sealed class Mailbox
         Host = host;
         Port = port;
         Username = username;
-        Cursor = cursor;
+        UpdateCursor(cursor);
     }
 
     public static Mailbox Create(string host, int port, string username)
@@ -40,7 +56,7 @@ public sealed class Mailbox
             host,
             port,
             username,
-            new MailboxCursor(LastSyncDate: defaultStart, LastUid: null));
+            new MailboxCursor.SyncedTo(defaultStart, null));
     }
 
     public void UpdateDetails(string host, int port, string username)
@@ -60,6 +76,11 @@ public sealed class Mailbox
     public void UpdateCursor(MailboxCursor cursor)
     {
         if (cursor is null) throw new DomainException("Cursor must not be null");
-        Cursor = cursor;
+        (_cursorDate, _cursorUid) = cursor switch
+        {
+            MailboxCursor.NeverSynced => ((DateOnly?)null, (long?)null),
+            MailboxCursor.SyncedTo s  => (s.Date, s.Uid),
+            _                         => throw new DomainException("Unknown MailboxCursor subtype")
+        };
     }
 }

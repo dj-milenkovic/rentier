@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 using CsvHelper;
 using CsvHelper.Configuration;
 using Rentier.Application.Common;
@@ -91,9 +92,18 @@ public sealed class IbkrCsvParser : IStatementParser
         return rows;
     }
 
-    // ISIN pattern: (XX0000000000) — 2 letter country + 9 alphanumeric + 1 digit
+    // ISIN pattern: (XX0000000000) — 2 letter country + 9 alphanumeric + 1 digit.
+    // IBKR descriptions look like "AAPL(US0378331005) Cash Dividend" — the ISIN is mid-string,
+    // so we strip the ISIN parenthetical and everything after it to recover the entity name.
+    private static readonly Regex IsinPattern =
+        new(@"\s*\([A-Z]{2}[A-Z0-9]{9}\d\).*$", RegexOptions.Compiled);
+
+    /// <summary>
+    /// Strips the ISIN parenthetical (e.g. "(US0378331005)") and any trailing suffix from a
+    /// description, returning just the entity name (e.g. "AAPL" from "AAPL(US0378331005) Cash Dividend").
+    /// </summary>
     internal static string StripIsin(string description) =>
-        description.Split('(')[0].Trim();
+        IsinPattern.Replace(description, string.Empty).Trim();
 
     private static (Dictionary<(string Entity, DateOnly Date, string Currency), DividendRecord> dividends,
                     List<ParseError> errors)

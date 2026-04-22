@@ -44,6 +44,8 @@ public static class TaxCalculationService
             throw new DomainException("WHT currency must match income currency");
 
         var incomeRate = await rateProvider(incomeDate, upperIncome);
+        if (incomeRate is null)
+            throw new DomainException($"Exchange rate not found for currency '{upperIncome}' on {incomeDate}");
         ct.ThrowIfCancellationRequested();
 
         var grossIncomeRsd = Round(incomeAmount * incomeRate.RateToRsd);
@@ -52,6 +54,8 @@ public static class TaxCalculationService
         if (whtAmount > 0)
         {
             var whtRate = (upperWht == upperIncome) ? incomeRate : await rateProvider(incomeDate, upperWht);
+            if (whtRate is null)
+                throw new DomainException($"Exchange rate not found for WHT currency '{upperWht}' on {incomeDate}");
             ct.ThrowIfCancellationRequested();
             whtPaidRsd = Round(whtAmount * whtRate.RateToRsd);
         }

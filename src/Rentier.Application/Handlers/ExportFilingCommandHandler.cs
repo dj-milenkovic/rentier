@@ -54,11 +54,14 @@ public sealed class ExportFilingCommandHandler
             }
         }
 
-        var bytes = _serializer.Serialize(filing, profile, paymentNotes);
+        var serializeResult = _serializer.Serialize(filing, profile, paymentNotes);
+        if (!serializeResult.IsSuccess)
+            return Result<ExportFilingResult, Error>.Failure(serializeResult.Error);
+
         var suggestedFileName = BuildFileName(filing);
 
         return Result<ExportFilingResult, Error>.Success(
-            new ExportFilingResult(bytes, suggestedFileName));
+            new ExportFilingResult(serializeResult.Value, suggestedFileName));
     }
 
     /// <summary>

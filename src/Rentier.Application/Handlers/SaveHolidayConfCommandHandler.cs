@@ -2,6 +2,7 @@ using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
+using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Exceptions;
 

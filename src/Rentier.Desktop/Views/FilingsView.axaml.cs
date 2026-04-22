@@ -26,11 +26,16 @@ public partial class FilingsView : ReactiveUserControl<FilingsViewModel>
     }
 
     /// <summary>
-    /// Stub for column-sort event added by feat/027 AXAML change.
-    /// Full ApplySortCommand routing will be completed in feat/027 T019.
+    /// Routes column-sort clicks to <see cref="FilingsViewModel.ApplySortCommand"/> for server-side sorting.
+    /// Setting <c>e.Handled = true</c> suppresses Avalonia's client-side sort, which would only reorder
+    /// the current page and not the full dataset.
     /// </summary>
     private void DataGrid_Sorting(object? sender, DataGridColumnEventArgs e)
     {
-        e.Handled = false;
+        var tag = e.Column.Tag as string;
+        if (string.IsNullOrEmpty(tag)) return;
+
+        e.Handled = true;
+        ViewModel?.ApplySortCommand.Execute((tag, (bool?)null)).Subscribe();
     }
 }

@@ -56,7 +56,10 @@ public class CreateManualFilingCommandHandlerTests
         IExchangeRateFetcher? fetcher     = null,
         IHolidayRepository?  holidayRepo  = null,
         IFilingRepository?   filingRepo   = null)
-        => new(MakeResolver(fetcher), holidayRepo ?? MakeHolidayRepo(), filingRepo ?? MakeFilingRepo());
+    {
+        var calculator = new ManualFilingCalculator(MakeResolver(fetcher), holidayRepo ?? MakeHolidayRepo());
+        return new CreateManualFilingCommandHandler(calculator, filingRepo ?? MakeFilingRepo());
+    }
 
     private static CreateManualFilingCommand ValidCommand(decimal? netReceived = 85.00m)
         => new(ProfileId, IncomeType.Dividend, "AAPL", TestDate, "USD", 100.00m, netReceived);
@@ -222,7 +225,31 @@ public class CreateManualFilingCommandHandlerTests
         result.Error.Code.Should().Be("NET_EXCEEDS_GROSS");
     }
 
-    // ── Network Failure (US3) ─────────────────────────────────────────────────
+    [Fact]
+    public async Task HandleAsync_DefaultIncomeDate_ReturnsDateRequiredError()
+    {
+        var handler = MakeHandler();
+        var cmd     = new CreateManualFilingCommand(ProfileId, IncomeType.Dividend, "AAPL", default, "USD", 100m, null);
+
+        var result = await handler.HandleAsync(cmd);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Code.Should().Be("DATE_REQUIRED");
+    }
+
+    [Fact]
+    public async Task HandleAsync_NegativeNetReceived_ReturnsNetNegativeError()
+    {
+        var handler = MakeHandler();
+        var cmd     = new CreateManualFilingCommand(ProfileId, IncomeType.Dividend, "AAPL", TestDate, "USD", 100m, -1m);
+
+        var result = await handler.HandleAsync(cmd);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Code.Should().Be("NET_NEGATIVE");
+    }
+
+
 
     [Fact]
     public async Task HandleAsync_NetworkError_ReturnsNetworkFailureError()

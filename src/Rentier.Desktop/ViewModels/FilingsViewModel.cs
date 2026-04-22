@@ -11,7 +11,7 @@ using Rentier.Application.Enums;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
 using Rentier.Desktop.Resources;
-using Rentier.Domain.Entities;
+using Rentier.Domain.Enums;
 
 namespace Rentier.Desktop.ViewModels;
 
@@ -64,7 +64,6 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
             this.RaiseAndSetIfChanged(ref _showAll, value);
             _currentPage = 1;
             this.RaisePropertyChanged(nameof(CurrentPage));
-            LoadPageCommand.Execute().Subscribe();
         }
     }
 
@@ -76,7 +75,6 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
             this.RaiseAndSetIfChanged(ref _reportIdFilter, value);
             _currentPage = 1;
             this.RaisePropertyChanged(nameof(CurrentPage));
-            LoadPageCommand.Execute().Subscribe();
         }
     }
 
@@ -376,6 +374,24 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
         this.WhenActivated(disposables =>
         {
             LoadPageCommand.Execute().Subscribe().DisposeWith(disposables);
+
+            // M2: InvokeCommand pattern prevents undisposed Subscribe() calls in property setters
+            this.WhenAnyValue(x => x.ShowAll)
+                .Skip(1)
+                .Select(_ => Unit.Default)
+                .InvokeCommand(LoadPageCommand)
+                .DisposeWith(disposables);
+
+            this.WhenAnyValue(x => x.ReportIdFilter)
+                .Skip(1)
+                .Select(_ => Unit.Default)
+                .InvokeCommand(LoadPageCommand)
+                .DisposeWith(disposables);
+
+            // C2: dispose row subscriptions on every deactivation cycle
+            Disposable.Create(() => _rowSubscriptions.Clear())
+                .DisposeWith(disposables);
+
             LoadPageCommand.ThrownExceptions
                 .Subscribe(ex => ErrorMessage = ex.Message)
                 .DisposeWith(disposables);

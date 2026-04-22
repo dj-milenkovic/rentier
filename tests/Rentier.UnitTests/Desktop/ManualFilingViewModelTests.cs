@@ -8,9 +8,8 @@ using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
-using Rentier.Application.Repositories;
+using Rentier.Application.Queries;
 using Rentier.Desktop.ViewModels;
-using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 using Xunit;
 
@@ -23,8 +22,8 @@ public class ManualFilingViewModelTests
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
-    private static TaxpayerProfile MakeProfile()
-        => new TaxpayerProfile(ProfileId, "1234567890123", "Test User", "Test Address", "00001");
+    private static TaxpayerProfileDto MakeProfileDto()
+        => new TaxpayerProfileDto(ProfileId, "1234567890123", "Test User", "Test Address", "00001", null, null);
 
     private static ICommandHandler<CalculateManualFilingCommand, Result<ManualFilingPreviewDto, Error>>
         MockCalculateHandler(ManualFilingPreviewDto? dto = null)
@@ -47,11 +46,13 @@ public class ManualFilingViewModelTests
         return h;
     }
 
-    private static ITaxpayerProfileRepository MockProfileRepo(TaxpayerProfile? profile = null)
+    private static IQueryHandler<GetTaxpayerProfileQuery, Result<TaxpayerProfileDto?, Error>>
+        MockProfileQueryHandler(TaxpayerProfileDto? dto = null)
     {
-        var repo = Substitute.For<ITaxpayerProfileRepository>();
-        repo.GetAsync(Arg.Any<CancellationToken>()).Returns(profile ?? MakeProfile());
-        return repo;
+        var h = Substitute.For<IQueryHandler<GetTaxpayerProfileQuery, Result<TaxpayerProfileDto?, Error>>>();
+        h.HandleAsync(Arg.Any<GetTaxpayerProfileQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<TaxpayerProfileDto?, Error>.Success(dto ?? MakeProfileDto()));
+        return h;
     }
 
     private static ManualFilingPreviewDto MakePreviewDto()
@@ -68,22 +69,22 @@ public class ManualFilingViewModelTests
     private static ManualFilingViewModel CreateVm(
         ICommandHandler<CalculateManualFilingCommand, Result<ManualFilingPreviewDto, Error>>? calcHandler = null,
         ICommandHandler<CreateManualFilingCommand, Result<Guid, Error>>? createHandler = null,
-        ITaxpayerProfileRepository? profileRepo = null,
+        IQueryHandler<GetTaxpayerProfileQuery, Result<TaxpayerProfileDto?, Error>>? profileQueryHandler = null,
         Action? navigateBack = null)
         => new ManualFilingViewModel(
-            calcHandler   ?? MockCalculateHandler(),
-            createHandler ?? MockCreateHandler(),
-            profileRepo   ?? MockProfileRepo(),
-            navigateBack  ?? (() => { }),
+            calcHandler         ?? MockCalculateHandler(),
+            createHandler       ?? MockCreateHandler(),
+            profileQueryHandler ?? MockProfileQueryHandler(),
+            navigateBack        ?? (() => { }),
             ImmediateScheduler.Instance);
 
     private static ManualFilingViewModel CreateFilledVm(
         ICommandHandler<CalculateManualFilingCommand, Result<ManualFilingPreviewDto, Error>>? calcHandler = null,
         ICommandHandler<CreateManualFilingCommand, Result<Guid, Error>>? createHandler = null,
-        ITaxpayerProfileRepository? profileRepo = null,
+        IQueryHandler<GetTaxpayerProfileQuery, Result<TaxpayerProfileDto?, Error>>? profileQueryHandler = null,
         Action? navigateBack = null)
     {
-        var vm = CreateVm(calcHandler, createHandler, profileRepo, navigateBack);
+        var vm = CreateVm(calcHandler, createHandler, profileQueryHandler, navigateBack);
         vm.Ticker          = "AAPL";
         vm.IncomeDate      = new DateTimeOffset(TestDate.ToDateTime(TimeOnly.MinValue));
         vm.GrossAmountText = "100.00";
@@ -381,13 +382,14 @@ public class ManualFilingViewModelTests
     [Fact]
     public void WhenActivated_NoProfile_SetsErrorMessage()
     {
-        var profileRepo = Substitute.For<ITaxpayerProfileRepository>();
-        profileRepo.GetAsync(Arg.Any<CancellationToken>()).Returns((TaxpayerProfile?)null);
+        var profileHandler = Substitute.For<IQueryHandler<GetTaxpayerProfileQuery, Result<TaxpayerProfileDto?, Error>>>();
+        profileHandler.HandleAsync(Arg.Any<GetTaxpayerProfileQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<TaxpayerProfileDto?, Error>.Success(null));
 
-        var vm = CreateVm(profileRepo: profileRepo);
+        var vm = CreateVm(profileQueryHandler: profileHandler);
 
         // With ImmediateScheduler, the WhenActivated observable fires synchronously
-        // ErrorMessage should be set
+        using var _ = vm.Activator.Activate();
         vm.ErrorMessage.Should().NotBeNull();
     }
 

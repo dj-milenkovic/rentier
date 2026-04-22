@@ -52,7 +52,7 @@ public class PpOpoXmlSerializerTests
     [Fact]
     public void Serialize_RootElement_IsNs1PodaciPoreskeDeklaracije()
     {
-        var bytes = _sut.Serialize(MakeFiling(), MakeProfile(), string.Empty);
+        var bytes = _sut.Serialize(MakeFiling(), MakeProfile(), string.Empty).Value;
         var root = ParseRoot(bytes);
 
         root.Name.LocalName.Should().Be("PodaciPoreskeDeklaracije");
@@ -62,7 +62,7 @@ public class PpOpoXmlSerializerTests
     [Fact]
     public void Serialize_RootElement_HasXmlnsNs1Attribute()
     {
-        var bytes = _sut.Serialize(MakeFiling(), MakeProfile(), string.Empty);
+        var bytes = _sut.Serialize(MakeFiling(), MakeProfile(), string.Empty).Value;
         var xml = Encoding.UTF8.GetString(bytes);
 
         xml.Should().Contain("xmlns:ns1=\"http://pid.purs.gov.rs\"");
@@ -71,7 +71,7 @@ public class PpOpoXmlSerializerTests
     [Fact]
     public void Serialize_AllTopLevelChildren_HaveNs1Prefix()
     {
-        var bytes = _sut.Serialize(MakeFiling(), MakeProfile(), string.Empty);
+        var bytes = _sut.Serialize(MakeFiling(), MakeProfile(), string.Empty).Value;
         var root = ParseRoot(bytes);
 
         foreach (var child in root.Elements())
@@ -84,7 +84,7 @@ public class PpOpoXmlSerializerTests
     [Fact]
     public void Serialize_PodaciOPrijavi_ContainsVrstaPrijaveObracunskiPeriodAndRok()
     {
-        var bytes = _sut.Serialize(MakeFiling(incomeDate: new DateOnly(2025, 3, 15)), MakeProfile(), string.Empty);
+        var bytes = _sut.Serialize(MakeFiling(incomeDate: new DateOnly(2025, 3, 15)), MakeProfile(), string.Empty).Value;
         var root = ParseRoot(bytes);
         var section = root.Element(Ns1 + "PodaciOPrijavi")!;
 
@@ -104,7 +104,7 @@ public class PpOpoXmlSerializerTests
             opstinaCode: "110",
             phone: "0611234567",
             email: "john@example.com");
-        var bytes = _sut.Serialize(MakeFiling(), profile, string.Empty);
+        var bytes = _sut.Serialize(MakeFiling(), profile, string.Empty).Value;
         var root = ParseRoot(bytes);
         var section = root.Element(Ns1 + "PodaciOPoreskomObvezniku")!;
 
@@ -125,7 +125,7 @@ public class PpOpoXmlSerializerTests
     public void Serialize_PodaciOPoreskomObvezniku_NoPlainTextCdataInRawXml()
     {
         var profile = MakeProfile(fullName: "Jovan Jovanovic & Co", address: "Knez Mihailova 1 <Belgrade>");
-        var bytes = _sut.Serialize(MakeFiling(), profile, string.Empty);
+        var bytes = _sut.Serialize(MakeFiling(), profile, string.Empty).Value;
         var xml = Encoding.UTF8.GetString(bytes);
 
         xml.Should().NotContain("<![CDATA[");
@@ -134,7 +134,7 @@ public class PpOpoXmlSerializerTests
     [Fact]
     public void Serialize_PodaciOVrstamaPrihoda_ContainsRedniBrojAndSifra()
     {
-        var bytes = _sut.Serialize(MakeFiling(IncomeType.Dividend), MakeProfile(), string.Empty);
+        var bytes = _sut.Serialize(MakeFiling(IncomeType.Dividend), MakeProfile(), string.Empty).Value;
         var root = ParseRoot(bytes);
         var section = root.Element(Ns1 + "PodaciOVrstamaPrihoda")!;
 
@@ -146,7 +146,7 @@ public class PpOpoXmlSerializerTests
     [Fact]
     public void Serialize_UkupnoSection_Exists()
     {
-        var bytes = _sut.Serialize(MakeFiling(), MakeProfile(), string.Empty);
+        var bytes = _sut.Serialize(MakeFiling(), MakeProfile(), string.Empty).Value;
         var root = ParseRoot(bytes);
 
         root.Element(Ns1 + "Ukupno").Should().NotBeNull();
@@ -156,7 +156,7 @@ public class PpOpoXmlSerializerTests
     public void Serialize_UkupnoSection_ContainsAllMonetaryFields()
     {
         var filing = MakeFiling(grossIncome: 12345.50m, whtPaid: 123.45m, grossTaxPayable: 1234.55m, taxPayable: 1111.10m);
-        var bytes = _sut.Serialize(filing, MakeProfile(), string.Empty);
+        var bytes = _sut.Serialize(filing, MakeProfile(), string.Empty).Value;
         var root = ParseRoot(bytes);
         var ukupno = root.Element(Ns1 + "Ukupno")!;
 
@@ -170,7 +170,7 @@ public class PpOpoXmlSerializerTests
     [Fact]
     public void Serialize_KamataSection_ExistsWithZeroValues()
     {
-        var bytes = _sut.Serialize(MakeFiling(), MakeProfile(), string.Empty);
+        var bytes = _sut.Serialize(MakeFiling(), MakeProfile(), string.Empty).Value;
         var root = ParseRoot(bytes);
         var kamata = root.Element(Ns1 + "Kamata")!;
 
@@ -182,7 +182,7 @@ public class PpOpoXmlSerializerTests
     [Fact]
     public void Serialize_PodaciODodatnojKamati_ExistsAsEmptyElement()
     {
-        var bytes = _sut.Serialize(MakeFiling(), MakeProfile(), string.Empty);
+        var bytes = _sut.Serialize(MakeFiling(), MakeProfile(), string.Empty).Value;
         var root = ParseRoot(bytes);
         var dodKamata = root.Element(Ns1 + "PodaciODodatnojKamati");
 
@@ -196,7 +196,7 @@ public class PpOpoXmlSerializerTests
     [Fact]
     public void Serialize_EncodingDeclaration_IsUppercaseUtf8()
     {
-        var bytes = _sut.Serialize(MakeFiling(), MakeProfile(), string.Empty);
+        var bytes = _sut.Serialize(MakeFiling(), MakeProfile(), string.Empty).Value;
         var xml = Encoding.UTF8.GetString(bytes);
 
         xml.Should().Contain("encoding=\"UTF-8\"");
@@ -205,7 +205,7 @@ public class PpOpoXmlSerializerTests
     [Fact]
     public void Serialize_Output_IsUtf8WithoutBom()
     {
-        var bytes = _sut.Serialize(MakeFiling(), MakeProfile(), string.Empty);
+        var bytes = _sut.Serialize(MakeFiling(), MakeProfile(), string.Empty).Value;
 
         bytes[0].Should().NotBe(0xEF);
         var xml = Encoding.UTF8.GetString(bytes);
@@ -218,7 +218,7 @@ public class PpOpoXmlSerializerTests
     public void OsnovicaZaPorezMapsToGrossIncomeNotGrossTax()
     {
         var filing = MakeFiling(grossIncome: 100_000.00m, grossTaxPayable: 15_000.00m);
-        var bytes = _sut.Serialize(filing, MakeProfile(), string.Empty);
+        var bytes = _sut.Serialize(filing, MakeProfile(), string.Empty).Value;
         var root = ParseRoot(bytes);
 
         var incomeRow = root.Element(Ns1 + "PodaciOVrstamaPrihoda")!;
@@ -239,7 +239,7 @@ public class PpOpoXmlSerializerTests
     [Fact]
     public void Serialize_Dividend_SifraIs111402000()
     {
-        var bytes = _sut.Serialize(MakeFiling(IncomeType.Dividend), MakeProfile(), string.Empty);
+        var bytes = _sut.Serialize(MakeFiling(IncomeType.Dividend), MakeProfile(), string.Empty).Value;
         var root = ParseRoot(bytes);
         root.Descendants(Ns1 + "SifraVrstePrihoda").Single().Value.Should().Be("111402000");
     }
@@ -247,7 +247,7 @@ public class PpOpoXmlSerializerTests
     [Fact]
     public void Serialize_Interest_SifraIs111401000()
     {
-        var bytes = _sut.Serialize(MakeFiling(IncomeType.Interest), MakeProfile(), string.Empty);
+        var bytes = _sut.Serialize(MakeFiling(IncomeType.Interest), MakeProfile(), string.Empty).Value;
         var root = ParseRoot(bytes);
         root.Descendants(Ns1 + "SifraVrstePrihoda").Single().Value.Should().Be("111401000");
     }
@@ -257,7 +257,7 @@ public class PpOpoXmlSerializerTests
     {
         var filing = MakeFiling(grossIncome: 12345.50m, whtPaid: 123.45m,
             grossTaxPayable: 1234.55m, taxPayable: 1111.10m);
-        var bytes = _sut.Serialize(filing, MakeProfile(), string.Empty);
+        var bytes = _sut.Serialize(filing, MakeProfile(), string.Empty).Value;
         var root = ParseRoot(bytes);
         var incomeRow = root.Element(Ns1 + "PodaciOVrstamaPrihoda")!;
 
@@ -273,7 +273,7 @@ public class PpOpoXmlSerializerTests
     public void Serialize_ZeroAmount_FormattedAs0Dot00()
     {
         var filing = MakeFiling(grossIncome: 0m, whtPaid: 0m, grossTaxPayable: 0m, taxPayable: 0m);
-        var bytes = _sut.Serialize(filing, MakeProfile(), string.Empty);
+        var bytes = _sut.Serialize(filing, MakeProfile(), string.Empty).Value;
         var root = ParseRoot(bytes);
         root.Descendants(Ns1 + "BrutoPrihod").First().Value.Should().Be("0.00");
     }
@@ -282,7 +282,7 @@ public class PpOpoXmlSerializerTests
     public void Serialize_IncomeDate_FormattedAsYyyyMmDd()
     {
         var filing = MakeFiling(incomeDate: new DateOnly(2025, 3, 15));
-        var bytes = _sut.Serialize(filing, MakeProfile(), string.Empty);
+        var bytes = _sut.Serialize(filing, MakeProfile(), string.Empty).Value;
         var root = ParseRoot(bytes);
         root.Descendants(Ns1 + "DatumOstvarivanjaPrihoda").Single().Value.Should().Be("2025-03-15");
     }
@@ -291,7 +291,7 @@ public class PpOpoXmlSerializerTests
     public void Serialize_FilingDeadline_FormattedAsYyyyMmDd()
     {
         var filing = MakeFiling(deadline: new DateOnly(2025, 4, 30));
-        var bytes = _sut.Serialize(filing, MakeProfile(), string.Empty);
+        var bytes = _sut.Serialize(filing, MakeProfile(), string.Empty).Value;
         var root = ParseRoot(bytes);
         root.Descendants(Ns1 + "DatumDospelostiObaveze").Single().Value.Should().Be("2025-04-30");
     }
@@ -300,7 +300,7 @@ public class PpOpoXmlSerializerTests
     public void Serialize_ObracunskiPeriod_IsYyyyMm()
     {
         var filing = MakeFiling(incomeDate: new DateOnly(2025, 3, 15));
-        var bytes = _sut.Serialize(filing, MakeProfile(), string.Empty);
+        var bytes = _sut.Serialize(filing, MakeProfile(), string.Empty).Value;
         var root = ParseRoot(bytes);
         root.Descendants(Ns1 + "ObracunskiPeriod").Single().Value.Should().Be("2025-03");
     }
@@ -309,7 +309,7 @@ public class PpOpoXmlSerializerTests
     public void Serialize_NullPhoneNumber_EmptyElement()
     {
         var profile = MakeProfile(phone: null);
-        var bytes = _sut.Serialize(MakeFiling(), profile, string.Empty);
+        var bytes = _sut.Serialize(MakeFiling(), profile, string.Empty).Value;
         var root = ParseRoot(bytes);
         root.Descendants(Ns1 + "TelefonKontaktOsobe").Single().Value.Should().BeEmpty();
     }
@@ -317,7 +317,7 @@ public class PpOpoXmlSerializerTests
     [Fact]
     public void Serialize_PaymentNotes_AppearsInOstalo()
     {
-        var bytes = _sut.Serialize(MakeFiling(), MakeProfile(), "IBAN: RS12345 REF: 12345");
+        var bytes = _sut.Serialize(MakeFiling(), MakeProfile(), "IBAN: RS12345 REF: 12345").Value;
         var root = ParseRoot(bytes);
         root.Descendants(Ns1 + "Ostalo").Single().Value.Should().Be("IBAN: RS12345 REF: 12345");
     }
@@ -325,7 +325,7 @@ public class PpOpoXmlSerializerTests
     [Fact]
     public void Serialize_NacinIsplate_AlwaysThree()
     {
-        var bytes = _sut.Serialize(MakeFiling(), MakeProfile(), string.Empty);
+        var bytes = _sut.Serialize(MakeFiling(), MakeProfile(), string.Empty).Value;
         var root = ParseRoot(bytes);
         root.Descendants(Ns1 + "NacinIsplate").Single().Value.Should().Be("3");
     }
@@ -333,7 +333,7 @@ public class PpOpoXmlSerializerTests
     [Fact]
     public void Serialize_VrstaPrijave_AlwaysOne()
     {
-        var bytes = _sut.Serialize(MakeFiling(), MakeProfile(), string.Empty);
+        var bytes = _sut.Serialize(MakeFiling(), MakeProfile(), string.Empty).Value;
         var root = ParseRoot(bytes);
         root.Descendants(Ns1 + "VrstaPrijave").Single().Value.Should().Be("1");
     }

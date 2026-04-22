@@ -1,3 +1,4 @@
+using Rentier.Application.Common;
 using Rentier.Domain.Entities;
 
 namespace Rentier.Application.Interfaces;
@@ -10,9 +11,9 @@ namespace Rentier.Application.Interfaces;
 /// </summary>
 public interface IXmlFilingSerializer
 {
-    /// <summary>Returns the serialized XML bytes for the given filing context.</summary>
+    /// <summary>Returns the serialized XML bytes for the given filing context, or a failure if the filing cannot be serialized.</summary>
     /// <param name="filing">The filing aggregate root.</param>
     /// <param name="profile">The taxpayer profile (must not be null).</param>
     /// <param name="paymentNotes">Importer payment notes; empty string if unavailable.</param>
-    byte[] Serialize(Filing filing, TaxpayerProfile profile, string paymentNotes);
+    Result<byte[], Error> Serialize(Filing filing, TaxpayerProfile profile, string paymentNotes);
 }

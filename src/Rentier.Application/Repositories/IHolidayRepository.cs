@@ -1,7 +1,7 @@
 using Rentier.Application.DTOs;
 using Rentier.Domain.Entities;
 
-namespace Rentier.Application.Interfaces;
+namespace Rentier.Application.Repositories;
 
 /// <summary>
 /// Repository contract for persisting and retrieving holiday configuration.

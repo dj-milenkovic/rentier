@@ -21,9 +21,11 @@ public sealed class MacOsCredentialStore : ICredentialStore
     {
         return Task.Run<Result<VoidResult, Error>>(async () =>
         {
-            // ArgumentList prevents shell injection — each argument is passed verbatim
+            // ArgumentList prevents shell injection — each argument is passed verbatim.
+            // Password is piped via stdin (not passed as -w <value>) to keep it out of `ps aux`.
             var (exitCode, _, stderr) = await RunSecurityAsync(
-                ["add-generic-password", "-a", AccountName, "-s", key, "-w", secret, "-U"]);
+                ["add-generic-password", "-a", AccountName, "-s", key, "-U", "-w"],
+                stdinInput: secret);
 
             return exitCode == 0
                 ? Result<VoidResult, Error>.Success(VoidResult.Value)
@@ -72,13 +74,14 @@ public sealed class MacOsCredentialStore : ICredentialStore
     }
 
     private static async Task<(int ExitCode, string Stdout, string Stderr)> RunSecurityAsync(
-        string[] args)
+        string[] args, string? stdinInput = null)
     {
         var startInfo = new ProcessStartInfo
         {
             FileName = SecurityBinary,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
+            RedirectStandardInput = stdinInput is not null,
             UseShellExecute = false,
             CreateNoWindow = true
         };
@@ -87,6 +90,13 @@ public sealed class MacOsCredentialStore : ICredentialStore
 
         using var process = new Process { StartInfo = startInfo };
         process.Start();
+
+        // Write secret via stdin to avoid exposing it in process arguments
+        if (stdinInput is not null)
+        {
+            await process.StandardInput.WriteLineAsync(stdinInput);
+            process.StandardInput.Close();
+        }
 
         // Read stdout and stderr concurrently to prevent deadlock when either buffer fills
         var stdoutTask = process.StandardOutput.ReadToEndAsync();

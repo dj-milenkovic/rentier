@@ -128,4 +128,133 @@ public class ReportRepositoryTests : IAsyncLifetime
         var act = async () => await _repository.AddAsync(MakeReport(importer.Id, "dupe.csv"));
         await act.Should().ThrowAsync<DbUpdateException>();
     }
+
+    // ── GetByIdAsync tests ───────────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetByIdAsync_WithExistingId_ReturnsReport()
+    {
+        var importer = MakeImporter();
+        await _context.Importers.AddAsync(importer);
+        await _context.SaveChangesAsync();
+
+        var report = MakeReport(importer.Id);
+        await _repository.AddAsync(report);
+
+        var result = await _repository.GetByIdAsync(report.Id);
+
+        result.Should().NotBeNull();
+        result!.Id.Should().Be(report.Id);
+        result.ReportName.Should().Be("report.csv");
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_WithNonExistentId_ReturnsNull()
+    {
+        var result = await _repository.GetByIdAsync(Guid.NewGuid());
+
+        result.Should().BeNull();
+    }
+
+    // ── GetByImporterAsync tests ─────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetByImporterAsync_WithMatchingReports_ReturnsAll()
+    {
+        var importer = MakeImporter();
+        await _context.Importers.AddAsync(importer);
+        await _context.SaveChangesAsync();
+
+        await _repository.AddAsync(MakeReport(importer.Id, "r1.csv"));
+        await _repository.AddAsync(MakeReport(importer.Id, "r2.csv"));
+
+        var result = await _repository.GetByImporterAsync(importer.Id);
+
+        result.Should().HaveCount(2);
+        result.Select(r => r.ReportName).Should().BeEquivalentTo(["r1.csv", "r2.csv"]);
+    }
+
+    [Fact]
+    public async Task GetByImporterAsync_WithNoMatch_ReturnsEmpty()
+    {
+        var result = await _repository.GetByImporterAsync(Guid.NewGuid());
+
+        result.Should().BeEmpty();
+    }
+
+    // ── UpdateAsync tests ────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task UpdateAsync_WithExistingReport_PersistsChanges()
+    {
+        var importer = MakeImporter();
+        await _context.Importers.AddAsync(importer);
+        await _context.SaveChangesAsync();
+
+        var report = MakeReport(importer.Id);
+        await _repository.AddAsync(report);
+
+        report.SetStatus(ReportStatus.Processed);
+        await _repository.UpdateAsync(report);
+
+        var result = await _repository.GetByIdAsync(report.Id);
+        result!.Status.Should().Be(ReportStatus.Processed);
+    }
+
+    // ── DeleteAsync tests ────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task DeleteAsync_WithExistingReport_RemovesIt()
+    {
+        var importer = MakeImporter();
+        await _context.Importers.AddAsync(importer);
+        await _context.SaveChangesAsync();
+
+        var report = MakeReport(importer.Id);
+        await _repository.AddAsync(report);
+
+        await _repository.DeleteAsync(report.Id);
+
+        var all = await _repository.GetAllAsync();
+        all.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task DeleteAsync_WithNonExistentReport_NoException()
+    {
+        var act = async () => await _repository.DeleteAsync(Guid.NewGuid());
+
+        await act.Should().NotThrowAsync();
+    }
+
+    // ── DeleteManyAsync tests ────────────────────────────────────────────────
+
+    [Fact]
+    public async Task DeleteManyAsync_WithMultipleIds_RemovesAll()
+    {
+        var importer = MakeImporter();
+        await _context.Importers.AddAsync(importer);
+        await _context.SaveChangesAsync();
+
+        var r1 = MakeReport(importer.Id, "r1.csv");
+        var r2 = MakeReport(importer.Id, "r2.csv");
+        var r3 = MakeReport(importer.Id, "r3.csv");
+        await _repository.AddAsync(r1);
+        await _repository.AddAsync(r2);
+        await _repository.AddAsync(r3);
+
+        await _repository.DeleteManyAsync([r1.Id, r2.Id]);
+
+        var remaining = await _repository.GetAllAsync();
+        remaining.Should().HaveCount(1);
+        remaining[0].Id.Should().Be(r3.Id);
+    }
+
+    [Fact]
+    public async Task DeleteManyAsync_WithEmptyList_NoException()
+    {
+        var act = async () => await _repository.DeleteManyAsync([]);
+
+        await act.Should().NotThrowAsync();
+    }
 }

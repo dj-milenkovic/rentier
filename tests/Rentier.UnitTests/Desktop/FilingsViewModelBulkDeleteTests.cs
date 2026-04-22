@@ -8,7 +8,6 @@ using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
 using Rentier.Desktop.ViewModels;
-using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 using Xunit;
 

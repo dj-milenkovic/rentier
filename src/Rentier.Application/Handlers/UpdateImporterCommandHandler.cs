@@ -30,7 +30,8 @@ public sealed class UpdateImporterCommandHandler
         {
             try
             {
-                _ = new System.Text.RegularExpressions.Regex(command.AttachmentRegex);
+                // Validate the pattern compiles; static IsMatch uses an internal cache
+                System.Text.RegularExpressions.Regex.IsMatch(string.Empty, command.AttachmentRegex);
             }
             catch (ArgumentException ex)
             {

@@ -1,4 +1,4 @@
-﻿using Rentier.Domain.Exceptions;
+using Rentier.Domain.Exceptions;
 using Rentier.Domain.ValueObjects;
 
 namespace Rentier.Domain.Services;
@@ -15,7 +15,7 @@ public static class BusinessDayResolver
         if (holidays is null) throw new DomainException("HolidayConf must not be null");
         return date.DayOfWeek != DayOfWeek.Saturday
             && date.DayOfWeek != DayOfWeek.Sunday
-            && !holidays.Holidays.Contains(date);
+            && !holidays.ContainsHoliday(date);
     }
 
     /// <summary>

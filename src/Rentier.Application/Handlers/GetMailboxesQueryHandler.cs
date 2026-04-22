@@ -25,8 +25,8 @@ public sealed class GetMailboxesQueryHandler
             m.Host,
             m.Port,
             m.Username,
-            m.Cursor.LastSyncDate,
-            m.Cursor.LastUid)).ToList();
+            m.Cursor is Domain.ValueObjects.MailboxCursor.SyncedTo s ? s.Date : null,
+            m.Cursor is Domain.ValueObjects.MailboxCursor.SyncedTo s2 ? s2.Uid : null)).ToList();
         return Result<IReadOnlyList<MailboxDto>, Error>.Success(list.AsReadOnly());
     }
 }

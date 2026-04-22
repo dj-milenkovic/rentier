@@ -6,6 +6,7 @@ using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Handlers;
 using Rentier.Application.Interfaces;
+using Rentier.Application.Repositories;
 using Rentier.Application.Services;
 using Rentier.Domain.Enums;
 using Rentier.Domain.ValueObjects;
@@ -45,7 +46,10 @@ public class CalculateManualFilingCommandHandlerTests
     private static CalculateManualFilingCommandHandler MakeHandler(
         IExchangeRateFetcher? fetcher = null,
         IHolidayRepository?  holidayRepo = null)
-        => new(MakeResolver(fetcher), holidayRepo ?? MakeHolidayRepo());
+    {
+        var calculator = new ManualFilingCalculator(MakeResolver(fetcher), holidayRepo ?? MakeHolidayRepo());
+        return new CalculateManualFilingCommandHandler(calculator);
+    }
 
     private static CalculateManualFilingCommand ValidCommand(decimal? netReceived = 85.00m)
         => new(ProfileId, IncomeType.Dividend, "AAPL", TestDate, "USD", 100.00m, netReceived);

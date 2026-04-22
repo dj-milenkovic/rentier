@@ -5,7 +5,6 @@ using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Parsing;
 using Rentier.Application.Repositories;
-using Rentier.Application.Services;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 using Rentier.Domain.Services;
@@ -19,7 +18,7 @@ public sealed class ProcessReportsCommandHandler
     private readonly IReportRepository _reportRepository;
     private readonly IImporterRepository _importerRepository;
     private readonly IFilingRepository _filingRepository;
-    private readonly ExchangeRateResolver _exchangeRateResolver;
+    private readonly IExchangeRateResolver _exchangeRateResolver;
     private readonly IHolidayRepository _holidayRepository;
     private readonly IStatementParser _statementParser;
     private readonly ILogger<ProcessReportsCommandHandler> _logger;
@@ -28,7 +27,7 @@ public sealed class ProcessReportsCommandHandler
         IReportRepository reportRepository,
         IImporterRepository importerRepository,
         IFilingRepository filingRepository,
-        ExchangeRateResolver exchangeRateResolver,
+        IExchangeRateResolver exchangeRateResolver,
         IHolidayRepository holidayRepository,
         IStatementParser statementParser,
         ILogger<ProcessReportsCommandHandler> logger)
@@ -61,8 +60,21 @@ public sealed class ProcessReportsCommandHandler
             ct.ThrowIfCancellationRequested();
             try
             {
-                var (created, succeeded, failed, eventErrors) =
-                    await ProcessReportAsync(report, holidays, ct);
+                var processResult = await ProcessReportAsync(report, holidays, ct);
+
+                if (!processResult.IsSuccess)
+                {
+                    // Data integrity failure (no attachment, missing importer, parse error) — not an unexpected exception
+                    report.SetStatus(ReportStatus.Error);
+                    await _reportRepository.UpdateAsync(report, ct);
+                    reportsErrored++;
+                    _logger.LogWarning(
+                        "Report {ReportId} rejected: [{Code}] {Message}",
+                        report.Id, processResult.Error.Code, processResult.Error.Message);
+                    continue;
+                }
+
+                var (created, succeeded, failed, eventErrors) = processResult.Value;
 
                 filingsCreated += created;
                 allEventErrors.AddRange(eventErrors);
@@ -97,10 +109,11 @@ public sealed class ProcessReportsCommandHandler
             }
             catch (Exception ex)
             {
+                // Truly unexpected failures (network, DB) — log as error
                 report.SetStatus(ReportStatus.Error);
                 await _reportRepository.UpdateAsync(report, ct);
                 reportsErrored++;
-                _logger.LogError(ex, "Report {ReportId} failed: {Message}", report.Id, ex.Message);
+                _logger.LogError(ex, "Report {ReportId} failed unexpectedly: {Message}", report.Id, ex.Message);
             }
         }
 
@@ -108,17 +121,21 @@ public sealed class ProcessReportsCommandHandler
             new ProcessReportsResult(filingsCreated, reportsProcessed, reportsErrored, allEventErrors, reportsPartialError));
     }
 
-    private async Task<(int created, int succeeded, int failed, List<FilingCreationError> errors)>
+    private async Task<Result<(int created, int succeeded, int failed, List<FilingCreationError> errors), Error>>
         ProcessReportAsync(Report report, HolidayConf holidays, CancellationToken ct)
     {
         if (report.AttachmentContent == null || report.AttachmentContent.Length == 0)
-            throw new InvalidOperationException("Report has no attachment content");
+            return Result<(int, int, int, List<FilingCreationError>), Error>.Failure(
+                new Error("NO_ATTACHMENT", "Report has no attachment content"));
 
-        var importer = await _importerRepository.GetByIdAsync(report.ImporterId, ct)
-            ?? throw new InvalidOperationException($"Importer {report.ImporterId} not found");
+        var importer = await _importerRepository.GetByIdAsync(report.ImporterId, ct);
+        if (importer is null)
+            return Result<(int, int, int, List<FilingCreationError>), Error>.Failure(
+                new Error("IMPORTER_NOT_FOUND", $"Importer {report.ImporterId} not found"));
 
         if (importer.TaxpayerProfileId == null)
-            throw new InvalidOperationException($"Importer {report.ImporterId} has no TaxpayerProfileId");
+            return Result<(int, int, int, List<FilingCreationError>), Error>.Failure(
+                new Error("NO_TAXPAYER_PROFILE", $"Importer {report.ImporterId} has no TaxpayerProfileId"));
 
         var taxpayerProfileId = importer.TaxpayerProfileId.Value;
 
@@ -126,7 +143,8 @@ public sealed class ProcessReportsCommandHandler
         var parseResult = await _statementParser.ParseAsync(stream, ct);
 
         if (!parseResult.IsSuccess)
-            throw new InvalidOperationException($"Parse failed: {parseResult.Error.Message}");
+            return Result<(int, int, int, List<FilingCreationError>), Error>.Failure(
+                new Error("PARSE_FAILED", parseResult.Error.Message));
 
         var parsed = parseResult.Value;
         var rateProvider = BuildRateProvider(parsed, holidays, ct);
@@ -239,7 +257,8 @@ public sealed class ProcessReportsCommandHandler
             }
         }
 
-        return (created, succeeded, failed, errors);
+        return Result<(int, int, int, List<FilingCreationError>), Error>.Success(
+            (created, succeeded, failed, errors));
     }
 
     private Func<DateOnly, string, Task<Result<RateResolution, Error>>> BuildRateProvider(

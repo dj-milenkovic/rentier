@@ -156,7 +156,6 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
 
             this.RaiseAndSetIfChanged(ref _sortDescending, value);
             CurrentPage = 1;
-            LoadPageCommand.Execute().Subscribe();
         }
     }
 
@@ -316,6 +315,18 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
         this.WhenActivated(disposables =>
         {
             LoadPageCommand.Execute().Subscribe().DisposeWith(disposables);
+
+            // M2: InvokeCommand pattern prevents undisposed Subscribe() call in SortDescending setter
+            this.WhenAnyValue(x => x.SortDescending)
+                .Skip(1)
+                .Select(_ => Unit.Default)
+                .InvokeCommand(LoadPageCommand)
+                .DisposeWith(disposables);
+
+            // C2: dispose row subscriptions on every deactivation cycle
+            Disposable.Create(() => _rowSubscriptions.Clear())
+                .DisposeWith(disposables);
+
             LoadPageCommand.ThrownExceptions
                 .Subscribe(ex => ErrorMessage = ex.Message)
                 .DisposeWith(disposables);
@@ -451,15 +462,7 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
         SyncStatusMessage = null;
         SyncProgressValue = 0;
 
-        var progress = new Progress<SyncProgress>(p =>
-        {
-            if (p.Total > 0)
-                SyncProgressValue = (int)((double)p.Processed / p.Total * 100);
-            if (p.CurrentFile != null)
-                SyncStatusMessage = p.CurrentFile;
-        });
-
-        var result = await _syncHandler.HandleAsync(new SyncMailboxCommand(SyncParameters.Default, progress), ct);
+        var result = await _syncHandler.HandleAsync(new SyncMailboxCommand(SyncParameters.Default), ct);
 
         if (result.IsSuccess)
         {

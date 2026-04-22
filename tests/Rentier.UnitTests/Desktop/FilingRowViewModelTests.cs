@@ -1,7 +1,6 @@
 using FluentAssertions;
 using Rentier.Application.DTOs;
 using Rentier.Desktop.ViewModels;
-using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 using System.Reactive.Linq;
 using Xunit;

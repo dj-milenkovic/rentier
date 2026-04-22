@@ -1,6 +1,6 @@
 using Avalonia.Data.Converters;
 using Rentier.Desktop.Extensions;
-using Rentier.Domain.Entities;
+using Rentier.Domain.Enums;
 
 namespace Rentier.Desktop.Converters;
 

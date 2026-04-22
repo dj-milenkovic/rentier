@@ -8,6 +8,23 @@ namespace Rentier.UnitTests;
 public class HolidayYearRangeTests
 {
     [Fact]
+    public void Constructor_Valid_SetsStartYearAndEndYear()
+    {
+        var range = new HolidayYearRange(2024, 2027);
+
+        range.StartYear.Should().Be(2024);
+        range.EndYear.Should().Be(2027);
+    }
+
+    [Fact]
+    public void Constructor_Valid_HasSingletonId()
+    {
+        var range = new HolidayYearRange(2024, 2027);
+
+        range.Id.Should().Be(HolidayYearRange.SingletonId);
+    }
+
+    [Fact]
     public void Constructor_ValidRange_DoesNotThrow()
     {
         var act = () => new HolidayYearRange(2024, 2027);

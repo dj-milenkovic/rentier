@@ -48,24 +48,23 @@ public sealed class NbsExchangeRateFetcher : IExchangeRateFetcher
                   $"?InputDate={dateStr}&CurrencyCodeCo=0";
 
         // Step 4: HTTP GET
-        HttpResponseMessage response;
+        string xml;
         try
         {
-            response = await _http.GetAsync(url, ct);
+            using var response = await _http.GetAsync(url, ct);
+            if (!response.IsSuccessStatusCode)
+                return Result<ExchangeRate, Error>.Failure(
+                    new Error("NBS_HTTP_ERROR",
+                        $"NBS returned {(int)response.StatusCode} {response.StatusCode}."));
+
+            // Step 5: Read body
+            xml = await response.Content.ReadAsStringAsync(ct);
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
             return Result<ExchangeRate, Error>.Failure(
                 new Error("NBS_HTTP_ERROR", ex.Message));
         }
-
-        if (!response.IsSuccessStatusCode)
-            return Result<ExchangeRate, Error>.Failure(
-                new Error("NBS_HTTP_ERROR",
-                    $"NBS returned {(int)response.StatusCode} {response.StatusCode}."));
-
-        // Step 5: Read body
-        var xml = await response.Content.ReadAsStringAsync(ct);
 
         // Step 6: Parse XML — LocalName used to avoid namespace binding fragility
         XDocument doc;

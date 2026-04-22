@@ -7,7 +7,6 @@ using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
 using Rentier.Desktop.ViewModels;
-using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 using Xunit;
 
@@ -46,22 +45,32 @@ public class FilingsViewModelTests
     private static ICommandHandler<BulkDeleteFilingsCommand, Result<VoidResult, Error>> MockBulkDeleteFilings() =>
         Substitute.For<ICommandHandler<BulkDeleteFilingsCommand, Result<VoidResult, Error>>>();
 
+    private static ICommandHandler<ExportFilingCommand, Result<ExportFilingResult, Error>> MockExportSuccess(ExportFilingResult? result = null)
+    {
+        var mock = Substitute.For<ICommandHandler<ExportFilingCommand, Result<ExportFilingResult, Error>>>();
+        mock.HandleAsync(Arg.Any<ExportFilingCommand>(), Arg.Any<CancellationToken>())
+            .Returns(Result<ExportFilingResult, Error>.Success(result ?? new ExportFilingResult([], "test.xml")));
+        return mock;
+    }
+
     private static FilingsViewModel CreateVm(
         IQueryHandler<GetFilingsQuery, Result<FilingsPageResult, Error>>? getFilings = null,
         ICommandHandler<UpdateFilingStatusCommand, Result<VoidResult, Error>>? updateStatus = null,
         ICommandHandler<UpdatePaymentReferenceCommand, Result<VoidResult, Error>>? updateRef = null,
         ICommandHandler<DeleteFilingCommand, Result<VoidResult, Error>>? deleteFiling = null,
-        Func<string, Task<bool>>? confirmDelete = null)
+        Func<string, Task<bool>>? confirmDelete = null,
+        ICommandHandler<ExportFilingCommand, Result<ExportFilingResult, Error>>? exportFiling = null,
+        Func<ExportFilingResult, Task>? saveFile = null)
     {
         return new FilingsViewModel(
-            getFilings  ?? MockGetFilings(),
+            getFilings   ?? MockGetFilings(),
             updateStatus ?? MockUpdateStatus(),
             updateRef    ?? MockUpdateRef(),
             deleteFiling ?? MockDelete(),
-            MockExport(),
+            exportFiling ?? MockExport(),
             MockBulkDeleteFilings(),
             confirmDelete ?? (_ => Task.FromResult(false)),
-            _ => Task.CompletedTask,
+            saveFile ?? (_ => Task.CompletedTask),
             () => { },
             ImmediateScheduler.Instance);
     }
@@ -356,5 +365,73 @@ public class FilingsViewModelTests
         // Sort state unchanged
         vm.SortColumn.Should().Be(Application.Enums.FilingSortColumn.FilingDeadline);
         vm.SortDescending.Should().BeTrue();
+    }
+
+    // ── SavePaymentRefCommand tests ──────────────────────────────────────────
+
+    [Fact]
+    public void SavePaymentRefCommand_WhenSuccessful_ReloadsPage()
+    {
+        var updateRef = MockUpdateRef();
+        updateRef.HandleAsync(Arg.Any<UpdatePaymentReferenceCommand>(), Arg.Any<CancellationToken>())
+            .Returns(Result<VoidResult, Error>.Success(VoidResult.Value));
+
+        var getFilings = MockGetFilings();
+        var vm = CreateVm(getFilings: getFilings, updateRef: updateRef);
+        using var _ = vm.Activator.Activate();
+
+        vm.SavePaymentRefCommand.Execute((Guid.NewGuid(), "REF123")).Subscribe();
+
+        // LoadPage: 1 on activation + 1 after save
+        getFilings.Received(2).HandleAsync(Arg.Any<GetFilingsQuery>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public void SavePaymentRefCommand_WhenHandlerFails_SetsErrorMessage()
+    {
+        var updateRef = MockUpdateRef();
+        updateRef.HandleAsync(Arg.Any<UpdatePaymentReferenceCommand>(), Arg.Any<CancellationToken>())
+            .Returns(Result<VoidResult, Error>.Failure(new Error("UPDATE_FAILED", "Update failed")));
+
+        var vm = CreateVm(updateRef: updateRef);
+        using var _ = vm.Activator.Activate();
+
+        vm.SavePaymentRefCommand.Execute((Guid.NewGuid(), "REF123")).Subscribe();
+
+        vm.ErrorMessage.Should().Be("Update failed");
+    }
+
+    // ── ExportCommand tests ──────────────────────────────────────────────────
+
+    [Fact]
+    public void ExportCommand_WhenSuccessful_CallsSaveFileDialog()
+    {
+        var expectedResult = new ExportFilingResult([], "test.xml");
+        var exportHandler = MockExportSuccess(expectedResult);
+        var savedResults = new List<ExportFilingResult>();
+
+        var vm = CreateVm(
+            exportFiling: exportHandler,
+            saveFile: r => { savedResults.Add(r); return Task.CompletedTask; });
+        using var _ = vm.Activator.Activate();
+
+        vm.ExportCommand.Execute(Guid.NewGuid()).Subscribe();
+
+        savedResults.Should().ContainSingle().Which.Should().Be(expectedResult);
+    }
+
+    [Fact]
+    public void ExportCommand_WhenHandlerFails_SetsErrorMessage()
+    {
+        var exportHandler = Substitute.For<ICommandHandler<ExportFilingCommand, Result<ExportFilingResult, Error>>>();
+        exportHandler.HandleAsync(Arg.Any<ExportFilingCommand>(), Arg.Any<CancellationToken>())
+            .Returns(Result<ExportFilingResult, Error>.Failure(new Error("EXPORT_FAILED", "Export failed")));
+
+        var vm = CreateVm(exportFiling: exportHandler);
+        using var _ = vm.Activator.Activate();
+
+        vm.ExportCommand.Execute(Guid.NewGuid()).Subscribe();
+
+        vm.ErrorMessage.Should().Be("Export failed");
     }
 }

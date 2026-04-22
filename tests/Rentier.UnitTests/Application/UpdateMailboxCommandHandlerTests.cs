@@ -99,4 +99,18 @@ public class UpdateMailboxCommandHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("CREDENTIAL_WRITE_FAILED");
     }
+
+    [Fact]
+    public async Task HandleAsync_EmptyHost_ReturnsDomainValidationError()
+    {
+        var existing = Mailbox.Create("imap.example.com", 993, "user@example.com");
+        _repo.GetByIdAsync(existing.Id, Arg.Any<CancellationToken>()).Returns(existing);
+
+        var cmd = new UpdateMailboxCommand(existing.Id, "", 993, "user@example.com", null);
+
+        var result = await _handler.HandleAsync(cmd);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Code.Should().Be("DOMAIN_VALIDATION");
+    }
 }

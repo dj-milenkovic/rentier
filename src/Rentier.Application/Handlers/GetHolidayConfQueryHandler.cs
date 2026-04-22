@@ -2,6 +2,7 @@ using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
+using Rentier.Application.Repositories;
 
 namespace Rentier.Application.Handlers;
 

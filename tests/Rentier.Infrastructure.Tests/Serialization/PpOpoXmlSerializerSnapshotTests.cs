@@ -42,7 +42,7 @@ public class PpOpoXmlSerializerSnapshotTests
         var bytes = _sut.Serialize(
             MakeRepresentativeFiling(),
             MakeProfile(),
-            "IBAN: RS35170006000123456789 Model: 97 Poziv: 2025-0001");
+            "IBAN: RS35170006000123456789 Model: 97 Poziv: 2025-0001").Value;
 
         var xml = Encoding.UTF8.GetString(bytes);
 

@@ -24,7 +24,7 @@ public class ExportFilingCommandHandlerTests
     public ExportFilingCommandHandlerTests()
     {
         _serializer.Serialize(Arg.Any<Filing>(), Arg.Any<TaxpayerProfile>(), Arg.Any<string>())
-            .Returns([0x3C, 0x3F]); // minimal non-empty byte array
+            .Returns(Result<byte[], Error>.Success(new byte[] { 0x3C, 0x3F })); // minimal non-empty byte array
 
         _sut = new ExportFilingCommandHandler(_filings, _profiles, _reports, _importers, _serializer);
     }

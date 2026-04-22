@@ -27,6 +27,56 @@ public class FilingStatusTransitionTests
             act.Should().NotThrow();
     }
 
+    [Fact]
+    public void AdvanceStatus_InitToFiled_SetsStatusToFiled()
+    {
+        var filing = CreateFilingInState(FilingStatus.Init);
+
+        filing.AdvanceStatus(FilingStatus.Filed);
+
+        filing.Status.Should().Be(FilingStatus.Filed);
+    }
+
+    [Fact]
+    public void AdvanceStatus_FiledToPaid_SetsStatusToPaid()
+    {
+        var filing = CreateFilingInState(FilingStatus.Filed);
+
+        filing.AdvanceStatus(FilingStatus.Paid);
+
+        filing.Status.Should().Be(FilingStatus.Paid);
+    }
+
+    [Fact]
+    public void AdvanceStatus_FiledToFiled_ThrowsDomainException()
+    {
+        var filing = CreateFilingInState(FilingStatus.Filed);
+
+        var act = () => filing.AdvanceStatus(FilingStatus.Filed);
+
+        act.Should().Throw<DomainException>();
+    }
+
+    [Fact]
+    public void AdvanceStatus_PaidToPaid_ThrowsDomainException()
+    {
+        var filing = CreateFilingInState(FilingStatus.Paid);
+
+        var act = () => filing.AdvanceStatus(FilingStatus.Paid);
+
+        act.Should().Throw<DomainException>();
+    }
+
+    [Fact]
+    public void AdvanceStatus_PaidToFiled_ThrowsDomainException()
+    {
+        var filing = CreateFilingInState(FilingStatus.Paid);
+
+        var act = () => filing.AdvanceStatus(FilingStatus.Filed);
+
+        act.Should().Throw<DomainException>();
+    }
+
     /// <summary>Creates a Filing already advanced to the given status via the public factory.</summary>
     private static Filing CreateFilingInState(FilingStatus status)
     {

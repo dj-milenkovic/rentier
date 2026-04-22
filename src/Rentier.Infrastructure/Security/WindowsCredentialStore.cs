@@ -112,7 +112,10 @@ public sealed class WindowsCredentialStore : ICredentialStore
                 var cred = Marshal.PtrToStructure<CREDENTIALW>(ptr);
                 byte[] blob = new byte[cred.CredentialBlobSize];
                 Marshal.Copy(cred.CredentialBlob, blob, 0, blob.Length);
-                return Result<string, Error>.Success(Encoding.UTF8.GetString(blob));
+                var secret = Encoding.UTF8.GetString(blob);
+                // Zero the blob to avoid leaving the secret in managed memory
+                Array.Clear(blob, 0, blob.Length);
+                return Result<string, Error>.Success(secret);
             }
             finally
             {

@@ -1,6 +1,7 @@
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.Interfaces;
+using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
 
 namespace Rentier.Application.Handlers;
@@ -31,19 +32,25 @@ public sealed class EnsureHolidaysSeededCommandHandler
             return Result<bool, Error>.Success(false);
 
         var currentYear = DateOnly.FromDateTime(DateTime.Today).Year;
-        var seededHolidays = new List<PublicHoliday>
+        var endYear = currentYear + 3;
+
+        // Seed the fixed-date Serbian public holidays for every year in the range.
+        // Variable-date holidays (Easter Orthodox, Labour Day) must be imported via the web importer.
+        var seededHolidays = new List<PublicHoliday>();
+        for (int year = currentYear; year <= endYear; year++)
         {
-            PublicHoliday.Create(new DateOnly(currentYear, 1, 1), "Nova godina"),
-            PublicHoliday.Create(new DateOnly(currentYear, 1, 2), "Nova godina"),
-            PublicHoliday.Create(new DateOnly(currentYear, 1, 7), "Božić"),
-            PublicHoliday.Create(new DateOnly(currentYear, 2, 15), "Sretenje"),
-            PublicHoliday.Create(new DateOnly(currentYear, 2, 16), "Sretenje"),
-            PublicHoliday.Create(new DateOnly(currentYear, 5, 1), "Praznik rada"),
-            PublicHoliday.Create(new DateOnly(currentYear, 5, 2), "Praznik rada"),
-            PublicHoliday.Create(new DateOnly(currentYear, 6, 28), "Vidovdan"),
-            PublicHoliday.Create(new DateOnly(currentYear, 11, 11), "Dan primirja"),
-        };
-        var seedRange = new HolidayYearRange(currentYear, currentYear + 3);
+            seededHolidays.Add(PublicHoliday.Create(new DateOnly(year, 1, 1), "Nova godina"));
+            seededHolidays.Add(PublicHoliday.Create(new DateOnly(year, 1, 2), "Nova godina"));
+            seededHolidays.Add(PublicHoliday.Create(new DateOnly(year, 1, 7), "Božić"));
+            seededHolidays.Add(PublicHoliday.Create(new DateOnly(year, 2, 15), "Sretenje"));
+            seededHolidays.Add(PublicHoliday.Create(new DateOnly(year, 2, 16), "Sretenje"));
+            seededHolidays.Add(PublicHoliday.Create(new DateOnly(year, 5, 1), "Praznik rada"));
+            seededHolidays.Add(PublicHoliday.Create(new DateOnly(year, 5, 2), "Praznik rada"));
+            seededHolidays.Add(PublicHoliday.Create(new DateOnly(year, 6, 28), "Vidovdan"));
+            seededHolidays.Add(PublicHoliday.Create(new DateOnly(year, 11, 11), "Dan primirja"));
+        }
+
+        var seedRange = new HolidayYearRange(currentYear, endYear);
         await _repository.SaveHolidaysAsync(seededHolidays, seedRange, ct);
 
         return Result<bool, Error>.Success(true);

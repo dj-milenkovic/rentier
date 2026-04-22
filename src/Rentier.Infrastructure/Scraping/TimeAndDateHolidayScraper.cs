@@ -37,7 +37,7 @@ internal sealed class TimeAndDateHolidayScraper : IHolidayImporter
 
         try
         {
-            var config = Configuration.Default.WithDefaultLoader();
+            var config = Configuration.Default;
             var context = BrowsingContext.New(config);
             var document = await context.OpenAsync(req => req.Content(html), cancellationToken);
 
