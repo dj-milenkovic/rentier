@@ -280,36 +280,8 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
             outputScheduler: _scheduler);
 
         BulkDeleteCommand = ReactiveCommand.CreateFromTask(
-            async (CancellationToken ct) =>
-            {
-                var selectedIds = Rows
-                    .Where(r => r.IsSelected)
-                    .Select(r => r.Id)
-                    .ToList();
-
-                if (selectedIds.Count == 0) return;
-
-                var message = string.Format(
-                    Strings.BulkDelete_Reports_Confirmation_Message, selectedIds.Count);
-                var confirmed = await _confirmDelete(
-                    Strings.BulkDelete_Reports_Confirmation_Title, message);
-                if (!confirmed) return;
-
-                var result = await _bulkDeleteReports.HandleAsync(
-                    new BulkDeleteReportsCommand(selectedIds), ct);
-
-                if (!result.IsSuccess)
-                {
-                    ErrorMessage = Strings.BulkDelete_Error_Failed;
-                    return;
-                }
-
-                // Decrement page when all visible items on a non-first page are deleted
-                if (selectedIds.Count == Rows.Count && _currentPage > 1)
-                    CurrentPage--;
-
-                await LoadPageAsync(ct);
-            },
+            OnBulkDeleteAsync,
+            this.WhenAnyValue(x => x.HasSelection),
             outputScheduler: _scheduler);
 
         this.WhenActivated(disposables =>
@@ -454,6 +426,37 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
         {
             IsLoading = false;
         }
+    }
+
+    private async Task OnBulkDeleteAsync(CancellationToken ct)
+    {
+        var selectedIds = Rows
+            .Where(r => r.IsSelected)
+            .Select(r => r.Id)
+            .ToList();
+
+        if (selectedIds.Count == 0) return;
+
+        var message = string.Format(
+            Strings.BulkDelete_Reports_Confirmation_Message, selectedIds.Count);
+        var confirmed = await _confirmDelete(
+            Strings.BulkDelete_Reports_Confirmation_Title, message);
+        if (!confirmed) return;
+
+        var result = await _bulkDeleteReports.HandleAsync(
+            new BulkDeleteReportsCommand(selectedIds), ct);
+
+        if (!result.IsSuccess)
+        {
+            ErrorMessage = Strings.BulkDelete_Error_Failed;
+            return;
+        }
+
+        // Decrement page when all visible items on a non-first page are deleted
+        if (selectedIds.Count == Rows.Count && _currentPage > 1)
+            CurrentPage--;
+
+        await LoadPageAsync(ct);
     }
 
     // Existing IMAP sync logic — preserved verbatim

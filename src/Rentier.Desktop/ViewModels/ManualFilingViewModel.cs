@@ -8,6 +8,7 @@ using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
+using Rentier.Desktop.Dialogs;
 using Rentier.Desktop.Resources;
 using Rentier.Domain.Enums;
 
@@ -33,6 +34,8 @@ public sealed class ManualFilingViewModel : ReactiveObject, IActivatableViewMode
     private ManualFilingPreviewDto? _preview      = null;
     private string?          _errorMessage       = null;
     private bool             _isLoading          = false;
+    private bool             _hasNoProfile       = false;
+    private bool             _isDirty            = false;
     private Guid?            _taxpayerProfileId  = null;
 
     private readonly IScheduler _scheduler;
@@ -87,13 +90,21 @@ public sealed class ManualFilingViewModel : ReactiveObject, IActivatableViewMode
     public ManualFilingPreviewDto? Preview
     {
         get => _preview;
-        private set => this.RaiseAndSetIfChanged(ref _preview, value);
+        private set
+        {
+            this.RaiseAndSetIfChanged(ref _preview, value);
+            this.RaisePropertyChanged(nameof(RateSourceDisplay));
+        }
     }
 
     public string? ErrorMessage
     {
         get => _errorMessage;
-        set => this.RaiseAndSetIfChanged(ref _errorMessage, value);
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _errorMessage, value);
+            this.RaisePropertyChanged(nameof(HasActualError));
+        }
     }
 
     public bool IsLoading
@@ -101,6 +112,33 @@ public sealed class ManualFilingViewModel : ReactiveObject, IActivatableViewMode
         get => _isLoading;
         private set => this.RaiseAndSetIfChanged(ref _isLoading, value);
     }
+
+    /// <summary>True when no taxpayer profile is configured; shown as an informational callout.</summary>
+    public bool HasNoProfile
+    {
+        get => _hasNoProfile;
+        private set
+        {
+            this.RaiseAndSetIfChanged(ref _hasNoProfile, value);
+            this.RaisePropertyChanged(nameof(HasActualError));
+        }
+    }
+
+    /// <summary>True only when there is an error that is not the no-profile info state.</summary>
+    public bool HasActualError => ErrorMessage != null && !HasNoProfile;
+
+    /// <summary>True once the user has modified any input field.</summary>
+    public bool IsDirty
+    {
+        get => _isDirty;
+        private set => this.RaiseAndSetIfChanged(ref _isDirty, value);
+    }
+
+    /// <summary>Formatted exchange rate source string combining type (Exact/Fallback) and date.</summary>
+    public string? RateSourceDisplay => Preview is null ? null :
+        Preview.ExchangeRateSourceType == ExchangeRateSourceType.Exact
+            ? string.Format(Strings.ManualFiling_RateSource_Exact, Preview.ExchangeRateSourceDate.ToString("yyyy-MM-dd"))
+            : string.Format(Strings.ManualFiling_RateSource_Fallback, Preview.ExchangeRateSourceDate.ToString("yyyy-MM-dd"));
 
     // Helper properties for RadioButton binding
     public bool IsDividend
@@ -166,9 +204,19 @@ public sealed class ManualFilingViewModel : ReactiveObject, IActivatableViewMode
             canSave,
             outputScheduler: _scheduler);
 
-        CancelCommand = ReactiveCommand.Create(
-            () => _navigateBackToFilings(),
-            outputScheduler: _scheduler);
+        CancelCommand = ReactiveCommand.CreateFromTask(async () =>
+        {
+            if (IsDirty)
+            {
+                var confirmed = await ConfirmDialogHelper.ShowAsync(
+                    Strings.ManualFiling_Cancel_Discard_Title,
+                    Strings.ManualFiling_Cancel_Discard_Message,
+                    Strings.ManualFiling_Cancel_Discard_Confirm,
+                    Strings.ManualFiling_Cancel_Discard_Keep);
+                if (!confirmed) return;
+            }
+            _navigateBackToFilings();
+        }, outputScheduler: _scheduler);
 
         ClearErrorCommand = ReactiveCommand.Create(
             () => { ErrorMessage = null; },
@@ -189,7 +237,7 @@ public sealed class ManualFilingViewModel : ReactiveObject, IActivatableViewMode
                 .DisposeWith(disposables);
         });
 
-        // Clear preview when any input changes (skip initial emission, set up in constructor so tests work)
+        // Clear preview and mark form dirty when any input changes (skip initial emission)
         this.WhenAnyValue(
                 x => x.Ticker,
                 x => x.IncomeDate,
@@ -198,7 +246,7 @@ public sealed class ManualFilingViewModel : ReactiveObject, IActivatableViewMode
                 x => x.NetReceivedText,
                 x => x.SelectedIncomeType)
             .Skip(1)
-            .Subscribe(_ => Preview = null);
+            .Subscribe(_ => { Preview = null; IsDirty = true; });
     }
 
     // ── Command implementations ───────────────────────────────────────────────
@@ -208,8 +256,14 @@ public sealed class ManualFilingViewModel : ReactiveObject, IActivatableViewMode
         try
         {
             var result = await _profileQueryHandler.HandleAsync(new GetTaxpayerProfileQuery(), ct);
-            if (!result.IsSuccess || result.Value is null)
-                ErrorMessage = Strings.ManualFiling_Error_NoProfile;
+            if (!result.IsSuccess)
+                ErrorMessage = result.Error.Message;
+            else if (result.Value is null)
+            {
+                // Show as an informational callout rather than a red error
+                HasNoProfile  = true;
+                ErrorMessage  = Strings.ManualFiling_Error_NoProfile; // kept for test compatibility
+            }
             else
                 _taxpayerProfileId = result.Value.Id;
         }

@@ -5,6 +5,7 @@
     xmlns:reactive="http://reactiveui.net"
     xmlns:vm="using:Rentier.Desktop.ViewModels"
     xmlns:res="using:Rentier.Desktop.Resources"
+    xmlns:local="using:Rentier.Desktop.Converters"
     x:Class="Rentier.Desktop.Views.DashboardView"
     x:CompileBindings="False">
   <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="16" RowSpacing="16">
@@ -18,7 +19,7 @@
                Text="{Binding ErrorMessage}" Foreground="Red" TextWrapping="Wrap" Margin="0,4" />
 
     <!-- Summary Cards -->
-    <Border Grid.Row="1" Background="#F5F5F5" CornerRadius="6" Padding="12">
+    <Border Grid.Row="1" Background="#F5F5F5" CornerRadius="6" Padding="12" IsVisible="{Binding HasData}">
       <UniformGrid Columns="5">
         <StackPanel Margin="4" HorizontalAlignment="Center">
           <TextBlock Text="{x:Static res:Strings.Dashboard_PendingCount}" FontSize="11" Foreground="Gray" HorizontalAlignment="Center" />
@@ -43,6 +44,11 @@
       </UniformGrid>
     </Border>
 
+    <TextBlock Grid.Row="1" IsVisible="{Binding !HasData}"
+               Text="{x:Static res:Strings.Dashboard_NoData}"
+               HorizontalAlignment="Center" VerticalAlignment="Center"
+               Foreground="Gray" Margin="0,8" />
+
     <!-- Overdue Filings -->
     <StackPanel Grid.Row="2"
                 IsVisible="{Binding HasOverdueFilings}">
@@ -56,8 +62,8 @@
                     CornerRadius="4" Padding="8,4" Margin="0,2">
               <Grid ColumnDefinitions="*,Auto,Auto,Auto">
                 <TextBlock Grid.Column="0" Text="{Binding PayingEntity}" FontWeight="SemiBold" />
-                <TextBlock Grid.Column="1" Text="{Binding FilingDeadline}" Margin="8,0" Foreground="#CC0000" />
-                <TextBlock Grid.Column="2" Text="{Binding Status}" Margin="8,0" />
+                <TextBlock Grid.Column="1" Text="{Binding FilingDeadline, StringFormat={}{0:yyyy-MM-dd}}" Margin="8,0" Foreground="#CC0000" />
+                <TextBlock Grid.Column="2" Text="{Binding Status, Converter={x:Static local:FilingStatusDisplayConverter.Instance}}" Margin="8,0" />
                 <TextBlock Grid.Column="3" Text="{Binding TaxPayableRsd, StringFormat={}{0:N2} RSD}" Margin="8,0" />
               </Grid>
             </Border>
@@ -76,17 +82,22 @@
                 Name="UpcomingGrid"
                 ItemsSource="{Binding UpcomingDeadlines}"
                 IsReadOnly="True"
+                IsVisible="{Binding HasUpcomingDeadlines}"
                 GridLinesVisibility="Horizontal"
                 CanUserSortColumns="True"
                 AutoGenerateColumns="False">
         <DataGrid.Columns>
           <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_PayingEntity}" Binding="{Binding PayingEntity}" Width="*" />
-          <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_Deadline}" Binding="{Binding FilingDeadline}" Width="110" />
-          <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_IncomeType}" Binding="{Binding IncomeType}" Width="90" />
-          <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_Status}" Binding="{Binding Status}" Width="90" />
-          <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_TaxPayable}" Binding="{Binding TaxPayableRsd, StringFormat={}{0:N2}}" Width="140" />
+          <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_Deadline}" Binding="{Binding FilingDeadline, StringFormat={}{0:yyyy-MM-dd}}" Width="110" />
+          <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_IncomeType}" Binding="{Binding IncomeType, Converter={x:Static local:IncomeTypeDisplayConverter.Instance}}" Width="90" />
+          <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_Status}" Binding="{Binding Status, Converter={x:Static local:FilingStatusDisplayConverter.Instance}}" Width="90" />
+          <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_TaxPayable}" Binding="{Binding TaxPayableRsd, StringFormat={}{0:N2} RSD}" Width="140" />
         </DataGrid.Columns>
       </DataGrid>
+      <TextBlock Grid.Row="1" IsVisible="{Binding !HasUpcomingDeadlines}"
+                 Text="{x:Static res:Strings.Dashboard_NoUpcomingDeadlines}"
+                 HorizontalAlignment="Center" VerticalAlignment="Center"
+                 Foreground="Gray" Margin="0,16" />
     </Grid>
   </Grid>
 </reactive:ReactiveUserControl>

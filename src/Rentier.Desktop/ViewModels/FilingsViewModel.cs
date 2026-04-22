@@ -117,6 +117,11 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
     public bool HasSelection => _hasSelection.Value;
     public string DeleteSelectedLabel => _deleteSelectedLabel.Value;
 
+    /// <summary>Shows the current sort column and direction in the filter toolbar.</summary>
+    public string SortIndicatorDisplay => SortDescending
+        ? $"↓ {SortColumn}"
+        : $"↑ {SortColumn}";
+
     public bool? IsAllSelected
     {
         get
@@ -339,6 +344,7 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
 
                 await LoadPageAsync(ct);
             },
+            this.WhenAnyValue(x => x.HasSelection),
             outputScheduler: _scheduler);
 
         // FR-009 / FR-010: Server-side column sort command.
@@ -355,6 +361,7 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
                     // FR-009: same column → toggle direction, keep current page
                     _sortDescending = !_sortDescending;
                     this.RaisePropertyChanged(nameof(SortDescending));
+                    this.RaisePropertyChanged(nameof(SortIndicatorDisplay));
                 }
                 else
                 {
@@ -364,6 +371,7 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
                     _currentPage = 1;
                     this.RaisePropertyChanged(nameof(SortColumn));
                     this.RaisePropertyChanged(nameof(SortDescending));
+                    this.RaisePropertyChanged(nameof(SortIndicatorDisplay));
                     this.RaisePropertyChanged(nameof(CurrentPage));
                 }
 

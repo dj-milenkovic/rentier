@@ -9,6 +9,7 @@ using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
+using Rentier.Desktop.Dialogs;
 using Rentier.Desktop.Resources;
 
 namespace Rentier.Desktop.ViewModels;
@@ -20,6 +21,7 @@ public sealed class MailboxSettingsViewModel : ReactiveObject, IActivatableViewM
     private readonly ICommandHandler<UpdateMailboxCommand, Result<VoidResult, Error>> _updateHandler;
     private readonly ICommandHandler<DeleteMailboxCommand, Result<VoidResult, Error>> _deleteHandler;
     private readonly IScheduler _scheduler;
+    private readonly Func<string, string, string, string, Task<bool>> _confirmAction;
 
     private string _host = "imap.gmail.com";
     private int _port = 993;
@@ -98,13 +100,15 @@ public sealed class MailboxSettingsViewModel : ReactiveObject, IActivatableViewM
         ICommandHandler<AddMailboxCommand, Result<Guid, Error>> addHandler,
         ICommandHandler<UpdateMailboxCommand, Result<VoidResult, Error>> updateHandler,
         ICommandHandler<DeleteMailboxCommand, Result<VoidResult, Error>> deleteHandler,
-        IScheduler? scheduler = null)
+        IScheduler? scheduler = null,
+        Func<string, string, string, string, Task<bool>>? confirmAction = null)
     {
         _queryHandler = queryHandler;
         _addHandler = addHandler;
         _updateHandler = updateHandler;
         _deleteHandler = deleteHandler;
         _scheduler = scheduler ?? RxApp.MainThreadScheduler;
+        _confirmAction = confirmAction ?? ConfirmDialogHelper.ShowAsync;
 
         AddNewCommand = ReactiveCommand.Create(OnAddNew);
 
@@ -216,6 +220,13 @@ public sealed class MailboxSettingsViewModel : ReactiveObject, IActivatableViewM
     private async Task OnDeleteAsync(CancellationToken ct)
     {
         if (SelectedMailbox is null) return;
+
+        var confirmed = await _confirmAction(
+            Strings.Mailbox_Delete_Title,
+            string.Format(Strings.Mailbox_Delete_Message, SelectedMailbox.Host),
+            Strings.Common_Delete,
+            Strings.Common_Cancel);
+        if (!confirmed) return;
 
         IsLoading = true;
         ErrorMessage = null;

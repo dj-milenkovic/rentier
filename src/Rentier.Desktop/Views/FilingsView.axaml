@@ -12,25 +12,19 @@
     <StreamGeometry x:Key="AdvanceStatusIcon">M9 18 L15 12 L9 6</StreamGeometry>
     <StreamGeometry x:Key="ExportPpOpoXmlIcon">M12 3 L12 15 M7 10 L12 15 L17 10 M5 21 L19 21</StreamGeometry>
   </reactive:ReactiveUserControl.Resources>
-  <reactive:ReactiveUserControl.Styles>
-    <Style Selector="ToggleButton:checked">
-      <Setter Property="Background" Value="{DynamicResource SystemAccentColor}" />
-      <Setter Property="Foreground" Value="White" />
-    </Style>
-    <Style Selector="ToggleButton:checked:pointerover">
-      <Setter Property="Background" Value="{DynamicResource SystemAccentColorLight1}" />
-      <Setter Property="Foreground" Value="White" />
-    </Style>
-  </reactive:ReactiveUserControl.Styles>
+
   <DockPanel>
 
     <!-- Filter toggle bar -->
     <DockPanel DockPanel.Dock="Top" Margin="8,8,8,4">
       <StackPanel Orientation="Horizontal" Spacing="8">
-        <ToggleButton IsChecked="{Binding ShowAll, Converter={x:Static local:InvertBoolConverter.Instance}}"
-                      Content="{x:Static res:Strings.Filings_Filter_Unpaid}" />
-        <ToggleButton IsChecked="{Binding ShowAll}"
-                      Content="{x:Static res:Strings.Filings_Filter_All}" />
+        <RadioButton GroupName="FilingFilter"
+                     IsChecked="{Binding ShowAll, Converter={x:Static local:InvertBoolConverter.Instance}}"
+                     Content="{x:Static res:Strings.Filings_Filter_Unpaid}" />
+        <RadioButton GroupName="FilingFilter"
+                     IsChecked="{Binding ShowAll}"
+                     Content="{x:Static res:Strings.Filings_Filter_All}" />
+        <TextBlock Text="{Binding SortIndicatorDisplay}" Foreground="Gray" FontSize="11" VerticalAlignment="Center" />
       </StackPanel>
       <Button Content="{x:Static res:Strings.ManualFiling_Title}"
               Command="{Binding NewFilingCommand}"
@@ -165,7 +159,7 @@
             <DataTemplate>
               <TextBox Text="{Binding PaymentReference}"
                        IsReadOnly="{Binding IsPaymentReferenceEditable, Converter={x:Static local:InvertBoolConverter.Instance}}"
-                       LostFocus="PaymentRef_LostFocus"
+                       KeyDown="PaymentRef_KeyDown"
                        BorderThickness="0"
                        Background="Transparent"
                        Margin="4,0" />
@@ -181,18 +175,22 @@
                           HorizontalAlignment="Center" VerticalAlignment="Center">
                 <!-- Advance Status: chevron-right (Lucide, MIT) -->
                 <Button Command="{Binding AdvanceStatusCommand}"
+                        IsVisible="{Binding HasNextStatus}"
+                        AutomationProperties.Name="{Binding AdvanceStatusTooltip}"
                         ToolTip.Tip="{Binding AdvanceStatusTooltip}"
                         Padding="4" Background="Transparent" BorderThickness="0">
                   <PathIcon Data="{StaticResource AdvanceStatusIcon}" Width="16" Height="16" />
                 </Button>
                 <!-- Export XML: download (Lucide, MIT) -->
                 <Button Command="{Binding ExportCommand}"
+                        AutomationProperties.Name="{x:Static res:Strings.Filings_Tooltip_Export}"
                         ToolTip.Tip="{x:Static res:Strings.Filings_Tooltip_Export}"
                         Padding="4" Background="Transparent" BorderThickness="0">
                   <PathIcon Data="{StaticResource ExportPpOpoXmlIcon}" Width="16" Height="16" />
                 </Button>
                 <!-- Delete: trash-2 (Lucide, MIT) -->
                 <Button Command="{Binding DeleteCommand}"
+                        AutomationProperties.Name="{x:Static res:Strings.Filings_Tooltip_Delete}"
                         ToolTip.Tip="{x:Static res:Strings.Filings_Tooltip_Delete}"
                         Padding="4" Background="Transparent" BorderThickness="0">
                   <PathIcon Data="{StaticResource TrashIcon}"

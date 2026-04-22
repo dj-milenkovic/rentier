@@ -1,14 +1,20 @@
-<UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:Rentier.Desktop.ViewModels"
-             xmlns:res="using:Rentier.Desktop.Resources"
-             x:Class="Rentier.Desktop.Views.ProfileSettingsView"
-             x:DataType="vm:ProfileSettingsViewModel">
+<reactive:ReactiveUserControl
+    x:TypeArguments="vm:ProfileSettingsViewModel"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:reactive="http://reactiveui.net"
+    xmlns:vm="using:Rentier.Desktop.ViewModels"
+    xmlns:res="using:Rentier.Desktop.Resources"
+    x:Class="Rentier.Desktop.Views.ProfileSettingsView"
+    x:DataType="vm:ProfileSettingsViewModel">
   <ScrollViewer>
     <StackPanel Spacing="12" Margin="20">
 
       <TextBlock Text="{x:Static res:Strings.Profile_Jmbg_Label}" />
-      <TextBox Text="{Binding Jmbg}" />
+      <TextBox Text="{Binding Jmbg}" MaxLength="13" />
+      <TextBlock Text="{Binding JmbgValidationMessage}"
+                 IsVisible="{Binding JmbgValidationMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                 Foreground="Red" FontSize="11" />
 
       <TextBlock Text="{x:Static res:Strings.Profile_FullName_Label}" />
       <TextBox Text="{Binding FullName}" />
@@ -18,6 +24,8 @@
 
       <TextBlock Text="{x:Static res:Strings.Profile_OpstinaCode_Label}" />
       <TextBox Text="{Binding OpstinaCode}" />
+      <TextBlock Text="{x:Static res:Strings.Profile_OpstinaCode_Helper}"
+                 Opacity="0.6" FontSize="11" />
 
       <TextBlock Text="{x:Static res:Strings.Profile_PhoneNumber_Label}" />
       <TextBox Text="{Binding PhoneNumber}" />
@@ -36,4 +44,4 @@
       <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsLoading}" />
     </StackPanel>
   </ScrollViewer>
-</UserControl>
+</reactive:ReactiveUserControl>

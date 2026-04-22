@@ -36,6 +36,10 @@ public sealed class HolidaySettingsViewModel : ReactiveObject, IActivatableViewM
     public HolidayEntryViewModel? SelectedEntry { get => _selectedEntry; set => this.RaiseAndSetIfChanged(ref _selectedEntry, value); }
     public bool HasUnsavedChanges { get => _hasUnsavedChanges; private set => this.RaiseAndSetIfChanged(ref _hasUnsavedChanges, value); }
 
+    /// <summary>Returns a validation message when EndYear is less than StartYear; null otherwise.</summary>
+    public string? YearRangeValidationMessage =>
+        EndYear < StartYear ? Strings.Holidays_YearRange_Error : null;
+
     /// <summary>Returns true when the Entries collection is non-empty.</summary>
     public bool HasItems => Entries.Count > 0;
 
@@ -76,11 +80,19 @@ public sealed class HolidaySettingsViewModel : ReactiveObject, IActivatableViewM
         FilteredEntries.CollectionChanged += (_, _) =>
             this.RaisePropertyChanged(nameof(IsFilteredEmpty));
 
-        // Rebuild when year range changes
+        // Rebuild when year range changes; also refresh year-range validation message
         this.WhenAnyValue(x => x.StartYear, x => x.EndYear)
-            .Subscribe(_ => RebuildFilteredEntries());
+            .Subscribe(_ =>
+            {
+                RebuildFilteredEntries();
+                this.RaisePropertyChanged(nameof(YearRangeValidationMessage));
+            });
 
         var notLoading = this.WhenAnyValue(x => x.IsLoading).Select(l => !l);
+
+        // Disable Save and Fetch when the year range is invalid
+        var yearRangeValid = this.WhenAnyValue(x => x.StartYear, x => x.EndYear, (s, e) => e >= s);
+        var canSaveOrFetch = notLoading.CombineLatest(yearRangeValid, (nl, rv) => nl && rv);
 
         AddRowCommand = ReactiveCommand.Create(() =>
         {
@@ -110,7 +122,7 @@ public sealed class HolidaySettingsViewModel : ReactiveObject, IActivatableViewM
                 else { ErrorMessage = result.Error.Message; }
             }
             finally { IsLoading = false; }
-        }, notLoading);
+        }, canSaveOrFetch);
 
         FetchFromWebCommand = ReactiveCommand.CreateFromTask(async (CancellationToken ct) =>
         {
@@ -139,7 +151,7 @@ public sealed class HolidaySettingsViewModel : ReactiveObject, IActivatableViewM
                 else { ErrorMessage = result.Error.Message; }
             }
             finally { IsLoading = false; }
-        }, notLoading);
+        }, canSaveOrFetch);
 
         this.WhenActivated(disposables =>
         {

@@ -7,6 +7,7 @@ using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
+using Rentier.Desktop.Resources;
 using ReactiveUI;
 
 namespace Rentier.Desktop.ViewModels;
@@ -22,6 +23,7 @@ public sealed class DashboardViewModel : ReactiveObject, IActivatableViewModel
     private bool _isLoading;
     private string? _errorMessage;
     private bool _hasData;
+    private bool _hasUpcomingDeadlines;
     private ObservableCollection<UpcomingDeadlineDto> _upcomingDeadlines = [];
     private ObservableCollection<OverdueFilingDto> _overdueFilings = [];
     private int _initCount;
@@ -46,6 +48,12 @@ public sealed class DashboardViewModel : ReactiveObject, IActivatableViewModel
     {
         get => _hasData;
         private set => this.RaiseAndSetIfChanged(ref _hasData, value);
+    }
+
+    public bool HasUpcomingDeadlines
+    {
+        get => _hasUpcomingDeadlines;
+        private set => this.RaiseAndSetIfChanged(ref _hasUpcomingDeadlines, value);
     }
 
     public ObservableCollection<UpcomingDeadlineDto> UpcomingDeadlines
@@ -134,13 +142,14 @@ public sealed class DashboardViewModel : ReactiveObject, IActivatableViewModel
             var dto = result.Value;
             UpcomingDeadlines = new ObservableCollection<UpcomingDeadlineDto>(dto.UpcomingDeadlines);
             OverdueFilings = new ObservableCollection<OverdueFilingDto>(dto.OverdueFilings);
+            HasUpcomingDeadlines = dto.UpcomingDeadlines.Count > 0;
             InitCount = dto.InitCount;
             FiledCount = dto.FiledCount;
             PaidCount = dto.PaidCount;
             TotalUnpaidDisplay = dto.TotalUnpaidRsd.ToString("N2", CultureInfo.InvariantCulture) + " RSD";
             LastSyncDisplay = dto.LastSyncDate.HasValue
                 ? dto.LastSyncDate.Value.ToString("yyyy-MM-dd")
-                : "Never";
+                : Strings.Dashboard_LastSyncNever;
             HasData = true;
             this.RaisePropertyChanged(nameof(HasOverdueFilings));
         }

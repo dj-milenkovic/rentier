@@ -114,8 +114,8 @@ internal static class ImportDialogHelper
             HorizontalAlignment = HorizontalAlignment.Stretch
         };
 
-        var confirmButton = new Button { Content = "Import", Margin = new Thickness(0, 0, 4, 0) };
-        var cancelButton  = new Button { Content = "Cancel" };
+        var confirmButton = new Button { Content = Strings.ImportDialog_Import_Button, Margin = new Thickness(0, 0, 4, 0), IsDefault = true };
+        var cancelButton  = new Button { Content = "Cancel", IsCancel = true };
 
         var dialog = new Window
         {
@@ -130,7 +130,7 @@ internal static class ImportDialogHelper
                 Spacing = 12,
                 Children =
                 {
-                    new TextBlock { Text = "Select importer:" },
+                    new TextBlock { Text = Strings.ImportDialog_SelectImporter },
                     comboBox,
                     new StackPanel
                     {

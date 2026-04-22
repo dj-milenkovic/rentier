@@ -1,11 +1,14 @@
-<UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:Rentier.Desktop.ViewModels"
-             xmlns:res="using:Rentier.Desktop.Resources"
-             xmlns:local="using:Rentier.Desktop.Converters"
-             x:Class="Rentier.Desktop.Views.ImporterSettingsView"
-             x:CompileBindings="False"
-             x:DataType="vm:ImporterSettingsViewModel">
+<reactive:ReactiveUserControl
+    x:TypeArguments="vm:ImporterSettingsViewModel"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:reactive="http://reactiveui.net"
+    xmlns:vm="using:Rentier.Desktop.ViewModels"
+    xmlns:res="using:Rentier.Desktop.Resources"
+    xmlns:local="using:Rentier.Desktop.Converters"
+    x:Class="Rentier.Desktop.Views.ImporterSettingsView"
+    x:CompileBindings="False"
+    x:DataType="vm:ImporterSettingsViewModel">
   <Grid ColumnDefinitions="250,*">
     <!-- Left panel: importer list -->
     <DockPanel Grid.Column="0">
@@ -100,4 +103,4 @@
       </StackPanel>
     </ScrollViewer>
   </Grid>
-</UserControl>
+</reactive:ReactiveUserControl>

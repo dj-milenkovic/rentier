@@ -28,7 +28,11 @@ public static class Strings
     public static string Dashboard_OverdueFilings => "Overdue Filings";
     public static string Dashboard_UpcomingDeadlines => "Upcoming Deadlines";
     public static string Dashboard_ViewAllFilings => "View All Filings";
-    public static string Sync_StartButton => "▶ Start Sync";
+    public static string Dashboard_LoadError => "Failed to load dashboard data.";
+    public static string Dashboard_LastSyncNever => "Never";
+    public static string Dashboard_NoData => "No data yet. Run a sync to get started.";
+    public static string Dashboard_NoUpcomingDeadlines => "No upcoming deadlines in the next 30 days.";
+    public static string Sync_StartButton=> "▶ Start Sync";
     public static string Sync_CancelButton => "⬛ Cancel";
     public static string Sync_Title => "Sync";
     public static string Sync_Starting => "Starting mailbox sync...";
@@ -220,4 +224,22 @@ public static class Strings
     public static string ManualFiling_RateSource_Exact => "Exact ({0})";
     public static string ManualFiling_RateSource_Fallback => "Fallback from {0}";
     public static string Filings_Toolbar_NewFiling => "New Filing";
+    public static string ImportDialog_SelectImporter => "Select importer:";
+    public static string ImportDialog_Import_Button => "Import";
+    public static string Common_Delete => "Delete";
+    public static string Common_Cancel => "Cancel";
+    public static string Mailbox_Delete_Title => "Delete Mailbox";
+    public static string Mailbox_Delete_Message => "Are you sure you want to delete the mailbox for {0}? This action cannot be undone.";
+    public static string Importer_Delete_Title => "Delete Importer";
+    public static string Importer_Delete_Message => "Are you sure you want to delete the importer '{0}'? This action cannot be undone.";
+    public static string Profile_OpstinaCode_Helper => "5-digit municipal code, e.g. 71101 for Stari Grad";
+    public static string Holidays_YearRange_Error => "End year must be \u2265 Start year";
+    public static string Sync_Mode_Label => "Sync Mode";
+    public static string Sync_Duplicates_Label => "Duplicates";
+    public static string Sync_ReplayFrom_Label => "Replay From";
+    public static string Sync_PartialSuccess_Message => "Sync completed with errors. Check the log above for details.";
+    public static string ManualFiling_Cancel_Discard_Title => "Discard Changes?";
+    public static string ManualFiling_Cancel_Discard_Message => "You have unsaved changes. Are you sure you want to cancel?";
+    public static string ManualFiling_Cancel_Discard_Confirm => "Discard";
+    public static string ManualFiling_Cancel_Discard_Keep => "Keep Editing";
 }
