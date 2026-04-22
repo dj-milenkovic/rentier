@@ -18,5 +18,8 @@
     <TabItem Header="{x:Static res:Strings.Settings_Importers_TabHeader}">
       <views:ImporterSettingsView DataContext="{Binding ImportersTab}" />
     </TabItem>
+    <TabItem Header="Appearance">
+      <views:AppearanceSettingsView DataContext="{Binding AppearanceTab}" />
+    </TabItem>
   </TabControl>
 </UserControl>

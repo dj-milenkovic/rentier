@@ -1,0 +1,47 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Rentier.Desktop.ViewModels"
+             xmlns:svc="using:Rentier.Desktop.Services"
+             x:Class="Rentier.Desktop.Views.AppearanceSettingsView"
+             x:DataType="vm:AppearanceSettingsViewModel">
+  <StackPanel Spacing="24" Margin="20">
+
+    <!-- Section header -->
+    <StackPanel Spacing="4">
+      <TextBlock Text="Appearance"
+                 FontSize="18" FontWeight="SemiBold"
+                 Foreground="{DynamicResource RentierTextPrimaryBrush}" />
+      <TextBlock Text="Customize the visual theme of Rentier."
+                 FontSize="13"
+                 Foreground="{DynamicResource RentierTextSecondaryBrush}" />
+    </StackPanel>
+
+    <!-- Theme selection card -->
+    <Border Classes="card"
+            BorderBrush="{DynamicResource RentierBorderBrush}"
+            BorderThickness="1">
+      <StackPanel Spacing="16">
+        <TextBlock Text="Theme"
+                   FontSize="14" FontWeight="Medium"
+                   Foreground="{DynamicResource RentierTextPrimaryBrush}" />
+
+        <StackPanel Spacing="10">
+          <RadioButton Content="Follow system setting"
+                       IsChecked="{Binding IsSystem, Mode=TwoWay}"
+                       GroupName="ThemeGroup" />
+          <RadioButton Content="Light"
+                       IsChecked="{Binding IsLight, Mode=TwoWay}"
+                       GroupName="ThemeGroup" />
+          <RadioButton Content="Dark"
+                       IsChecked="{Binding IsDark, Mode=TwoWay}"
+                       GroupName="ThemeGroup" />
+        </StackPanel>
+
+        <TextBlock Text="Changes take effect immediately."
+                   FontSize="11"
+                   Foreground="{DynamicResource RentierTextSecondaryBrush}" />
+      </StackPanel>
+    </Border>
+
+  </StackPanel>
+</UserControl>

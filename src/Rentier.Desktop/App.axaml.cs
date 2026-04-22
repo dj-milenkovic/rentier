@@ -6,6 +6,7 @@ using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.Interfaces;
 using Rentier.Desktop.Composition;
+using Rentier.Desktop.Services;
 using Rentier.Desktop.ViewModels;
 using Rentier.Desktop.Views;
 using Rentier.Infrastructure;
@@ -45,6 +46,10 @@ public partial class App : Avalonia.Application
             var seedHandler = provider.GetRequiredService<
                 ICommandHandler<EnsureHolidaysSeededCommand, Result<bool, Error>>>();
             await seedHandler.HandleAsync(new EnsureHolidaysSeededCommand());
+
+            // Apply the user's saved theme before the window is shown
+            var themeService = provider.GetRequiredService<IThemeService>();
+            Services.ThemeService.ApplyOnStartup(themeService.GetPreference());
 
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {

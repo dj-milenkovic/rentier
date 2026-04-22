@@ -1,24 +1,94 @@
-<Window xmlns="https://github.com/avaloniaui"
+﻿<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:res="clr-namespace:Rentier.Desktop.Resources"
         xmlns:vm="using:Rentier.Desktop.ViewModels"
         x:Class="Rentier.Desktop.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
+        x:CompileBindings="False"
         Title="{x:Static res:Strings.AppTitle}"
         Icon="avares://Rentier.Desktop/Assets/Icons/app-icon.png"
-        Width="900" Height="600"
-        MinWidth="780" MinHeight="520">
+        Background="{DynamicResource RentierRegionBrush}"
+        FontFamily="Inter"
+        Width="1000" Height="640"
+        MinWidth="800" MinHeight="520"
+        WindowStartupLocation="CenterScreen">
+
   <DockPanel>
-    <ListBox DockPanel.Dock="Left"
-             ItemsSource="{Binding NavigationEntries}"
-             SelectedItem="{Binding SelectedEntry}"
-             Width="180">
-      <ListBox.ItemTemplate>
-        <DataTemplate x:DataType="vm:NavigationEntry">
-          <TextBlock Text="{Binding Label}" Margin="8"/>
-        </DataTemplate>
-      </ListBox.ItemTemplate>
-    </ListBox>
-    <ContentControl Content="{Binding CurrentViewModel}" Margin="16"/>
+
+    <!-- ── Sidebar ───────────────────────────────────────────────────────── -->
+    <Border DockPanel.Dock="Left"
+            Width="220"
+            Background="{DynamicResource RentierSidebarBrush}"
+            BorderBrush="{DynamicResource RentierBorderBrush}"
+            BorderThickness="0,0,1,0">
+      <DockPanel>
+
+        <!-- Logo header -->
+        <Border DockPanel.Dock="Top"
+                Padding="16,14,16,14"
+                BorderBrush="{DynamicResource RentierBorderBrush}"
+                BorderThickness="0,0,0,1"
+                Margin="0,0,0,8">
+          <StackPanel HorizontalAlignment="Center">
+            <Image Source="avares://Rentier.Desktop/Assets/Icons/app-icon-alpha.png"
+                   Width="80" Height="80"
+                   HorizontalAlignment="Center"
+                   RenderOptions.BitmapInterpolationMode="HighQuality" />
+            <TextBlock Text="Rentier"
+                       FontSize="25" FontWeight="SemiBold"
+                       LetterSpacing="1.25"
+                       Foreground="{DynamicResource RentierTextPrimaryBrush}"
+                       HorizontalAlignment="Center" />
+          </StackPanel>
+        </Border>
+
+        <!-- Navigation list -->
+        <ListBox DockPanel.Dock="Top"
+                 Classes="sidebar-nav"
+                 ItemsSource="{Binding NavigationEntries}"
+                 SelectedItem="{Binding SelectedEntry}">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:NavigationEntry">
+              <!-- Only show entries that are visible in the sidebar -->
+              <Grid IsVisible="{Binding IsVisible}"
+                    ColumnDefinitions="4,44,*"
+                    Height="40">
+
+                <!-- Active selection pipe -->
+                <Border Grid.Column="0"
+                        Width="3" Height="20"
+                        CornerRadius="1.5"
+                        Background="{DynamicResource RentierNavActivePipeBrush}"
+                        IsVisible="{Binding $parent[ListBoxItem].IsSelected}"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Left" />
+
+                <!-- Nav icon -->
+                <PathIcon Grid.Column="1"
+                          Data="{Binding Icon}"
+                          Width="18" Height="18"
+                          Foreground="{DynamicResource RentierTextPrimaryBrush}"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center" />
+
+                <!-- Label -->
+                <TextBlock Grid.Column="2"
+                           Text="{Binding Label}"
+                           FontSize="13" FontWeight="Medium"
+                           Foreground="{DynamicResource RentierTextPrimaryBrush}"
+                           VerticalAlignment="Center" />
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+
+      </DockPanel>
+    </Border>
+
+    <!-- ── Content area ──────────────────────────────────────────────────── -->
+    <ContentControl Content="{Binding CurrentViewModel}"
+                    Margin="0"
+                    Background="{DynamicResource RentierRegionBrush}" />
+
   </DockPanel>
 </Window>

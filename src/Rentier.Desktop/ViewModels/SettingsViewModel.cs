@@ -8,16 +8,19 @@ public sealed class SettingsViewModel : ReactiveObject
     public HolidaySettingsViewModel HolidayTab { get; }
     public MailboxSettingsViewModel MailboxesTab { get; }
     public ImporterSettingsViewModel ImportersTab { get; }
+    public AppearanceSettingsViewModel AppearanceTab { get; }
 
     public SettingsViewModel(
         ProfileSettingsViewModel profileTab,
         HolidaySettingsViewModel holidayTab,
         MailboxSettingsViewModel mailboxesTab,
-        ImporterSettingsViewModel importersTab)
+        ImporterSettingsViewModel importersTab,
+        AppearanceSettingsViewModel appearanceTab)
     {
         ProfileTab = profileTab;
         HolidayTab = holidayTab;
         MailboxesTab = mailboxesTab;
         ImportersTab = importersTab;
+        AppearanceTab = appearanceTab;
     }
 }

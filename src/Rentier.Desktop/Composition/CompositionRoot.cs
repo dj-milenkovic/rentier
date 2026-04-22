@@ -8,6 +8,7 @@ using Rentier.Application.Queries;
 using Rentier.Application.Services;
 using Rentier.Desktop.Dialogs;
 using Rentier.Desktop.Resources;
+using Rentier.Desktop.Services;
 using Rentier.Desktop.ViewModels;
 
 namespace Rentier.Desktop.Composition;
@@ -20,6 +21,9 @@ public static class CompositionRoot
 {
     public static IServiceCollection AddDesktopServices(this IServiceCollection services)
     {
+        // Theme service (Desktop-only UI concern — not an Application layer service)
+        services.AddSingleton<IThemeService, ThemeService>();
+
         // Application shared services
         services.AddTransient<ManualFilingCalculator>();
 
@@ -42,6 +46,7 @@ public static class CompositionRoot
 
         // ViewModels
         services.AddTransient<ProfileSettingsViewModel>();
+        services.AddTransient<AppearanceSettingsViewModel>();
         services.AddTransient<SettingsViewModel>();
         services.AddSingleton<MainWindowViewModel>();
 

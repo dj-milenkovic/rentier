@@ -24,7 +24,7 @@
         <RadioButton GroupName="FilingFilter"
                      IsChecked="{Binding ShowAll}"
                      Content="{x:Static res:Strings.Filings_Filter_All}" />
-        <TextBlock Text="{Binding SortIndicatorDisplay}" Foreground="Gray" FontSize="11" VerticalAlignment="Center" />
+        <TextBlock Text="{Binding SortIndicatorDisplay}" Foreground="{DynamicResource RentierTextSecondaryBrush}" FontSize="11" VerticalAlignment="Center" />
       </StackPanel>
       <Button Content="{x:Static res:Strings.ManualFiling_Title}"
               Command="{Binding NewFilingCommand}"
@@ -38,7 +38,7 @@
       <Button Content="{Binding DeleteSelectedLabel}"
               Command="{Binding BulkDeleteCommand}"
               IsVisible="{Binding HasSelection}"
-              Foreground="Red" />
+              Foreground="{DynamicResource RentierDangerForegroundBrush}" />
     </StackPanel>
 
     <!-- Loading indicator -->
@@ -53,7 +53,7 @@
         <ColumnDefinition Width="Auto" />
       </Grid.ColumnDefinitions>
       <TextBlock Grid.Column="0" Text="{Binding ErrorMessage}"
-                 Foreground="Red" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,4" />
+                 Foreground="{DynamicResource RentierDangerForegroundBrush}" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,4" />
       <Button Grid.Column="1" Content="{x:Static res:Strings.Filings_Error_Dismiss}"
               Command="{Binding ClearErrorCommand}" VerticalAlignment="Center" Margin="4,0,0,0" />
     </Grid>
@@ -127,7 +127,7 @@
                        IsHitTestVisible="False"
                       HorizontalAlignment="Center" VerticalAlignment="Center" Margin="4,0">
                 <TextBlock Text="{Binding StatusDisplayText}"
-                           Foreground="White" FontSize="11" FontWeight="SemiBold"
+                           Foreground="{DynamicResource RentierStatusBadgeTextBrush}" FontSize="11" FontWeight="SemiBold"
                            HorizontalAlignment="Center" />
               </Border>
             </DataTemplate>
@@ -194,7 +194,7 @@
                         ToolTip.Tip="{x:Static res:Strings.Filings_Tooltip_Delete}"
                         Padding="4" Background="Transparent" BorderThickness="0">
                   <PathIcon Data="{StaticResource TrashIcon}"
-                            Foreground="Red" Width="16" Height="16" />
+                            Foreground="{DynamicResource RentierDangerForegroundBrush}" Width="16" Height="16" />
                 </Button>
               </StackPanel>
             </DataTemplate>

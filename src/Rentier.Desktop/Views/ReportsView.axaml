@@ -35,7 +35,7 @@
         <Button Content="{Binding DeleteSelectedLabel}"
                 Command="{Binding BulkDeleteCommand}"
                 IsVisible="{Binding HasSelection}"
-                Foreground="Red" />
+                Foreground="{DynamicResource RentierDangerForegroundBrush}" />
       </StackPanel>
     </StackPanel>
 
@@ -52,7 +52,7 @@
                 Margin="8,4"
                 IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
       <TextBlock Text="{Binding ErrorMessage}"
-                 Foreground="Red"
+                 Foreground="{DynamicResource RentierDangerForegroundBrush}"
                  VerticalAlignment="Center"
                  TextWrapping="Wrap" />
       <Button Content="{x:Static res:Strings.Reports_Error_Dismiss}"
@@ -148,7 +148,7 @@
                         Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                         CommandParameter="{Binding Id}"
                         ToolTip.Tip="{x:Static res:Strings.Reports_Tooltip_Delete}"
-                        Foreground="Red"
+                        Foreground="{DynamicResource RentierDangerForegroundBrush}"
                         Padding="6" Background="Transparent" BorderThickness="0">
                   <PathIcon Data="{StaticResource TrashIcon}" Width="16" Height="16" />
                 </Button>

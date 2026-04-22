@@ -1,10 +1,15 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="using:Rentier.Desktop"
-             x:Class="Rentier.Desktop.App">
+             x:Class="Rentier.Desktop.App"
+             RequestedThemeVariant="Default">
   <Application.Styles>
     <FluentTheme />
     <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
+    <!-- Rentier design system: theme color tokens (loaded before Controls so tokens are available) -->
+    <StyleInclude Source="avares://Rentier.Desktop/Assets/Styles/Theme.axaml" />
+    <!-- Rentier control overrides: corner radii, sidebar, accent button, etc. -->
+    <StyleInclude Source="avares://Rentier.Desktop/Assets/Styles/Controls.axaml" />
   </Application.Styles>
   <Application.Resources>
     <ResourceDictionary>

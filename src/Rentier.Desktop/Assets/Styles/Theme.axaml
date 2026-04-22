@@ -1,0 +1,148 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!--
+    Rentier design-system resources.
+    Loaded as a StyleInclude in Application.Styles so ThemeDictionaries respond to
+    RequestedThemeVariant changes at runtime (same pattern as WalletWasabi).
+    All semantic brushes start with "Rentier" to avoid collisions with FluentTheme keys.
+    System* color overrides re-key FluentTheme's own tokens to use our blue accent.
+  -->
+  <Styles.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.ThemeDictionaries>
+
+        <!-- ════════════════════════════════════════════════════════════════
+             DARK  —  deep navy bg + blue accent
+             ════════════════════════════════════════════════════════════════ -->
+        <ResourceDictionary x:Key="Dark">
+          <!-- Accent (overrides FluentTheme system accent → blue instead of purple) -->
+          <Color x:Key="SystemAccentColor">#3B82F6</Color>
+          <Color x:Key="SystemAccentColorLight1">#60A5FA</Color>
+          <Color x:Key="SystemAccentColorLight2">#93C5FD</Color>
+          <Color x:Key="SystemAccentColorDark1">#2563EB</Color>
+          <Color x:Key="SystemAccentColorDark2">#1D4ED8</Color>
+
+          <!-- Layer backgrounds -->
+          <SolidColorBrush x:Key="RentierRegionBrush"        Color="#0F172A" />
+          <SolidColorBrush x:Key="RentierSidebarBrush"       Color="#1E293B" />
+          <SolidColorBrush x:Key="RentierCardBrush"          Color="#1E293B" />
+          <SolidColorBrush x:Key="RentierCardElevatedBrush"  Color="#243349" />
+
+          <!-- Typography -->
+          <SolidColorBrush x:Key="RentierTextPrimaryBrush"   Color="#F1F5F9" />
+          <SolidColorBrush x:Key="RentierTextSecondaryBrush" Color="#94A3B8" />
+          <SolidColorBrush x:Key="RentierBorderBrush"        Color="#334155" />
+          <SolidColorBrush x:Key="RentierNavHoverBrush"      Color="#263348" />
+
+          <!-- Accent brush shorthand -->
+          <SolidColorBrush x:Key="RentierAccentBrush"        Color="#3B82F6" />
+          <SolidColorBrush x:Key="RentierNavActivePipeBrush" Color="#3B82F6" />
+
+          <!-- Status — danger -->
+          <SolidColorBrush x:Key="RentierDangerForegroundBrush"  Color="#EF4444" />
+          <SolidColorBrush x:Key="RentierDangerBackgroundBrush"  Color="#2D0A0A" />
+
+          <!-- Status — warning -->
+          <SolidColorBrush x:Key="RentierWarningForegroundBrush" Color="#F59E0B" />
+          <SolidColorBrush x:Key="RentierWarningBackgroundBrush" Color="#2D1800" />
+
+          <!-- Status — success -->
+          <SolidColorBrush x:Key="RentierSuccessForegroundBrush" Color="#22C55E" />
+          <SolidColorBrush x:Key="RentierSuccessBackgroundBrush" Color="#0A2D14" />
+
+          <!-- Filing status badge backgrounds (same in both themes — saturated colours) -->
+          <SolidColorBrush x:Key="RentierStatusInitBrush"        Color="#D4A017" />
+          <SolidColorBrush x:Key="RentierStatusFiledBrush"       Color="#0063B1" />
+          <SolidColorBrush x:Key="RentierStatusPaidBrush"        Color="#107C10" />
+          <!-- Text on top of the above saturated badge backgrounds (always white) -->
+          <SolidColorBrush x:Key="RentierStatusBadgeTextBrush"   Color="#FFFFFF" />
+
+          <!-- Muted (log timestamps, etc.) -->
+          <SolidColorBrush x:Key="RentierMutedBrush"             Color="#64748B" />
+
+          <!-- ScrollBar (FluentTheme resource keys) -->
+          <SolidColorBrush x:Key="ScrollBarThumbBackgroundColor"    Color="#3B82F6" />
+          <SolidColorBrush x:Key="ScrollBarPanningThumbBackground"  Color="#3B82F6" />
+          <SolidColorBrush x:Key="ScrollBarThumbFillPressed"        Color="#2563EB" />
+          <SolidColorBrush x:Key="ScrollBarThumbFillPointerOver"    Color="#60A5FA" />
+
+          <!-- DataGrid (FluentTheme resource keys) -->
+          <SolidColorBrush x:Key="DataGridColumnHeaderBackgroundBrush"        Color="Transparent" />
+          <SolidColorBrush x:Key="DataGridCellFocusVisualPrimaryBrush"        Color="Transparent" />
+          <SolidColorBrush x:Key="DataGridCellFocusVisualSecondaryBrush"      Color="Transparent" />
+          <SolidColorBrush x:Key="DataGridRowSelectedHoveredBackgroundBrush"  Color="Transparent" />
+        </ResourceDictionary>
+
+        <!-- ════════════════════════════════════════════════════════════════
+             LIGHT  —  slate-50 bg + same blue accent  (Stripe-inspired)
+             ════════════════════════════════════════════════════════════════ -->
+        <ResourceDictionary x:Key="Light">
+          <!-- Accent -->
+          <Color x:Key="SystemAccentColor">#3B82F6</Color>
+          <Color x:Key="SystemAccentColorLight1">#60A5FA</Color>
+          <Color x:Key="SystemAccentColorLight2">#93C5FD</Color>
+          <Color x:Key="SystemAccentColorDark1">#2563EB</Color>
+          <Color x:Key="SystemAccentColorDark2">#1D4ED8</Color>
+
+          <!-- Layer backgrounds -->
+          <SolidColorBrush x:Key="RentierRegionBrush"        Color="#F8FAFC" />
+          <SolidColorBrush x:Key="RentierSidebarBrush"       Color="#FFFFFF" />
+          <SolidColorBrush x:Key="RentierCardBrush"          Color="#FFFFFF" />
+          <SolidColorBrush x:Key="RentierCardElevatedBrush"  Color="#F1F5F9" />
+
+          <!-- Typography -->
+          <SolidColorBrush x:Key="RentierTextPrimaryBrush"   Color="#0F172A" />
+          <SolidColorBrush x:Key="RentierTextSecondaryBrush" Color="#64748B" />
+          <SolidColorBrush x:Key="RentierBorderBrush"        Color="#E2E8F0" />
+          <SolidColorBrush x:Key="RentierNavHoverBrush"      Color="#EFF6FF" />
+
+          <!-- Accent -->
+          <SolidColorBrush x:Key="RentierAccentBrush"        Color="#3B82F6" />
+          <SolidColorBrush x:Key="RentierNavActivePipeBrush" Color="#3B82F6" />
+
+          <!-- Status — danger -->
+          <SolidColorBrush x:Key="RentierDangerForegroundBrush"  Color="#DC2626" />
+          <SolidColorBrush x:Key="RentierDangerBackgroundBrush"  Color="#FEF2F2" />
+
+          <!-- Status — warning -->
+          <SolidColorBrush x:Key="RentierWarningForegroundBrush" Color="#D97706" />
+          <SolidColorBrush x:Key="RentierWarningBackgroundBrush" Color="#FFFBEB" />
+
+          <!-- Status — success -->
+          <SolidColorBrush x:Key="RentierSuccessForegroundBrush" Color="#16A34A" />
+          <SolidColorBrush x:Key="RentierSuccessBackgroundBrush" Color="#F0FDF4" />
+
+          <!-- Filing status badge backgrounds (same in both themes — saturated colours) -->
+          <SolidColorBrush x:Key="RentierStatusInitBrush"        Color="#D4A017" />
+          <SolidColorBrush x:Key="RentierStatusFiledBrush"       Color="#0063B1" />
+          <SolidColorBrush x:Key="RentierStatusPaidBrush"        Color="#107C10" />
+          <!-- Text on top of the above saturated badge backgrounds (always white) -->
+          <SolidColorBrush x:Key="RentierStatusBadgeTextBrush"   Color="#FFFFFF" />
+
+          <!-- Muted -->
+          <SolidColorBrush x:Key="RentierMutedBrush"             Color="#94A3B8" />
+
+          <!-- ScrollBar -->
+          <SolidColorBrush x:Key="ScrollBarThumbBackgroundColor"    Color="#3B82F6" />
+          <SolidColorBrush x:Key="ScrollBarPanningThumbBackground"  Color="#3B82F6" />
+          <SolidColorBrush x:Key="ScrollBarThumbFillPressed"        Color="#2563EB" />
+          <SolidColorBrush x:Key="ScrollBarThumbFillPointerOver"    Color="#60A5FA" />
+
+          <!-- DataGrid -->
+          <SolidColorBrush x:Key="DataGridColumnHeaderBackgroundBrush"        Color="Transparent" />
+          <SolidColorBrush x:Key="DataGridCellFocusVisualPrimaryBrush"        Color="Transparent" />
+          <SolidColorBrush x:Key="DataGridCellFocusVisualSecondaryBrush"      Color="Transparent" />
+          <SolidColorBrush x:Key="DataGridRowSelectedHoveredBackgroundBrush"  Color="Transparent" />
+        </ResourceDictionary>
+
+      </ResourceDictionary.ThemeDictionaries>
+
+      <!-- ── Theme-invariant resources ─────────────────────────────────── -->
+      <CornerRadius x:Key="RentierCardCornerRadius">8</CornerRadius>
+      <CornerRadius x:Key="RentierControlCornerRadius">6</CornerRadius>
+      <Thickness x:Key="RentierCardPadding">16</Thickness>
+      <BoxShadows x:Key="RentierCardShadow">0 2 8 0 #20000000, 0 1 2 0 #10000000</BoxShadows>
+
+    </ResourceDictionary>
+  </Styles.Resources>
+</Styles>
