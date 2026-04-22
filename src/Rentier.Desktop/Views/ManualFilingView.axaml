@@ -20,8 +20,16 @@
       <ProgressBar IsIndeterminate="True"
                    IsVisible="{Binding IsLoading}" Height="6" MinHeight="6" />
 
-      <!-- Error banner -->
-      <Grid IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+      <!-- No-profile info callout (blue, informational) -->
+      <Border IsVisible="{Binding HasNoProfile}"
+              Background="#EFF6FF" BorderBrush="#3B82F6" BorderThickness="1"
+              CornerRadius="4" Padding="12,10">
+        <TextBlock Text="{x:Static res:Strings.ManualFiling_Error_NoProfile}"
+                   Foreground="#1D4ED8" TextWrapping="Wrap" />
+      </Border>
+
+      <!-- Error banner (real errors only, not no-profile) -->
+      <Grid IsVisible="{Binding HasActualError}">
         <Grid.ColumnDefinitions>
           <ColumnDefinition Width="*" />
           <ColumnDefinition Width="Auto" />
@@ -92,7 +100,8 @@
         <Button Content="{x:Static res:Strings.ManualFiling_Calculate_Button}"
                 Command="{Binding CalculateCommand}" />
         <Button Content="{x:Static res:Strings.ManualFiling_Save_Button}"
-                Command="{Binding SaveCommand}" />
+                Command="{Binding SaveCommand}"
+                IsVisible="{Binding Preview, Converter={x:Static ObjectConverters.IsNotNull}}" />
         <Button Content="{x:Static res:Strings.ManualFiling_Cancel_Button}"
                 Command="{Binding CancelCommand}" />
       </StackPanel>
@@ -137,7 +146,7 @@
 
           <Grid ColumnDefinitions="*,*">
             <TextBlock Grid.Column="0" Text="{x:Static res:Strings.ManualFiling_Preview_RateSource}" FontWeight="SemiBold" />
-            <TextBlock Grid.Column="1" Text="{Binding Preview.ExchangeRateSourceDate, StringFormat='{}{0:yyyy-MM-dd}'}" />
+            <TextBlock Grid.Column="1" Text="{Binding RateSourceDisplay}" />
           </Grid>
         </StackPanel>
       </Border>

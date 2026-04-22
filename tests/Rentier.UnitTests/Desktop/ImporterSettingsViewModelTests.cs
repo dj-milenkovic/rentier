@@ -68,7 +68,8 @@ public sealed class ImporterSettingsViewModelTests
             add ?? MockAdd(),
             update ?? MockUpdate(),
             delete ?? MockDelete(),
-            ImmediateScheduler.Instance);
+            ImmediateScheduler.Instance,
+            confirmAction: (_, _, _, _) => Task.FromResult(true));
     }
 
     private static ImporterDto MakeImporterDto(string name = "Test Importer") =>

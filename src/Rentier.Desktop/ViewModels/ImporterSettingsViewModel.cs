@@ -9,6 +9,7 @@ using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
+using Rentier.Desktop.Dialogs;
 using Rentier.Desktop.Resources;
 using Rentier.Domain.Enums;
 
@@ -23,6 +24,7 @@ public sealed class ImporterSettingsViewModel : ReactiveObject, IActivatableView
     private readonly ICommandHandler<UpdateImporterCommand, Result<VoidResult, Error>> _updateImporter;
     private readonly ICommandHandler<DeleteImporterCommand, Result<VoidResult, Error>> _deleteImporter;
     private readonly IScheduler _scheduler;
+    private readonly Func<string, string, string, string, Task<bool>> _confirmAction;
 
     // Form fields
     private string _displayName = string.Empty;
@@ -144,7 +146,8 @@ public sealed class ImporterSettingsViewModel : ReactiveObject, IActivatableView
         ICommandHandler<AddImporterCommand, Result<Guid, Error>> addImporter,
         ICommandHandler<UpdateImporterCommand, Result<VoidResult, Error>> updateImporter,
         ICommandHandler<DeleteImporterCommand, Result<VoidResult, Error>> deleteImporter,
-        IScheduler? scheduler = null)
+        IScheduler? scheduler = null,
+        Func<string, string, string, string, Task<bool>>? confirmAction = null)
     {
         _getImporters = getImporters;
         _getProfile = getProfile;
@@ -153,6 +156,7 @@ public sealed class ImporterSettingsViewModel : ReactiveObject, IActivatableView
         _updateImporter = updateImporter;
         _deleteImporter = deleteImporter;
         _scheduler = scheduler ?? RxApp.MainThreadScheduler;
+        _confirmAction = confirmAction ?? ConfirmDialogHelper.ShowAsync;
 
         AddNewCommand = ReactiveCommand.Create(OnAddNew);
         SaveCommand = ReactiveCommand.CreateFromTask(OnSaveAsync);
@@ -289,6 +293,13 @@ public sealed class ImporterSettingsViewModel : ReactiveObject, IActivatableView
     private async Task OnDeleteAsync(CancellationToken ct)
     {
         if (SelectedImporter is null) return;
+
+        var confirmed = await _confirmAction(
+            Strings.Importer_Delete_Title,
+            string.Format(Strings.Importer_Delete_Message, SelectedImporter.DisplayName),
+            Strings.Common_Delete,
+            Strings.Common_Cancel);
+        if (!confirmed) return;
 
         IsLoading = true;
         ErrorMessage = null;

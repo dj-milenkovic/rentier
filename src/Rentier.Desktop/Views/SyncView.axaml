@@ -1,10 +1,13 @@
-<UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:Rentier.Desktop.ViewModels"
-             xmlns:res="using:Rentier.Desktop.Resources"
-             xmlns:local="using:Rentier.Desktop.Converters"
-             x:Class="Rentier.Desktop.Views.SyncView"
-             x:CompileBindings="False">
+<reactive:ReactiveUserControl
+    x:TypeArguments="vm:SyncViewModel"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:reactive="http://reactiveui.net"
+    xmlns:vm="using:Rentier.Desktop.ViewModels"
+    xmlns:res="using:Rentier.Desktop.Resources"
+    xmlns:local="using:Rentier.Desktop.Converters"
+    x:Class="Rentier.Desktop.Views.SyncView"
+    x:CompileBindings="False">
   <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="16">
 
     <!-- Sync configuration panel -->
@@ -14,7 +17,7 @@
 
         <!-- Sync mode row -->
         <Grid ColumnDefinitions="120,*">
-          <TextBlock Grid.Column="0" Text="Sync Mode" VerticalAlignment="Center" />
+          <TextBlock Grid.Column="0" Text="{x:Static res:Strings.Sync_Mode_Label}" VerticalAlignment="Center" />
           <ComboBox Grid.Column="1"
                     ItemsSource="{Binding AvailableSyncModes}"
                     SelectedItem="{Binding SelectedSyncMode}">
@@ -28,7 +31,7 @@
 
         <!-- Duplicate strategy row -->
         <Grid ColumnDefinitions="120,*">
-          <TextBlock Grid.Column="0" Text="Duplicates" VerticalAlignment="Center" />
+          <TextBlock Grid.Column="0" Text="{x:Static res:Strings.Sync_Duplicates_Label}" VerticalAlignment="Center" />
           <ComboBox Grid.Column="1"
                     ItemsSource="{Binding AvailableDuplicateStrategies}"
                     SelectedItem="{Binding SelectedDuplicateStrategy}">
@@ -43,7 +46,7 @@
         <!-- Replay-from-date picker (only shown in ReplayFromDate mode) -->
         <Grid ColumnDefinitions="120,*"
               IsVisible="{Binding IsReplayFromDateMode}">
-          <TextBlock Grid.Column="0" Text="Replay From" VerticalAlignment="Center" />
+          <TextBlock Grid.Column="0" Text="{x:Static res:Strings.Sync_ReplayFrom_Label}" VerticalAlignment="Center" />
           <DatePicker Grid.Column="1"
                       SelectedDate="{Binding ReplayFromDateOffset}" />
         </Grid>
@@ -102,9 +105,9 @@
                  IsVisible="{Binding SummaryMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
       <Border Background="#FFEEEE" Padding="8" CornerRadius="4"
               IsVisible="{Binding HasErrors}">
-        <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding ErrorSummaryMessage}" Foreground="Red" TextWrapping="Wrap" />
       </Border>
     </StackPanel>
 
   </Grid>
-</UserControl>
+</reactive:ReactiveUserControl>

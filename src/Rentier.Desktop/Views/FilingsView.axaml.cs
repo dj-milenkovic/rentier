@@ -1,28 +1,40 @@
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.LogicalTree;
 using Avalonia.ReactiveUI;
 using ReactiveUI;
+using System.Reactive.Disposables;
 using Rentier.Desktop.ViewModels;
 
 namespace Rentier.Desktop.Views;
 
 /// <summary>
-/// Code-behind for FilingsView. DataGrid cell-level events (LostFocus, Sorting)
+/// Code-behind for FilingsView. DataGrid cell-level events (KeyDown, Sorting)
 /// cannot be expressed as commands in AXAML without code-behind -- this is the accepted exception.
 /// </summary>
 public partial class FilingsView : ReactiveUserControl<FilingsViewModel>
 {
+    private readonly CompositeDisposable _disposables = new();
+
     public FilingsView() => InitializeComponent();
 
-    private void PaymentRef_LostFocus(object? sender, RoutedEventArgs e)
+    protected override void OnDetachedFromLogicalTree(LogicalTreeAttachmentEventArgs e)
     {
+        base.OnDetachedFromLogicalTree(e);
+        _disposables.Dispose();
+    }
+
+    private void PaymentRef_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Enter) return;
         if (sender is not TextBox tb) return;
         if (tb.DataContext is not FilingRowViewModel row) return;
 
         // Skip the DB write when the text hasn't actually changed since the row was loaded.
         if (tb.Text == row.PaymentReference) return;
 
-        ViewModel?.SavePaymentRefCommand.Execute((row.Id, tb.Text)).Subscribe();
+        ViewModel?.SavePaymentRefCommand.Execute((row.Id, tb.Text)).Subscribe().DisposeWith(_disposables);
     }
 
     /// <summary>
@@ -36,6 +48,6 @@ public partial class FilingsView : ReactiveUserControl<FilingsViewModel>
         if (string.IsNullOrEmpty(tag)) return;
 
         e.Handled = true;
-        ViewModel?.ApplySortCommand.Execute((tag, (bool?)null)).Subscribe();
+        ViewModel?.ApplySortCommand.Execute((tag, (bool?)null)).Subscribe().DisposeWith(_disposables);
     }
 }

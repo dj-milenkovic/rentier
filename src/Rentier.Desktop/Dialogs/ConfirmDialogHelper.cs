@@ -24,8 +24,8 @@ internal static class ConfirmDialogHelper
         if (owner is null)
             return false;
 
-        var confirmButton = new Button { Content = confirmText, Margin = new Thickness(0, 0, 4, 0) };
-        var cancelButton  = new Button { Content = cancelText };
+        var confirmButton = new Button { Content = confirmText, Margin = new Thickness(0, 0, 4, 0), IsDefault = true };
+        var cancelButton  = new Button { Content = cancelText, IsCancel = true };
 
         var dialog = new Window
         {

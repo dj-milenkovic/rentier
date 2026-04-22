@@ -81,6 +81,12 @@ public sealed class ProfileSettingsViewModel : ReactiveObject, IActivatableViewM
         private set => this.RaiseAndSetIfChanged(ref _successMessage, value);
     }
 
+    /// <summary>Returns a validation error when JMBG is non-empty but not exactly 13 digits.</summary>
+    public string? JmbgValidationMessage =>
+        !string.IsNullOrEmpty(Jmbg) && (Jmbg.Length != 13 || !Jmbg.All(char.IsDigit))
+            ? Strings.Profile_JmbgValidation_Error
+            : null;
+
     public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> SaveCommand { get; }
 
     public ProfileSettingsViewModel(
@@ -106,6 +112,15 @@ public sealed class ProfileSettingsViewModel : ReactiveObject, IActivatableViewM
             .DistinctUntilChanged();
 
         SaveCommand = ReactiveCommand.CreateFromTask(ExecuteSaveAsync, canSave);
+
+        // Notify view of inline JMBG validation as the user types
+        this.WhenAnyValue(x => x.Jmbg)
+            .Subscribe(_ => this.RaisePropertyChanged(nameof(JmbgValidationMessage)));
+
+        // Clear the save-confirmation banner whenever the user edits any field
+        this.WhenAnyValue(x => x.Jmbg, x => x.FullName, x => x.Address, x => x.OpstinaCode, x => x.PhoneNumber)
+            .Skip(1)
+            .Subscribe(_ => SuccessMessage = string.Empty);
 
         this.WhenActivated(disposables =>
         {

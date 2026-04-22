@@ -499,6 +499,12 @@
   <data name="Dashboard_LoadError" xml:space="preserve">
     <value>Failed to load dashboard data.</value>
   </data>
+  <data name="Dashboard_NoData" xml:space="preserve">
+    <value>No data yet. Run a sync to get started.</value>
+  </data>
+  <data name="Dashboard_NoUpcomingDeadlines" xml:space="preserve">
+    <value>No upcoming deadlines in the next 30 days.</value>
+  </data>
   <data name="Sync_Mode_Incremental" xml:space="preserve">
     <value>Incremental</value>
   </data>
@@ -680,4 +686,58 @@
     <value>Fallback from {0}</value>
   </data>
   <data name="Filings_Toolbar_NewFiling" xml:space="preserve"><value>New Filing</value></data>
+  <data name="ImportDialog_SelectImporter" xml:space="preserve">
+    <value>Select importer:</value>
+  </data>
+  <data name="ImportDialog_Import_Button" xml:space="preserve">
+    <value>Import</value>
+  </data>
+  <data name="Common_Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Common_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Mailbox_Delete_Title" xml:space="preserve">
+    <value>Delete Mailbox</value>
+  </data>
+  <data name="Mailbox_Delete_Message" xml:space="preserve">
+    <value>Are you sure you want to delete the mailbox for {0}? This action cannot be undone.</value>
+  </data>
+  <data name="Importer_Delete_Title" xml:space="preserve">
+    <value>Delete Importer</value>
+  </data>
+  <data name="Importer_Delete_Message" xml:space="preserve">
+    <value>Are you sure you want to delete the importer '{0}'? This action cannot be undone.</value>
+  </data>
+  <data name="Profile_OpstinaCode_Helper" xml:space="preserve">
+    <value>5-digit municipal code, e.g. 71101 for Stari Grad</value>
+  </data>
+  <data name="Holidays_YearRange_Error" xml:space="preserve">
+    <value>End year must be ≥ Start year</value>
+  </data>
+  <data name="Sync_Mode_Label" xml:space="preserve">
+    <value>Sync Mode</value>
+  </data>
+  <data name="Sync_Duplicates_Label" xml:space="preserve">
+    <value>Duplicates</value>
+  </data>
+  <data name="Sync_ReplayFrom_Label" xml:space="preserve">
+    <value>Replay From</value>
+  </data>
+  <data name="Sync_PartialSuccess_Message" xml:space="preserve">
+    <value>Sync completed with errors. Check the log above for details.</value>
+  </data>
+  <data name="ManualFiling_Cancel_Discard_Title" xml:space="preserve">
+    <value>Discard Changes?</value>
+  </data>
+  <data name="ManualFiling_Cancel_Discard_Message" xml:space="preserve">
+    <value>You have unsaved changes. Are you sure you want to cancel?</value>
+  </data>
+  <data name="ManualFiling_Cancel_Discard_Confirm" xml:space="preserve">
+    <value>Discard</value>
+  </data>
+  <data name="ManualFiling_Cancel_Discard_Keep" xml:space="preserve">
+    <value>Keep Editing</value>
+  </data>
 </root>

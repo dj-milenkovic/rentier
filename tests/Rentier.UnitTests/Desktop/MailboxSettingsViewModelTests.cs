@@ -38,7 +38,8 @@ public class MailboxSettingsViewModelTests
             add ?? MockAdd(),
             update ?? MockUpdate(),
             delete ?? MockDelete(),
-            ImmediateScheduler.Instance);
+            ImmediateScheduler.Instance,
+            confirmAction: (_, _, _, _) => Task.FromResult(true));
 
     private static MailboxDto MakeDto(string host = "imap.example.com", int port = 993, string username = "user@example.com")
         => new(Guid.NewGuid(), host, port, username, null, null);

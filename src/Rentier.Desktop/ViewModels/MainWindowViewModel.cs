@@ -59,7 +59,11 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
                     var filingsEntry = NavigationEntries?.FirstOrDefault(e => e.ViewModel is FilingsViewModel);
                     if (filingsEntry is not null) SelectedEntry = filingsEntry;
                 }));
-            CurrentViewModel = manualVm;
+
+            // Use a transient hidden entry (not in NavigationEntries) so the ListBox shows
+            // no sidebar highlight while the ManualFiling sub-page is active. The
+            // WhenAnyValue(SelectedEntry) subscription handles setting CurrentViewModel.
+            SelectedEntry = new NavigationEntry(string.Empty, manualVm, IsVisible: false);
         };
 
         filingsVm = ActivatorUtilities.CreateInstance<FilingsViewModel>(

@@ -1,10 +1,13 @@
-<UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:Rentier.Desktop.ViewModels"
-             xmlns:res="using:Rentier.Desktop.Resources"
-             x:Class="Rentier.Desktop.Views.MailboxSettingsView"
-             x:CompileBindings="False"
-             x:DataType="vm:MailboxSettingsViewModel">
+<reactive:ReactiveUserControl
+    x:TypeArguments="vm:MailboxSettingsViewModel"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:reactive="http://reactiveui.net"
+    xmlns:vm="using:Rentier.Desktop.ViewModels"
+    xmlns:res="using:Rentier.Desktop.Resources"
+    x:Class="Rentier.Desktop.Views.MailboxSettingsView"
+    x:CompileBindings="False"
+    x:DataType="vm:MailboxSettingsViewModel">
   <Grid ColumnDefinitions="250,*">
     <!-- Left panel: mailbox list -->
     <DockPanel Grid.Column="0">
@@ -62,4 +65,4 @@
       </StackPanel>
     </ScrollViewer>
   </Grid>
-</UserControl>
+</reactive:ReactiveUserControl>

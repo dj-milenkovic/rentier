@@ -57,6 +57,13 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
         private set => this.RaiseAndSetIfChanged(ref _hasErrors, value);
     }
 
+    /// <summary>
+    /// Returns the specific ErrorMessage when sync failed completely, or a generic partial-success
+    /// message when individual item errors occurred but no overall failure message was set.
+    /// </summary>
+    private readonly ObservableAsPropertyHelper<string?> _errorSummaryMessage;
+    public string? ErrorSummaryMessage => _errorSummaryMessage.Value;
+
     // ── Sync mode / strategy selection ──────────────────────────────────────
     public SyncMode[] AvailableSyncModes { get; } = Enum.GetValues<SyncMode>();
     public DuplicateStrategy[] AvailableDuplicateStrategies { get; } = Enum.GetValues<DuplicateStrategy>();
@@ -171,6 +178,11 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
                 _ => string.Empty
             };
         }).ToProperty(this, x => x.ImpactSummary, initialValue: string.Empty);
+
+        _errorSummaryMessage = this
+            .WhenAnyValue(x => x.ErrorMessage, x => x.HasErrors,
+                (msg, hasErrors) => msg ?? (hasErrors ? Resources.Strings.Sync_PartialSuccess_Message : null))
+            .ToProperty(this, x => x.ErrorSummaryMessage);
 
         var canSync = this.WhenAnyValue(x => x.ValidationError)
             .Select(e => e == null);

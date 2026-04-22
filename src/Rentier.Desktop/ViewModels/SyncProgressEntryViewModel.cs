@@ -13,7 +13,7 @@ public sealed class SyncProgressEntryViewModel
     {
         Icon = entry.Severity switch
         {
-            SyncProgressSeverity.Error => "⚠",
+            SyncProgressSeverity.Error => "✕",
             SyncProgressSeverity.Warning => "⚠",
             _ => "•"
         };

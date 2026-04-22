@@ -1,10 +1,13 @@
-<UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:Rentier.Desktop.ViewModels"
-             xmlns:res="using:Rentier.Desktop.Resources"
-             xmlns:local="using:Rentier.Desktop.Converters"
-             x:Class="Rentier.Desktop.Views.ReportsView"
-             x:CompileBindings="False">
+<reactive:ReactiveUserControl
+    x:TypeArguments="vm:ReportsViewModel"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:reactive="http://reactiveui.net"
+    xmlns:vm="using:Rentier.Desktop.ViewModels"
+    xmlns:res="using:Rentier.Desktop.Resources"
+    xmlns:local="using:Rentier.Desktop.Converters"
+    x:Class="Rentier.Desktop.Views.ReportsView"
+    x:CompileBindings="False">
   <DockPanel>
 
     <!-- Toolbar -->
@@ -95,8 +98,8 @@
                       IsChecked="{Binding DataContext.IsAllSelected,
                                   RelativeSource={RelativeSource AncestorType=DataGrid},
                                   Mode=TwoWay}"
-                      IsHitTestVisible="{Binding DataContext.HasItems,
-                                         RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                      IsEnabled="{Binding DataContext.HasItems,
+                                  RelativeSource={RelativeSource AncestorType=DataGrid}}"
                       HorizontalAlignment="Center" VerticalAlignment="Center" />
           </DataGridTemplateColumn.Header>
           <DataGridTemplateColumn.CellTemplate>
@@ -130,17 +133,19 @@
         <DataGridTextColumn Header="{x:Static res:Strings.Reports_Col_FilingCount}"
                             Binding="{Binding FilingCount}"
                             Width="70" />
-        <DataGridTemplateColumn Width="Auto">
+        <DataGridTemplateColumn Header="Actions" Width="Auto">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <StackPanel Orientation="Horizontal" Spacing="4" Margin="4,0">
-                <Button Command="{Binding DataContext.ViewFilingsCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                <Button AutomationProperties.Name="{x:Static res:Strings.Reports_Tooltip_ViewFilings}"
+                        Command="{Binding DataContext.ViewFilingsCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                         CommandParameter="{Binding Id}"
                         ToolTip.Tip="{x:Static res:Strings.Reports_Tooltip_ViewFilings}"
                         Padding="6" Background="Transparent" BorderThickness="0">
                   <PathIcon Data="{StaticResource ViewFilingsIcon}" Width="16" Height="16" />
                 </Button>
-                <Button Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                <Button AutomationProperties.Name="{x:Static res:Strings.Reports_Tooltip_Delete}"
+                        Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                         CommandParameter="{Binding Id}"
                         ToolTip.Tip="{x:Static res:Strings.Reports_Tooltip_Delete}"
                         Foreground="Red"
@@ -155,4 +160,4 @@
     </DataGrid>
 
   </DockPanel>
-</UserControl>
+</reactive:ReactiveUserControl>
