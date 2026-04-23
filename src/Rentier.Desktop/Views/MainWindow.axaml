@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:Rentier.Desktop.ViewModels"
+        xmlns:conv="using:Rentier.Desktop.Converters"
         x:Class="Rentier.Desktop.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         x:CompileBindings="False"
@@ -11,6 +12,11 @@
         Width="1000" Height="640"
         MinWidth="800" MinHeight="520"
         WindowStartupLocation="CenterScreen">
+
+  <Window.Resources>
+    <!-- Converts IsExpanded (bool) → chevron rotation angle: false=0°, true=90° -->
+    <conv:BoolToDoubleConverter x:Key="BoolToAngleConverter" TrueValue="90" FalseValue="0" />
+  </Window.Resources>
 
   <DockPanel>
 
@@ -48,34 +54,79 @@
                  SelectedItem="{Binding SelectedEntry}">
           <ListBox.ItemTemplate>
             <DataTemplate x:DataType="vm:NavigationEntry">
-              <!-- Only show entries that are visible in the sidebar -->
+              <!-- Outer container: hidden when IsVisible=false (e.g. ManualFiling transient entry) -->
               <Grid IsVisible="{Binding IsVisible}"
-                    ColumnDefinitions="4,44,*"
                     Height="40">
 
-                <!-- Active selection pipe -->
-                <Border Grid.Column="0"
-                        Width="3" Height="20"
-                        CornerRadius="1.5"
-                        Background="{DynamicResource RentierNavActivePipeBrush}"
-                        IsVisible="{Binding $parent[ListBoxItem].IsSelected}"
-                        VerticalAlignment="Center"
-                        HorizontalAlignment="Left" />
+                <!-- ── Group header row (Settings collapsible group) ─────── -->
+                <Grid ColumnDefinitions="4,44,*"
+                      IsVisible="{Binding IsGroup}">
 
-                <!-- Nav icon -->
-                <PathIcon Grid.Column="1"
-                          Data="{Binding Icon}"
-                          Width="18" Height="18"
-                          Foreground="{DynamicResource RentierTextPrimaryBrush}"
-                          HorizontalAlignment="Center"
-                          VerticalAlignment="Center" />
+                  <!-- Spacer (no active pipe for group headers) -->
+                  <Border Grid.Column="0" Width="4" />
 
-                <!-- Label -->
-                <TextBlock Grid.Column="2"
-                           Text="{Binding Label}"
-                           FontSize="13" FontWeight="Medium"
-                           Foreground="{DynamicResource RentierTextPrimaryBrush}"
-                           VerticalAlignment="Center" />
+                  <!-- Group icon -->
+                  <PathIcon Grid.Column="1"
+                            Data="{Binding Icon}"
+                            Width="18" Height="18"
+                            Foreground="{DynamicResource RentierTextPrimaryBrush}"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center" />
+
+                  <!-- Label + chevron -->
+                  <Grid Grid.Column="2"
+                        ColumnDefinitions="*,24">
+                    <TextBlock Grid.Column="0"
+                               Text="{Binding Label}"
+                               FontSize="13" FontWeight="Medium"
+                               Foreground="{DynamicResource RentierTextPrimaryBrush}"
+                               VerticalAlignment="Center" />
+
+                    <!-- Chevron — rotates 0° (collapsed/right) → 90° (expanded/down) -->
+                    <PathIcon Grid.Column="1"
+                              Data="{StaticResource NavChevronIcon}"
+                              Width="12" Height="12"
+                              Foreground="{DynamicResource RentierTextPrimaryBrush}"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"
+                              RenderTransformOrigin="50%,50%">
+                      <PathIcon.RenderTransform>
+                        <RotateTransform Angle="{Binding IsExpanded, Converter={StaticResource BoolToAngleConverter}}" />
+                      </PathIcon.RenderTransform>
+                    </PathIcon>
+                  </Grid>
+                </Grid>
+
+                <!-- ── Regular / child item row ──────────────────────────── -->
+                <Grid ColumnDefinitions="4,44,*"
+                      IsVisible="{Binding !IsGroup}">
+
+                  <!-- Active selection pipe (only for non-group entries) -->
+                  <Border Grid.Column="0"
+                          Width="3" Height="20"
+                          CornerRadius="1.5"
+                          Background="{DynamicResource RentierNavActivePipeBrush}"
+                          IsVisible="{Binding $parent[ListBoxItem].IsSelected}"
+                          VerticalAlignment="Center"
+                          HorizontalAlignment="Left" />
+
+                  <!-- Nav icon — offset left for child items (IndentLevel=1 → 16px left margin) -->
+                  <PathIcon Grid.Column="1"
+                            Data="{Binding Icon}"
+                            Width="18" Height="18"
+                            Margin="{Binding IndentLevel, Converter={x:Static conv:IndentToMarginConverter.Instance}}"
+                            Foreground="{DynamicResource RentierTextPrimaryBrush}"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center" />
+
+                  <!-- Label -->
+                  <TextBlock Grid.Column="2"
+                             Text="{Binding Label}"
+                             FontSize="13" FontWeight="Medium"
+                             Foreground="{DynamicResource RentierTextPrimaryBrush}"
+                             VerticalAlignment="Center" />
+                </Grid>
+
               </Grid>
             </DataTemplate>
           </ListBox.ItemTemplate>

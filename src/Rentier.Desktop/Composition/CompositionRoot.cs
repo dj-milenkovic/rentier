@@ -60,10 +60,9 @@ public static class CompositionRoot
             ICommandHandler<ProcessReportsCommand, Result<ProcessReportsResult, Error>>,
             ProcessReportsCommandHandler>();
 
-        // ViewModels
-        services.AddTransient<ProfileSettingsViewModel>();
-        services.AddTransient<AppearanceSettingsViewModel>();
-        services.AddTransient<SettingsViewModel>();
+        // ViewModels — settings sub-ViewModels are singletons for in-session state persistence
+        services.AddSingleton<ProfileSettingsViewModel>();
+        services.AddSingleton<AppearanceSettingsViewModel>();
         services.AddSingleton<MainWindowViewModel>();
 
         // Holiday handlers
@@ -82,7 +81,7 @@ public static class CompositionRoot
         services.AddTransient<
             ICommandHandler<FetchHolidaysFromWebCommand, Result<IReadOnlyList<HolidayEntryDto>, Error>>,
             FetchHolidaysFromWebCommandHandler>();
-        services.AddTransient<HolidaySettingsViewModel>();
+        services.AddSingleton<HolidaySettingsViewModel>();
 
         // Mailbox handlers
         services.AddTransient<
@@ -97,7 +96,7 @@ public static class CompositionRoot
         services.AddTransient<
             ICommandHandler<DeleteMailboxCommand, Result<VoidResult, Error>>,
             DeleteMailboxCommandHandler>();
-        services.AddTransient<MailboxSettingsViewModel>();
+        services.AddSingleton<MailboxSettingsViewModel>();
 
         // Importer handlers
         services.AddTransient<
@@ -112,7 +111,7 @@ public static class CompositionRoot
         services.AddTransient<
             ICommandHandler<DeleteImporterCommand, Result<VoidResult, Error>>,
             DeleteImporterCommandHandler>();
-        services.AddTransient<ImporterSettingsViewModel>();
+        services.AddSingleton<ImporterSettingsViewModel>();
 
         // Filing handlers — registered in CompositionRoot (not InfrastructureServiceExtensions)
         services.AddTransient<
