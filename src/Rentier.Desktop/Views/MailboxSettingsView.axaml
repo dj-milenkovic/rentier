@@ -4,7 +4,6 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:reactive="http://reactiveui.net"
     xmlns:vm="using:Rentier.Desktop.ViewModels"
-    xmlns:res="using:Rentier.Desktop.Resources"
     x:Class="Rentier.Desktop.Views.MailboxSettingsView"
     x:CompileBindings="False"
     x:DataType="vm:MailboxSettingsViewModel">
@@ -13,7 +12,7 @@
     <DockPanel Grid.Column="0">
       <Button DockPanel.Dock="Bottom"
               Command="{Binding AddNewCommand}"
-              Content="{x:Static res:Strings.Mailboxes_AddNew_Button}"
+              Content="{Binding [Mailboxes_AddNew_Button], Source={StaticResource Localizer}}"
               HorizontalAlignment="Stretch"
               Margin="4" />
       <ListBox ItemsSource="{Binding Mailboxes}"
@@ -29,28 +28,28 @@
     <!-- Right panel: form -->
     <ScrollViewer Grid.Column="1">
       <StackPanel Margin="16" Spacing="8">
-        <TextBlock Text="{x:Static res:Strings.Mailboxes_Host_Label}" />
+        <TextBlock Text="{Binding [Mailboxes_Host_Label], Source={StaticResource Localizer}}" />
         <TextBox Text="{Binding Host}" />
 
-        <TextBlock Text="{x:Static res:Strings.Mailboxes_Port_Label}" />
+        <TextBlock Text="{Binding [Mailboxes_Port_Label], Source={StaticResource Localizer}}" />
         <NumericUpDown Value="{Binding Port}"
                        Minimum="1"
                        Maximum="65535"
                        FormatString="0" />
 
-        <TextBlock Text="{x:Static res:Strings.Mailboxes_Username_Label}" />
+        <TextBlock Text="{Binding [Mailboxes_Username_Label], Source={StaticResource Localizer}}" />
         <TextBox Text="{Binding Username}" />
 
-        <TextBlock Text="{x:Static res:Strings.Mailboxes_Password_Label}" />
+        <TextBlock Text="{Binding [Mailboxes_Password_Label], Source={StaticResource Localizer}}" />
         <TextBox Text="{Binding Password}"
                  PasswordChar="•"
-                 Watermark="{x:Static res:Strings.Mailboxes_Password_Hint}" />
+                 Watermark="{Binding [Mailboxes_Password_Hint], Source={StaticResource Localizer}}" />
 
         <StackPanel Orientation="Horizontal" Spacing="8">
           <Button Command="{Binding SaveCommand}"
-                  Content="{x:Static res:Strings.Mailboxes_Save_Button}" />
+                  Content="{Binding [Mailboxes_Save_Button], Source={StaticResource Localizer}}" />
           <Button Command="{Binding DeleteCommand}"
-                  Content="{x:Static res:Strings.Mailboxes_Delete_Button}" />
+                  Content="{Binding [Mailboxes_Delete_Button], Source={StaticResource Localizer}}" />
         </StackPanel>
 
         <TextBlock Text="{Binding ErrorMessage}"

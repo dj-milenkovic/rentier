@@ -47,7 +47,13 @@ public class MainWindowViewModelSmokeTests
     {
         var themeService = Substitute.For<IThemeService>();
         themeService.GetPreference().Returns(ThemePreference.System);
-        return new AppearanceSettingsViewModel(themeService);
+        var locService = Substitute.For<ILocalizationService>();
+        locService.CurrentCultureCode.Returns("sr-Latn");
+        locService.CultureChanged.Returns(System.Reactive.Linq.Observable.Never<string>());
+        var setCmd = Substitute.For<ICommandHandler<SetUserPreferenceCommand, Result<VoidResult, Error>>>();
+        setCmd.HandleAsync(Arg.Any<SetUserPreferenceCommand>(), Arg.Any<CancellationToken>())
+            .Returns(Result<VoidResult, Error>.Success(VoidResult.Value));
+        return new AppearanceSettingsViewModel(themeService, locService, setCmd);
     }
 
     private static IServiceProvider CreateProvider()
@@ -94,24 +100,98 @@ public class MainWindowViewModelSmokeTests
             () => Task.FromResult<(Guid, string, byte[])?>(null));
         services.AddSingleton(Substitute.For<ISyncAllCommandHandler>());
 
+        // Settings sub-ViewModels (singletons matching production DI)
+        services.AddSingleton(CreateProfileVm());
+        services.AddSingleton(CreateHolidayVm());
+        services.AddSingleton(CreateMailboxVm());
+        services.AddSingleton(CreateImporterVm());
+        services.AddSingleton(CreateAppearanceVm());
+
         return services.BuildServiceProvider();
     }
 
-    [Fact]
-    public void MainWindowViewModel_Constructed_NavigationEntriesHasFiveItems()
+    private static MainWindowViewModel CreateVm()
     {
-        var settingsVm = new SettingsViewModel(CreateProfileVm(), CreateHolidayVm(), CreateMailboxVm(), CreateImporterVm(), CreateAppearanceVm());
-        var vm = new MainWindowViewModel(CreateProvider(), settingsVm);
+        var locService = Substitute.For<ILocalizationService>();
+        locService.CultureChanged.Returns(System.Reactive.Linq.Observable.Never<string>());
+        return new MainWindowViewModel(CreateProvider(), locService);
+    }
 
-        vm.NavigationEntries.Count.Should().Be(5);
+    [Fact]
+    public void MainWindowViewModel_Constructed_NavigationEntriesHasTenItems()
+    {
+        var vm = CreateVm();
+
+        // 4 top-level (Dashboard, Filings, Reports, Sync) + 1 Settings group + 5 children
+        vm.NavigationEntries.Count.Should().Be(10);
     }
 
     [Fact]
     public void MainWindowViewModel_Constructed_InitialViewModelIsDashboardViewModel()
     {
-        var settingsVm = new SettingsViewModel(CreateProfileVm(), CreateHolidayVm(), CreateMailboxVm(), CreateImporterVm(), CreateAppearanceVm());
-        var vm = new MainWindowViewModel(CreateProvider(), settingsVm);
+        var vm = CreateVm();
 
         vm.CurrentViewModel.Should().BeOfType<DashboardViewModel>();
+    }
+
+    [Fact]
+    public void NavigationEntries_SettingsGroup_IsGroupTrueAndExpandedByDefault()
+    {
+        var vm = CreateVm();
+
+        // Entry at index 4 is the Settings group header
+        var settingsGroup = vm.NavigationEntries[4];
+
+        settingsGroup.IsGroup.Should().BeTrue();
+        settingsGroup.IsExpanded.Should().BeTrue();
+        settingsGroup.ViewModel.Should().BeNull();
+    }
+
+    [Fact]
+    public void NavigationEntries_SettingsChildren_HaveCorrectIndentLevelAndParentGroup()
+    {
+        var vm = CreateVm();
+        var settingsGroup = vm.NavigationEntries[4];
+
+        // Entries 5–9 are the Settings children
+        for (int i = 5; i <= 9; i++)
+        {
+            var child = vm.NavigationEntries[i];
+            child.IndentLevel.Should().Be(1, $"entry [{i}] should have IndentLevel=1");
+            child.ParentGroup.Should().BeSameAs(settingsGroup, $"entry [{i}] should reference the Settings group");
+            child.IsVisible.Should().BeTrue($"entry [{i}] should be visible by default (group starts expanded)");
+            child.IsGroup.Should().BeFalse($"entry [{i}] is a child, not a group header");
+        }
+    }
+
+    [Fact]
+    public void SelectingGroupHeader_TogglesIsExpanded_DoesNotChangeCurrentViewModel()
+    {
+        var vm = CreateVm();
+        using var _ = vm.Activator.Activate();
+
+        var settingsGroup = vm.NavigationEntries[4];
+        var initialViewModel = vm.CurrentViewModel;
+        var initialExpanded = settingsGroup.IsExpanded; // true by default
+
+        // Select the group header — should toggle expand and NOT navigate
+        vm.SelectedEntry = settingsGroup;
+
+        vm.CurrentViewModel.Should().BeSameAs(initialViewModel, "CurrentViewModel must not change when clicking a group header");
+        settingsGroup.IsExpanded.Should().Be(!initialExpanded, "IsExpanded must be toggled");
+    }
+
+    [Fact]
+    public void SelectingProfileChild_SetsCurrentViewModelToProfileSettingsViewModel()
+    {
+        var vm = CreateVm();
+        using var _ = vm.Activator.Activate();
+
+        // Entry[5] is the Profile child
+        var profileEntry = vm.NavigationEntries[5];
+
+        vm.SelectedEntry = profileEntry;
+
+        vm.CurrentViewModel.Should().BeOfType<ProfileSettingsViewModel>();
     }
 }

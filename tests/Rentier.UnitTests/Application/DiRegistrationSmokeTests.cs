@@ -8,6 +8,7 @@ using Rentier.Application.Handlers;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
 using Rentier.Application.Repositories;
+using Rentier.Desktop.Services;
 using Xunit;
 
 namespace Rentier.UnitTests;
@@ -40,6 +41,35 @@ public class DiRegistrationSmokeTests
         provider.GetRequiredService<ICredentialStore>().Should().NotBeNull();
         provider.GetRequiredService<IMailboxSyncService>().Should().NotBeNull();
         provider.GetRequiredService<ICommandHandler<SyncMailboxCommand, Result<SyncResult, Error>>>().Should().NotBeNull();
+    }
+
+    // ── T036: New language/preference services resolve correctly ──────────────
+
+    [Fact]
+    public void ServiceCollection_LocalizationAndPreferenceServices_AllResolveSuccessfully()
+    {
+        var services = new ServiceCollection();
+
+        // Register stubs for dependencies
+        services.AddSingleton(Substitute.For<IUserPreferenceRepository>());
+
+        // Register the actual services under test
+        services.AddSingleton<ILocalizationService, LocalizationService>();
+        services.AddTransient<
+            IQueryHandler<GetUserPreferenceQuery, Result<string?, Error>>,
+            GetUserPreferenceQueryHandler>();
+        services.AddTransient<
+            ICommandHandler<SetUserPreferenceCommand, Result<VoidResult, Error>>,
+            SetUserPreferenceCommandHandler>();
+
+        var provider = services.BuildServiceProvider();
+
+        provider.GetRequiredService<ILocalizationService>().Should().NotBeNull();
+        provider.GetRequiredService<IUserPreferenceRepository>().Should().NotBeNull();
+        provider.GetRequiredService<IQueryHandler<GetUserPreferenceQuery, Result<string?, Error>>>()
+            .Should().NotBeNull();
+        provider.GetRequiredService<ICommandHandler<SetUserPreferenceCommand, Result<VoidResult, Error>>>()
+            .Should().NotBeNull();
     }
 
     [Fact]

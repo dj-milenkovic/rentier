@@ -18,6 +18,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<ExchangeRate> ExchangeRateCache => Set<ExchangeRate>();
     public DbSet<Report> Reports => Set<Report>();
     public DbSet<Filing> Filings => Set<Filing>();
+    public DbSet<UserPreference> UserPreferences => Set<UserPreference>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

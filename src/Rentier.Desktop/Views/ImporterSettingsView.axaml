@@ -4,7 +4,6 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:reactive="http://reactiveui.net"
     xmlns:vm="using:Rentier.Desktop.ViewModels"
-    xmlns:res="using:Rentier.Desktop.Resources"
     xmlns:local="using:Rentier.Desktop.Converters"
     x:Class="Rentier.Desktop.Views.ImporterSettingsView"
     x:CompileBindings="False"
@@ -14,7 +13,7 @@
     <DockPanel Grid.Column="0">
       <Button DockPanel.Dock="Bottom"
               Command="{Binding AddNewCommand}"
-              Content="{x:Static res:Strings.Importers_AddNew_Button}"
+              Content="{Binding [Importers_AddNew_Button], Source={StaticResource Localizer}}"
               HorizontalAlignment="Stretch"
               Margin="4" />
       <ListBox ItemsSource="{Binding ImporterItems}"
@@ -33,10 +32,10 @@
     <!-- Right panel: form -->
     <ScrollViewer Grid.Column="1">
       <StackPanel Margin="16" Spacing="8">
-        <TextBlock Text="{x:Static res:Strings.Importers_DisplayName_Label}" />
+        <TextBlock Text="{Binding [Importers_DisplayName_Label], Source={StaticResource Localizer}}" />
         <TextBox Text="{Binding DisplayName}" />
 
-        <TextBlock Text="{x:Static res:Strings.Importers_ReportType_Label}" />
+        <TextBlock Text="{Binding [Importers_ReportType_Label], Source={StaticResource Localizer}}" />
         <ComboBox ItemsSource="{Binding AvailableReportTypes}"
                   SelectedItem="{Binding ReportType, Mode=TwoWay}">
           <ComboBox.ItemTemplate>
@@ -46,10 +45,10 @@
           </ComboBox.ItemTemplate>
         </ComboBox>
 
-        <TextBlock Text="{x:Static res:Strings.Importers_TaxpayerProfile_Label}" />
+        <TextBlock Text="{Binding [Importers_TaxpayerProfile_Label], Source={StaticResource Localizer}}" />
         <ComboBox ItemsSource="{Binding AvailableProfiles}"
                   SelectedItem="{Binding SelectedProfile, Mode=TwoWay}"
-                  PlaceholderText="{x:Static res:Strings.Importers_NoProfile_Placeholder}">
+                  PlaceholderText="{Binding [Importers_NoProfile_Placeholder], Source={StaticResource Localizer}}">
           <ComboBox.ItemTemplate>
             <DataTemplate>
               <TextBlock Text="{Binding FullName}" />
@@ -57,10 +56,10 @@
           </ComboBox.ItemTemplate>
         </ComboBox>
 
-        <TextBlock Text="{x:Static res:Strings.Importers_Mailbox_Label}" />
+        <TextBlock Text="{Binding [Importers_Mailbox_Label], Source={StaticResource Localizer}}" />
         <ComboBox ItemsSource="{Binding AvailableMailboxes}"
                   SelectedItem="{Binding SelectedMailbox, Mode=TwoWay}"
-                  PlaceholderText="{x:Static res:Strings.Importers_NoMailbox_Placeholder}">
+                  PlaceholderText="{Binding [Importers_NoMailbox_Placeholder], Source={StaticResource Localizer}}">
           <ComboBox.ItemTemplate>
             <DataTemplate>
               <TextBlock>
@@ -70,25 +69,25 @@
           </ComboBox.ItemTemplate>
         </ComboBox>
 
-        <TextBlock Text="{x:Static res:Strings.Importers_FromFilter_Label}" />
+        <TextBlock Text="{Binding [Importers_FromFilter_Label], Source={StaticResource Localizer}}" />
         <TextBox Text="{Binding FromFilter}" />
 
-        <TextBlock Text="{x:Static res:Strings.Importers_SubjectFilter_Label}" />
+        <TextBlock Text="{Binding [Importers_SubjectFilter_Label], Source={StaticResource Localizer}}" />
         <TextBox Text="{Binding SubjectFilter}" />
 
-        <TextBlock Text="{x:Static res:Strings.Importers_AttachmentRegex_Label}" />
+        <TextBlock Text="{Binding [Importers_AttachmentRegex_Label], Source={StaticResource Localizer}}" />
         <TextBox Text="{Binding AttachmentRegex}" />
 
-        <TextBlock Text="{x:Static res:Strings.Importers_PaymentNotes_Label}" />
+        <TextBlock Text="{Binding [Importers_PaymentNotes_Label], Source={StaticResource Localizer}}" />
         <TextBox Text="{Binding PaymentNotes}"
                  AcceptsReturn="True"
                  MinLines="3" />
 
         <StackPanel Orientation="Horizontal" Spacing="8">
           <Button Command="{Binding SaveCommand}"
-                  Content="{x:Static res:Strings.Importers_Save_Button}" />
+                  Content="{Binding [Importers_Save_Button], Source={StaticResource Localizer}}" />
           <Button Command="{Binding DeleteCommand}"
-                  Content="{x:Static res:Strings.Importers_Delete_Button}" />
+                  Content="{Binding [Importers_Delete_Button], Source={StaticResource Localizer}}" />
         </StackPanel>
 
         <TextBlock Text="{Binding ErrorMessage}"

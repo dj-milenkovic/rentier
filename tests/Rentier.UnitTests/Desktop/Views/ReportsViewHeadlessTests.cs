@@ -118,8 +118,8 @@ public class ReportsViewHeadlessTests
         window.UpdateLayout();
         Dispatcher.UIThread.RunJobs();
 
-        FindButton(window, Rentier.Desktop.Resources.Strings.Reports_Page_Previous).IsVisible.Should().BeTrue();
-        FindButton(window, Rentier.Desktop.Resources.Strings.Reports_Page_Next).IsVisible.Should().BeTrue();
+        FindButton(window, "Reports_Page_Previous").IsVisible.Should().BeTrue();
+        FindButton(window, "Reports_Page_Next").IsVisible.Should().BeTrue();
 
         window.Close();
     }
@@ -173,7 +173,7 @@ public class ReportsViewHeadlessTests
         window.UpdateLayout();
         Dispatcher.UIThread.RunJobs();
 
-        FindButton(window, Rentier.Desktop.Resources.Strings.Reports_Page_Next).IsEnabled.Should().BeTrue();
+        FindButton(window, "Reports_Page_Next").IsEnabled.Should().BeTrue();
 
         window.Close();
     }
@@ -323,8 +323,27 @@ public class ReportsViewHeadlessTests
         "IBKR \u2013 Jan 2025",
         new DateOnly(2025, 1, 10));
 
-    private static Button FindButton(Window window, string content)
-        => window.GetVisualDescendants()
+    /// <summary>
+    /// Finds a button by its LOCALIZATION KEY — e.g. "Reports_Page_Previous".
+    /// Resolves the display text through the Localizer resource (respects current culture).
+    /// </summary>
+    private static Button FindButton(Window window, string localizationKey)
+    {
+        var localizedText = GetLocalizedText(localizationKey);
+        return window.GetVisualDescendants()
             .OfType<Button>()
-            .Single(button => button.Content is string text && text == content);
+            .Single(button => button.Content is string text && text == localizedText);
+    }
+
+    private static string GetLocalizedText(string key)
+    {
+        if (Avalonia.Application.Current?.TryGetResource("Localizer",
+            Avalonia.Styling.ThemeVariant.Default, out var localizer) == true
+            && localizer is Rentier.Desktop.Services.ILocalizationService loc)
+            return loc[key];
+        // Fallback: use English strings via reflection
+        return typeof(Rentier.Desktop.Resources.Strings)
+            .GetProperty(key, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+            ?.GetValue(null) as string ?? $"[{key}]";
+    }
 }

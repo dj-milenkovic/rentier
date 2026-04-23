@@ -4,7 +4,6 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:reactive="http://reactiveui.net"
     xmlns:vm="using:Rentier.Desktop.ViewModels"
-    xmlns:res="using:Rentier.Desktop.Resources"
     xmlns:local="using:Rentier.Desktop.Converters"
     x:Class="Rentier.Desktop.Views.FilingsView"
     x:CompileBindings="False">
@@ -20,15 +19,15 @@
       <StackPanel Orientation="Horizontal" Spacing="8">
         <RadioButton GroupName="FilingFilter"
                      IsChecked="{Binding ShowAll, Converter={x:Static local:InvertBoolConverter.Instance}}"
-                     Content="{x:Static res:Strings.Filings_Filter_Unpaid}" />
+                     Content="{Binding [Filings_Filter_Unpaid], Source={StaticResource Localizer}}" />
         <RadioButton GroupName="FilingFilter"
                      IsChecked="{Binding ShowAll}"
-                     Content="{x:Static res:Strings.Filings_Filter_All}" />
+                     Content="{Binding [Filings_Filter_All], Source={StaticResource Localizer}}" />
         <TextBlock Text="{Binding SortIndicatorDisplay}" Foreground="{DynamicResource RentierTextSecondaryBrush}" FontSize="11" VerticalAlignment="Center" />
       </StackPanel>
-      <Button Content="{x:Static res:Strings.ManualFiling_Title}"
+      <Button Content="{Binding [ManualFiling_Title], Source={StaticResource Localizer}}"
               Command="{Binding NewFilingCommand}"
-              ToolTip.Tip="{x:Static res:Strings.Filings_Toolbar_NewFiling}"
+              ToolTip.Tip="{Binding [Filings_Toolbar_NewFiling], Source={StaticResource Localizer}}"
               HorizontalAlignment="Right" Margin="0,0,8,0"
               DockPanel.Dock="Right" />
     </DockPanel>
@@ -54,24 +53,24 @@
       </Grid.ColumnDefinitions>
       <TextBlock Grid.Column="0" Text="{Binding ErrorMessage}"
                  Foreground="{DynamicResource RentierDangerForegroundBrush}" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,4" />
-      <Button Grid.Column="1" Content="{x:Static res:Strings.Filings_Error_Dismiss}"
+      <Button Grid.Column="1" Content="{Binding [Filings_Error_Dismiss], Source={StaticResource Localizer}}"
               Command="{Binding ClearErrorCommand}" VerticalAlignment="Center" Margin="4,0,0,0" />
     </Grid>
 
     <!-- Pagination bar -->
     <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="8"
                 Margin="8" HorizontalAlignment="Center">
-      <Button Content="{x:Static res:Strings.Filings_Page_Previous}"
+      <Button Content="{Binding [Filings_Page_Previous], Source={StaticResource Localizer}}"
               Command="{Binding PreviousPageCommand}" />
       <TextBlock Text="{Binding PageIndicator}" VerticalAlignment="Center" />
-      <Button Content="{x:Static res:Strings.Filings_Page_Next}"
+      <Button Content="{Binding [Filings_Page_Next], Source={StaticResource Localizer}}"
               Command="{Binding NextPageCommand}" />
     </StackPanel>
 
     <!-- Empty state -->
     <TextBlock DockPanel.Dock="Top"
                IsVisible="{Binding IsEmpty}"
-               Text="{x:Static res:Strings.Filings_Empty}"
+               Text="{Binding [Filings_Empty], Source={StaticResource Localizer}}"
                HorizontalAlignment="Center" VerticalAlignment="Center"
                Margin="0,40" />
 
@@ -119,7 +118,7 @@
         </DataGridTemplateColumn>
 
         <!-- Status badge: read-only coloured pill showing current filing status -->
-        <DataGridTemplateColumn Header="{x:Static res:Strings.Filings_Col_Status}" Width="90" CanUserSort="False">
+        <DataGridTemplateColumn Header="{Binding [Filings_Col_Status], Source={StaticResource Localizer}}" Width="90" CanUserSort="False">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <Border Background="{Binding Status, Converter={x:Static local:FilingStatusBrushConverter.Instance}}"
@@ -138,23 +137,23 @@
         <!-- REMOVED: replaced by Actions column icon buttons (feat/030) -->
 
         <!-- Income Type column -->
-        <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_IncomeType}" Width="110" Tag="IncomeType"
+        <DataGridTextColumn Header="{Binding [Filings_Col_IncomeType], Source={StaticResource Localizer}}" Width="110" Tag="IncomeType"
           Binding="{Binding IncomeType, Converter={x:Static local:IncomeTypeDisplayConverter.Instance}}" />
 
         <!-- Paying Entity column -->
-        <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_PayingEntity}" Width="*" Tag="PayingEntity"
+        <DataGridTextColumn Header="{Binding [Filings_Col_PayingEntity], Source={StaticResource Localizer}}" Width="*" Tag="PayingEntity"
           Binding="{Binding PayingEntity}" />
 
         <!-- Filing Deadline column -->
-        <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_Deadline}" Width="120" Tag="FilingDeadline"
+        <DataGridTextColumn Header="{Binding [Filings_Col_Deadline], Source={StaticResource Localizer}}" Width="120" Tag="FilingDeadline"
           Binding="{Binding DeadlineDisplay}" />
 
         <!-- Tax Payable column -->
-        <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_TaxPayable}" Width="130" Tag="TaxPayable"
+        <DataGridTextColumn Header="{Binding [Filings_Col_TaxPayable], Source={StaticResource Localizer}}" Width="130" Tag="TaxPayable"
           Binding="{Binding TaxPayableDisplay}" />
 
         <!-- Payment Reference column: editable TextBox for Filed rows only -->
-        <DataGridTemplateColumn Header="{x:Static res:Strings.Filings_Col_PaymentRef}" Width="180" Tag="PaymentReference" CanUserSort="False">
+        <DataGridTemplateColumn Header="{Binding [Filings_Col_PaymentRef], Source={StaticResource Localizer}}" Width="180" Tag="PaymentReference" CanUserSort="False">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <TextBox Text="{Binding PaymentReference}"
@@ -168,7 +167,7 @@
         </DataGridTemplateColumn>
 
         <!-- Actions column: Advance Status (chevron-right, Lucide MIT), Export XML (download, Lucide MIT), Delete (trash-2, Lucide MIT) -->
-        <DataGridTemplateColumn Header="{x:Static res:Strings.Filings_Col_Actions}" Width="Auto" CanUserSort="False">
+        <DataGridTemplateColumn Header="{Binding [Filings_Col_Actions], Source={StaticResource Localizer}}" Width="Auto" CanUserSort="False">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <StackPanel Orientation="Horizontal" Spacing="2"
@@ -183,15 +182,15 @@
                 </Button>
                 <!-- Export XML: download (Lucide, MIT) -->
                 <Button Command="{Binding ExportCommand}"
-                        AutomationProperties.Name="{x:Static res:Strings.Filings_Tooltip_Export}"
-                        ToolTip.Tip="{x:Static res:Strings.Filings_Tooltip_Export}"
+                        AutomationProperties.Name="{Binding [Filings_Tooltip_Export], Source={StaticResource Localizer}}"
+                        ToolTip.Tip="{Binding [Filings_Tooltip_Export], Source={StaticResource Localizer}}"
                         Padding="4" Background="Transparent" BorderThickness="0">
                   <PathIcon Data="{StaticResource ExportPpOpoXmlIcon}" Width="16" Height="16" />
                 </Button>
                 <!-- Delete: trash-2 (Lucide, MIT) -->
                 <Button Command="{Binding DeleteCommand}"
-                        AutomationProperties.Name="{x:Static res:Strings.Filings_Tooltip_Delete}"
-                        ToolTip.Tip="{x:Static res:Strings.Filings_Tooltip_Delete}"
+                        AutomationProperties.Name="{Binding [Filings_Tooltip_Delete], Source={StaticResource Localizer}}"
+                        ToolTip.Tip="{Binding [Filings_Tooltip_Delete], Source={StaticResource Localizer}}"
                         Padding="4" Background="Transparent" BorderThickness="0">
                   <PathIcon Data="{StaticResource TrashIcon}"
                             Foreground="{DynamicResource RentierDangerForegroundBrush}" Width="16" Height="16" />

@@ -4,7 +4,6 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:reactive="http://reactiveui.net"
     xmlns:vm="using:Rentier.Desktop.ViewModels"
-    xmlns:res="using:Rentier.Desktop.Resources"
     xmlns:local="using:Rentier.Desktop.Converters"
     x:Class="Rentier.Desktop.Views.SyncView"
     x:CompileBindings="False">
@@ -20,7 +19,7 @@
 
         <!-- Sync mode row -->
         <Grid ColumnDefinitions="120,*">
-          <TextBlock Grid.Column="0" Text="{x:Static res:Strings.Sync_Mode_Label}" VerticalAlignment="Center" />
+          <TextBlock Grid.Column="0" Text="{Binding [Sync_Mode_Label], Source={StaticResource Localizer}}" VerticalAlignment="Center" />
           <ComboBox Grid.Column="1"
                     ItemsSource="{Binding AvailableSyncModes}"
                     SelectedItem="{Binding SelectedSyncMode}">
@@ -34,7 +33,7 @@
 
         <!-- Duplicate strategy row -->
         <Grid ColumnDefinitions="120,*">
-          <TextBlock Grid.Column="0" Text="{x:Static res:Strings.Sync_Duplicates_Label}" VerticalAlignment="Center" />
+          <TextBlock Grid.Column="0" Text="{Binding [Sync_Duplicates_Label], Source={StaticResource Localizer}}" VerticalAlignment="Center" />
           <ComboBox Grid.Column="1"
                     ItemsSource="{Binding AvailableDuplicateStrategies}"
                     SelectedItem="{Binding SelectedDuplicateStrategy}">
@@ -49,13 +48,13 @@
         <!-- Replay-from-date picker (only shown in ReplayFromDate mode) -->
         <Grid ColumnDefinitions="120,*"
               IsVisible="{Binding IsReplayFromDateMode}">
-          <TextBlock Grid.Column="0" Text="{x:Static res:Strings.Sync_ReplayFrom_Label}" VerticalAlignment="Center" />
+          <TextBlock Grid.Column="0" Text="{Binding [Sync_ReplayFrom_Label], Source={StaticResource Localizer}}" VerticalAlignment="Center" />
           <DatePicker Grid.Column="1"
                       SelectedDate="{Binding ReplayFromDateOffset}" />
         </Grid>
 
         <!-- Full replay warning -->
-        <TextBlock Text="{x:Static res:Strings.Sync_FullReplay_Warning}"
+        <TextBlock Text="{Binding [Sync_FullReplay_Warning], Source={StaticResource Localizer}}"
                    Foreground="{DynamicResource RentierWarningForegroundBrush}"
                    TextWrapping="Wrap"
                    IsVisible="{Binding IsFullReplayMode}" />
@@ -76,10 +75,10 @@
 
     <!-- Header buttons -->
     <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,0,0,12">
-      <Button Content="{x:Static res:Strings.Sync_StartButton}"
+      <Button Content="{Binding [Sync_StartButton], Source={StaticResource Localizer}}"
               Command="{Binding SyncCommand}"
               IsEnabled="{Binding !IsRunning}" />
-      <Button Content="{x:Static res:Strings.Sync_CancelButton}"
+      <Button Content="{Binding [Sync_CancelButton], Source={StaticResource Localizer}}"
               Command="{Binding CancelCommand}"
               IsEnabled="{Binding IsRunning}" />
     </StackPanel>

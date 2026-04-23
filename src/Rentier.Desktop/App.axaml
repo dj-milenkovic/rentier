@@ -11,11 +11,12 @@
     <!-- Rentier control overrides: corner radii, sidebar, accent button, etc. -->
     <StyleInclude Source="avares://Rentier.Desktop/Assets/Styles/Controls.axaml" />
   </Application.Styles>
-  <Application.Resources>
+    <Application.Resources>
     <ResourceDictionary>
       <ResourceDictionary.MergedDictionaries>
         <ResourceInclude Source="avares://Rentier.Desktop/Assets/Icons.axaml" />
       </ResourceDictionary.MergedDictionaries>
+      <!-- Localizer resource is set programmatically in App.axaml.cs -->
     </ResourceDictionary>
   </Application.Resources>
   <Application.DataTemplates>
