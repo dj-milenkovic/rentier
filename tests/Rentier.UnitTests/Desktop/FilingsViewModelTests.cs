@@ -8,6 +8,7 @@ using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
 using Rentier.Desktop.ViewModels;
 using Rentier.Domain.Enums;
+using Rentier.Application.Enums;
 using Xunit;
 
 namespace Rentier.UnitTests;
@@ -84,7 +85,7 @@ public class FilingsViewModelTests
         using var _ = vm.Activator.Activate();
 
         getFilings.Received(1).HandleAsync(
-            Arg.Is<GetFilingsQuery>(q => q.Filter == Application.Enums.FilingFilterMode.Unpaid),
+            Arg.Is<GetFilingsQuery>(q => q.Filter == FilingFilterMode.Unpaid),
             Arg.Any<CancellationToken>());
     }
 
@@ -257,7 +258,7 @@ public class FilingsViewModelTests
         // Second call should use All filter
         getFilings.Received(1).HandleAsync(
             Arg.Is<GetFilingsQuery>(q =>
-                q.Filter == Application.Enums.FilingFilterMode.All && q.Page == 1),
+                q.Filter == FilingFilterMode.All && q.Page == 1),
             Arg.Any<CancellationToken>());
     }
 
@@ -268,7 +269,7 @@ public class FilingsViewModelTests
     {
         var vm = CreateVm();
 
-        vm.SortColumn.Should().Be(Application.Enums.FilingSortColumn.FilingDeadline);
+        vm.SortColumn.Should().Be(FilingSortColumn.FilingDeadline);
         vm.SortDescending.Should().BeTrue();
     }
 
@@ -282,7 +283,7 @@ public class FilingsViewModelTests
         // Default state: FilingDeadline DESC
         getFilings.Received(1).HandleAsync(
             Arg.Is<GetFilingsQuery>(q =>
-                q.SortColumn == Application.Enums.FilingSortColumn.FilingDeadline &&
+                q.SortColumn == FilingSortColumn.FilingDeadline &&
                 q.SortDescending == true),
             Arg.Any<CancellationToken>());
     }
@@ -305,12 +306,12 @@ public class FilingsViewModelTests
 
         // Direction should be toggled to ascending
         vm.SortDescending.Should().BeFalse();
-        vm.SortColumn.Should().Be(Application.Enums.FilingSortColumn.FilingDeadline);
+        vm.SortColumn.Should().Be(FilingSortColumn.FilingDeadline);
 
         // Query sent after toggle should use the new direction
         getFilings.Received().HandleAsync(
             Arg.Is<GetFilingsQuery>(q =>
-                q.SortColumn == Application.Enums.FilingSortColumn.FilingDeadline &&
+                q.SortColumn == FilingSortColumn.FilingDeadline &&
                 q.SortDescending == false),
             Arg.Any<CancellationToken>());
     }
@@ -347,7 +348,7 @@ public class FilingsViewModelTests
         // Click a different column (TaxPayable)
         vm.ApplySortCommand.Execute(("TaxPayable", null)).Subscribe();
 
-        vm.SortColumn.Should().Be(Application.Enums.FilingSortColumn.TaxPayable);
+        vm.SortColumn.Should().Be(FilingSortColumn.TaxPayable);
         vm.SortDescending.Should().BeFalse(); // ascending when changing column
         vm.CurrentPage.Should().Be(1);        // page reset to 1
     }
@@ -363,7 +364,7 @@ public class FilingsViewModelTests
         vm.ApplySortCommand.Execute(("UnknownColumn", null)).Subscribe();
 
         // Sort state unchanged
-        vm.SortColumn.Should().Be(Application.Enums.FilingSortColumn.FilingDeadline);
+        vm.SortColumn.Should().Be(FilingSortColumn.FilingDeadline);
         vm.SortDescending.Should().BeTrue();
     }
 

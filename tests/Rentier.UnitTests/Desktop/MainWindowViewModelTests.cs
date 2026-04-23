@@ -107,13 +107,31 @@ public class MainWindowViewModelTests
 
         var themeService = Substitute.For<IThemeService>();
         themeService.GetPreference().Returns(ThemePreference.System);
-        var appearanceVm = new AppearanceSettingsViewModel(themeService);
+        var locService = Substitute.For<ILocalizationService>();
+        locService.CurrentCultureCode.Returns("sr-Latn");
+        locService.CultureChanged.Returns(System.Reactive.Linq.Observable.Never<string>());
+        var setPreferenceCmd = Substitute.For<ICommandHandler<SetUserPreferenceCommand, Result<VoidResult, Error>>>();
+        setPreferenceCmd.HandleAsync(Arg.Any<SetUserPreferenceCommand>(), Arg.Any<CancellationToken>())
+            .Returns(Result<VoidResult, Error>.Success(VoidResult.Value));
+        var appearanceVm = new AppearanceSettingsViewModel(themeService, locService, setPreferenceCmd);
 
         return new SettingsViewModel(profileVm, holidayVm, mailboxVm, importerVm, appearanceVm);
     }
 
+    private static ILocalizationService BuildLocalizationService()
+    {
+        var locService = Substitute.For<ILocalizationService>();
+        locService.CultureChanged.Returns(System.Reactive.Linq.Observable.Never<string>());
+        locService["Nav_Dashboard"].Returns("Dashboard");
+        locService["Nav_Filings"].Returns("Filings");
+        locService["Nav_Reports"].Returns("Reports");
+        locService["Nav_Sync"].Returns("Sync");
+        locService["Nav_Settings"].Returns("Settings");
+        return locService;
+    }
+
     private static MainWindowViewModel CreateVm() =>
-        new(BuildProvider(), BuildSettingsVm());
+        new(BuildProvider(), BuildSettingsVm(), BuildLocalizationService());
 
     // ── Constructor tests ─────────────────────────────────────────────────────
 

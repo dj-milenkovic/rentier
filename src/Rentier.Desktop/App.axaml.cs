@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.Interfaces;
+using Rentier.Application.Queries;
 using Rentier.Desktop.Composition;
 using Rentier.Desktop.Services;
 using Rentier.Desktop.ViewModels;
@@ -26,6 +27,14 @@ public partial class App : Avalonia.Application
 
     public override async void OnFrameworkInitializationCompleted()
     {
+        // Set up a fallback LocalizationService immediately so AXAML bindings work
+        // even if DI initialization fails (e.g., in headless test environments).
+        // English is used as the initial fallback — the saved language preference
+        // (defaulting to sr-Latn) is applied below after DI and DB are initialized.
+        var fallbackLocalizer = new LocalizationService();
+        fallbackLocalizer.SetCulture("en");
+        Avalonia.Application.Current!.Resources["Localizer"] = fallbackLocalizer;
+
         try
         {
             var dbPath = System.IO.Path.Combine(
@@ -50,6 +59,18 @@ public partial class App : Avalonia.Application
             // Apply the user's saved theme before the window is shown
             var themeService = provider.GetRequiredService<IThemeService>();
             Services.ThemeService.ApplyOnStartup(themeService.GetPreference());
+
+            // T032: Read saved language preference, apply culture, then register Localizer resource
+            var localizationService = provider.GetRequiredService<ILocalizationService>();
+            var getLangHandler = provider.GetRequiredService<
+                IQueryHandler<GetUserPreferenceQuery, Result<string?, Error>>>();
+            var langResult = await getLangHandler.HandleAsync(new GetUserPreferenceQuery("Language"));
+            var savedLang = langResult.IsSuccess ? langResult.Value : null;
+            localizationService.SetCulture(savedLang ?? "sr-Latn");
+
+            // T024: Set the DI singleton as the AXAML Localizer resource (NOT a new instance)
+            // <!-- Localizer resource is set programmatically in App.axaml.cs -->
+            Avalonia.Application.Current!.Resources["Localizer"] = localizationService;
 
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {

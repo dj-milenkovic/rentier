@@ -2,20 +2,20 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Rentier.Desktop.ViewModels"
              xmlns:views="using:Rentier.Desktop.Views"
-             xmlns:res="using:Rentier.Desktop.Resources"
              x:Class="Rentier.Desktop.Views.SettingsView"
-             x:DataType="vm:SettingsViewModel">
+             x:DataType="vm:SettingsViewModel"
+             x:CompileBindings="False">
   <TabControl>
-    <TabItem Header="{x:Static res:Strings.Settings_Profile_TabHeader}">
+    <TabItem Header="{Binding [Settings_Profile_TabHeader], Source={StaticResource Localizer}}">
       <views:ProfileSettingsView DataContext="{Binding ProfileTab}" />
     </TabItem>
-    <TabItem Header="{x:Static res:Strings.Settings_Holidays_TabHeader}">
+    <TabItem Header="{Binding [Settings_Holidays_TabHeader], Source={StaticResource Localizer}}">
       <views:HolidaySettingsView DataContext="{Binding HolidayTab}" />
     </TabItem>
-    <TabItem Header="{x:Static res:Strings.Settings_Mailboxes_TabHeader}">
+    <TabItem Header="{Binding [Settings_Mailboxes_TabHeader], Source={StaticResource Localizer}}">
       <views:MailboxSettingsView DataContext="{Binding MailboxesTab}" />
     </TabItem>
-    <TabItem Header="{x:Static res:Strings.Settings_Importers_TabHeader}">
+    <TabItem Header="{Binding [Settings_Importers_TabHeader], Source={StaticResource Localizer}}">
       <views:ImporterSettingsView DataContext="{Binding ImportersTab}" />
     </TabItem>
     <TabItem Header="Appearance">

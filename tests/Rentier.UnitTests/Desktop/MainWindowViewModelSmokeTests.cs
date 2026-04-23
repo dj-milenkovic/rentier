@@ -47,7 +47,13 @@ public class MainWindowViewModelSmokeTests
     {
         var themeService = Substitute.For<IThemeService>();
         themeService.GetPreference().Returns(ThemePreference.System);
-        return new AppearanceSettingsViewModel(themeService);
+        var locService = Substitute.For<ILocalizationService>();
+        locService.CurrentCultureCode.Returns("sr-Latn");
+        locService.CultureChanged.Returns(System.Reactive.Linq.Observable.Never<string>());
+        var setCmd = Substitute.For<ICommandHandler<SetUserPreferenceCommand, Result<VoidResult, Error>>>();
+        setCmd.HandleAsync(Arg.Any<SetUserPreferenceCommand>(), Arg.Any<CancellationToken>())
+            .Returns(Result<VoidResult, Error>.Success(VoidResult.Value));
+        return new AppearanceSettingsViewModel(themeService, locService, setCmd);
     }
 
     private static IServiceProvider CreateProvider()
@@ -100,8 +106,10 @@ public class MainWindowViewModelSmokeTests
     [Fact]
     public void MainWindowViewModel_Constructed_NavigationEntriesHasFiveItems()
     {
+        var locService = Substitute.For<ILocalizationService>();
+        locService.CultureChanged.Returns(System.Reactive.Linq.Observable.Never<string>());
         var settingsVm = new SettingsViewModel(CreateProfileVm(), CreateHolidayVm(), CreateMailboxVm(), CreateImporterVm(), CreateAppearanceVm());
-        var vm = new MainWindowViewModel(CreateProvider(), settingsVm);
+        var vm = new MainWindowViewModel(CreateProvider(), settingsVm, locService);
 
         vm.NavigationEntries.Count.Should().Be(5);
     }
@@ -109,8 +117,10 @@ public class MainWindowViewModelSmokeTests
     [Fact]
     public void MainWindowViewModel_Constructed_InitialViewModelIsDashboardViewModel()
     {
+        var locService = Substitute.For<ILocalizationService>();
+        locService.CultureChanged.Returns(System.Reactive.Linq.Observable.Never<string>());
         var settingsVm = new SettingsViewModel(CreateProfileVm(), CreateHolidayVm(), CreateMailboxVm(), CreateImporterVm(), CreateAppearanceVm());
-        var vm = new MainWindowViewModel(CreateProvider(), settingsVm);
+        var vm = new MainWindowViewModel(CreateProvider(), settingsVm, locService);
 
         vm.CurrentViewModel.Should().BeOfType<DashboardViewModel>();
     }

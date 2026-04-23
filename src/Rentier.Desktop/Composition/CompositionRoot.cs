@@ -5,11 +5,13 @@ using Rentier.Application.DTOs;
 using Rentier.Application.Handlers;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
+using Rentier.Application.Repositories;
 using Rentier.Application.Services;
 using Rentier.Desktop.Dialogs;
 using Rentier.Desktop.Resources;
 using Rentier.Desktop.Services;
 using Rentier.Desktop.ViewModels;
+using Rentier.Infrastructure.Repositories;
 
 namespace Rentier.Desktop.Composition;
 
@@ -23,6 +25,20 @@ public static class CompositionRoot
     {
         // Theme service (Desktop-only UI concern — not an Application layer service)
         services.AddSingleton<IThemeService, ThemeService>();
+
+        // T030: Localization service (singleton — same instance used by AXAML Localizer resource)
+        services.AddSingleton<ILocalizationService, LocalizationService>();
+
+        // T030: UserPreference infrastructure repository
+        services.AddTransient<IUserPreferenceRepository, UserPreferenceRepository>();
+
+        // T030: UserPreference CQRS handlers
+        services.AddTransient<
+            IQueryHandler<GetUserPreferenceQuery, Result<string?, Error>>,
+            GetUserPreferenceQueryHandler>();
+        services.AddTransient<
+            ICommandHandler<SetUserPreferenceCommand, Result<VoidResult, Error>>,
+            SetUserPreferenceCommandHandler>();
 
         // Application shared services
         services.AddTransient<ManualFilingCalculator>();

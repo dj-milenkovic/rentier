@@ -242,4 +242,14 @@ public static class Strings
     public static string ManualFiling_Cancel_Discard_Message => "You have unsaved changes. Are you sure you want to cancel?";
     public static string ManualFiling_Cancel_Discard_Confirm => "Discard";
     public static string ManualFiling_Cancel_Discard_Keep => "Keep Editing";
+    public static string Settings_Language => "Language";
+    public static string Settings_Appearance_TabHeader => "Appearance";
+    public static string Appearance_Header => "Appearance";
+    public static string Appearance_Subheader => "Customize the visual theme of Rentier.";
+    public static string Theme_Header => "Theme";
+    public static string Theme_System => "Follow system setting";
+    public static string Theme_Light => "Light";
+    public static string Theme_Dark => "Dark";
+    public static string Theme_ImmediateNote => "Changes take effect immediately.";
+    public static string Language_Header => "Language";
 }
