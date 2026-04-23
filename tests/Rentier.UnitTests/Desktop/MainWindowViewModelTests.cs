@@ -6,6 +6,7 @@ using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
+using Rentier.Desktop.Services;
 using Rentier.Desktop.ViewModels;
 using Xunit;
 
@@ -104,7 +105,11 @@ public class MainWindowViewModelTests
             getImporters, getProfile, getMailboxes,
             addImporter, updateImporter, deleteImporter);
 
-        return new SettingsViewModel(profileVm, holidayVm, mailboxVm, importerVm);
+        var themeService = Substitute.For<IThemeService>();
+        themeService.GetPreference().Returns(ThemePreference.System);
+        var appearanceVm = new AppearanceSettingsViewModel(themeService);
+
+        return new SettingsViewModel(profileVm, holidayVm, mailboxVm, importerVm, appearanceVm);
     }
 
     private static MainWindowViewModel CreateVm() =>
@@ -190,5 +195,58 @@ public class MainWindowViewModelTests
         reportsVm.ViewFilingsCommand.Execute(reportId).Subscribe();
 
         vm.SelectedEntry.ViewModel.Should().BeOfType<FilingsViewModel>();
+    }
+
+    // ── ReportIdFilter cleared on back-navigation (Bug #2 regression tests) ──
+
+    [Fact]
+    public void Navigate_FromDashboardToFilings_ClearsReportIdFilter()
+    {
+        var vm = CreateVm();
+        using var _ = vm.Activator.Activate();
+
+        // Pre-set a stale report filter via Reports → Filings navigation
+        var reportId = Guid.NewGuid();
+        var reportsVm = (ReportsViewModel)vm.NavigationEntries
+            .First(e => e.ViewModel is ReportsViewModel).ViewModel;
+        reportsVm.ViewFilingsCommand.Execute(reportId).Subscribe();
+
+        var filingsVm = (FilingsViewModel)vm.NavigationEntries
+            .First(e => e.ViewModel is FilingsViewModel).ViewModel;
+        filingsVm.ReportIdFilter.Should().Be(reportId); // precondition
+
+        // Navigate to Filings from Dashboard — must clear the stale filter
+        var dashboardVm = (DashboardViewModel)vm.NavigationEntries
+            .First(e => e.ViewModel is DashboardViewModel).ViewModel;
+        dashboardVm.NavigateToFilingsCommand.Execute().Subscribe();
+
+        filingsVm.ReportIdFilter.Should().BeNull();
+    }
+
+    [Fact]
+    public void Navigate_BackFromManualFilingCancel_ClearsReportIdFilter()
+    {
+        var vm = CreateVm();
+        using var _ = vm.Activator.Activate();
+
+        // Pre-set a stale report filter
+        var reportId = Guid.NewGuid();
+        var reportsVm = (ReportsViewModel)vm.NavigationEntries
+            .First(e => e.ViewModel is ReportsViewModel).ViewModel;
+        reportsVm.ViewFilingsCommand.Execute(reportId).Subscribe();
+
+        var filingsVm = (FilingsViewModel)vm.NavigationEntries
+            .First(e => e.ViewModel is FilingsViewModel).ViewModel;
+        filingsVm.ReportIdFilter.Should().Be(reportId); // precondition
+
+        // Navigate to ManualFiling
+        filingsVm.NewFilingCommand.Execute().Subscribe();
+        var manualVm = vm.CurrentViewModel as ManualFilingViewModel;
+        manualVm.Should().NotBeNull();
+
+        // Cancel (form not dirty → no confirmation dialog) → navigates back
+        manualVm!.CancelCommand.Execute().Subscribe();
+
+        filingsVm.ReportIdFilter.Should().BeNull();
     }
 }

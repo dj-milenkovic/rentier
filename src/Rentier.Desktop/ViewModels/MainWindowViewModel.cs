@@ -38,8 +38,12 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
         SettingsViewModel settingsVm)
     {
         // ── Dashboard navigation ──────────────────────────────────────────────
+        // filingsVm is declared here (before navigateToDashboardFilings) so all
+        // navigation callbacks can reference it via closure.
+        FilingsViewModel? filingsVm = null;
         Action navigateToDashboardFilings = () =>
         {
+            if (filingsVm is not null) filingsVm.ReportIdFilter = null;
             var filingsEntry = NavigationEntries?.FirstOrDefault(e => e.ViewModel is FilingsViewModel);
             if (filingsEntry is not null)
                 SelectedEntry = filingsEntry;
@@ -49,14 +53,12 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
             provider, navigateToDashboardFilings);
 
         // ── Manual filing navigation (back to filings) ────────────────────────
-        // Declared here so the closure can reference filingsVm after it is created below.
-        FilingsViewModel? filingsVm = null;
         Action navigateToManualFiling = () =>
         {
             var manualVm = ActivatorUtilities.CreateInstance<ManualFilingViewModel>(
                 provider, (Action)(() =>
                 {
-                    if (filingsVm is not null) filingsVm.ShowAll = true;
+                    if (filingsVm is not null) filingsVm.ReportIdFilter = null;
                     var filingsEntry = NavigationEntries?.FirstOrDefault(e => e.ViewModel is FilingsViewModel);
                     if (filingsEntry is not null) SelectedEntry = filingsEntry;
                 }));
@@ -85,6 +87,7 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
         // ── Sync navigation ───────────────────────────────────────────────────
         Action navigateToFilings_sync = () =>
         {
+            if (filingsVm is not null) filingsVm.ReportIdFilter = null;
             var filingsEntry = NavigationEntries?.FirstOrDefault(e => e.ViewModel is FilingsViewModel);
             if (filingsEntry is not null)
                 SelectedEntry = filingsEntry;
