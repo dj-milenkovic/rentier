@@ -20,6 +20,11 @@ public static class Strings
     public static string Nav_Reports => "Reports";
     public static string Nav_Sync => "Sync";
     public static string Nav_Settings => "Settings";
+    public static string Nav_Settings_Profile => "Profile";
+    public static string Nav_Settings_Holidays => "Holidays";
+    public static string Nav_Settings_Mailboxes => "Mailboxes";
+    public static string Nav_Settings_Importers => "Importers";
+    public static string Nav_Settings_Language => "Language";
     public static string Dashboard_PendingCount => "Pending";
     public static string Dashboard_FiledCount => "Filed";
     public static string Dashboard_PaidCount => "Paid";

@@ -20,6 +20,12 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
     private ReactiveObject _currentViewModel;
     private NavigationEntry _selectedEntry;
 
+    /// <summary>
+    /// Tracks the last content entry that was navigated to (for restoring selection after
+    /// a group header is clicked).
+    /// </summary>
+    private NavigationEntry? _lastContentEntry;
+
     public IReadOnlyList<NavigationEntry> NavigationEntries { get; }
 
     public ReactiveObject CurrentViewModel
@@ -36,7 +42,6 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
 
     public MainWindowViewModel(
         IServiceProvider provider,
-        SettingsViewModel settingsVm,
         ILocalizationService localizationService)
     {
         // ── Dashboard navigation ──────────────────────────────────────────────
@@ -98,23 +103,72 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
         var syncVm = ActivatorUtilities.CreateInstance<SyncViewModel>(
             provider, navigateToFilings_sync);
 
+        // ── Settings sub-ViewModels (singleton — resolved once per app session) ───
+        var profileVm    = provider.GetRequiredService<ProfileSettingsViewModel>();
+        var holidayVm    = provider.GetRequiredService<HolidaySettingsViewModel>();
+        var mailboxVm    = provider.GetRequiredService<MailboxSettingsViewModel>();
+        var importerVm   = provider.GetRequiredService<ImporterSettingsViewModel>();
+        var appearanceVm = provider.GetRequiredService<AppearanceSettingsViewModel>();
+
+        // ── Settings group: group header + 5 child entries ────────────────────
+        // Build the group header first (no children yet — set after children are created).
+        var settingsGroup = new NavigationEntry(localizationService["Nav_Settings"], viewModel: null, Icon: NavIcon("NavSettingsGroupIcon"))
+        {
+            IsGroup    = true,
+            IsExpanded = true,
+        };
+
+        // Build child entries with ParentGroup referencing the group header.
+        var profileChild   = new NavigationEntry(localizationService["Nav_Settings_Profile"],    profileVm,    Icon: NavIcon("NavProfileIcon"))    { IndentLevel = 1, ParentGroup = settingsGroup };
+        var holidaysChild  = new NavigationEntry(localizationService["Nav_Settings_Holidays"],   holidayVm,    Icon: NavIcon("NavHolidaysIcon"))    { IndentLevel = 1, ParentGroup = settingsGroup };
+        var mailboxesChild = new NavigationEntry(localizationService["Nav_Settings_Mailboxes"],  mailboxVm,    Icon: NavIcon("NavMailboxesIcon"))   { IndentLevel = 1, ParentGroup = settingsGroup };
+        var importersChild = new NavigationEntry(localizationService["Nav_Settings_Importers"],  importerVm,   Icon: NavIcon("NavImportersIcon"))   { IndentLevel = 1, ParentGroup = settingsGroup };
+        var languageChild  = new NavigationEntry(localizationService["Nav_Settings_Language"],   appearanceVm, Icon: NavIcon("NavLanguageIcon"))    { IndentLevel = 1, ParentGroup = settingsGroup };
+
+        // Wire children into the group header.
+        settingsGroup.Children = new[] { profileChild, holidaysChild, mailboxesChild, importersChild, languageChild };
+
+        // ── Flat navigation list (group header + children are all siblings) ────
         NavigationEntries = new List<NavigationEntry>
         {
             new(localizationService["Nav_Dashboard"], dashboardVm, Icon: NavIcon("NavHomeIcon")),
             new(localizationService["Nav_Filings"],   filingsVm,   Icon: NavIcon("NavFilingsIcon")),
             new(localizationService["Nav_Reports"],   reportsVm,   Icon: NavIcon("NavReportsIcon")),
             new(localizationService["Nav_Sync"],      syncVm,      Icon: NavIcon("NavSyncIcon")),
-            new(localizationService["Nav_Settings"],  settingsVm,  Icon: NavIcon("NavSettingsIcon"))
+            settingsGroup,
+            profileChild,    // index 5
+            holidaysChild,   // index 6
+            mailboxesChild,  // index 7
+            importersChild,  // index 8
+            languageChild,   // index 9
         };
 
-        _selectedEntry = NavigationEntries[0];
-        _currentViewModel = dashboardVm;
+        _selectedEntry     = NavigationEntries[0];
+        _currentViewModel  = dashboardVm;
+        _lastContentEntry  = NavigationEntries[0];
 
         // M1: subscription moved into WhenActivated so it is disposed on deactivation
         this.WhenActivated(disposables =>
         {
             this.WhenAnyValue(x => x.SelectedEntry)
-                .Subscribe(entry => { if (entry is not null) CurrentViewModel = entry.ViewModel; })
+                .Subscribe(entry =>
+                {
+                    if (entry is null) return;
+
+                    if (entry.IsGroup)
+                    {
+                        // Toggle the group expand/collapse state; do NOT change CurrentViewModel.
+                        entry.ToggleExpanded();
+                        // Immediately restore selection to the last real content entry so the
+                        // ListBox does not leave a stale highlight on the group header row.
+                        SelectedEntry = _lastContentEntry ?? NavigationEntries[0];
+                    }
+                    else if (entry.ViewModel is not null)
+                    {
+                        _lastContentEntry = entry;
+                        CurrentViewModel  = entry.ViewModel;
+                    }
+                })
                 .DisposeWith(disposables);
 
             localizationService.CultureChanged
@@ -126,18 +180,29 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
 
     private void UpdateNavigationLabels(ILocalizationService loc)
     {
-        var keyMap = new Dictionary<Type, string>
+        foreach (var entry in NavigationEntries)
         {
-            [typeof(DashboardViewModel)] = "Nav_Dashboard",
-            [typeof(FilingsViewModel)]   = "Nav_Filings",
-            [typeof(ReportsViewModel)]   = "Nav_Reports",
-            [typeof(SyncViewModel)]      = "Nav_Sync",
-            [typeof(SettingsViewModel)]  = "Nav_Settings",
-        };
+            if (entry.IsGroup)
+            {
+                entry.Label = loc["Nav_Settings"];
+                continue;
+            }
 
-        foreach (var entry in NavigationEntries.Where(e => e.IsVisible))
-        {
-            if (keyMap.TryGetValue(entry.ViewModel.GetType(), out var key))
+            var key = entry.ViewModel switch
+            {
+                DashboardViewModel          => "Nav_Dashboard",
+                FilingsViewModel            => "Nav_Filings",
+                ReportsViewModel            => "Nav_Reports",
+                SyncViewModel               => "Nav_Sync",
+                ProfileSettingsViewModel    => "Nav_Settings_Profile",
+                HolidaySettingsViewModel    => "Nav_Settings_Holidays",
+                MailboxSettingsViewModel    => "Nav_Settings_Mailboxes",
+                ImporterSettingsViewModel   => "Nav_Settings_Importers",
+                AppearanceSettingsViewModel => "Nav_Settings_Language",
+                _                           => null,
+            };
+
+            if (key is not null)
                 entry.Label = loc[key];
         }
     }
