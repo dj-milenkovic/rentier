@@ -1927,6 +1927,241 @@ No exceptions as flow control. All strings in Strings.resx.
 
 ---
 
+## Tier 11 — UX Personalisation Wave (2026-04-23)
+
+These features improve personalisation and navigability: users can now choose
+their UI language, and the settings area is restructured from a flat tabbed
+pane into individual sub-menu items in the sidebar for faster, more direct
+access to each settings section.
+
+---
+
+### 035 · Language Selection (English / Serbian)
+
+**What it delivers**: The user can choose the application display language —
+English or Serbian (Latin) — from a Settings sub-view. The selected language
+is persisted in SQLite and applied immediately across the entire UI without
+requiring an app restart. All visible strings switch to the chosen locale.
+
+**UX contract**:
+- A new "Language" section appears in the Settings area (visible once
+  Settings Navigation feature 036 is applied; can sit as a tab until then).
+- The selector shows two options: "English" and "Srpski" (Serbian).
+- Changing the selection applies the new locale immediately; no restart prompt.
+- The selected language survives app restart (persisted to SQLite).
+- Default language is English.
+
+**Layers touched**: Domain (new `AppLanguage` enum: `English`, `Serbian`),
+Application (new `IAppPreferencesRepository` interface;
+`SetLanguageCommand(AppLanguage Language)` + Handler;
+`GetAppPreferencesQuery` + Handler returning `AppPreferencesDto`),
+Infrastructure (new `AppPreferences` EF entity, `AppPreferencesRepository`
+impl, EF migration; `LocalizationService` that switches
+`CultureInfo.CurrentUICulture` and raises a change notification),
+Desktop (new `LanguageSettingsViewModel`; new `LanguageSettingsView.axaml`
+with a `ComboBox` or `RadioButton` group; wire `LocalizationService` into
+the Avalonia resource pipeline so `Strings.resx` / `Strings.sr.resx`
+resources hot-swap on culture change; `CompositionRoot` — register new
+handler and service; `Strings.resx` — add all new UI strings;
+`Strings.sr.resx` — Serbian translations for every existing and new string).
+
+**Depends on**: `001-initial-setup`
+
+**Status**: 🗓 Planned
+
+**Spec-kit prompt**:
+```
+Implement language selection for Rentier. The user can switch the UI between
+English and Serbian (Latin script) from the Settings page. The choice persists
+across restarts and applies immediately without requiring a restart.
+
+--- Domain ---
+Add an AppLanguage enum to Domain:
+  public enum AppLanguage { English, Serbian }
+
+--- Application ---
+Create IAppPreferencesRepository in Application/Interfaces/:
+  Task<AppPreferences?> GetAsync(CancellationToken ct);
+  Task SaveAsync(AppPreferences prefs, CancellationToken ct);
+
+Add AppPreferencesDto record: AppLanguage Language.
+
+Create GetAppPreferencesQuery + GetAppPreferencesQueryHandler:
+  Returns AppPreferencesDto with Language (default AppLanguage.English when
+  no row exists yet).
+
+Create SetLanguageCommand(AppLanguage Language) + SetLanguageCommandHandler:
+  Upserts the AppPreferences row and calls ILocalizationService.ApplyLanguage.
+
+Create ILocalizationService interface in Application/Interfaces/:
+  void ApplyLanguage(AppLanguage language);
+
+--- Infrastructure ---
+Add AppPreferences EF entity: { Id (int PK, always 1), Language (int) }.
+Implement AppPreferencesRepository using AppDbContext. Add EF migration.
+Implement LocalizationService:
+  ApplyLanguage sets CultureInfo.CurrentUICulture and
+  CultureInfo.CurrentCulture to CultureInfo("en") or CultureInfo("sr-Latn-RS")
+  and raises a static event LocalizationService.LanguageChanged that the UI
+  layer subscribes to in order to refresh string bindings.
+
+--- Desktop ---
+1. Add Strings.sr.resx with Serbian (Latin) translations of every string in
+   Strings.resx. Use casual, clear Serbian register (not legalese).
+2. Add a LanguageSettingsViewModel:
+   - AppLanguage SelectedLanguage (initialised from GetAppPreferencesQuery)
+   - ReactiveCommand ApplyCommand (enabled when selection differs from current)
+   - On ApplyCommand: dispatch SetLanguageCommand; on success update UI.
+   - IsLoading, ErrorMessage standard props.
+3. Add LanguageSettingsView.axaml:
+   - Header: "Language / Jezik"
+   - RadioButton or ComboBox with two options:
+       "English" (AppLanguage.English)
+       "Srpski"  (AppLanguage.Serbian)
+   - "Apply" Button bound to ApplyCommand.
+4. Subscribe to LocalizationService.LanguageChanged in MainViewModel (or
+   App.axaml.cs) and call a RefreshStrings() method that invalidates any
+   static string resource bindings. If Avalonia's ResourceDictionary does not
+   support hot-swap, fall back to soft-restart of the main window content
+   (re-create the root navigation view while keeping the same Window open).
+5. On startup (before the first window is shown) call
+   LocalizationService.ApplyLanguage using the stored preference.
+6. Register LocalizationService as singleton in CompositionRoot.
+   Register LanguageSettingsViewModel and handler.
+
+--- Tests ---
+- Unit test SetLanguageCommandHandler: verify SaveAsync is called with correct
+  AppLanguage; verify ILocalizationService.ApplyLanguage is called.
+- Unit test GetAppPreferencesQueryHandler: returns English default when no row
+  exists; returns stored value otherwise.
+- ViewModel test: ApplyCommand is disabled when selection equals current;
+  enabled when different; ErrorMessage is set on handler failure.
+
+All async. Result pattern. All strings in Strings.resx / Strings.sr.resx.
+```
+
+---
+
+### 036 · Settings Navigation — Sub-menu Items in Sidebar
+
+**What it delivers**: The Settings section in the main sidebar is restructured
+from a single "Settings" navigation item (that shows a tabbed view with
+Profile / Holidays / Mailboxes / Importers / Language) into an expandable
+group with a dedicated sub-menu item for each settings section. Each item
+navigates directly to its settings view, giving users one-click access without
+first entering a shared Settings pane.
+
+**UX contract**:
+- The sidebar gains a "Settings" group header (non-clickable label or
+  collapsible section) with the following child items beneath it:
+  - Profile
+  - Holidays
+  - Mailboxes
+  - Importers
+  - Language
+- Selecting any child item navigates the content area to that settings view.
+- The active child item is highlighted (same accent style as the current
+  top-level nav items).
+- The old tabbed `SettingsView` / tab host is removed; each sub-view becomes
+  a standalone page routed via the existing navigation mechanism.
+- Navigation state persists during the session (e.g., returning from Filings
+  to Settings re-shows the last active sub-page).
+- No data or business logic changes — this is a pure navigation refactor.
+
+**Layers touched**: Desktop (`MainViewModel` — replace single `SettingsView`
+navigation entry with five child navigation entries; `MainView.axaml` —
+update the sidebar `ListBox` / `ItemsControl` to render group headers and
+child items with indentation; remove the tab-host `SettingsView.axaml` (or
+repurpose it as a redirect/landing); each of `ProfileSettingsView`,
+`HolidaySettingsView`, `MailboxSettingsView`, `ImporterSettingsView`,
+`LanguageSettingsView` is registered as a first-class navigation destination;
+`Strings.resx` — add sidebar label strings for each sub-item).
+
+**Depends on**: `002-taxpayer-profile`, `003-holiday-configuration`,
+`004-mailbox-configuration`, `005-importer-configuration`,
+`035-language-selection`
+
+**Status**: 🗓 Planned
+
+**Spec-kit prompt**:
+```
+Refactor the Settings navigation in Rentier: replace the single tabbed
+Settings page with individual sidebar sub-menu items for each settings section.
+
+Current state:
+- Sidebar has a "Settings" item that navigates to SettingsView.axaml.
+- SettingsView.axaml uses a TabControl with tabs: Profile, Holidays,
+  Mailboxes, Importers (and Language after feature 035).
+
+Target state:
+- Sidebar renders a "Settings" group label followed by indented child items:
+    ⚙ Settings          ← non-navigable section header
+      · Profile
+      · Holidays
+      · Mailboxes
+      · Importers
+      · Language
+- Clicking a child item navigates the content area to that sub-view directly.
+- The top-level SettingsView tab host is removed.
+
+--- MainViewModel ---
+Replace the single SettingsView navigation entry with five NavigationItem
+entries (or equivalent), each carrying:
+  - Label (from Strings.resx)
+  - IsSettingsChild = true (for indentation styling)
+  - Target view type or factory
+
+Track ActiveSettingsChild separately or fold it into the existing
+SelectedNavItem pattern — whichever the current navigation mechanism uses.
+Expose LastActiveSettingsView (default: Profile) so returning to Settings
+after navigating away re-shows the last sub-page.
+
+--- MainView.axaml ---
+Update the sidebar item template to support two visual variants:
+  1. Top-level nav item (existing style — icon + label, full-width clickable).
+  2. Settings child item (indented, smaller icon or bullet, same accent
+     highlight on active). Use a DataTemplateSelector or a style with an
+     IsSettingsChild trigger.
+
+Add a non-navigable "Settings" group header between the last top-level item
+and the first child item. Style it as a muted uppercase label
+(e.g. Opacity=0.6, FontSize=11, Margin="16,12,0,4").
+
+--- Navigation wiring ---
+Each sub-view (ProfileSettingsView, HolidaySettingsView, MailboxSettingsView,
+ImporterSettingsView, LanguageSettingsView) must already exist as standalone
+ReactiveUserControl<TViewModel> views. Verify each is registered in
+CompositionRoot. If SettingsView previously constructed sub-ViewModels, move
+that responsibility to CompositionRoot / the individual ViewModels.
+
+--- SettingsView.axaml ---
+Remove the TabControl. Either delete SettingsView entirely (if nothing else
+references it) or convert it to a simple redirect that activates the Profile
+child item. Update any navigation code that previously navigated to
+SettingsView to navigate to ProfileSettingsView instead.
+
+--- Strings.resx / Strings.sr.resx ---
+Add:
+  Nav_Settings_Group   = "Settings" / "Podešavanja"
+  Nav_Settings_Profile = "Profile"  / "Profil"
+  Nav_Settings_Holidays= "Holidays" / "Praznici"
+  Nav_Settings_Mailboxes="Mailboxes"/ "Sandučići"
+  Nav_Settings_Importers= "Importers"/ "Importeri"
+  Nav_Settings_Language = "Language" / "Jezik"
+
+--- Tests ---
+- ViewModel unit test: selecting Profile child item sets content area to
+  ProfileSettingsView; selecting Mailboxes sets to MailboxSettingsView.
+- ViewModel unit test: LastActiveSettingsView is remembered across nav away
+  and nav back.
+- No Application or Infrastructure changes needed.
+
+All strings in Strings.resx and Strings.sr.resx. No data-layer changes.
+Pure navigation refactor.
+```
+
+---
+
 ## Feature Dependency Graph
 
 ```
@@ -1976,8 +2211,12 @@ No exceptions as flow control. All strings in Strings.resx.
  │    └── 030-filings-action-consolidation ◄── 025
  ├── 030-filings-action-consolidation
  │    └── 031-reports-action-icons ◄── 022
- └── 030, 031
-      └── 032-column-width-audit
+ ├── 030, 031
+ │    └── 032-column-width-audit
+ ├── 001-initial-setup
+ │    └── 035-language-selection
+ └── 035-language-selection
+      └── 036-settings-navigation ◄── 002, 003, 004, 005
 ```
 
 ---
@@ -1996,13 +2235,16 @@ No exceptions as flow control. All strings in Strings.resx.
 | **H — Data Enrichment** | 026 (needs 020) | Public holiday web import |
 | **I — UX Polish Wave** | 027 → 028 → 029 → 030 → 031 → 032 | Sorting, pagination, icon actions |
 | **J — XML & Manual Filing** | 033 → 034 (needs 006, 009, 033) | Schema compliance + manual entry |
+| **K — Personalisation** | 035 → 036 (needs 002–005, 035) | Language switching + settings nav |
 
 Lanes A and B can run in parallel from day one. Lane C starts when both
 converge. Lane D follows C. Lane E starts after 011 (with 017 partially in
 parallel). Lane I depends on 025 (for 028) and 021/022 (for 030/031); the
 rest of Lane I can start as soon as 012 and 014 are complete. Lane J can
 start independently of Lanes C–I as soon as 006 and 009 are done (feature
-033 only needs 013 and 002; feature 034 needs 033, 006, and 009).
+033 only needs 013 and 002; feature 034 needs 033, 006, and 009). Lane K
+can start as soon as 001 is done for feature 035; feature 036 requires
+Lanes A and 035 to be complete first.
 
 ---
 

@@ -4,7 +4,6 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:reactive="http://reactiveui.net"
     xmlns:vm="using:Rentier.Desktop.ViewModels"
-    xmlns:res="using:Rentier.Desktop.Resources"
     xmlns:local="using:Rentier.Desktop.Converters"
     x:Class="Rentier.Desktop.Views.ReportsView"
     x:CompileBindings="False">
@@ -13,10 +12,10 @@
     <!-- Toolbar -->
     <StackPanel DockPanel.Dock="Top" Orientation="Vertical" Spacing="4" Margin="8,8,8,4">
       <StackPanel Orientation="Horizontal" Spacing="8">
-        <Button Content="{x:Static res:Strings.Reports_Button_Import}"
+        <Button Content="{Binding [Reports_Button_Import], Source={StaticResource Localizer}}"
                 Command="{Binding ImportCommand}"
                 IsEnabled="{Binding !IsLoading}" />
-        <Button Content="{x:Static res:Strings.Reports_Button_Sync}"
+        <Button Content="{Binding [Reports_Button_Sync], Source={StaticResource Localizer}}"
                 Command="{Binding SyncCommand}"
                 IsEnabled="{Binding !IsSyncing}" />
         <ProgressBar Minimum="0" Maximum="100"
@@ -27,7 +26,7 @@
                    IsVisible="{Binding IsSyncing}"
                    VerticalAlignment="Center" />
       </StackPanel>
-      <TextBlock Text="{x:Static res:Strings.Reports_Sync_Subtitle}"
+      <TextBlock Text="{Binding [Reports_Sync_Subtitle], Source={StaticResource Localizer}}"
                  FontSize="11" Opacity="0.65" TextWrapping="Wrap"
                  Margin="0,0,0,2" />
       <!-- Bulk selection toolbar -->
@@ -55,13 +54,13 @@
                  Foreground="{DynamicResource RentierDangerForegroundBrush}"
                  VerticalAlignment="Center"
                  TextWrapping="Wrap" />
-      <Button Content="{x:Static res:Strings.Reports_Error_Dismiss}"
+      <Button Content="{Binding [Reports_Error_Dismiss], Source={StaticResource Localizer}}"
               Command="{Binding ClearErrorCommand}" />
     </StackPanel>
 
     <!-- Empty state -->
     <TextBlock DockPanel.Dock="Top"
-               Text="{x:Static res:Strings.Reports_Empty}"
+               Text="{Binding [Reports_Empty], Source={StaticResource Localizer}}"
                IsVisible="{Binding IsEmpty}"
                HorizontalAlignment="Center"
                Margin="0,32" />
@@ -69,10 +68,10 @@
     <!-- Pagination bar -->
     <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="8"
                 Margin="8" HorizontalAlignment="Center">
-      <Button Content="{x:Static res:Strings.Reports_Page_Previous}"
+      <Button Content="{Binding [Reports_Page_Previous], Source={StaticResource Localizer}}"
               Command="{Binding PreviousPageCommand}" />
       <TextBlock Text="{Binding PageIndicator}" VerticalAlignment="Center" />
-      <Button Content="{x:Static res:Strings.Reports_Page_Next}"
+      <Button Content="{Binding [Reports_Page_Next], Source={StaticResource Localizer}}"
               Command="{Binding NextPageCommand}" />
     </StackPanel>
 
@@ -114,7 +113,7 @@
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
-        <DataGridTemplateColumn Header="{x:Static res:Strings.Reports_Col_Name}" Width="*">
+        <DataGridTemplateColumn Header="{Binding [Reports_Col_Name], Source={StaticResource Localizer}}" Width="*">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <TextBlock Text="{Binding DisplayName}"
@@ -123,36 +122,36 @@
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
-        <DataGridTextColumn Header="{x:Static res:Strings.Reports_Col_ImportDate}"
+        <DataGridTextColumn Header="{Binding [Reports_Col_ImportDate], Source={StaticResource Localizer}}"
                             Binding="{Binding ImportDateDisplay}"
                             Width="110" />
-        <DataGridTextColumn Header="{x:Static res:Strings.Reports_Col_EmailDate}"
+        <DataGridTextColumn Header="{Binding [Reports_Col_EmailDate], Source={StaticResource Localizer}}"
                             Binding="{Binding EmailDateDisplay}"
                             Width="110" />
-        <DataGridTextColumn Header="{x:Static res:Strings.Reports_Col_Importer}"
+        <DataGridTextColumn Header="{Binding [Reports_Col_Importer], Source={StaticResource Localizer}}"
                             Binding="{Binding ImporterName}"
                             Width="160" />
-        <DataGridTextColumn Header="{x:Static res:Strings.Reports_Col_Status}"
+        <DataGridTextColumn Header="{Binding [Reports_Col_Status], Source={StaticResource Localizer}}"
                             Binding="{Binding Status, Converter={x:Static local:ReportStatusDisplayConverter.Instance}}"
                             Width="100" />
-        <DataGridTextColumn Header="{x:Static res:Strings.Reports_Col_FilingCount}"
+        <DataGridTextColumn Header="{Binding [Reports_Col_FilingCount], Source={StaticResource Localizer}}"
                             Binding="{Binding FilingCount}"
                             Width="70" />
         <DataGridTemplateColumn Header="Actions" Width="Auto">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <StackPanel Orientation="Horizontal" Spacing="4" Margin="4,0">
-                <Button AutomationProperties.Name="{x:Static res:Strings.Reports_Tooltip_ViewFilings}"
+                <Button AutomationProperties.Name="{Binding [Reports_Tooltip_ViewFilings], Source={StaticResource Localizer}}"
                         Command="{Binding DataContext.ViewFilingsCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                         CommandParameter="{Binding Id}"
-                        ToolTip.Tip="{x:Static res:Strings.Reports_Tooltip_ViewFilings}"
+                        ToolTip.Tip="{Binding [Reports_Tooltip_ViewFilings], Source={StaticResource Localizer}}"
                         Padding="6" Background="Transparent" BorderThickness="0">
                   <PathIcon Data="{StaticResource ViewFilingsIcon}" Width="16" Height="16" />
                 </Button>
-                <Button AutomationProperties.Name="{x:Static res:Strings.Reports_Tooltip_Delete}"
+                <Button AutomationProperties.Name="{Binding [Reports_Tooltip_Delete], Source={StaticResource Localizer}}"
                         Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                         CommandParameter="{Binding Id}"
-                        ToolTip.Tip="{x:Static res:Strings.Reports_Tooltip_Delete}"
+                        ToolTip.Tip="{Binding [Reports_Tooltip_Delete], Source={StaticResource Localizer}}"
                         Foreground="{DynamicResource RentierDangerForegroundBrush}"
                         Padding="6" Background="Transparent" BorderThickness="0">
                   <PathIcon Data="{StaticResource TrashIcon}" Width="16" Height="16" />

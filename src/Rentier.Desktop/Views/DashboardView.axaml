@@ -4,7 +4,6 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:reactive="http://reactiveui.net"
     xmlns:vm="using:Rentier.Desktop.ViewModels"
-    xmlns:res="using:Rentier.Desktop.Resources"
     xmlns:local="using:Rentier.Desktop.Converters"
     x:Class="Rentier.Desktop.Views.DashboardView"
     x:CompileBindings="False">
@@ -31,30 +30,30 @@
             IsVisible="{Binding HasData}">
       <UniformGrid Columns="5">
         <StackPanel Margin="4" HorizontalAlignment="Center">
-          <TextBlock Text="{x:Static res:Strings.Dashboard_PendingCount}" FontSize="11" Foreground="{DynamicResource RentierTextSecondaryBrush}" HorizontalAlignment="Center" />
+          <TextBlock Text="{Binding [Dashboard_PendingCount], Source={StaticResource Localizer}}" FontSize="11" Foreground="{DynamicResource RentierTextSecondaryBrush}" HorizontalAlignment="Center" />
           <TextBlock Text="{Binding InitCount}" FontSize="22" FontWeight="Bold" HorizontalAlignment="Center" />
         </StackPanel>
         <StackPanel Margin="4" HorizontalAlignment="Center">
-          <TextBlock Text="{x:Static res:Strings.Dashboard_FiledCount}" FontSize="11" Foreground="{DynamicResource RentierTextSecondaryBrush}" HorizontalAlignment="Center" />
+          <TextBlock Text="{Binding [Dashboard_FiledCount], Source={StaticResource Localizer}}" FontSize="11" Foreground="{DynamicResource RentierTextSecondaryBrush}" HorizontalAlignment="Center" />
           <TextBlock Text="{Binding FiledCount}" FontSize="22" FontWeight="Bold" HorizontalAlignment="Center" />
         </StackPanel>
         <StackPanel Margin="4" HorizontalAlignment="Center">
-          <TextBlock Text="{x:Static res:Strings.Dashboard_PaidCount}" FontSize="11" Foreground="{DynamicResource RentierTextSecondaryBrush}" HorizontalAlignment="Center" />
+          <TextBlock Text="{Binding [Dashboard_PaidCount], Source={StaticResource Localizer}}" FontSize="11" Foreground="{DynamicResource RentierTextSecondaryBrush}" HorizontalAlignment="Center" />
           <TextBlock Text="{Binding PaidCount}" FontSize="22" FontWeight="Bold" HorizontalAlignment="Center" />
         </StackPanel>
         <StackPanel Margin="4" HorizontalAlignment="Center">
-          <TextBlock Text="{x:Static res:Strings.Dashboard_TotalUnpaid}" FontSize="11" Foreground="{DynamicResource RentierTextSecondaryBrush}" HorizontalAlignment="Center" />
+          <TextBlock Text="{Binding [Dashboard_TotalUnpaid], Source={StaticResource Localizer}}" FontSize="11" Foreground="{DynamicResource RentierTextSecondaryBrush}" HorizontalAlignment="Center" />
           <TextBlock Text="{Binding TotalUnpaidDisplay}" FontSize="14" FontWeight="SemiBold" HorizontalAlignment="Center" />
         </StackPanel>
         <StackPanel Margin="4" HorizontalAlignment="Center">
-          <TextBlock Text="{x:Static res:Strings.Dashboard_LastSync}" FontSize="11" Foreground="{DynamicResource RentierTextSecondaryBrush}" HorizontalAlignment="Center" />
+          <TextBlock Text="{Binding [Dashboard_LastSync], Source={StaticResource Localizer}}" FontSize="11" Foreground="{DynamicResource RentierTextSecondaryBrush}" HorizontalAlignment="Center" />
           <TextBlock Text="{Binding LastSyncDisplay}" FontSize="14" HorizontalAlignment="Center" />
         </StackPanel>
       </UniformGrid>
     </Border>
 
     <TextBlock Grid.Row="1" IsVisible="{Binding !HasData}"
-               Text="{x:Static res:Strings.Dashboard_NoData}"
+               Text="{Binding [Dashboard_NoData], Source={StaticResource Localizer}}"
                HorizontalAlignment="Center" VerticalAlignment="Center"
                Foreground="{DynamicResource RentierTextSecondaryBrush}" Margin="0,8" />
 
@@ -64,7 +63,7 @@
       <Border Background="{DynamicResource RentierDangerBackgroundBrush}"
               CornerRadius="{StaticResource RentierControlCornerRadius}"
               Padding="8,6" Margin="0,0,0,6">
-        <TextBlock Text="{x:Static res:Strings.Dashboard_OverdueFilings}"
+        <TextBlock Text="{Binding [Dashboard_OverdueFilings], Source={StaticResource Localizer}}"
                    FontWeight="Bold"
                    Foreground="{DynamicResource RentierDangerForegroundBrush}" />
       </Border>
@@ -91,8 +90,8 @@
     <!-- Upcoming Deadlines DataGrid -->
     <Grid Grid.Row="3" RowDefinitions="Auto,*">
       <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="0,0,0,6">
-        <TextBlock Text="{x:Static res:Strings.Dashboard_UpcomingDeadlines}" FontWeight="Bold" VerticalAlignment="Center" />
-        <Button Content="{x:Static res:Strings.Dashboard_ViewAllFilings}" Command="{Binding NavigateToFilingsCommand}" />
+        <TextBlock Text="{Binding [Dashboard_UpcomingDeadlines], Source={StaticResource Localizer}}" FontWeight="Bold" VerticalAlignment="Center" />
+        <Button Content="{Binding [Dashboard_ViewAllFilings], Source={StaticResource Localizer}}" Command="{Binding NavigateToFilingsCommand}" />
       </StackPanel>
       <DataGrid Grid.Row="1"
                 Name="UpcomingGrid"
@@ -103,15 +102,15 @@
                 CanUserSortColumns="True"
                 AutoGenerateColumns="False">
         <DataGrid.Columns>
-          <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_PayingEntity}" Binding="{Binding PayingEntity}" Width="*" />
-          <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_Deadline}" Binding="{Binding FilingDeadline, StringFormat={}{0:yyyy-MM-dd}}" Width="110" />
-          <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_IncomeType}" Binding="{Binding IncomeType, Converter={x:Static local:IncomeTypeDisplayConverter.Instance}}" Width="90" />
-          <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_Status}" Binding="{Binding Status, Converter={x:Static local:FilingStatusDisplayConverter.Instance}}" Width="90" />
-          <DataGridTextColumn Header="{x:Static res:Strings.Filings_Col_TaxPayable}" Binding="{Binding TaxPayableRsd, StringFormat={}{0:N2} RSD}" Width="140" />
+          <DataGridTextColumn Header="{Binding [Filings_Col_PayingEntity], Source={StaticResource Localizer}}" Binding="{Binding PayingEntity}" Width="*" />
+          <DataGridTextColumn Header="{Binding [Filings_Col_Deadline], Source={StaticResource Localizer}}" Binding="{Binding FilingDeadline, StringFormat={}{0:yyyy-MM-dd}}" Width="110" />
+          <DataGridTextColumn Header="{Binding [Filings_Col_IncomeType], Source={StaticResource Localizer}}" Binding="{Binding IncomeType, Converter={x:Static local:IncomeTypeDisplayConverter.Instance}}" Width="90" />
+          <DataGridTextColumn Header="{Binding [Filings_Col_Status], Source={StaticResource Localizer}}" Binding="{Binding Status, Converter={x:Static local:FilingStatusDisplayConverter.Instance}}" Width="90" />
+          <DataGridTextColumn Header="{Binding [Filings_Col_TaxPayable], Source={StaticResource Localizer}}" Binding="{Binding TaxPayableRsd, StringFormat={}{0:N2} RSD}" Width="140" />
         </DataGrid.Columns>
       </DataGrid>
       <TextBlock Grid.Row="1" IsVisible="{Binding !HasUpcomingDeadlines}"
-                 Text="{x:Static res:Strings.Dashboard_NoUpcomingDeadlines}"
+                 Text="{Binding [Dashboard_NoUpcomingDeadlines], Source={StaticResource Localizer}}"
                  HorizontalAlignment="Center" VerticalAlignment="Center"
                  Foreground="{DynamicResource RentierTextSecondaryBrush}" Margin="0,16" />
     </Grid>

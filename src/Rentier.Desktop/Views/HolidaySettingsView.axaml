@@ -4,7 +4,6 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:reactive="http://reactiveui.net"
     xmlns:vm="using:Rentier.Desktop.ViewModels"
-    xmlns:res="using:Rentier.Desktop.Resources"
     xmlns:conv="using:Rentier.Desktop.Converters"
     x:Class="Rentier.Desktop.Views.HolidaySettingsView"
     x:DataType="vm:HolidaySettingsViewModel"
@@ -15,22 +14,22 @@
   <DockPanel LastChildFill="True">
     <!-- Title with unsaved-changes asterisk (L5) -->
     <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="4" Margin="8,8,8,2">
-      <TextBlock Text="{x:Static res:Strings.Settings_Holidays_TabHeader}"
+      <TextBlock Text="{Binding [Settings_Holidays_TabHeader], Source={StaticResource Localizer}}"
                  FontWeight="SemiBold" FontSize="14" />
       <TextBlock Text="*" Foreground="OrangeRed" FontWeight="Bold"
                  IsVisible="{Binding HasUnsavedChanges}"
-                 ToolTip.Tip="{x:Static res:Strings.Holidays_UnsavedChanges_Label}" />
+                 ToolTip.Tip="{Binding [Holidays_UnsavedChanges_Label], Source={StaticResource Localizer}}" />
     </StackPanel>
     <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="8,2,8,4">
-      <Button Content="{x:Static res:Strings.Holidays_AddRow_Button}" Command="{Binding AddRowCommand}" />
-      <Button Content="{x:Static res:Strings.Holidays_DeleteRow_Button}" Command="{Binding DeleteRowCommand}" CommandParameter="{Binding SelectedEntry}" />
-      <Button Content="{x:Static res:Strings.Holidays_Save_Button}" Command="{Binding SaveCommand}" />
-      <Button Content="{x:Static res:Strings.Holidays_FetchFromWeb_Button}" Command="{Binding FetchFromWebCommand}" />
+      <Button Content="{Binding [Holidays_AddRow_Button], Source={StaticResource Localizer}}" Command="{Binding AddRowCommand}" />
+      <Button Content="{Binding [Holidays_DeleteRow_Button], Source={StaticResource Localizer}}" Command="{Binding DeleteRowCommand}" CommandParameter="{Binding SelectedEntry}" />
+      <Button Content="{Binding [Holidays_Save_Button], Source={StaticResource Localizer}}" Command="{Binding SaveCommand}" />
+      <Button Content="{Binding [Holidays_FetchFromWeb_Button], Source={StaticResource Localizer}}" Command="{Binding FetchFromWebCommand}" />
     </StackPanel>
     <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="8,4">
-      <TextBlock Text="{x:Static res:Strings.Holidays_StartYear_Label}" VerticalAlignment="Center" />
+      <TextBlock Text="{Binding [Holidays_StartYear_Label], Source={StaticResource Localizer}}" VerticalAlignment="Center" />
       <NumericUpDown Value="{Binding StartYear}" Minimum="2020" Maximum="2099" MinWidth="120" FormatString="0" />
-      <TextBlock Text="{x:Static res:Strings.Holidays_EndYear_Label}" VerticalAlignment="Center" />
+      <TextBlock Text="{Binding [Holidays_EndYear_Label], Source={StaticResource Localizer}}" VerticalAlignment="Center" />
       <NumericUpDown Value="{Binding EndYear}" Minimum="2020" Maximum="2099" MinWidth="120" FormatString="0" />
     </StackPanel>
     <!-- Year-range validation message (L12) -->
@@ -39,11 +38,11 @@
                IsVisible="{Binding YearRangeValidationMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                Foreground="Red" FontSize="11" Margin="8,0,8,4" />
     <TextBlock DockPanel.Dock="Top"
-               Text="{x:Static res:Strings.Holidays_YearRange_HelperText}"
+               Text="{Binding [Holidays_YearRange_HelperText], Source={StaticResource Localizer}}"
                Margin="8,0,8,4" Opacity="0.6" FontSize="11" TextWrapping="Wrap" />
     <Separator DockPanel.Dock="Top" Margin="8,4" />
     <TextBlock DockPanel.Dock="Top"
-               Text="{x:Static res:Strings.Holidays_EmptyForRange}"
+               Text="{Binding [Holidays_EmptyForRange], Source={StaticResource Localizer}}"
                IsVisible="{Binding IsFilteredEmpty}"
                HorizontalAlignment="Center" Opacity="0.6" Margin="8,16" />
     <StackPanel DockPanel.Dock="Bottom" Margin="8,4">
@@ -58,7 +57,7 @@
                Opacity="0.6" Margin="8,16" />
     <DataGrid x:Name="HolidaysGrid" ItemsSource="{Binding FilteredEntries}" SelectedItem="{Binding SelectedEntry, Mode=TwoWay}" AutoGenerateColumns="False" Margin="8,4">
       <DataGrid.Columns>
-        <DataGridTemplateColumn Header="{x:Static res:Strings.Holidays_Date_Column}" Width="*">
+        <DataGridTemplateColumn Header="{Binding [Holidays_Date_Column], Source={StaticResource Localizer}}" Width="*">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <TextBlock Text="{Binding Date, Converter={StaticResource DateOnlyConverter}}" VerticalAlignment="Center" Margin="4,0" />
@@ -70,7 +69,7 @@
             </DataTemplate>
           </DataGridTemplateColumn.CellEditingTemplate>
         </DataGridTemplateColumn>
-        <DataGridTextColumn Header="{x:Static res:Strings.Holidays_Name_Column}" Binding="{Binding Name}" Width="2*" />
+        <DataGridTextColumn Header="{Binding [Holidays_Name_Column], Source={StaticResource Localizer}}" Binding="{Binding Name}" Width="2*" />
       </DataGrid.Columns>
     </DataGrid>
   </DockPanel>

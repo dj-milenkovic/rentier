@@ -1,8 +1,9 @@
 using Avalonia.Media;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reactive.Disposables;
+using System.Reactive.Linq;
 using ReactiveUI;
-using Rentier.Desktop.Resources;
+using Rentier.Desktop.Services;
 
 namespace Rentier.Desktop.ViewModels;
 
@@ -35,7 +36,8 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
 
     public MainWindowViewModel(
         IServiceProvider provider,
-        SettingsViewModel settingsVm)
+        SettingsViewModel settingsVm,
+        ILocalizationService localizationService)
     {
         // ── Dashboard navigation ──────────────────────────────────────────────
         // filingsVm is declared here (before navigateToDashboardFilings) so all
@@ -98,11 +100,11 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
 
         NavigationEntries = new List<NavigationEntry>
         {
-            new(Strings.Nav_Dashboard, dashboardVm, Icon: NavIcon("NavHomeIcon")),
-            new(Strings.Nav_Filings,   filingsVm,   Icon: NavIcon("NavFilingsIcon")),
-            new(Strings.Nav_Reports,   reportsVm,   Icon: NavIcon("NavReportsIcon")),
-            new(Strings.Nav_Sync,      syncVm,      Icon: NavIcon("NavSyncIcon")),
-            new(Strings.Nav_Settings,  settingsVm,  Icon: NavIcon("NavSettingsIcon"))
+            new(localizationService["Nav_Dashboard"], dashboardVm, Icon: NavIcon("NavHomeIcon")),
+            new(localizationService["Nav_Filings"],   filingsVm,   Icon: NavIcon("NavFilingsIcon")),
+            new(localizationService["Nav_Reports"],   reportsVm,   Icon: NavIcon("NavReportsIcon")),
+            new(localizationService["Nav_Sync"],      syncVm,      Icon: NavIcon("NavSyncIcon")),
+            new(localizationService["Nav_Settings"],  settingsVm,  Icon: NavIcon("NavSettingsIcon"))
         };
 
         _selectedEntry = NavigationEntries[0];
@@ -114,7 +116,30 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
             this.WhenAnyValue(x => x.SelectedEntry)
                 .Subscribe(entry => { if (entry is not null) CurrentViewModel = entry.ViewModel; })
                 .DisposeWith(disposables);
+
+            localizationService.CultureChanged
+                .ObserveOn(RxApp.MainThreadScheduler)
+                .Subscribe(_ => UpdateNavigationLabels(localizationService))
+                .DisposeWith(disposables);
         });
+    }
+
+    private void UpdateNavigationLabels(ILocalizationService loc)
+    {
+        var keyMap = new Dictionary<Type, string>
+        {
+            [typeof(DashboardViewModel)] = "Nav_Dashboard",
+            [typeof(FilingsViewModel)]   = "Nav_Filings",
+            [typeof(ReportsViewModel)]   = "Nav_Reports",
+            [typeof(SyncViewModel)]      = "Nav_Sync",
+            [typeof(SettingsViewModel)]  = "Nav_Settings",
+        };
+
+        foreach (var entry in NavigationEntries.Where(e => e.IsVisible))
+        {
+            if (keyMap.TryGetValue(entry.ViewModel.GetType(), out var key))
+                entry.Label = loc[key];
+        }
     }
 
     private static StreamGeometry? NavIcon(string key)

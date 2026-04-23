@@ -4,36 +4,36 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:reactive="http://reactiveui.net"
     xmlns:vm="using:Rentier.Desktop.ViewModels"
-    xmlns:res="using:Rentier.Desktop.Resources"
     x:Class="Rentier.Desktop.Views.ProfileSettingsView"
-    x:DataType="vm:ProfileSettingsViewModel">
+    x:DataType="vm:ProfileSettingsViewModel"
+             x:CompileBindings="False">
   <ScrollViewer>
     <StackPanel Spacing="12" Margin="20">
 
-      <TextBlock Text="{x:Static res:Strings.Profile_Jmbg_Label}" />
+      <TextBlock Text="{Binding [Profile_Jmbg_Label], Source={StaticResource Localizer}}" />
       <TextBox Text="{Binding Jmbg}" MaxLength="13" />
       <TextBlock Text="{Binding JmbgValidationMessage}"
                  IsVisible="{Binding JmbgValidationMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                  Foreground="Red" FontSize="11" />
 
-      <TextBlock Text="{x:Static res:Strings.Profile_FullName_Label}" />
+      <TextBlock Text="{Binding [Profile_FullName_Label], Source={StaticResource Localizer}}" />
       <TextBox Text="{Binding FullName}" />
 
-      <TextBlock Text="{x:Static res:Strings.Profile_Address_Label}" />
+      <TextBlock Text="{Binding [Profile_Address_Label], Source={StaticResource Localizer}}" />
       <TextBox Text="{Binding Address}" />
 
-      <TextBlock Text="{x:Static res:Strings.Profile_OpstinaCode_Label}" />
+      <TextBlock Text="{Binding [Profile_OpstinaCode_Label], Source={StaticResource Localizer}}" />
       <TextBox Text="{Binding OpstinaCode}" />
-      <TextBlock Text="{x:Static res:Strings.Profile_OpstinaCode_Helper}"
+      <TextBlock Text="{Binding [Profile_OpstinaCode_Helper], Source={StaticResource Localizer}}"
                  Opacity="0.6" FontSize="11" />
 
-      <TextBlock Text="{x:Static res:Strings.Profile_PhoneNumber_Label}" />
+      <TextBlock Text="{Binding [Profile_PhoneNumber_Label], Source={StaticResource Localizer}}" />
       <TextBox Text="{Binding PhoneNumber}" />
 
-      <TextBlock Text="{x:Static res:Strings.Profile_Email_Label}" />
+      <TextBlock Text="{Binding [Profile_Email_Label], Source={StaticResource Localizer}}" />
       <TextBox Text="{Binding Email}" />
 
-      <Button Content="{x:Static res:Strings.Profile_Save_Button}"
+      <Button Content="{Binding [Profile_Save_Button], Source={StaticResource Localizer}}"
               Command="{Binding SaveCommand}" />
 
       <TextBlock Text="{Binding ErrorMessage}" Foreground="Red"
