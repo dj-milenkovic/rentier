@@ -7,6 +7,7 @@ using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
 using Rentier.Application.Repositories;
+using Rentier.Desktop.Services;
 using Rentier.Desktop.ViewModels;
 using System.Reactive.Concurrency;
 using Xunit;
@@ -41,6 +42,13 @@ public class MainWindowViewModelSmokeTests
             Substitute.For<ICommandHandler<AddImporterCommand, Result<Guid, Error>>>(),
             Substitute.For<ICommandHandler<UpdateImporterCommand, Result<VoidResult, Error>>>(),
             Substitute.For<ICommandHandler<DeleteImporterCommand, Result<VoidResult, Error>>>());
+
+    private static AppearanceSettingsViewModel CreateAppearanceVm()
+    {
+        var themeService = Substitute.For<IThemeService>();
+        themeService.GetPreference().Returns(ThemePreference.System);
+        return new AppearanceSettingsViewModel(themeService);
+    }
 
     private static IServiceProvider CreateProvider()
     {
@@ -92,7 +100,7 @@ public class MainWindowViewModelSmokeTests
     [Fact]
     public void MainWindowViewModel_Constructed_NavigationEntriesHasFiveItems()
     {
-        var settingsVm = new SettingsViewModel(CreateProfileVm(), CreateHolidayVm(), CreateMailboxVm(), CreateImporterVm());
+        var settingsVm = new SettingsViewModel(CreateProfileVm(), CreateHolidayVm(), CreateMailboxVm(), CreateImporterVm(), CreateAppearanceVm());
         var vm = new MainWindowViewModel(CreateProvider(), settingsVm);
 
         vm.NavigationEntries.Count.Should().Be(5);
@@ -101,7 +109,7 @@ public class MainWindowViewModelSmokeTests
     [Fact]
     public void MainWindowViewModel_Constructed_InitialViewModelIsDashboardViewModel()
     {
-        var settingsVm = new SettingsViewModel(CreateProfileVm(), CreateHolidayVm(), CreateMailboxVm(), CreateImporterVm());
+        var settingsVm = new SettingsViewModel(CreateProfileVm(), CreateHolidayVm(), CreateMailboxVm(), CreateImporterVm(), CreateAppearanceVm());
         var vm = new MainWindowViewModel(CreateProvider(), settingsVm);
 
         vm.CurrentViewModel.Should().BeOfType<DashboardViewModel>();

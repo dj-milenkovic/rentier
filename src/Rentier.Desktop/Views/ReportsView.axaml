@@ -92,15 +92,20 @@
       </DataGrid.Styles>
       <DataGrid.Columns>
         <!-- Selection checkbox column -->
-        <DataGridTemplateColumn Width="40">
+        <DataGridTemplateColumn Width="40" CanUserSort="False">
           <DataGridTemplateColumn.Header>
-            <CheckBox IsThreeState="True"
-                      IsChecked="{Binding DataContext.IsAllSelected,
-                                  RelativeSource={RelativeSource AncestorType=DataGrid},
-                                  Mode=TwoWay}"
-                      IsEnabled="{Binding DataContext.HasItems,
-                                  RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                      HorizontalAlignment="Center" VerticalAlignment="Center" />
+            <Grid Width="24" Height="24"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Center">
+              <CheckBox IsThreeState="True"
+                        IsChecked="{Binding DataContext.IsAllSelected,
+                                    RelativeSource={RelativeSource AncestorType=DataGrid},
+                                    Mode=TwoWay}"
+                        IsEnabled="{Binding DataContext.HasItems,
+                                    RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center" />
+            </Grid>
           </DataGridTemplateColumn.Header>
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>

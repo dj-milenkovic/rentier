@@ -1,4 +1,4 @@
-using Rentier.Application.Commands;
+﻿using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Repositories;
@@ -39,15 +39,19 @@ public sealed class EnsureHolidaysSeededCommandHandler
         var seededHolidays = new List<PublicHoliday>();
         for (int year = currentYear; year <= endYear; year++)
         {
-            seededHolidays.Add(PublicHoliday.Create(new DateOnly(year, 1, 1), "Nova godina"));
-            seededHolidays.Add(PublicHoliday.Create(new DateOnly(year, 1, 2), "Nova godina"));
-            seededHolidays.Add(PublicHoliday.Create(new DateOnly(year, 1, 7), "Božić"));
-            seededHolidays.Add(PublicHoliday.Create(new DateOnly(year, 2, 15), "Sretenje"));
-            seededHolidays.Add(PublicHoliday.Create(new DateOnly(year, 2, 16), "Sretenje"));
-            seededHolidays.Add(PublicHoliday.Create(new DateOnly(year, 5, 1), "Praznik rada"));
-            seededHolidays.Add(PublicHoliday.Create(new DateOnly(year, 5, 2), "Praznik rada"));
-            seededHolidays.Add(PublicHoliday.Create(new DateOnly(year, 6, 28), "Vidovdan"));
-            seededHolidays.Add(PublicHoliday.Create(new DateOnly(year, 11, 11), "Dan primirja"));
+            seededHolidays.Add(PublicHoliday.Create(new DateOnly(year, 1, 1), "Western New Year's Day"));
+            seededHolidays.Add(PublicHoliday.Create(new DateOnly(year, 1, 2), "Second Day of Western New Year's Day"));
+            seededHolidays.Add(PublicHoliday.Create(new DateOnly(year, 1, 7), "Christmas Day"));
+            seededHolidays.Add(PublicHoliday.Create(new DateOnly(year, 2, 15), "Statehood Day of the Republic of Serbia"));
+            seededHolidays.Add(PublicHoliday.Create(new DateOnly(year, 2, 16), "Statehood Day of the Republic of Serbia observed"));
+            seededHolidays.Add(PublicHoliday.Create(new DateOnly(year, 2, 17), "Statehood Day of the Republic of Serbia (Day 2)"));
+            seededHolidays.Add(PublicHoliday.Create(new DateOnly(year, 4, 10), "Good Friday"));
+            seededHolidays.Add(PublicHoliday.Create(new DateOnly(year, 4, 11), "Holy Saturday"));
+            seededHolidays.Add(PublicHoliday.Create(new DateOnly(year, 4, 12), "Easter Day"));
+            seededHolidays.Add(PublicHoliday.Create(new DateOnly(year, 4, 13), "Easter Monday"));
+            seededHolidays.Add(PublicHoliday.Create(new DateOnly(year, 5, 1), "Labor holiday"));
+            seededHolidays.Add(PublicHoliday.Create(new DateOnly(year, 5, 2), "Labor Day Holiday"));            
+            seededHolidays.Add(PublicHoliday.Create(new DateOnly(year, 11, 11), "Armistice Day"));
         }
 
         var seedRange = new HolidayYearRange(currentYear, endYear);
