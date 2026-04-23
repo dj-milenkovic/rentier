@@ -76,6 +76,21 @@
   <data name="Nav_Settings" xml:space="preserve">
     <value>Settings</value>
   </data>
+  <data name="Nav_Settings_Profile" xml:space="preserve">
+    <value>Profile</value>
+  </data>
+  <data name="Nav_Settings_Holidays" xml:space="preserve">
+    <value>Holidays</value>
+  </data>
+  <data name="Nav_Settings_Mailboxes" xml:space="preserve">
+    <value>Mailboxes</value>
+  </data>
+  <data name="Nav_Settings_Importers" xml:space="preserve">
+    <value>Importers</value>
+  </data>
+  <data name="Nav_Settings_Language" xml:space="preserve">
+    <value>Language</value>
+  </data>
   <data name="Sync_StartButton" xml:space="preserve">
     <value>▶ Start Sync</value>
   </data>

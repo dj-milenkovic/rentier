@@ -36,7 +36,7 @@ public class DashboardViewModelTests
 
     private static UpcomingDeadlineDto MakeUpcoming(string entity = "Corp A") =>
         new(Guid.NewGuid(), entity, new DateOnly(2024, 6, 30),
-            100m, FilingStatus.Init, Domain.Enums.IncomeType.Dividend);
+            100m, FilingStatus.Init, IncomeType.Dividend);
 
     private static OverdueFilingDto MakeOverdue(string entity = "Corp B") =>
         new(Guid.NewGuid(), entity, new DateOnly(2024, 1, 15), 200m, FilingStatus.Init);

@@ -6,7 +6,7 @@ using Rentier.Application.Handlers;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Repositories;
 using Rentier.Tests.Common.Fakes;
-using Xunit;
+using Rentier.Domain.Entities;using Xunit;
 
 namespace Rentier.UnitTests;
 
@@ -32,7 +32,7 @@ public class AddMailboxCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBe(Guid.Empty);
-        await _repo.Received(1).AddAsync(Arg.Any<Domain.Entities.Mailbox>(), Arg.Any<CancellationToken>());
+        await _repo.Received(1).AddAsync(Arg.Any<Mailbox>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -46,7 +46,7 @@ public class AddMailboxCommandHandlerTests
         var savedKey = _fakeCredentials.StoredKeys.Single();
         savedKey.Should().EndWith("/password");
         savedKey.Should().StartWith("Rentier/Mailbox/");
-        await _repo.Received(1).AddAsync(Arg.Any<Domain.Entities.Mailbox>(), Arg.Any<CancellationToken>());
+        await _repo.Received(1).AddAsync(Arg.Any<Mailbox>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -70,7 +70,7 @@ public class AddMailboxCommandHandlerTests
         await _handler.HandleAsync(cmd);
 
         _fakeCredentials.StoredKeys.Should().BeEmpty();
-        await _repo.Received(1).AddAsync(Arg.Any<Domain.Entities.Mailbox>(), Arg.Any<CancellationToken>());
+        await _repo.Received(1).AddAsync(Arg.Any<Mailbox>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -81,7 +81,7 @@ public class AddMailboxCommandHandlerTests
         await _handler.HandleAsync(cmd);
 
         _fakeCredentials.StoredKeys.Should().BeEmpty();
-        await _repo.Received(1).AddAsync(Arg.Any<Domain.Entities.Mailbox>(), Arg.Any<CancellationToken>());
+        await _repo.Received(1).AddAsync(Arg.Any<Mailbox>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -93,7 +93,7 @@ public class AddMailboxCommandHandlerTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("DOMAIN_VALIDATION");
-        await _repo.DidNotReceive().AddAsync(Arg.Any<Domain.Entities.Mailbox>(), Arg.Any<CancellationToken>());
+        await _repo.DidNotReceive().AddAsync(Arg.Any<Mailbox>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -110,6 +110,6 @@ public class AddMailboxCommandHandlerTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("CREDENTIAL_WRITE_FAILED");
-        await _repo.DidNotReceive().AddAsync(Arg.Any<Domain.Entities.Mailbox>(), Arg.Any<CancellationToken>());
+        await _repo.DidNotReceive().AddAsync(Arg.Any<Mailbox>(), Arg.Any<CancellationToken>());
     }
 }

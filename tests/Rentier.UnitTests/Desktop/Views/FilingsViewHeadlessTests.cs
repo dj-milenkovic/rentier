@@ -257,7 +257,7 @@ public class FilingsViewHeadlessTests
 
         var exportButton = window.GetVisualDescendants()
             .OfType<Button>()
-            .FirstOrDefault(button => Avalonia.Controls.ToolTip.GetTip(button) as string == Strings.Filings_Tooltip_Export);
+            .FirstOrDefault(button => Avalonia.Controls.ToolTip.GetTip(button) as string == GetLocalizedText("Filings_Tooltip_Export"));
         exportButton.Should().NotBeNull();
         var exportIcons = exportButton!.GetVisualDescendants().OfType<PathIcon>().ToList();
         exportIcons.Should().ContainSingle();
@@ -322,4 +322,15 @@ public class FilingsViewHeadlessTests
         new DateOnly(2025, 4, 30),
         100.00m,
         null);
+
+    private static string GetLocalizedText(string key)
+    {
+        if (Avalonia.Application.Current?.TryGetResource("Localizer",
+            Avalonia.Styling.ThemeVariant.Default, out var localizer) == true
+            && localizer is Rentier.Desktop.Services.ILocalizationService loc)
+            return loc[key];
+        return typeof(Rentier.Desktop.Resources.Strings)
+            .GetProperty(key, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+            ?.GetValue(null) as string ?? $"[{key}]";
+    }
 }

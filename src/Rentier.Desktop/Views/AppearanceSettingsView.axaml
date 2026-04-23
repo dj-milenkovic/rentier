@@ -3,15 +3,16 @@
              xmlns:vm="using:Rentier.Desktop.ViewModels"
              xmlns:svc="using:Rentier.Desktop.Services"
              x:Class="Rentier.Desktop.Views.AppearanceSettingsView"
-             x:DataType="vm:AppearanceSettingsViewModel">
+             x:DataType="vm:AppearanceSettingsViewModel"
+             x:CompileBindings="False">
   <StackPanel Spacing="24" Margin="20">
 
     <!-- Section header -->
     <StackPanel Spacing="4">
-      <TextBlock Text="Appearance"
+      <TextBlock Text="{Binding [Appearance_Header], Source={StaticResource Localizer}}"
                  FontSize="18" FontWeight="SemiBold"
                  Foreground="{DynamicResource RentierTextPrimaryBrush}" />
-      <TextBlock Text="Customize the visual theme of Rentier."
+      <TextBlock Text="{Binding [Appearance_Subheader], Source={StaticResource Localizer}}"
                  FontSize="13"
                  Foreground="{DynamicResource RentierTextSecondaryBrush}" />
     </StackPanel>
@@ -21,25 +22,46 @@
             BorderBrush="{DynamicResource RentierBorderBrush}"
             BorderThickness="1">
       <StackPanel Spacing="16">
-        <TextBlock Text="Theme"
+        <TextBlock Text="{Binding [Theme_Header], Source={StaticResource Localizer}}"
                    FontSize="14" FontWeight="Medium"
                    Foreground="{DynamicResource RentierTextPrimaryBrush}" />
 
         <StackPanel Spacing="10">
-          <RadioButton Content="Follow system setting"
+          <RadioButton Content="{Binding [Theme_System], Source={StaticResource Localizer}}"
                        IsChecked="{Binding IsSystem, Mode=TwoWay}"
                        GroupName="ThemeGroup" />
-          <RadioButton Content="Light"
+          <RadioButton Content="{Binding [Theme_Light], Source={StaticResource Localizer}}"
                        IsChecked="{Binding IsLight, Mode=TwoWay}"
                        GroupName="ThemeGroup" />
-          <RadioButton Content="Dark"
+          <RadioButton Content="{Binding [Theme_Dark], Source={StaticResource Localizer}}"
                        IsChecked="{Binding IsDark, Mode=TwoWay}"
                        GroupName="ThemeGroup" />
         </StackPanel>
 
-        <TextBlock Text="Changes take effect immediately."
+        <TextBlock Text="{Binding [Theme_ImmediateNote], Source={StaticResource Localizer}}"
                    FontSize="11"
                    Foreground="{DynamicResource RentierTextSecondaryBrush}" />
+      </StackPanel>
+    </Border>
+
+    <!-- Language selection card -->
+    <Border Classes="card"
+            BorderBrush="{DynamicResource RentierBorderBrush}"
+            BorderThickness="1">
+      <StackPanel Spacing="16">
+        <TextBlock Text="{Binding [Settings_Language], Source={StaticResource Localizer}}"
+                   FontSize="14" FontWeight="Medium"
+                   Foreground="{DynamicResource RentierTextPrimaryBrush}" />
+
+        <StackPanel Spacing="10">
+          <!-- Labels are hardcoded per FR-006 — NOT localizer-bound -->
+          <RadioButton Content="English"
+                       IsChecked="{Binding IsEnglish, Mode=TwoWay}"
+                       GroupName="Language" />
+          <RadioButton Content="Srpski"
+                       IsChecked="{Binding IsSrLatn, Mode=TwoWay}"
+                       GroupName="Language" />
+        </StackPanel>
       </StackPanel>
     </Border>
 

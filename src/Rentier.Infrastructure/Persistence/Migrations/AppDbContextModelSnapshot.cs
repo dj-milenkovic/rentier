@@ -15,7 +15,7 @@ namespace Rentier.Infrastructure.Persistence.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "8.0.26");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.7");
 
             modelBuilder.Entity("Rentier.Domain.Entities.Filing", b =>
                 {
@@ -180,6 +180,14 @@ namespace Rentier.Infrastructure.Persistence.Migrations
                         .HasMaxLength(320)
                         .HasColumnType("TEXT");
 
+                    b.Property<DateOnly?>("_cursorDate")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("Cursor_LastSyncDate");
+
+                    b.Property<long?>("_cursorUid")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("Cursor_LastUid");
+
                     b.HasKey("Id");
 
                     b.ToTable("Mailboxes", (string)null);
@@ -296,6 +304,22 @@ namespace Rentier.Infrastructure.Persistence.Migrations
                     b.ToTable("TaxpayerProfiles", (string)null);
                 });
 
+            modelBuilder.Entity("Rentier.Domain.Entities.UserPreference", b =>
+                {
+                    b.Property<string>("Key")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Key");
+
+                    b.ToTable("UserPreferences", (string)null);
+                });
+
             modelBuilder.Entity("Rentier.Domain.ValueObjects.ExchangeRate", b =>
                 {
                     b.Property<DateOnly>("Date")
@@ -339,33 +363,6 @@ namespace Rentier.Infrastructure.Persistence.Migrations
                         .WithMany()
                         .HasForeignKey("TaxpayerProfileId")
                         .OnDelete(DeleteBehavior.SetNull);
-                });
-
-            modelBuilder.Entity("Rentier.Domain.Entities.Mailbox", b =>
-                {
-                    b.OwnsOne("Rentier.Domain.ValueObjects.MailboxCursor", "Cursor", b1 =>
-                        {
-                            b1.Property<Guid>("MailboxId")
-                                .HasColumnType("TEXT");
-
-                            b1.Property<DateOnly?>("LastSyncDate")
-                                .HasColumnType("TEXT")
-                                .HasColumnName("Cursor_LastSyncDate");
-
-                            b1.Property<long?>("LastUid")
-                                .HasColumnType("INTEGER")
-                                .HasColumnName("Cursor_LastUid");
-
-                            b1.HasKey("MailboxId");
-
-                            b1.ToTable("Mailboxes");
-
-                            b1.WithOwner()
-                                .HasForeignKey("MailboxId");
-                        });
-
-                    b.Navigation("Cursor")
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("Rentier.Domain.Entities.Report", b =>
