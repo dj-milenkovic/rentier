@@ -146,7 +146,7 @@ public class GetReportsQueryHandlerTests
         var result = await _sut.HandleAsync(new GetReportsQuery());
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("GET_REPORTS_FAILED");
+        result.Error.Code.Should().Be("REPORT_QUERY_FAILED");
         result.Error.Message.Should().Contain("DB failure");
     }
 
@@ -235,7 +235,7 @@ public class GetReportsQueryHandlerTests
         var result = await _sut.HandleAsync(new GetReportsQuery(Page: 0));
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("VALIDATION_ERROR");
+        result.Error.Code.Should().Be("PAGINATION_VALIDATION_FAILED");
         result.Error.Message.Should().Contain("1");
     }
 
@@ -245,7 +245,7 @@ public class GetReportsQueryHandlerTests
         var result = await _sut.HandleAsync(new GetReportsQuery(PageSize: 0));
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("VALIDATION_ERROR");
+        result.Error.Code.Should().Be("PAGINATION_VALIDATION_FAILED");
     }
 
     [Fact]
@@ -254,6 +254,6 @@ public class GetReportsQueryHandlerTests
         var result = await _sut.HandleAsync(new GetReportsQuery(PageSize: 101));
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("VALIDATION_ERROR");
+        result.Error.Code.Should().Be("PAGINATION_VALIDATION_FAILED");
     }
 }

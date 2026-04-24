@@ -42,7 +42,7 @@ public class ManualFilingViewModelTests
         h.HandleAsync(Arg.Any<CreateManualFilingCommand>(), Arg.Any<CancellationToken>())
             .Returns(success
                 ? Result<Guid, Error>.Success(Guid.NewGuid())
-                : Result<Guid, Error>.Failure(new Error("DUPLICATE_FILING", "A filing with the same details already exists")));
+                : Result<Guid, Error>.Failure(new Error("FILING_CREATE_DUPLICATE", "A filing with the same details already exists")));
         return h;
     }
 

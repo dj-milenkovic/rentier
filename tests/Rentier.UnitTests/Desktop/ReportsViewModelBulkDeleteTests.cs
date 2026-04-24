@@ -36,7 +36,7 @@ public class ReportsViewModelBulkDeleteTests
         mock.HandleAsync(Arg.Any<BulkDeleteReportsCommand>(), Arg.Any<CancellationToken>())
             .Returns(success
                 ? Result<VoidResult, Error>.Success(VoidResult.Value)
-                : Result<VoidResult, Error>.Failure(new Error("BULK_DELETE_REPORTS_FAILED", "error")));
+                : Result<VoidResult, Error>.Failure(new Error("REPORT_BULK_DELETE_FAILED", "error")));
         return mock;
     }
 

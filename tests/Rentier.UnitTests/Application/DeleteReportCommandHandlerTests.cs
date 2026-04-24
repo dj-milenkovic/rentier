@@ -70,7 +70,7 @@ public class DeleteReportCommandHandlerTests
         var result = await _sut.HandleAsync(new DeleteReportCommand(Guid.NewGuid()));
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("DELETE_REPORT_FAILED");
+        result.Error.Code.Should().Be("REPORT_DELETE_FAILED");
         await _reportRepo.DidNotReceive().DeleteAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
 
@@ -83,7 +83,7 @@ public class DeleteReportCommandHandlerTests
         var result = await _sut.HandleAsync(new DeleteReportCommand(Guid.NewGuid()));
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("DELETE_REPORT_FAILED");
+        result.Error.Code.Should().Be("REPORT_DELETE_FAILED");
         result.Error.Message.Should().Contain("Report not deletable");
     }
 }

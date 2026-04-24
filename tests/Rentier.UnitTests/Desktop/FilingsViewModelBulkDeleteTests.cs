@@ -36,7 +36,7 @@ public class FilingsViewModelBulkDeleteTests
         mock.HandleAsync(Arg.Any<BulkDeleteFilingsCommand>(), Arg.Any<CancellationToken>())
             .Returns(success
                 ? Result<VoidResult, Error>.Success(VoidResult.Value)
-                : Result<VoidResult, Error>.Failure(new Error("BULK_DELETE_FILINGS_FAILED", "error")));
+                : Result<VoidResult, Error>.Failure(new Error("FILING_BULK_DELETE_FAILED", "error")));
         return mock;
     }
 

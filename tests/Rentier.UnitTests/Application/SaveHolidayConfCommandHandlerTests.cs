@@ -58,7 +58,7 @@ public class SaveHolidayConfCommandHandlerTests
         var result = await _handler.HandleAsync(cmd);
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("INVALID_YEAR_RANGE");
+        result.Error.Code.Should().Be("HOLIDAY_SAVE_INVALID_YEAR_RANGE");
         await _repo.DidNotReceive().SaveHolidaysAsync(
             Arg.Any<IReadOnlyList<PublicHoliday>>(),
             Arg.Any<HolidayYearRange>(),
@@ -80,7 +80,7 @@ public class SaveHolidayConfCommandHandlerTests
         var result = await _handler.HandleAsync(cmd);
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("DUPLICATE_DATES");
+        result.Error.Code.Should().Be("HOLIDAY_SAVE_DUPLICATE_DATES");
         await _repo.DidNotReceive().SaveHolidaysAsync(
             Arg.Any<IReadOnlyList<PublicHoliday>>(),
             Arg.Any<HolidayYearRange>(),

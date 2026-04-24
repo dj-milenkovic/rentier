@@ -23,7 +23,7 @@ public class BulkDeleteFilingsCommandHandlerTests
         var cmd = new BulkDeleteFilingsCommand(null!);
         var result = await _sut.HandleAsync(cmd);
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("BULK_DELETE_FILINGS_INVALID");
+        result.Error.Code.Should().Be("FILING_BULK_DELETE_INVALID");
     }
 
     [Fact]
@@ -32,7 +32,7 @@ public class BulkDeleteFilingsCommandHandlerTests
         var cmd = new BulkDeleteFilingsCommand(Array.Empty<Guid>());
         var result = await _sut.HandleAsync(cmd);
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("BULK_DELETE_FILINGS_INVALID");
+        result.Error.Code.Should().Be("FILING_BULK_DELETE_INVALID");
     }
 
     [Fact]
@@ -58,7 +58,7 @@ public class BulkDeleteFilingsCommandHandlerTests
         var result = await _sut.HandleAsync(new BulkDeleteFilingsCommand(ids));
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("BULK_DELETE_FILINGS_FAILED");
+        result.Error.Code.Should().Be("FILING_BULK_DELETE_FAILED");
         result.Error.Message.Should().Contain("DB error");
     }
 

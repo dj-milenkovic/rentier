@@ -75,7 +75,7 @@ public class ImportReportCommandHandlerTests
         var result = await _sut.HandleAsync(MakeCommand());
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("INVALID_CSV");
+        result.Error.Code.Should().Be("REPORT_IMPORT_INVALID_CSV");
         result.Error.Message.Should().Contain("Missing header");
     }
 
@@ -101,7 +101,7 @@ public class ImportReportCommandHandlerTests
         var result = await _sut.HandleAsync(MakeCommand());
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("DUPLICATE_REPORT");
+        result.Error.Code.Should().Be("REPORT_IMPORT_DUPLICATE");
     }
 
     [Fact]
@@ -138,7 +138,7 @@ public class ImportReportCommandHandlerTests
         var result = await _sut.HandleAsync(MakeCommand());
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("IMPORT_FAILED");
+        result.Error.Code.Should().Be("REPORT_IMPORT_FAILED");
         result.Error.Message.Should().Contain("DB write failed");
     }
 }

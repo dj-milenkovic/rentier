@@ -23,7 +23,7 @@ public class BulkDeleteReportsCommandHandlerTests
     {
         var result = await _sut.HandleAsync(new BulkDeleteReportsCommand(null!));
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("BULK_DELETE_REPORTS_INVALID");
+        result.Error.Code.Should().Be("REPORT_BULK_DELETE_INVALID");
     }
 
     [Fact]
@@ -31,7 +31,7 @@ public class BulkDeleteReportsCommandHandlerTests
     {
         var result = await _sut.HandleAsync(new BulkDeleteReportsCommand(Array.Empty<Guid>()));
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("BULK_DELETE_REPORTS_INVALID");
+        result.Error.Code.Should().Be("REPORT_BULK_DELETE_INVALID");
     }
 
     [Fact]
@@ -74,7 +74,7 @@ public class BulkDeleteReportsCommandHandlerTests
             new BulkDeleteReportsCommand(new[] { Guid.NewGuid() }));
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("BULK_DELETE_REPORTS_FAILED");
+        result.Error.Code.Should().Be("REPORT_BULK_DELETE_FAILED");
     }
 
     [Fact]
