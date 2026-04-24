@@ -9,21 +9,21 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Ace4896.DBus.Services.Secrets" Version="1.5.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.*">
+    <PackageReference Include="Ace4896.DBus.Services.Secrets" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.*" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.*">
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="MailKit" Version="4.*" />
-    <PackageReference Include="AngleSharp" Version="1.*" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.*" />
-    <PackageReference Include="CsvHelper" Version="33.*" />
-    <PackageReference Include="Velopack" Version="0.*" />
+    <PackageReference Include="MailKit" />
+    <PackageReference Include="AngleSharp" />
+    <PackageReference Include="Microsoft.Extensions.Http" />
+    <PackageReference Include="CsvHelper" />
+    <PackageReference Include="Velopack" />
   </ItemGroup>
 
   <ItemGroup>
