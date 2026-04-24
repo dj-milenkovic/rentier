@@ -11,7 +11,6 @@ using Rentier.Desktop.Dialogs;
 using Rentier.Desktop.Resources;
 using Rentier.Desktop.Services;
 using Rentier.Desktop.ViewModels;
-using Rentier.Infrastructure.Repositories;
 
 namespace Rentier.Desktop.Composition;
 
@@ -28,9 +27,6 @@ public static class CompositionRoot
 
         // T030: Localization service (singleton — same instance used by AXAML Localizer resource)
         services.AddSingleton<ILocalizationService, LocalizationService>();
-
-        // T030: UserPreference infrastructure repository
-        services.AddTransient<IUserPreferenceRepository, UserPreferenceRepository>();
 
         // T030: UserPreference CQRS handlers
         services.AddTransient<
