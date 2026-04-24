@@ -8,7 +8,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Rentier.Application\Rentier.Application.csproj" />
     <ProjectReference Include="..\Rentier.Domain\Rentier.Domain.csproj" />
-    <ProjectReference Include="..\Rentier.Infrastructure\Rentier.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -30,10 +29,6 @@
     <PackageReference Include="Avalonia.Fonts.Inter" Version="11.*" />
     <PackageReference Include="Avalonia.Desktop" Version="11.*" />
     <PackageReference Include="Avalonia.ReactiveUI" Version="11.*" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.*">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
     <PackageReference Include="ReactiveUI" Version="20.*" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.*" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.*" />
@@ -56,5 +51,19 @@
       <PackagePath>Contents/Resources</PackagePath>
     </None>
   </ItemGroup>
+
+  <!-- Release publish settings: self-contained single-file with embedded symbols -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+
+  <!-- ReadyToRun: Windows-only (R2R not beneficial on macOS/Linux for Avalonia) -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release' And '$([MSBuild]::IsOSPlatform(Windows))'">
+    <PublishReadyToRun>true</PublishReadyToRun>
+  </PropertyGroup>
 
 </Project>
