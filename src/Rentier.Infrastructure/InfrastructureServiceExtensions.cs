@@ -55,6 +55,7 @@ public static class InfrastructureServiceExtensions
         services.AddTransient<IStatementParser, IbkrCsvParser>();
         services.AddTransient<IReportRepository, ReportRepository>();
         services.AddTransient<IFilingRepository, FilingRepository>();
+        services.AddTransient<IUserPreferenceRepository, UserPreferenceRepository>();
         services.AddTransient<IXmlFilingSerializer, PpOpoXmlSerializer>();
         services.AddTransient<IMailboxSyncService, ImapMailboxSyncService>();
     }
