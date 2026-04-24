@@ -1,0 +1,53 @@
+﻿{
+  Dividends: [
+    {
+      Date: Date_1,
+      Currency: USD,
+      EntityName: AAPL,
+      Amount: 24.00
+    },
+    {
+      Date: Date_2,
+      Currency: EUR,
+      EntityName: MSFT,
+      Amount: 75.00
+    }
+  ],
+  Interest: [
+    {
+      Date: Date_3,
+      Currency: USD,
+      EntityName: Interactive Brokers,
+      Amount: 12.50
+    },
+    {
+      Date: Date_3,
+      Currency: USD,
+      EntityName: Interactive Brokers,
+      Amount: 2.10,
+      Type: Debit
+    }
+  ],
+  Withholdings: [
+    {
+      Date: Date_1,
+      Currency: USD,
+      EntityName: AAPL,
+      Amount: 3.60
+    },
+    {
+      Date: Date_2,
+      Currency: EUR,
+      EntityName: MSFT,
+      Amount: 11.25
+    }
+  ],
+  EmbeddedRates: [
+    {
+      Date: Date_1,
+      FromCurrency: EUR,
+      ToCurrency: USD,
+      Rate: 1.0921
+    }
+  ]
+}
