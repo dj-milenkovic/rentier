@@ -20,6 +20,7 @@ public class NavigationEntry : ReactiveObject
     private string _label;
     private bool _isVisible;
     private bool _isExpanded;
+    private bool _isActive;
 
     public string Label
     {
@@ -41,6 +42,23 @@ public class NavigationEntry : ReactiveObject
         get => _isVisible;
         set => this.RaiseAndSetIfChanged(ref _isVisible, value);
     }
+
+    /// <summary>
+    /// True when this entry is the currently active content page.
+    /// Decoupled from ListBox selection so the pipe highlight survives the
+    /// SelectedEntry=null reset used to allow re-clicking the same item.
+    /// </summary>
+    public bool IsActive
+    {
+        get => _isActive;
+        set => this.RaiseAndSetIfChanged(ref _isActive, value);
+    }
+
+    /// <summary>
+    /// True for child entries nested under a group header (IndentLevel &gt; 0).
+    /// Used by converters to apply smaller sizing in the sidebar.
+    /// </summary>
+    public bool IsChild => IndentLevel > 0;
 
     public StreamGeometry? Icon { get; init; }
 

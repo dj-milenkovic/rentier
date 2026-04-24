@@ -16,7 +16,7 @@ public static class SrLatnStrings
         ["Nav_Settings_Holidays"] = "Praznici",
         ["Nav_Settings_Mailboxes"] = "Poštanski sandučići",
         ["Nav_Settings_Importers"] = "Uvoznici",
-        ["Nav_Settings_Language"] = "Jezik",
+        ["Nav_Settings_Appearance"] = "Izgled",
         ["AppTitle"] = "Rentier",
         ["Sync_StartButton"] = "▶ Pokreni sinhronizaciju",
         ["Sync_CancelButton"] = "⬛ Otkaži",
