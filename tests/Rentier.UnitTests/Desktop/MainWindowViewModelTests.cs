@@ -148,7 +148,7 @@ public class MainWindowViewModelTests
         locService["Nav_Settings_Holidays"].Returns("Holidays");
         locService["Nav_Settings_Mailboxes"].Returns("Mailboxes");
         locService["Nav_Settings_Importers"].Returns("Importers");
-        locService["Nav_Settings_Language"].Returns("Language");
+        locService["Nav_Settings_Appearance"].Returns("Appearance");
         return locService;
     }
 
@@ -158,11 +158,11 @@ public class MainWindowViewModelTests
     // ── Constructor tests ─────────────────────────────────────────────────────
 
     [Fact]
-    public void Constructor_DefaultSelectedEntry_IsDashboard()
+    public void Constructor_DefaultCurrentViewModel_IsDashboard()
     {
         var vm = CreateVm();
 
-        vm.SelectedEntry.ViewModel.Should().BeOfType<DashboardViewModel>();
+        vm.CurrentViewModel.Should().BeOfType<DashboardViewModel>();
     }
 
     [Fact]
@@ -226,16 +226,17 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
-    public void Navigate_ToFilingsWithReportId_ChangesSelectedEntryToFilings()
+    public void Navigate_ToFilingsWithReportId_ChangesCurrentViewModelToFilings()
     {
         var vm = CreateVm();
+        using var _ = vm.Activator.Activate();
         var reportId = Guid.NewGuid();
         var reportsVm = (ReportsViewModel)vm.NavigationEntries
             .First(e => e.ViewModel is ReportsViewModel).ViewModel!;
 
         reportsVm.ViewFilingsCommand.Execute(reportId).Subscribe();
 
-        vm.SelectedEntry.ViewModel.Should().BeOfType<FilingsViewModel>();
+        vm.CurrentViewModel.Should().BeOfType<FilingsViewModel>();
     }
 
     // ── ReportIdFilter cleared on back-navigation (Bug #2 regression tests) ──

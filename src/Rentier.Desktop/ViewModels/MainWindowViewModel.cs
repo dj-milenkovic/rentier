@@ -18,7 +18,7 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
     public ViewModelActivator Activator { get; } = new();
 
     private ReactiveObject _currentViewModel;
-    private NavigationEntry _selectedEntry;
+    private NavigationEntry? _selectedEntry;
 
     /// <summary>
     /// Tracks the last content entry that was navigated to (for restoring selection after
@@ -34,7 +34,7 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
         set => this.RaiseAndSetIfChanged(ref _currentViewModel, value);
     }
 
-    public NavigationEntry SelectedEntry
+    public NavigationEntry? SelectedEntry
     {
         get => _selectedEntry;
         set => this.RaiseAndSetIfChanged(ref _selectedEntry, value);
@@ -112,7 +112,7 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
 
         // ── Settings group: group header + 5 child entries ────────────────────
         // Build the group header first (no children yet — set after children are created).
-        var settingsGroup = new NavigationEntry(localizationService["Nav_Settings"], viewModel: null, Icon: NavIcon("NavSettingsGroupIcon"))
+        var settingsGroup = new NavigationEntry(localizationService["Nav_Settings"], viewModel: null, Icon: NavIcon("NavSettingsIcon"))
         {
             IsGroup    = true,
             IsExpanded = true,
@@ -123,7 +123,7 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
         var holidaysChild  = new NavigationEntry(localizationService["Nav_Settings_Holidays"],   holidayVm,    Icon: NavIcon("NavHolidaysIcon"))    { IndentLevel = 1, ParentGroup = settingsGroup };
         var mailboxesChild = new NavigationEntry(localizationService["Nav_Settings_Mailboxes"],  mailboxVm,    Icon: NavIcon("NavMailboxesIcon"))   { IndentLevel = 1, ParentGroup = settingsGroup };
         var importersChild = new NavigationEntry(localizationService["Nav_Settings_Importers"],  importerVm,   Icon: NavIcon("NavImportersIcon"))   { IndentLevel = 1, ParentGroup = settingsGroup };
-        var languageChild  = new NavigationEntry(localizationService["Nav_Settings_Language"],   appearanceVm, Icon: NavIcon("NavLanguageIcon"))    { IndentLevel = 1, ParentGroup = settingsGroup };
+        var languageChild  = new NavigationEntry(localizationService["Nav_Settings_Appearance"],   appearanceVm, Icon: NavIcon("NavLanguageIcon"))    { IndentLevel = 1, ParentGroup = settingsGroup };
 
         // Wire children into the group header.
         settingsGroup.Children = new[] { profileChild, holidaysChild, mailboxesChild, importersChild, languageChild };
@@ -146,6 +146,7 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
         _selectedEntry     = NavigationEntries[0];
         _currentViewModel  = dashboardVm;
         _lastContentEntry  = NavigationEntries[0];
+        NavigationEntries[0].IsActive = true;
 
         // M1: subscription moved into WhenActivated so it is disposed on deactivation
         this.WhenActivated(disposables =>
@@ -159,15 +160,21 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
                     {
                         // Toggle the group expand/collapse state; do NOT change CurrentViewModel.
                         entry.ToggleExpanded();
-                        // Immediately restore selection to the last real content entry so the
-                        // ListBox does not leave a stale highlight on the group header row.
-                        SelectedEntry = _lastContentEntry ?? NavigationEntries[0];
                     }
                     else if (entry.ViewModel is not null)
                     {
+                        // Deactivate the previous content entry, activate the new one.
+                        if (_lastContentEntry is not null)
+                            _lastContentEntry.IsActive = false;
+                        entry.IsActive    = true;
                         _lastContentEntry = entry;
                         CurrentViewModel  = entry.ViewModel;
                     }
+
+                    // Always reset to null so the same item can be re-clicked immediately
+                    // without needing to click away first (ListBox won't fire SelectionChanged
+                    // for an item that stays selected; resetting to null breaks that lock).
+                    SelectedEntry = null;
                 })
                 .DisposeWith(disposables);
 
@@ -198,7 +205,7 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
                 HolidaySettingsViewModel    => "Nav_Settings_Holidays",
                 MailboxSettingsViewModel    => "Nav_Settings_Mailboxes",
                 ImporterSettingsViewModel   => "Nav_Settings_Importers",
-                AppearanceSettingsViewModel => "Nav_Settings_Language",
+                AppearanceSettingsViewModel => "Nav_Settings_Appearance",
                 _                           => null,
             };
 

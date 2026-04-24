@@ -16,6 +16,9 @@
   <Window.Resources>
     <!-- Converts IsExpanded (bool) → chevron rotation angle: false=0°, true=90° -->
     <conv:BoolToDoubleConverter x:Key="BoolToAngleConverter" TrueValue="90" FalseValue="0" />
+    <!-- Child items (IsChild=true) get a shorter row height and smaller font -->
+    <conv:BoolToDoubleConverter x:Key="ChildHeightConverter"   TrueValue="32" FalseValue="40" />
+    <conv:BoolToDoubleConverter x:Key="ChildFontSizeConverter" TrueValue="12" FalseValue="13" />
   </Window.Resources>
 
   <DockPanel>
@@ -56,7 +59,7 @@
             <DataTemplate x:DataType="vm:NavigationEntry">
               <!-- Outer container: hidden when IsVisible=false (e.g. ManualFiling transient entry) -->
               <Grid IsVisible="{Binding IsVisible}"
-                    Height="40">
+                    Height="{Binding IsChild, Converter={StaticResource ChildHeightConverter}}">
 
                 <!-- ── Group header row (Settings collapsible group) ─────── -->
                 <Grid ColumnDefinitions="4,44,*"
@@ -101,12 +104,12 @@
                 <Grid ColumnDefinitions="4,44,*"
                       IsVisible="{Binding !IsGroup}">
 
-                  <!-- Active selection pipe (only for non-group entries) -->
+                  <!-- Active selection pipe — driven by IsActive (decoupled from ListBox selection) -->
                   <Border Grid.Column="0"
                           Width="3" Height="20"
                           CornerRadius="1.5"
                           Background="{DynamicResource RentierNavActivePipeBrush}"
-                          IsVisible="{Binding $parent[ListBoxItem].IsSelected}"
+                          IsVisible="{Binding IsActive}"
                           VerticalAlignment="Center"
                           HorizontalAlignment="Left" />
 
@@ -119,10 +122,11 @@
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center" />
 
-                  <!-- Label -->
+                  <!-- Label — smaller font for child items -->
                   <TextBlock Grid.Column="2"
                              Text="{Binding Label}"
-                             FontSize="13" FontWeight="Medium"
+                             FontSize="{Binding IsChild, Converter={StaticResource ChildFontSizeConverter}}"
+                             FontWeight="Medium"
                              Foreground="{DynamicResource RentierTextPrimaryBrush}"
                              VerticalAlignment="Center" />
                 </Grid>

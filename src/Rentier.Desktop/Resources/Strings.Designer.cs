@@ -24,7 +24,7 @@ public static class Strings
     public static string Nav_Settings_Holidays => "Holidays";
     public static string Nav_Settings_Mailboxes => "Mailboxes";
     public static string Nav_Settings_Importers => "Importers";
-    public static string Nav_Settings_Language => "Language";
+    public static string Nav_Settings_Appearance => "Appearance";
     public static string Dashboard_PendingCount => "Pending";
     public static string Dashboard_FiledCount => "Filed";
     public static string Dashboard_PaidCount => "Paid";
