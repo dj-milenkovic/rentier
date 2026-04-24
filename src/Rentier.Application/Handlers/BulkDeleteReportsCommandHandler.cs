@@ -24,32 +24,25 @@ public sealed class BulkDeleteReportsCommandHandler
         _filingRepository = filingRepository;
     }
 
-    public async Task<Result<VoidResult, Error>> HandleAsync(
+    public Task<Result<VoidResult, Error>> HandleAsync(
         BulkDeleteReportsCommand command, CancellationToken ct = default)
     {
         if (command.ReportIds is null || command.ReportIds.Count == 0)
-            return Result<VoidResult, Error>.Failure(
-                new Error("BULK_DELETE_REPORTS_INVALID", "ReportIds must be non-null and non-empty."));
+            return Task.FromResult(Result<VoidResult, Error>.Failure(
+                new Error(ErrorCodes.REPORT_BULK_DELETE_INVALID, "ReportIds must be non-null and non-empty.")));
 
-        try
-        {
-            // Delete linked filings first (cascade) to prevent FK violations
-            foreach (var reportId in command.ReportIds)
-                await _filingRepository.DeleteByReportIdAsync(reportId, ct);
+        return HandlerHelper.ExecuteAsync<VoidResult>(
+            async () =>
+            {
+                // Delete linked filings first (cascade) to prevent FK violations
+                foreach (var reportId in command.ReportIds)
+                    await _filingRepository.DeleteByReportIdAsync(reportId, ct);
 
-            // Delete the reports
-            await _reportRepository.DeleteManyAsync(command.ReportIds, ct);
+                // Delete the reports
+                await _reportRepository.DeleteManyAsync(command.ReportIds, ct);
 
-            return Result<VoidResult, Error>.Success(VoidResult.Value);
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            return Result<VoidResult, Error>.Failure(
-                new Error("BULK_DELETE_REPORTS_FAILED", ex.Message));
-        }
+                return Result<VoidResult, Error>.Success(VoidResult.Value);
+            },
+            ErrorCodes.REPORT_BULK_DELETE_FAILED);
     }
 }

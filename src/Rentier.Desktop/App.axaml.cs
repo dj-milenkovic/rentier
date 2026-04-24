@@ -1,6 +1,5 @@
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
@@ -10,13 +9,11 @@ using Rentier.Desktop.Composition;
 using Rentier.Desktop.Services;
 using Rentier.Desktop.ViewModels;
 using Rentier.Desktop.Views;
-using Rentier.Infrastructure;
-using Rentier.Infrastructure.Persistence;
 
 namespace Rentier.Desktop;
 
 /// <summary>
-/// DI composition root. Infrastructure services registered via AddInfrastructureServices.
+/// DI composition root. Infrastructure services registered via reflection-discovered IInfrastructureRegistrar.
 /// </summary>
 public partial class App : Avalonia.Application
 {
@@ -43,13 +40,29 @@ public partial class App : Avalonia.Application
             System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(dbPath)!);
 
             var services = new ServiceCollection();
-            await services.AddInfrastructureServicesAsync(dbPath);
+
+            // Discover and invoke IInfrastructureRegistrar at runtime via reflection.
+            // This removes the compile-time ProjectReference from Desktop → Infrastructure.
+            var infraAssembly = System.Reflection.Assembly.Load("Rentier.Infrastructure")
+                ?? throw new InvalidOperationException(
+                    "Could not load Rentier.Infrastructure assembly. " +
+                    "Ensure the assembly is present in the application output directory.");
+
+            var registrarType = infraAssembly.GetTypes()
+                .FirstOrDefault(t => typeof(IInfrastructureRegistrar).IsAssignableFrom(t)
+                                     && t is { IsClass: true, IsAbstract: false })
+                ?? throw new InvalidOperationException(
+                    "No implementation of IInfrastructureRegistrar was found in Rentier.Infrastructure. " +
+                    "Ensure InfrastructureRegistrar is present and implements the interface.");
+
+            var registrar = (IInfrastructureRegistrar)Activator.CreateInstance(registrarType)!;
+            await registrar.RegisterServicesAsync(services, dbPath);
+
             services.AddDesktopServices();
             var provider = services.BuildServiceProvider();
 
-            // Apply EF migrations on startup
-            await using var dbContext = provider.GetRequiredService<AppDbContext>();
-            await dbContext.Database.MigrateAsync();
+            // Apply EF migrations via the abstraction — Desktop no longer references AppDbContext
+            await provider.GetRequiredService<IDatabaseInitializer>().InitializeAsync();
 
             // Seed holiday defaults if the database has no holiday configuration yet
             var seedHandler = provider.GetRequiredService<
@@ -102,3 +115,4 @@ public partial class App : Avalonia.Application
         }
     }
 }
+

@@ -14,26 +14,19 @@ public sealed class BulkDeleteFilingsCommandHandler
     public BulkDeleteFilingsCommandHandler(IFilingRepository filingRepository)
         => _filingRepository = filingRepository;
 
-    public async Task<Result<VoidResult, Error>> HandleAsync(
+    public Task<Result<VoidResult, Error>> HandleAsync(
         BulkDeleteFilingsCommand command, CancellationToken ct = default)
     {
         if (command.FilingIds is null || command.FilingIds.Count == 0)
-            return Result<VoidResult, Error>.Failure(
-                new Error("BULK_DELETE_FILINGS_INVALID", "FilingIds must be non-null and non-empty."));
+            return Task.FromResult(Result<VoidResult, Error>.Failure(
+                new Error(ErrorCodes.FILING_BULK_DELETE_INVALID, "FilingIds must be non-null and non-empty.")));
 
-        try
-        {
-            await _filingRepository.DeleteManyAsync(command.FilingIds, ct);
-            return Result<VoidResult, Error>.Success(VoidResult.Value);
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            return Result<VoidResult, Error>.Failure(
-                new Error("BULK_DELETE_FILINGS_FAILED", ex.Message));
-        }
+        return HandlerHelper.ExecuteAsync<VoidResult>(
+            async () =>
+            {
+                await _filingRepository.DeleteManyAsync(command.FilingIds, ct);
+                return Result<VoidResult, Error>.Success(VoidResult.Value);
+            },
+            ErrorCodes.FILING_BULK_DELETE_FAILED);
     }
 }

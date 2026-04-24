@@ -104,6 +104,6 @@ public sealed class MacOsCredentialStore : ICredentialStore
         await Task.WhenAll(stdoutTask, stderrTask);
         await process.WaitForExitAsync();
 
-        return (process.ExitCode, stdoutTask.Result, stderrTask.Result);
+        return (process.ExitCode, await stdoutTask, await stderrTask);
     }
 }

@@ -111,6 +111,6 @@ public class UpdateMailboxCommandHandlerTests
         var result = await _handler.HandleAsync(cmd);
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("DOMAIN_VALIDATION");
+        result.Error.Code.Should().Be("MAILBOX_VALIDATION_FAILED");
     }
 }

@@ -60,7 +60,7 @@ public sealed class UpdateImporterCommandHandlerTests
         var result = await _sut.HandleAsync(cmd);
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("INVALID_REGEX");
+        result.Error.Code.Should().Be("IMPORTER_VALIDATION_INVALID_REGEX");
         await _repo.DidNotReceive().UpdateAsync(Arg.Any<Importer>(), Arg.Any<CancellationToken>());
     }
 

@@ -15,17 +15,13 @@ public sealed class GetUserPreferenceQueryHandler
         _repository = repository;
     }
 
-    public async Task<Result<string?, Error>> HandleAsync(
-        GetUserPreferenceQuery query, CancellationToken ct = default)
-    {
-        try
-        {
-            var preference = await _repository.GetAsync(query.Key, ct);
-            return Result<string?, Error>.Success(preference?.Value);
-        }
-        catch (Exception ex)
-        {
-            return Result<string?, Error>.Failure(Error.Infrastructure(ex.Message));
-        }
-    }
+    public Task<Result<string?, Error>> HandleAsync(
+        GetUserPreferenceQuery query, CancellationToken ct = default) =>
+        HandlerHelper.ExecuteAsync<string?>(
+            async () =>
+            {
+                var preference = await _repository.GetAsync(query.Key, ct);
+                return Result<string?, Error>.Success(preference?.Value);
+            },
+            ErrorCodes.INFRASTRUCTURE_ERROR);
 }

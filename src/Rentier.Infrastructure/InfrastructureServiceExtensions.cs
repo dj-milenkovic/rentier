@@ -11,6 +11,7 @@ using Rentier.Infrastructure.Scraping;
 using Rentier.Infrastructure.Security;
 using Rentier.Infrastructure.Serialization;
 using Rentier.Infrastructure.Sync;
+using Rentier.Infrastructure.Updates;
 
 namespace Rentier.Infrastructure;
 
@@ -55,7 +56,9 @@ public static class InfrastructureServiceExtensions
         services.AddTransient<IStatementParser, IbkrCsvParser>();
         services.AddTransient<IReportRepository, ReportRepository>();
         services.AddTransient<IFilingRepository, FilingRepository>();
+        services.AddTransient<IUserPreferenceRepository, UserPreferenceRepository>();
         services.AddTransient<IXmlFilingSerializer, PpOpoXmlSerializer>();
         services.AddTransient<IMailboxSyncService, ImapMailboxSyncService>();
+        services.AddSingleton<IUpdateService, VelopackUpdateService>();
     }
 }
