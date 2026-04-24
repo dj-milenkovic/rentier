@@ -220,7 +220,7 @@ public class GetDashboardQueryHandlerTests
         var result = await _sut.HandleAsync(new GetDashboardQuery());
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("DASHBOARD_ERROR");
+        result.Error.Code.Should().Be("DASHBOARD_QUERY_FAILED");
         result.Error.Message.Should().Contain("DB connection lost");
     }
 

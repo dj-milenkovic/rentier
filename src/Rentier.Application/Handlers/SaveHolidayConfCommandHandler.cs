@@ -28,12 +28,12 @@ public sealed class SaveHolidayConfCommandHandler
         }
         catch (DomainException ex)
         {
-            return Result<VoidResult, Error>.Failure(new Error("INVALID_YEAR_RANGE", ex.Message));
+            return Result<VoidResult, Error>.Failure(new Error(ErrorCodes.HOLIDAY_SAVE_INVALID_YEAR_RANGE, ex.Message));
         }
 
         var dateGroups = cmd.Holidays.GroupBy(h => h.Date);
         if (dateGroups.Any(g => g.Count() > 1))
-            return Result<VoidResult, Error>.Failure(new Error("DUPLICATE_DATES", "Holiday list contains duplicate dates."));
+            return Result<VoidResult, Error>.Failure(new Error(ErrorCodes.HOLIDAY_SAVE_DUPLICATE_DATES, "Holiday list contains duplicate dates."));
 
         var holidays = cmd.Holidays
             .Select(dto => PublicHoliday.Create(dto.Date, dto.Name))

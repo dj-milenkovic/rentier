@@ -92,7 +92,7 @@ public class AddMailboxCommandHandlerTests
         var result = await _handler.HandleAsync(cmd);
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("DOMAIN_VALIDATION");
+        result.Error.Code.Should().Be("MAILBOX_VALIDATION_FAILED");
         await _repo.DidNotReceive().AddAsync(Arg.Any<Mailbox>(), Arg.Any<CancellationToken>());
     }
 

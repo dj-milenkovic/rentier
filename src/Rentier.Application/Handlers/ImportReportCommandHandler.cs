@@ -28,44 +28,36 @@ public sealed class ImportReportCommandHandler
         _processReports = processReports;
     }
 
-    public async Task<Result<Guid, Error>> HandleAsync(
-        ImportReportCommand command, CancellationToken ct = default)
-    {
-        try
-        {
-            // Step 1: Validate CSV format before anything is persisted
-            using var stream = new MemoryStream(command.CsvContent);
-            var parseResult = await _statementParser.ParseAsync(stream, ct);
-            if (!parseResult.IsSuccess)
-                return Result<Guid, Error>.Failure(
-                    new Error("INVALID_CSV", parseResult.Error.Message));
+    public Task<Result<Guid, Error>> HandleAsync(
+        ImportReportCommand command, CancellationToken ct = default) =>
+        HandlerHelper.ExecuteAsync<Guid>(
+            async () =>
+            {
+                // Step 1: Validate CSV format before anything is persisted
+                using var stream = new MemoryStream(command.CsvContent);
+                var parseResult = await _statementParser.ParseAsync(stream, ct);
+                if (!parseResult.IsSuccess)
+                    return Result<Guid, Error>.Failure(
+                        new Error(ErrorCodes.REPORT_IMPORT_INVALID_CSV, parseResult.Error.Message));
 
-            // Step 2: Duplicate check
-            var exists = await _reportRepository.ExistsByImporterAndNameAsync(
-                command.ImporterId, command.FileName, ct);
-            if (exists)
-                return Result<Guid, Error>.Failure(
-                    new Error("DUPLICATE_REPORT",
-                        $"A report named '{command.FileName}' already exists for this importer."));
+                // Step 2: Duplicate check
+                var exists = await _reportRepository.ExistsByImporterAndNameAsync(
+                    command.ImporterId, command.FileName, ct);
+                if (exists)
+                    return Result<Guid, Error>.Failure(
+                        new Error(ErrorCodes.REPORT_IMPORT_DUPLICATE,
+                            $"A report named ''{command.FileName}'' already exists for this importer."));
 
-            // Step 3: Persist
-            var report = Report.Create(command.ImporterId, command.FileName, command.CsvContent, null);
-            await _reportRepository.AddAsync(report, ct);
+                // Step 3: Persist
+                var report = Report.Create(command.ImporterId, command.FileName, command.CsvContent, null);
+                await _reportRepository.AddAsync(report, ct);
 
-            // Step 4: Run pipeline for all Init reports
-            var processResult = await _processReports.HandleAsync(new ProcessReportsCommand(), ct);
-            if (!processResult.IsSuccess)
-                return Result<Guid, Error>.Failure(processResult.Error);
+                // Step 4: Run pipeline for all Init reports
+                var processResult = await _processReports.HandleAsync(new ProcessReportsCommand(), ct);
+                if (!processResult.IsSuccess)
+                    return Result<Guid, Error>.Failure(processResult.Error);
 
-            return Result<Guid, Error>.Success(report.Id);
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            return Result<Guid, Error>.Failure(new Error("IMPORT_FAILED", ex.Message));
-        }
-    }
+                return Result<Guid, Error>.Success(report.Id);
+            },
+            ErrorCodes.REPORT_IMPORT_FAILED);
 }

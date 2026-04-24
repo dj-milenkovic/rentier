@@ -172,7 +172,7 @@ public class CreateManualFilingCommandHandlerTests
         var result = await handler.HandleAsync(cmd);
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("DUPLICATE_FILING");
+        result.Error.Code.Should().Be("FILING_CREATE_DUPLICATE");
     }
 
     [Fact]

@@ -48,7 +48,7 @@ public sealed class CreateManualFilingCommandHandler
 
         if (exists)
             return Result<Guid, Error>.Failure(
-                new Error("DUPLICATE_FILING", "A filing with the same details already exists"));
+                new Error(ErrorCodes.FILING_CREATE_DUPLICATE, "A filing with the same details already exists"));
 
         // ── Persist filing ───────────────────────────────────────────────
         var filing = Filing.CreateFromIncome(
@@ -71,4 +71,5 @@ public sealed class CreateManualFilingCommandHandler
         return Result<Guid, Error>.Success(filing.Id);
     }
 }
+
 

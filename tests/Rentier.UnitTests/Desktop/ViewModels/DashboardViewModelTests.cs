@@ -27,7 +27,7 @@ public class DashboardViewModelTests
     {
         var h = Substitute.For<IQueryHandler<GetDashboardQuery, Result<DashboardDto, Error>>>();
         h.HandleAsync(Arg.Any<GetDashboardQuery>(), Arg.Any<CancellationToken>())
-            .Returns(Result<DashboardDto, Error>.Failure(new Error("DASHBOARD_ERROR", errorMessage)));
+            .Returns(Result<DashboardDto, Error>.Failure(new Error("DASHBOARD_QUERY_FAILED", errorMessage)));
         return h;
     }
 

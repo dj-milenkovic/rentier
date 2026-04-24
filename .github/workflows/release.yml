@@ -68,11 +68,7 @@ jobs:
           dotnet publish ${{ env.PROJECT_PATH }}
           -c Release
           -r win-x64
-          --self-contained
-          -p:PublishSingleFile=true
-          -p:PublishReadyToRun=true
           -p:PublishTrimmed=${{ needs.version.outputs.trimmed }}
-          -p:DebugType=embedded
           -p:Version=${{ needs.version.outputs.version }}
           -p:AssemblyVersion=${{ needs.version.outputs.version }}
           -p:FileVersion=${{ needs.version.outputs.version }}
@@ -127,9 +123,7 @@ jobs:
           dotnet publish ${{ env.PROJECT_PATH }}
           -c Release
           -r ${{ matrix.rid }}
-          --self-contained
           -p:PublishTrimmed=${{ needs.version.outputs.trimmed }}
-          -p:DebugType=embedded
           -p:Version=${{ needs.version.outputs.version }}
           -p:AssemblyVersion=${{ needs.version.outputs.version }}
           -p:FileVersion=${{ needs.version.outputs.version }}
@@ -228,10 +222,7 @@ jobs:
           dotnet publish ${{ env.PROJECT_PATH }}
           -c Release
           -r linux-x64
-          --self-contained
-          -p:PublishSingleFile=true
           -p:PublishTrimmed=${{ needs.version.outputs.trimmed }}
-          -p:DebugType=embedded
           -p:Version=${{ needs.version.outputs.version }}
           -p:AssemblyVersion=${{ needs.version.outputs.version }}
           -p:FileVersion=${{ needs.version.outputs.version }}
