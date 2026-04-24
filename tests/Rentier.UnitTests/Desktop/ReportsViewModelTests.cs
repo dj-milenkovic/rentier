@@ -44,7 +44,7 @@ public class ReportsViewModelTests
         h.HandleAsync(Arg.Any<ImportReportCommand>(), Arg.Any<CancellationToken>())
             .Returns(success
                 ? Result<Guid, Error>.Success(Guid.NewGuid())
-                : Result<Guid, Error>.Failure(new Error("IMPORT_FAILED", "Import error")));
+                : Result<Guid, Error>.Failure(new Error("REPORT_IMPORT_FAILED", "Import error")));
         return h;
     }
 
@@ -55,7 +55,7 @@ public class ReportsViewModelTests
         h.HandleAsync(Arg.Any<DeleteReportCommand>(), Arg.Any<CancellationToken>())
             .Returns(success
                 ? Result<VoidResult, Error>.Success(VoidResult.Value)
-                : Result<VoidResult, Error>.Failure(new Error("DELETE_REPORT_FAILED", "Delete error")));
+                : Result<VoidResult, Error>.Failure(new Error("REPORT_DELETE_FAILED", "Delete error")));
         return h;
     }
 
@@ -121,7 +121,7 @@ public class ReportsViewModelTests
         var failingHandler = Substitute.For<IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>>>();
         failingHandler.HandleAsync(Arg.Any<GetReportsQuery>(), Arg.Any<CancellationToken>())
             .Returns(Result<ReportsPageResult, Error>.Failure(
-                new Error("GET_REPORTS_FAILED", "DB error")));
+                new Error("REPORT_QUERY_FAILED", "DB error")));
 
         var vm = CreateVm(getReports: failingHandler);
 

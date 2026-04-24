@@ -146,7 +146,7 @@ public class GetFilingsQueryHandlerTests
     {
         var result = await _sut.HandleAsync(new GetFilingsQuery(SortColumn: (FilingSortColumn)999));
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("VALIDATION_ERROR");
+        result.Error.Code.Should().Be("PAGINATION_VALIDATION_FAILED");
         result.Error.Message.Should().Contain("sort column");
     }
 
