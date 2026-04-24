@@ -106,15 +106,18 @@ public class MainWindowViewModelSmokeTests
         services.AddSingleton(CreateMailboxVm());
         services.AddSingleton(CreateImporterVm());
         services.AddSingleton(CreateAppearanceVm());
+        services.AddSingleton(_ => Substitute.For<IUpdateService>());
 
         return services.BuildServiceProvider();
     }
 
     private static MainWindowViewModel CreateVm()
     {
+        var provider = CreateProvider();
         var locService = Substitute.For<ILocalizationService>();
         locService.CultureChanged.Returns(System.Reactive.Linq.Observable.Never<string>());
-        return new MainWindowViewModel(CreateProvider(), locService);
+        var updateService = provider.GetRequiredService<IUpdateService>();
+        return new MainWindowViewModel(provider, locService, updateService);
     }
 
     [Fact]

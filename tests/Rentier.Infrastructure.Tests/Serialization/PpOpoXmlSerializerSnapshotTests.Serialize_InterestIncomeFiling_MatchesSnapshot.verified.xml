@@ -1,0 +1,55 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<ns1:PodaciPoreskeDeklaracije xmlns:ns1="http://pid.purs.gov.rs">
+  <ns1:PodaciOPrijavi>
+    <ns1:VrstaPrijave>1</ns1:VrstaPrijave>
+    <ns1:ObracunskiPeriod>2025-05</ns1:ObracunskiPeriod>
+    <ns1:Rok>1</ns1:Rok>
+  </ns1:PodaciOPrijavi>
+  <ns1:PodaciOPoreskomObvezniku>
+    <ns1:PoreskiIdentifikacioniBroj>
+      <ns1:JMBGPodnosiocaPrijave>1234567890123</ns1:JMBGPodnosiocaPrijave>
+    </ns1:PoreskiIdentifikacioniBroj>
+    <ns1:ImePrezimeObveznika>Jovan Jovanovic</ns1:ImePrezimeObveznika>
+    <ns1:UlicaBrojPoreskogObveznika>Knez Mihailova 1, Beograd</ns1:UlicaBrojPoreskogObveznika>
+    <ns1:PrebivalisteOpstina>11001</ns1:PrebivalisteOpstina>
+    <ns1:TelefonKontaktOsobe>0612345678</ns1:TelefonKontaktOsobe>
+    <ns1:ElektronskaPosta>jovan@example.com</ns1:ElektronskaPosta>
+  </ns1:PodaciOPoreskomObvezniku>
+  <ns1:PodaciONacinuOstvarivanjaPrihoda>
+    <ns1:NacinIsplate>3</ns1:NacinIsplate>
+    <ns1:Ostalo>Interest payment reference</ns1:Ostalo>
+  </ns1:PodaciONacinuOstvarivanjaPrihoda>
+  <ns1:PodaciOVrstamaPrihoda>
+    <ns1:RedniBroj>1</ns1:RedniBroj>
+    <ns1:SifraVrstePrihoda>111401000</ns1:SifraVrstePrihoda>
+    <ns1:DatumOstvarivanjaPrihoda>2025-05-10</ns1:DatumOstvarivanjaPrihoda>
+    <ns1:DatumDospelostiObaveze>2025-06-15</ns1:DatumDospelostiObaveze>
+    <ns1:BrutoPrihod>5000.00</ns1:BrutoPrihod>
+    <ns1:NormaraniTroskovi>0.00</ns1:NormaraniTroskovi>
+    <ns1:OsnovicaZaPorez>5000.00</ns1:OsnovicaZaPorez>
+    <ns1:ObracunatiPorez>750.00</ns1:ObracunatiPorez>
+    <ns1:PorezPlacenDrugojDrzavi>0.00</ns1:PorezPlacenDrugojDrzavi>
+    <ns1:PorezZaUplatu>750.00</ns1:PorezZaUplatu>
+    <ns1:OsnovicaZaDoprinose>0.00</ns1:OsnovicaZaDoprinose>
+    <ns1:ObracunatiDoprinosi>0.00</ns1:ObracunatiDoprinosi>
+    <ns1:DoprinosiPlaceniDrugojDrzavi>0.00</ns1:DoprinosiPlaceniDrugojDrzavi>
+    <ns1:DoprinosiZaUplatu>0.00</ns1:DoprinosiZaUplatu>
+  </ns1:PodaciOVrstamaPrihoda>
+  <ns1:Ukupno>
+    <ns1:BrutoPrihod>5000.00</ns1:BrutoPrihod>
+    <ns1:NormaraniTroskovi>0.00</ns1:NormaraniTroskovi>
+    <ns1:OsnovicaZaPorez>5000.00</ns1:OsnovicaZaPorez>
+    <ns1:ObracunatiPorez>750.00</ns1:ObracunatiPorez>
+    <ns1:PorezPlacenDrugojDrzavi>0.00</ns1:PorezPlacenDrugojDrzavi>
+    <ns1:PorezZaUplatu>750.00</ns1:PorezZaUplatu>
+    <ns1:OsnovicaZaDoprinose>0.00</ns1:OsnovicaZaDoprinose>
+    <ns1:ObracunatiDoprinosi>0.00</ns1:ObracunatiDoprinosi>
+    <ns1:DoprinosiPlaceniDrugojDrzavi>0.00</ns1:DoprinosiPlaceniDrugojDrzavi>
+    <ns1:DoprinosiZaUplatu>0.00</ns1:DoprinosiZaUplatu>
+  </ns1:Ukupno>
+  <ns1:Kamata>
+    <ns1:PorezZaUplatu>0.00</ns1:PorezZaUplatu>
+    <ns1:DoprinosiZaUplatu>0.00</ns1:DoprinosiZaUplatu>
+  </ns1:Kamata>
+  <ns1:PodaciODodatnojKamati />
+</ns1:PodaciPoreskeDeklaracije>

@@ -1,8 +1,11 @@
 using Avalonia.Media;
 using Microsoft.Extensions.DependencyInjection;
+using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using ReactiveUI;
+using Rentier.Application.DTOs;
+using Rentier.Application.Interfaces;
 using Rentier.Desktop.Services;
 
 namespace Rentier.Desktop.ViewModels;
@@ -40,10 +43,123 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
         set => this.RaiseAndSetIfChanged(ref _selectedEntry, value);
     }
 
+    // ── Update state ──────────────────────────────────────────────────────────
+
+    private UpdateState _currentUpdateState = UpdateState.Idle;
+    private string? _availableVersion;
+    private int _downloadProgress;
+    private string? _updateErrorMessage;
+
+    public UpdateState CurrentUpdateState
+    {
+        get => _currentUpdateState;
+        private set
+        {
+            this.RaiseAndSetIfChanged(ref _currentUpdateState, value);
+            this.RaisePropertyChanged(nameof(UpdateBarVisible));
+            this.RaisePropertyChanged(nameof(IsUpdateAvailableState));
+            this.RaisePropertyChanged(nameof(IsDownloadingState));
+            this.RaisePropertyChanged(nameof(IsDownloadedState));
+            this.RaisePropertyChanged(nameof(IsErrorState));
+        }
+    }
+
+    public string? AvailableVersion
+    {
+        get => _availableVersion;
+        private set => this.RaiseAndSetIfChanged(ref _availableVersion, value);
+    }
+
+    public int DownloadProgress
+    {
+        get => _downloadProgress;
+        private set => this.RaiseAndSetIfChanged(ref _downloadProgress, value);
+    }
+
+    public string? UpdateErrorMessage
+    {
+        get => _updateErrorMessage;
+        private set => this.RaiseAndSetIfChanged(ref _updateErrorMessage, value);
+    }
+
+    /// <summary>
+    /// True when the update notification bar should be visible.
+    /// Visible in: UpdateAvailable, Downloading, Downloaded, Error states.
+    /// </summary>
+    public bool UpdateBarVisible =>
+        _currentUpdateState is UpdateState.UpdateAvailable
+                            or UpdateState.Downloading
+                            or UpdateState.Downloaded
+                            or UpdateState.Error;
+
+    public bool IsUpdateAvailableState  => _currentUpdateState == UpdateState.UpdateAvailable;
+    public bool IsDownloadingState      => _currentUpdateState == UpdateState.Downloading;
+    public bool IsDownloadedState       => _currentUpdateState == UpdateState.Downloaded;
+    public bool IsErrorState            => _currentUpdateState == UpdateState.Error;
+
+    // ── Update commands ───────────────────────────────────────────────────────
+
+    public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> CheckForUpdateCommand { get; }
+    public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> DismissUpdateCommand { get; }
+    public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> BeginUpdateCommand { get; }
+    public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> RestartNowCommand { get; }
+    public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> DismissRestartCommand { get; }
+    public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> RetryDownloadCommand { get; }
+
+    private readonly IUpdateService _updateService;
+
     public MainWindowViewModel(
         IServiceProvider provider,
-        ILocalizationService localizationService)
+        ILocalizationService localizationService,
+        IUpdateService updateService)
     {
+        _updateService = updateService;
+
+        // ── Update commands setup ─────────────────────────────────────────────
+        var canCheck = this.WhenAnyValue(x => x.CurrentUpdateState)
+            .Select(s => s == UpdateState.Idle);
+
+        var canDismiss = this.WhenAnyValue(x => x.CurrentUpdateState)
+            .Select(s => s == UpdateState.UpdateAvailable);
+
+        var canBeginUpdate = this.WhenAnyValue(x => x.CurrentUpdateState)
+            .Select(s => s == UpdateState.UpdateAvailable);
+
+        var canRestart = this.WhenAnyValue(x => x.CurrentUpdateState)
+            .Select(s => s == UpdateState.Downloaded);
+
+        var canDismissRestart = this.WhenAnyValue(x => x.CurrentUpdateState)
+            .Select(s => s == UpdateState.Downloaded);
+
+        var canRetry = this.WhenAnyValue(x => x.CurrentUpdateState)
+            .Select(s => s == UpdateState.Error);
+
+        CheckForUpdateCommand = ReactiveCommand.CreateFromTask(
+            RunCheckForUpdateAsync, canCheck);
+
+        DismissUpdateCommand = ReactiveCommand.CreateFromTask(
+            async () => { CurrentUpdateState = UpdateState.Dismissed; await Task.CompletedTask; },
+            canDismiss);
+
+        BeginUpdateCommand = ReactiveCommand.CreateFromTask(
+            RunDownloadUpdateAsync, canBeginUpdate);
+
+        RestartNowCommand = ReactiveCommand.Create(
+            () => updateService.ApplyUpdateAndRestart(),
+            canRestart);
+
+        DismissRestartCommand = ReactiveCommand.CreateFromTask(
+            async () =>
+            {
+                updateService.ScheduleUpdateOnExit();
+                CurrentUpdateState = UpdateState.Idle;
+                await Task.CompletedTask;
+            },
+            canDismissRestart);
+
+        RetryDownloadCommand = ReactiveCommand.CreateFromTask(
+            RunDownloadUpdateAsync, canRetry);
+
         // ── Dashboard navigation ──────────────────────────────────────────────
         // filingsVm is declared here (before navigateToDashboardFilings) so all
         // navigation callbacks can reference it via closure.
@@ -182,7 +298,53 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
                 .ObserveOn(RxApp.MainThreadScheduler)
                 .Subscribe(_ => UpdateNavigationLabels(localizationService))
                 .DisposeWith(disposables);
+
+            // Auto-check for updates in background on activation
+            Observable.StartAsync(() => RunCheckForUpdateAsync(), RxApp.TaskpoolScheduler)
+                .Subscribe()
+                .DisposeWith(disposables);
         });
+    }
+
+    private async Task RunCheckForUpdateAsync()
+    {
+        CurrentUpdateState = UpdateState.Checking;
+        var result = await _updateService.CheckForUpdatesAsync().ConfigureAwait(false);
+        RxApp.MainThreadScheduler.Schedule(() =>
+        {
+            if (result.IsUpdateAvailable)
+            {
+                AvailableVersion = result.TargetVersion;
+                CurrentUpdateState = UpdateState.UpdateAvailable;
+            }
+            else
+            {
+                CurrentUpdateState = UpdateState.Idle;
+            }
+        });
+    }
+
+    private async Task RunDownloadUpdateAsync()
+    {
+        CurrentUpdateState = UpdateState.Downloading;
+        try
+        {
+            await _updateService.DownloadUpdateAsync(
+                progress => RxApp.MainThreadScheduler.Schedule(
+                    () => DownloadProgress = progress))
+                .ConfigureAwait(false);
+
+            RxApp.MainThreadScheduler.Schedule(
+                () => CurrentUpdateState = UpdateState.Downloaded);
+        }
+        catch (Exception ex)
+        {
+            RxApp.MainThreadScheduler.Schedule(() =>
+            {
+                UpdateErrorMessage = ex.Message;
+                CurrentUpdateState = UpdateState.Error;
+            });
+        }
     }
 
     private void UpdateNavigationLabels(ILocalizationService loc)
