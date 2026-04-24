@@ -26,7 +26,7 @@ description: "Task list for 038-code-quality-improvements"
 
 **Purpose**: Confirm the green baseline before any refactoring begins. Every subsequent phase must leave all tests green.
 
-- [ ] T001 Verify solution builds and all tests pass: `dotnet build Rentier.slnx && dotnet test Rentier.slnx`
+- [X] T001 Verify solution builds and all tests pass: `dotnet build Rentier.slnx && dotnet test Rentier.slnx`
 
 **Checkpoint**: Green baseline confirmed — refactoring may now begin.
 
@@ -38,8 +38,8 @@ description: "Task list for 038-code-quality-improvements"
 
 **Independent Test**: Search `src/` for `.Result` and `.Wait()` — zero matches in production code.
 
-- [ ] T002 [US1] Replace `stdoutTask.Result` and `stderrTask.Result` with `await stdoutTask` and `await stderrTask` on line 107 of `src/Rentier.Infrastructure/Security/MacOsCredentialStore.cs`
-- [ ] T003 [US1] Verify zero `.Result` / `.Wait()` calls remain in `src/`: run `Get-ChildItem src -Recurse -Include *.cs | Select-String '\.Result[^s]|\.Wait\(' | Where-Object { $_.Line -notmatch '//|///|^\s*\*' }`
+- [X] T002 [US1] Replace `stdoutTask.Result` and `stderrTask.Result` with `await stdoutTask` and `await stderrTask` on line 107 of `src/Rentier.Infrastructure/Security/MacOsCredentialStore.cs`
+- [X] T003 [US1] Verify zero `.Result` / `.Wait()` calls remain in `src/`: run `Get-ChildItem src -Recurse -Include *.cs | Select-String '\.Result[^s]|\.Wait\(' | Where-Object { $_.Line -notmatch '//|///|^\s*\*' }`
 
 **Checkpoint**: SC-001 satisfied — zero `.Result`/`.Wait()` in production code.
 
@@ -55,29 +55,29 @@ description: "Task list for 038-code-quality-improvements"
 
 ### Create Registry
 
-- [ ] T004 [US3] Create `src/Rentier.Application/Common/ErrorCodes.cs` — static class with all 37 `public const string` fields as specified in data-model.md (Generic, Credential, Filing, Report, Dashboard, Importer, Mailbox, Holiday, Pagination, Calculator categories)
-- [ ] T005 [US3] Update `src/Rentier.Application/Common/Error.cs` — replace all 8 inline string literals in factory methods (`Domain`, `NotFound`, `Infrastructure`, `CredentialNotFound`, `CredentialWriteFailed`, `CredentialReadFailed`, `CredentialDeleteFailed`, `ProviderUnavailable`, `UnsupportedPlatform`) with `ErrorCodes.*` references
+- [X] T004 [US3] Create `src/Rentier.Application/Common/ErrorCodes.cs` — static class with all 37 `public const string` fields as specified in data-model.md (Generic, Credential, Filing, Report, Dashboard, Importer, Mailbox, Holiday, Pagination, Calculator categories)
+- [X] T005 [US3] Update `src/Rentier.Application/Common/Error.cs` — replace all 8 inline string literals in factory methods (`Domain`, `NotFound`, `Infrastructure`, `CredentialNotFound`, `CredentialWriteFailed`, `CredentialReadFailed`, `CredentialDeleteFailed`, `ProviderUnavailable`, `UnsupportedPlatform`) with `ErrorCodes.*` references
 
 ### Migrate Handlers to ErrorCodes (all parallel — different files)
 
-- [ ] T006 [P] [US3] Update `src/Rentier.Application/Handlers/BulkDeleteFilingsCommandHandler.cs` — replace `"BULK_DELETE_FILINGS_FAILED"` → `ErrorCodes.FILING_BULK_DELETE_FAILED`, `"BULK_DELETE_FILINGS_INVALID"` → `ErrorCodes.FILING_BULK_DELETE_INVALID`
-- [ ] T007 [P] [US3] Update `src/Rentier.Application/Handlers/BulkDeleteReportsCommandHandler.cs` — replace `"BULK_DELETE_REPORTS_FAILED"` → `ErrorCodes.REPORT_BULK_DELETE_FAILED`, `"BULK_DELETE_REPORTS_INVALID"` → `ErrorCodes.REPORT_BULK_DELETE_INVALID`
-- [ ] T008 [P] [US3] Update `src/Rentier.Application/Handlers/GetDashboardQueryHandler.cs` — replace `"DASHBOARD_ERROR"` → `ErrorCodes.DASHBOARD_QUERY_FAILED`
-- [ ] T009 [P] [US3] Update `src/Rentier.Application/Handlers/DeleteReportCommandHandler.cs` — replace `"DELETE_REPORT_FAILED"` → `ErrorCodes.REPORT_DELETE_FAILED`
-- [ ] T010 [P] [US3] Update `src/Rentier.Application/Handlers/AddMailboxCommandHandler.cs` — replace `"DOMAIN_VALIDATION"` → `ErrorCodes.MAILBOX_VALIDATION_FAILED`
-- [ ] T011 [P] [US3] Update `src/Rentier.Application/Handlers/UpdateMailboxCommandHandler.cs` — replace `"DOMAIN_VALIDATION"` → `ErrorCodes.MAILBOX_VALIDATION_FAILED`; ensure `"NOT_FOUND"` references `ErrorCodes.NOT_FOUND`
-- [ ] T012 [P] [US3] Update `src/Rentier.Application/Handlers/SaveHolidayConfCommandHandler.cs` — replace `"DUPLICATE_DATES"` → `ErrorCodes.HOLIDAY_SAVE_DUPLICATE_DATES`, `"INVALID_YEAR_RANGE"` → `ErrorCodes.HOLIDAY_SAVE_INVALID_YEAR_RANGE`
-- [ ] T013 [P] [US3] Update `src/Rentier.Application/Handlers/CreateManualFilingCommandHandler.cs` — replace `"DUPLICATE_FILING"` → `ErrorCodes.FILING_CREATE_DUPLICATE`
-- [ ] T014 [P] [US3] Update `src/Rentier.Application/Handlers/ImportReportCommandHandler.cs` — replace `"IMPORT_FAILED"` → `ErrorCodes.REPORT_IMPORT_FAILED`, `"DUPLICATE_REPORT"` → `ErrorCodes.REPORT_IMPORT_DUPLICATE`, `"INVALID_CSV"` → `ErrorCodes.REPORT_IMPORT_INVALID_CSV`
-- [ ] T015 [P] [US3] Update `src/Rentier.Application/Handlers/GetReportsQueryHandler.cs` — replace `"GET_REPORTS_FAILED"` → `ErrorCodes.REPORT_QUERY_FAILED`, `"VALIDATION_ERROR"` → `ErrorCodes.PAGINATION_VALIDATION_FAILED`
-- [ ] T016 [P] [US3] Update `src/Rentier.Application/Handlers/GetFilingsQueryHandler.cs` — replace `"VALIDATION_ERROR"` → `ErrorCodes.PAGINATION_VALIDATION_FAILED`
-- [ ] T017 [P] [US3] Update `src/Rentier.Application/Handlers/AddImporterCommandHandler.cs` — replace `"INVALID_REGEX"` → `ErrorCodes.IMPORTER_VALIDATION_INVALID_REGEX`; ensure `"IMPORTER_NOT_FOUND"` references `ErrorCodes.IMPORTER_NOT_FOUND`
-- [ ] T018 [P] [US3] Update `src/Rentier.Application/Handlers/UpdateImporterCommandHandler.cs` — replace `"INVALID_REGEX"` → `ErrorCodes.IMPORTER_VALIDATION_INVALID_REGEX`; ensure `"IMPORTER_NOT_FOUND"` references `ErrorCodes.IMPORTER_NOT_FOUND`
-- [ ] T019 [P] [US3] Update `src/Rentier.Application/Handlers/ProcessReportsCommandHandler.cs` — replace `"NO_ATTACHMENT"` → `ErrorCodes.REPORT_PROCESS_NO_ATTACHMENT`, `"NO_TAXPAYER_PROFILE"` → `ErrorCodes.REPORT_PROCESS_NO_TAXPAYER`, `"PARSE_FAILED"` → `ErrorCodes.REPORT_PROCESS_PARSE_FAILED`; ensure `"IMPORTER_NOT_FOUND"` references `ErrorCodes.IMPORTER_NOT_FOUND`
+- [X] T006 [P] [US3] Update `src/Rentier.Application/Handlers/BulkDeleteFilingsCommandHandler.cs` — replace `"BULK_DELETE_FILINGS_FAILED"` → `ErrorCodes.FILING_BULK_DELETE_FAILED`, `"BULK_DELETE_FILINGS_INVALID"` → `ErrorCodes.FILING_BULK_DELETE_INVALID`
+- [X] T007 [P] [US3] Update `src/Rentier.Application/Handlers/BulkDeleteReportsCommandHandler.cs` — replace `"BULK_DELETE_REPORTS_FAILED"` → `ErrorCodes.REPORT_BULK_DELETE_FAILED`, `"BULK_DELETE_REPORTS_INVALID"` → `ErrorCodes.REPORT_BULK_DELETE_INVALID`
+- [X] T008 [P] [US3] Update `src/Rentier.Application/Handlers/GetDashboardQueryHandler.cs` — replace `"DASHBOARD_ERROR"` → `ErrorCodes.DASHBOARD_QUERY_FAILED`
+- [X] T009 [P] [US3] Update `src/Rentier.Application/Handlers/DeleteReportCommandHandler.cs` — replace `"DELETE_REPORT_FAILED"` → `ErrorCodes.REPORT_DELETE_FAILED`
+- [X] T010 [P] [US3] Update `src/Rentier.Application/Handlers/AddMailboxCommandHandler.cs` — replace `"DOMAIN_VALIDATION"` → `ErrorCodes.MAILBOX_VALIDATION_FAILED`
+- [X] T011 [P] [US3] Update `src/Rentier.Application/Handlers/UpdateMailboxCommandHandler.cs` — replace `"DOMAIN_VALIDATION"` → `ErrorCodes.MAILBOX_VALIDATION_FAILED`; ensure `"NOT_FOUND"` references `ErrorCodes.NOT_FOUND`
+- [X] T012 [P] [US3] Update `src/Rentier.Application/Handlers/SaveHolidayConfCommandHandler.cs` — replace `"DUPLICATE_DATES"` → `ErrorCodes.HOLIDAY_SAVE_DUPLICATE_DATES`, `"INVALID_YEAR_RANGE"` → `ErrorCodes.HOLIDAY_SAVE_INVALID_YEAR_RANGE`
+- [X] T013 [P] [US3] Update `src/Rentier.Application/Handlers/CreateManualFilingCommandHandler.cs` — replace `"DUPLICATE_FILING"` → `ErrorCodes.FILING_CREATE_DUPLICATE`
+- [X] T014 [P] [US3] Update `src/Rentier.Application/Handlers/ImportReportCommandHandler.cs` — replace `"IMPORT_FAILED"` → `ErrorCodes.REPORT_IMPORT_FAILED`, `"DUPLICATE_REPORT"` → `ErrorCodes.REPORT_IMPORT_DUPLICATE`, `"INVALID_CSV"` → `ErrorCodes.REPORT_IMPORT_INVALID_CSV`
+- [X] T015 [P] [US3] Update `src/Rentier.Application/Handlers/GetReportsQueryHandler.cs` — replace `"GET_REPORTS_FAILED"` → `ErrorCodes.REPORT_QUERY_FAILED`, `"VALIDATION_ERROR"` → `ErrorCodes.PAGINATION_VALIDATION_FAILED`
+- [X] T016 [P] [US3] Update `src/Rentier.Application/Handlers/GetFilingsQueryHandler.cs` — replace `"VALIDATION_ERROR"` → `ErrorCodes.PAGINATION_VALIDATION_FAILED`
+- [X] T017 [P] [US3] Update `src/Rentier.Application/Handlers/AddImporterCommandHandler.cs` — replace `"INVALID_REGEX"` → `ErrorCodes.IMPORTER_VALIDATION_INVALID_REGEX`; ensure `"IMPORTER_NOT_FOUND"` references `ErrorCodes.IMPORTER_NOT_FOUND`
+- [X] T018 [P] [US3] Update `src/Rentier.Application/Handlers/UpdateImporterCommandHandler.cs` — replace `"INVALID_REGEX"` → `ErrorCodes.IMPORTER_VALIDATION_INVALID_REGEX`; ensure `"IMPORTER_NOT_FOUND"` references `ErrorCodes.IMPORTER_NOT_FOUND`
+- [X] T019 [P] [US3] Update `src/Rentier.Application/Handlers/ProcessReportsCommandHandler.cs` — replace `"NO_ATTACHMENT"` → `ErrorCodes.REPORT_PROCESS_NO_ATTACHMENT`, `"NO_TAXPAYER_PROFILE"` → `ErrorCodes.REPORT_PROCESS_NO_TAXPAYER`, `"PARSE_FAILED"` → `ErrorCodes.REPORT_PROCESS_PARSE_FAILED`; ensure `"IMPORTER_NOT_FOUND"` references `ErrorCodes.IMPORTER_NOT_FOUND`
 
 ### Tests for User Story 3
 
-- [ ] T020 [US3] Create `tests/Rentier.UnitTests/Common/ErrorCodesTests.cs` — write tests verifying: (1) all string values in `ErrorCodes` are unique across the entire class, (2) all values are SCREAMING_SNAKE_CASE, (3) entity-specific codes follow `ENTITY_ACTION_REASON` format; use reflection to enumerate all `public const string` fields
+- [X] T020 [US3] Create `tests/Rentier.UnitTests/Common/ErrorCodesTests.cs` — write tests verifying: (1) all string values in `ErrorCodes` are unique across the entire class, (2) all values are SCREAMING_SNAKE_CASE, (3) entity-specific codes follow `ENTITY_ACTION_REASON` format; use reflection to enumerate all `public const string` fields
 
 **Checkpoint**: SC-003 and SC-004 satisfied — 100% of error codes in registry, uniqueness verified by test. Run `dotnet test tests/Rentier.UnitTests/Rentier.UnitTests.csproj` to confirm.
 
@@ -93,19 +93,19 @@ description: "Task list for 038-code-quality-improvements"
 
 ### Interface and Validator
 
-- [ ] T021 [US4] Create `src/Rentier.Application/Queries/IPaginatedQuery.cs` — interface with `int Page { get; }` and `int PageSize { get; }` properties
-- [ ] T022 [P] [US4] Add `IPaginatedQuery` to `src/Rentier.Application/Queries/GetFilingsQuery.cs` — implement interface on the existing record (no parameter changes)
-- [ ] T023 [P] [US4] Add `IPaginatedQuery` to `src/Rentier.Application/Queries/GetReportsQuery.cs` — implement interface on the existing record (no parameter changes)
-- [ ] T024 [US4] Create `src/Rentier.Application/Common/PaginationValidator.cs` — static class with `Validate<TValue>(IPaginatedQuery query)` returning `null` when valid, `Result<TValue, Error>.Failure(new Error(ErrorCodes.PAGINATION_VALIDATION_FAILED, "..."))` when page < 1 or page size outside 1–100; uses `ErrorCodes.PAGINATION_VALIDATION_FAILED`
+- [X] T021 [US4] Create `src/Rentier.Application/Queries/IPaginatedQuery.cs` — interface with `int Page { get; }` and `int PageSize { get; }` properties
+- [X] T022 [P] [US4] Add `IPaginatedQuery` to `src/Rentier.Application/Queries/GetFilingsQuery.cs` — implement interface on the existing record (no parameter changes)
+- [X] T023 [P] [US4] Add `IPaginatedQuery` to `src/Rentier.Application/Queries/GetReportsQuery.cs` — implement interface on the existing record (no parameter changes)
+- [X] T024 [US4] Create `src/Rentier.Application/Common/PaginationValidator.cs` — static class with `Validate<TValue>(IPaginatedQuery query)` returning `null` when valid, `Result<TValue, Error>.Failure(new Error(ErrorCodes.PAGINATION_VALIDATION_FAILED, "..."))` when page < 1 or page size outside 1–100; uses `ErrorCodes.PAGINATION_VALIDATION_FAILED`
 
 ### Update Handlers
 
-- [ ] T025 [P] [US4] Refactor `src/Rentier.Application/Handlers/GetFilingsQueryHandler.cs` — replace the inline `page < 1` and `pageSize < 1 || > 100` validation block with a `PaginationValidator.Validate<...>(query)` call; retain the sort-column validation which is handler-specific
-- [ ] T026 [P] [US4] Refactor `src/Rentier.Application/Handlers/GetReportsQueryHandler.cs` — replace the inline `page < 1` and `pageSize < 1 || > 100` validation block with a `PaginationValidator.Validate<...>(query)` call
+- [X] T025 [P] [US4] Refactor `src/Rentier.Application/Handlers/GetFilingsQueryHandler.cs` — replace the inline `page < 1` and `pageSize < 1 || > 100` validation block with a `PaginationValidator.Validate<...>(query)` call; retain the sort-column validation which is handler-specific
+- [X] T026 [P] [US4] Refactor `src/Rentier.Application/Handlers/GetReportsQueryHandler.cs` — replace the inline `page < 1` and `pageSize < 1 || > 100` validation block with a `PaginationValidator.Validate<...>(query)` call
 
 ### Tests for User Story 4
 
-- [ ] T027 [US4] Create `tests/Rentier.UnitTests/Common/PaginationValidatorTests.cs` — write boundary-value tests: page=0 returns failure with `PAGINATION_VALIDATION_FAILED`; page=1 returns null (valid); pageSize=0 returns failure; pageSize=1 returns null; pageSize=100 returns null; pageSize=101 returns failure; valid pagination (page=2, size=30) returns null
+- [X] T027 [US4] Create `tests/Rentier.UnitTests/Common/PaginationValidatorTests.cs` — write boundary-value tests: page=0 returns failure with `PAGINATION_VALIDATION_FAILED`; page=1 returns null (valid); pageSize=0 returns failure; pageSize=1 returns null; pageSize=100 returns null; pageSize=101 returns failure; valid pagination (page=2, size=30) returns null
 
 **Checkpoint**: SC-005 satisfied — pagination validation exists in exactly one location. Run `dotnet test tests/Rentier.UnitTests/Rentier.UnitTests.csproj` to confirm.
 
@@ -121,13 +121,13 @@ description: "Task list for 038-code-quality-improvements"
 
 ### Create HandlerHelper
 
-- [ ] T028 [US2] Create `src/Rentier.Application/Common/HandlerHelper.cs` — static class with two methods:
+- [X] T028 [US2] Create `src/Rentier.Application/Common/HandlerHelper.cs` — static class with two methods:
   - `ExecuteAsync<TValue>(Func<Task<Result<TValue, Error>>> operation, string errorCode, ILogger? logger = null, [CallerMemberName] string? caller = null)` — wraps operation: catches `OperationCanceledException` (rethrow), catches `DomainException` (return `Result.Failure(Error.Domain(ex.Message))`), catches `Exception` (log + return `Result.Failure(new Error(errorCode, ex.Message))`)
   - `ExecuteWithValidationAsync<TValue>(Func<Result<TValue, Error>?> validation, Func<Task<Result<TValue, Error>>> operation, string errorCode, ILogger? logger = null, [CallerMemberName] string? caller = null)` — runs validation first; if non-null result returned, short-circuit; otherwise delegates to `ExecuteAsync`
 
 ### Tests for User Story 2
 
-- [ ] T029 [US2] Create `tests/Rentier.UnitTests/Common/HandlerHelperTests.cs` — write tests for all exception handling paths:
+- [X] T029 [US2] Create `tests/Rentier.UnitTests/Common/HandlerHelperTests.cs` — write tests for all exception handling paths:
   - `OperationCanceledException` is re-thrown (not caught)
   - `DomainException` returns `Result.Failure` with `Error.Code == ErrorCodes.DOMAIN_ERROR`
   - Unexpected `Exception` returns `Result.Failure` with the supplied `errorCode`
@@ -141,31 +141,31 @@ description: "Task list for 038-code-quality-improvements"
 
 **Pattern B — `OperationCanceledException` + `Exception`**
 
-- [ ] T030 [P] [US2] Migrate `src/Rentier.Application/Handlers/BulkDeleteFilingsCommandHandler.cs` to `HandlerHelper.ExecuteAsync` with `ErrorCodes.FILING_BULK_DELETE_FAILED`; remove existing try-catch boilerplate
-- [ ] T031 [P] [US2] Migrate `src/Rentier.Application/Handlers/BulkDeleteReportsCommandHandler.cs` to `HandlerHelper.ExecuteAsync` with `ErrorCodes.REPORT_BULK_DELETE_FAILED`; remove existing try-catch boilerplate
-- [ ] T032 [P] [US2] Migrate `src/Rentier.Application/Handlers/DeleteReportCommandHandler.cs` to `HandlerHelper.ExecuteAsync` with `ErrorCodes.REPORT_DELETE_FAILED`; remove existing try-catch boilerplate
-- [ ] T033 [P] [US2] Migrate `src/Rentier.Application/Handlers/GetDashboardQueryHandler.cs` to `HandlerHelper.ExecuteAsync` with `ErrorCodes.DASHBOARD_QUERY_FAILED`; remove existing try-catch boilerplate
-- [ ] T034 [P] [US2] Migrate `src/Rentier.Application/Handlers/GetReportsQueryHandler.cs` to `HandlerHelper.ExecuteWithValidationAsync` — pass `PaginationValidator.Validate<PagedResult<ReportSummary>>` as the validation callback and `ErrorCodes.REPORT_QUERY_FAILED` as the error code; remove existing try-catch and inline pagination checks
-- [ ] T035 [P] [US2] Migrate `src/Rentier.Application/Handlers/ImportReportCommandHandler.cs` to `HandlerHelper.ExecuteAsync` with `ErrorCodes.REPORT_IMPORT_FAILED`; remove existing try-catch boilerplate (preserve inner validation logic)
+- [X] T030 [P] [US2] Migrate `src/Rentier.Application/Handlers/BulkDeleteFilingsCommandHandler.cs` to `HandlerHelper.ExecuteAsync` with `ErrorCodes.FILING_BULK_DELETE_FAILED`; remove existing try-catch boilerplate
+- [X] T031 [P] [US2] Migrate `src/Rentier.Application/Handlers/BulkDeleteReportsCommandHandler.cs` to `HandlerHelper.ExecuteAsync` with `ErrorCodes.REPORT_BULK_DELETE_FAILED`; remove existing try-catch boilerplate
+- [X] T032 [P] [US2] Migrate `src/Rentier.Application/Handlers/DeleteReportCommandHandler.cs` to `HandlerHelper.ExecuteAsync` with `ErrorCodes.REPORT_DELETE_FAILED`; remove existing try-catch boilerplate
+- [X] T033 [P] [US2] Migrate `src/Rentier.Application/Handlers/GetDashboardQueryHandler.cs` to `HandlerHelper.ExecuteAsync` with `ErrorCodes.DASHBOARD_QUERY_FAILED`; remove existing try-catch boilerplate
+- [X] T034 [P] [US2] Migrate `src/Rentier.Application/Handlers/GetReportsQueryHandler.cs` to `HandlerHelper.ExecuteWithValidationAsync` — pass `PaginationValidator.Validate<PagedResult<ReportSummary>>` as the validation callback and `ErrorCodes.REPORT_QUERY_FAILED` as the error code; remove existing try-catch and inline pagination checks
+- [X] T035 [P] [US2] Migrate `src/Rentier.Application/Handlers/ImportReportCommandHandler.cs` to `HandlerHelper.ExecuteAsync` with `ErrorCodes.REPORT_IMPORT_FAILED`; remove existing try-catch boilerplate (preserve inner validation logic)
 
 **Pattern A — `DomainException` only**
 
-- [ ] T036 [P] [US2] Migrate `src/Rentier.Application/Handlers/AddMailboxCommandHandler.cs` to `HandlerHelper.ExecuteAsync` with `ErrorCodes.MAILBOX_VALIDATION_FAILED`; remove existing try-catch boilerplate
-- [ ] T037 [P] [US2] Migrate `src/Rentier.Application/Handlers/SaveHolidayConfCommandHandler.cs` to `HandlerHelper.ExecuteAsync` with `ErrorCodes.HOLIDAY_SAVE_DUPLICATE_DATES` (primary code); remove existing try-catch boilerplate
-- [ ] T038 [P] [US2] Migrate `src/Rentier.Application/Handlers/SaveTaxpayerProfileCommandHandler.cs` to `HandlerHelper.ExecuteAsync` with appropriate `ErrorCodes.*` constant; remove existing try-catch boilerplate
-- [ ] T039 [P] [US2] Migrate `src/Rentier.Application/Handlers/UpdateFilingStatusCommandHandler.cs` to `HandlerHelper.ExecuteAsync` with appropriate `ErrorCodes.*` constant; remove existing try-catch boilerplate
-- [ ] T040 [P] [US2] Migrate `src/Rentier.Application/Handlers/UpdateMailboxCommandHandler.cs` to `HandlerHelper.ExecuteAsync` with `ErrorCodes.MAILBOX_VALIDATION_FAILED`; remove existing try-catch boilerplate
-- [ ] T041 [P] [US2] Migrate `src/Rentier.Application/Handlers/UpdatePaymentReferenceCommandHandler.cs` to `HandlerHelper.ExecuteAsync` with appropriate `ErrorCodes.*` constant; remove existing try-catch boilerplate
+- [X] T036 [P] [US2] Migrate `src/Rentier.Application/Handlers/AddMailboxCommandHandler.cs` to `HandlerHelper.ExecuteAsync` with `ErrorCodes.MAILBOX_VALIDATION_FAILED`; remove existing try-catch boilerplate
+- [X] T037 [P] [US2] Migrate `src/Rentier.Application/Handlers/SaveHolidayConfCommandHandler.cs` to `HandlerHelper.ExecuteAsync` with `ErrorCodes.HOLIDAY_SAVE_DUPLICATE_DATES` (primary code); remove existing try-catch boilerplate
+- [X] T038 [P] [US2] Migrate `src/Rentier.Application/Handlers/SaveTaxpayerProfileCommandHandler.cs` to `HandlerHelper.ExecuteAsync` with appropriate `ErrorCodes.*` constant; remove existing try-catch boilerplate
+- [X] T039 [P] [US2] Migrate `src/Rentier.Application/Handlers/UpdateFilingStatusCommandHandler.cs` to `HandlerHelper.ExecuteAsync` with appropriate `ErrorCodes.*` constant; remove existing try-catch boilerplate
+- [X] T040 [P] [US2] Migrate `src/Rentier.Application/Handlers/UpdateMailboxCommandHandler.cs` to `HandlerHelper.ExecuteAsync` with `ErrorCodes.MAILBOX_VALIDATION_FAILED`; remove existing try-catch boilerplate
+- [X] T041 [P] [US2] Migrate `src/Rentier.Application/Handlers/UpdatePaymentReferenceCommandHandler.cs` to `HandlerHelper.ExecuteAsync` with appropriate `ErrorCodes.*` constant; remove existing try-catch boilerplate
 
 **Pattern C — `DomainException` + `Exception`**
 
-- [ ] T042 [P] [US2] Migrate `src/Rentier.Application/Handlers/SetUserPreferenceCommandHandler.cs` to `HandlerHelper.ExecuteAsync` with appropriate `ErrorCodes.*` constant; remove existing try-catch boilerplate
-- [ ] T043 [P] [US2] Migrate `src/Rentier.Application/Handlers/GetUserPreferenceQueryHandler.cs` to `HandlerHelper.ExecuteAsync` with appropriate `ErrorCodes.*` constant; remove existing try-catch boilerplate
+- [X] T042 [P] [US2] Migrate `src/Rentier.Application/Handlers/SetUserPreferenceCommandHandler.cs` to `HandlerHelper.ExecuteAsync` with appropriate `ErrorCodes.*` constant; remove existing try-catch boilerplate
+- [X] T043 [P] [US2] Migrate `src/Rentier.Application/Handlers/GetUserPreferenceQueryHandler.cs` to `HandlerHelper.ExecuteAsync` with appropriate `ErrorCodes.*` constant; remove existing try-catch boilerplate
 
 **Partial Migrations — keep regex try-catch, use HandlerHelper for main body**
 
-- [ ] T044 [P] [US2] Partially migrate `src/Rentier.Application/Handlers/AddImporterCommandHandler.cs` — retain the `ArgumentException` try-catch that validates the regex pattern; wrap the main handler body (after regex validation) in `HandlerHelper.ExecuteAsync` with `ErrorCodes.IMPORTER_VALIDATION_INVALID_REGEX`
-- [ ] T045 [P] [US2] Partially migrate `src/Rentier.Application/Handlers/UpdateImporterCommandHandler.cs` — retain the `ArgumentException` try-catch that validates the regex pattern; wrap the main handler body (after regex validation) in `HandlerHelper.ExecuteAsync` with `ErrorCodes.IMPORTER_VALIDATION_INVALID_REGEX`
+- [X] T044 [P] [US2] Partially migrate `src/Rentier.Application/Handlers/AddImporterCommandHandler.cs` — retain the `ArgumentException` try-catch that validates the regex pattern; wrap the main handler body (after regex validation) in `HandlerHelper.ExecuteAsync` with `ErrorCodes.IMPORTER_VALIDATION_INVALID_REGEX`
+- [X] T045 [P] [US2] Partially migrate `src/Rentier.Application/Handlers/UpdateImporterCommandHandler.cs` — retain the `ArgumentException` try-catch that validates the regex pattern; wrap the main handler body (after regex validation) in `HandlerHelper.ExecuteAsync` with `ErrorCodes.IMPORTER_VALIDATION_INVALID_REGEX`
 
 **Checkpoint**: SC-002 and SC-007 satisfied — 14 full + 2 partial migrations complete; `ProcessReportsCommandHandler` retains custom logic (documented exclusion). Run `dotnet test Rentier.slnx` to confirm all existing tests still pass.
 
@@ -175,9 +175,9 @@ description: "Task list for 038-code-quality-improvements"
 
 **Purpose**: Cross-cutting validation confirming all success criteria are met.
 
-- [ ] T046 Run full test suite and confirm zero regressions: `dotnet test Rentier.slnx` — all tests pass including `ErrorCodesTests`, `HandlerHelperTests`, `PaginationValidatorTests`, and all pre-existing handler tests
-- [ ] T047 Verify SC-001 — zero `.Result` / `.Wait()` calls in production code: `Get-ChildItem src -Recurse -Include *.cs | Select-String '\.Result[^s]|\.Wait\(' | Where-Object { $_.Line -notmatch '//|///|^\s*\*' }`
-- [ ] T048 Verify SC-003 — zero inline error code string literals remain in handler files: `Get-ChildItem src/Rentier.Application/Handlers -Recurse -Include *.cs | Select-String '"[A-Z_]{3,}"' | Where-Object { $_.Line -notmatch 'ErrorCodes\.' -and $_.Line -notmatch '//|///|^\s*\*' }`
+- [X] T046 Run full test suite and confirm zero regressions: `dotnet test Rentier.slnx` — all tests pass including `ErrorCodesTests`, `HandlerHelperTests`, `PaginationValidatorTests`, and all pre-existing handler tests
+- [X] T047 Verify SC-001 — zero `.Result` / `.Wait()` calls in production code: `Get-ChildItem src -Recurse -Include *.cs | Select-String '\.Result[^s]|\.Wait\(' | Where-Object { $_.Line -notmatch '//|///|^\s*\*' }`
+- [X] T048 Verify SC-003 — zero inline error code string literals remain in handler files: `Get-ChildItem src/Rentier.Application/Handlers -Recurse -Include *.cs | Select-String '"[A-Z_]{3,}"' | Where-Object { $_.Line -notmatch 'ErrorCodes\.' -and $_.Line -notmatch '//|///|^\s*\*' }`
 
 ---
 
@@ -284,3 +284,4 @@ This catches regressions immediately at the file level without waiting for the f
 - **[Story] labels** map each task to its user story for traceability to spec.md
 - Commit after each phase or logical group (create → migrate → test)
 - Run `dotnet test` after every handler migration in Phase 5 to catch regressions early
+
