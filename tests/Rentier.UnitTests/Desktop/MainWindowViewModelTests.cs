@@ -12,11 +12,15 @@ using Xunit;
 
 namespace Rentier.UnitTests;
 
+[Collection("MainWindowViewModelTests")]
 public class MainWindowViewModelTests
 {
     private static IServiceProvider BuildProvider()
     {
         var services = new ServiceCollection();
+
+        // UpdateService
+        services.AddSingleton(_ => Substitute.For<IUpdateService>());
 
         // Dashboard
         services.AddTransient(_ =>
@@ -152,8 +156,12 @@ public class MainWindowViewModelTests
         return locService;
     }
 
-    private static MainWindowViewModel CreateVm() =>
-        new(BuildProvider(), BuildLocalizationService());
+    private static MainWindowViewModel CreateVm()
+    {
+        var provider = BuildProvider();
+        var updateService = provider.GetRequiredService<IUpdateService>();
+        return new(provider, BuildLocalizationService(), updateService);
+    }
 
     // ── Constructor tests ─────────────────────────────────────────────────────
 
@@ -287,3 +295,4 @@ public class MainWindowViewModelTests
         filingsVm.ReportIdFilter.Should().BeNull();
     }
 }
+

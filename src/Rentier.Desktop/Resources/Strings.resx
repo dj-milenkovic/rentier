@@ -755,4 +755,31 @@
   <data name="ManualFiling_Cancel_Discard_Keep" xml:space="preserve">
     <value>Keep Editing</value>
   </data>
+  <data name="Update_Available_Message" xml:space="preserve">
+    <value>Update v{0} available</value>
+  </data>
+  <data name="Update_Now_Button" xml:space="preserve">
+    <value>Update Now</value>
+  </data>
+  <data name="Update_Later_Button" xml:space="preserve">
+    <value>Later</value>
+  </data>
+  <data name="Update_Downloading_Message" xml:space="preserve">
+    <value>Downloading update... {0}%</value>
+  </data>
+  <data name="Update_Ready_Message" xml:space="preserve">
+    <value>Update ready. Restart to apply.</value>
+  </data>
+  <data name="Update_Restart_Button" xml:space="preserve">
+    <value>Restart Now</value>
+  </data>
+  <data name="Update_Error_Message" xml:space="preserve">
+    <value>Update failed: {0}</value>
+  </data>
+  <data name="Update_Retry_Button" xml:space="preserve">
+    <value>Retry</value>
+  </data>
+  <data name="Update_Dismiss_Button" xml:space="preserve">
+    <value>Dismiss</value>
+  </data>
 </root>
