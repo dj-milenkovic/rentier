@@ -24,27 +24,18 @@ public sealed class DeleteReportCommandHandler
         _filingRepository = filingRepository;
     }
 
-    public async Task<Result<VoidResult, Error>> HandleAsync(
-        DeleteReportCommand command, CancellationToken ct = default)
-    {
-        try
-        {
-            // Step 1: delete linked filings first (prevents FK violations)
-            await _filingRepository.DeleteByReportIdAsync(command.ReportId, ct);
+    public Task<Result<VoidResult, Error>> HandleAsync(
+        DeleteReportCommand command, CancellationToken ct = default) =>
+        HandlerHelper.ExecuteAsync<VoidResult>(
+            async () =>
+            {
+                // Step 1: delete linked filings first (prevents FK violations)
+                await _filingRepository.DeleteByReportIdAsync(command.ReportId, ct);
 
-            // Step 2: delete the report
-            await _reportRepository.DeleteAsync(command.ReportId, ct);
+                // Step 2: delete the report
+                await _reportRepository.DeleteAsync(command.ReportId, ct);
 
-            return Result<VoidResult, Error>.Success(VoidResult.Value);
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            return Result<VoidResult, Error>.Failure(
-                new Error("DELETE_REPORT_FAILED", ex.Message));
-        }
-    }
+                return Result<VoidResult, Error>.Success(VoidResult.Value);
+            },
+            ErrorCodes.REPORT_DELETE_FAILED);
 }

@@ -24,54 +24,38 @@ public sealed class GetReportsQueryHandler
         _filings = filings;
     }
 
-    public async Task<Result<ReportsPageResult, Error>> HandleAsync(
-        GetReportsQuery query, CancellationToken ct = default)
-    {
-        if (query.Page < 1)
-            return Result<ReportsPageResult, Error>.Failure(
-                new Error("VALIDATION_ERROR", "Page must be >= 1."));
-
-        if (query.PageSize < 1 || query.PageSize > 100)
-            return Result<ReportsPageResult, Error>.Failure(
-                new Error("VALIDATION_ERROR", "PageSize must be between 1 and 100."));
-
-        try
-        {
-            var reports = await _reports.GetAllAsync(query.SortDescending, ct);
-            var importerList = await _importers.GetAllAsync(ct);
-            var importerNames = importerList.ToDictionary(i => i.Id, i => i.DisplayName);
-
-            var dtos = new List<ReportRowDto>(reports.Count);
-            foreach (var r in reports)
+    public Task<Result<ReportsPageResult, Error>> HandleAsync(
+        GetReportsQuery query, CancellationToken ct = default) =>
+        HandlerHelper.ExecuteWithValidationAsync<ReportsPageResult>(
+            () => PaginationValidator.Validate<ReportsPageResult>(query),
+            async () =>
             {
-                ct.ThrowIfCancellationRequested();
-                var count        = await _filings.GetFilingCountByReportIdAsync(r.Id, ct);
-                var earliest     = await _filings.GetEarliestIncomeDateByReportIdAsync(r.Id, ct);
-                var importerName = importerNames.GetValueOrDefault(r.ImporterId, "Unknown");
-                var datePart     = (r.EmailDate ?? earliest ?? r.ImportDate).ToString("yyyy-MM-dd");
-                var displayName  = $"{importerName} \u2013 {datePart}";
-                dtos.Add(new ReportRowDto(r.Id, r.ReportName, r.ImportDate, r.EmailDate, importerName, r.Status, count, displayName, earliest));
-            }
+                var reports = await _reports.GetAllAsync(query.SortDescending, ct);
+                var importerList = await _importers.GetAllAsync(ct);
+                var importerNames = importerList.ToDictionary(i => i.Id, i => i.DisplayName);
 
-            var totalCount = dtos.Count;
-            var totalPages = Math.Max(1, (int)Math.Ceiling((double)totalCount / query.PageSize));
-            var slicedRows = (IReadOnlyList<ReportRowDto>)dtos
-                .Skip((query.Page - 1) * query.PageSize)
-                .Take(query.PageSize)
-                .ToList()
-                .AsReadOnly();
+                var dtos = new List<ReportRowDto>(reports.Count);
+                foreach (var r in reports)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    var count        = await _filings.GetFilingCountByReportIdAsync(r.Id, ct);
+                    var earliest     = await _filings.GetEarliestIncomeDateByReportIdAsync(r.Id, ct);
+                    var importerName = importerNames.GetValueOrDefault(r.ImporterId, "Unknown");
+                    var datePart     = (r.EmailDate ?? earliest ?? r.ImportDate).ToString("yyyy-MM-dd");
+                    var displayName  = $"{importerName} \u2013 {datePart}";
+                    dtos.Add(new ReportRowDto(r.Id, r.ReportName, r.ImportDate, r.EmailDate, importerName, r.Status, count, displayName, earliest));
+                }
 
-            return Result<ReportsPageResult, Error>.Success(
-                new ReportsPageResult(slicedRows, totalCount, totalPages));
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            return Result<ReportsPageResult, Error>.Failure(
-                new Error("GET_REPORTS_FAILED", ex.Message));
-        }
-    }
+                var totalCount = dtos.Count;
+                var totalPages = Math.Max(1, (int)Math.Ceiling((double)totalCount / query.PageSize));
+                var slicedRows = (IReadOnlyList<ReportRowDto>)dtos
+                    .Skip((query.Page - 1) * query.PageSize)
+                    .Take(query.PageSize)
+                    .ToList()
+                    .AsReadOnly();
+
+                return Result<ReportsPageResult, Error>.Success(
+                    new ReportsPageResult(slicedRows, totalCount, totalPages));
+            },
+            ErrorCodes.REPORT_QUERY_FAILED);
 }

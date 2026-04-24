@@ -37,10 +37,11 @@ public sealed class FetchHolidaysFromWebCommandHandler
 
         if (merged.Count == 0 && failedYears.Count > 0)
             return Result<IReadOnlyList<HolidayEntryDto>, Error>.Failure(
-                new Error("HOLIDAY_FETCH_ALL_FAILED",
+                new Error(ErrorCodes.HOLIDAY_FETCH_ALL_FAILED,
                     $"Failed to fetch holidays for all years: {string.Join(", ", failedYears)}"));
 
         return Result<IReadOnlyList<HolidayEntryDto>, Error>.Success(
             merged.Values.OrderBy(d => d.Date).ToList());
     }
 }
+

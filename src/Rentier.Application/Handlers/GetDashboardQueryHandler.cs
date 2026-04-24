@@ -18,45 +18,37 @@ public sealed class GetDashboardQueryHandler
         _mailboxRepo = mailboxRepo;
     }
 
-    public async Task<Result<DashboardDto, Error>> HandleAsync(
-        GetDashboardQuery query, CancellationToken ct = default)
-    {
-        try
-        {
-            var today = DateOnly.FromDateTime(DateTime.Today);
+    public Task<Result<DashboardDto, Error>> HandleAsync(
+        GetDashboardQuery query, CancellationToken ct = default) =>
+        HandlerHelper.ExecuteAsync<DashboardDto>(
+            async () =>
+            {
+                var today = DateOnly.FromDateTime(DateTime.Today);
 
-            // Run sequentially — SQLite is not thread-safe with EF Core
-            var upcoming = await _filingRepo.GetUpcomingAsync(today, 30, ct);
-            var overdue = await _filingRepo.GetOverdueAsync(today, ct);
-            var stats = await _filingRepo.GetFilingStatsAsync(ct);
-            var mailboxes = await _mailboxRepo.GetAllAsync(ct);
+                // Run sequentially — SQLite is not thread-safe with EF Core
+                var upcoming = await _filingRepo.GetUpcomingAsync(today, 30, ct);
+                var overdue = await _filingRepo.GetOverdueAsync(today, ct);
+                var stats = await _filingRepo.GetFilingStatsAsync(ct);
+                var mailboxes = await _mailboxRepo.GetAllAsync(ct);
 
-            DateOnly? lastSync = mailboxes
-                .Select(m => m.Cursor is Domain.ValueObjects.MailboxCursor.SyncedTo s ? s.Date : (DateOnly?)null)
-                .Where(d => d.HasValue)
-                .Select(d => d!.Value)
-                .OrderByDescending(d => d)
-                .Cast<DateOnly?>()
-                .FirstOrDefault();
+                DateOnly? lastSync = mailboxes
+                    .Select(m => m.Cursor is Domain.ValueObjects.MailboxCursor.SyncedTo s ? s.Date : (DateOnly?)null)
+                    .Where(d => d.HasValue)
+                    .Select(d => d!.Value)
+                    .OrderByDescending(d => d)
+                    .Cast<DateOnly?>()
+                    .FirstOrDefault();
 
-            var upcomingDtos = upcoming.Select(f => new UpcomingDeadlineDto(
-                f.Id, f.PayingEntity, f.FilingDeadline, f.TaxPayableRsd, f.Status, f.IncomeType)).ToList();
+                var upcomingDtos = upcoming.Select(f => new UpcomingDeadlineDto(
+                    f.Id, f.PayingEntity, f.FilingDeadline, f.TaxPayableRsd, f.Status, f.IncomeType)).ToList();
 
-            var overdueDtos = overdue.Select(f => new OverdueFilingDto(
-                f.Id, f.PayingEntity, f.FilingDeadline, f.TaxPayableRsd, f.Status)).ToList();
+                var overdueDtos = overdue.Select(f => new OverdueFilingDto(
+                    f.Id, f.PayingEntity, f.FilingDeadline, f.TaxPayableRsd, f.Status)).ToList();
 
-            return Result<DashboardDto, Error>.Success(new DashboardDto(
-                upcomingDtos, overdueDtos,
-                stats.InitCount, stats.FiledCount, stats.PaidCount, stats.TotalUnpaidRsd,
-                lastSync));
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            return Result<DashboardDto, Error>.Failure(new Error("DASHBOARD_ERROR", ex.Message));
-        }
-    }
+                return Result<DashboardDto, Error>.Success(new DashboardDto(
+                    upcomingDtos, overdueDtos,
+                    stats.InitCount, stats.FiledCount, stats.PaidCount, stats.TotalUnpaidRsd,
+                    lastSync));
+            },
+            ErrorCodes.DASHBOARD_QUERY_FAILED);
 }

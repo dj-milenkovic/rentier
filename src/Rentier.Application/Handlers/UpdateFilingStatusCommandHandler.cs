@@ -6,7 +6,7 @@ using Rentier.Domain.Exceptions;
 
 namespace Rentier.Application.Handlers;
 
-/// <summary>Advances a filing's status through the valid state machine transitions.</summary>
+/// <summary>Advances a filing status through the valid state machine transitions.</summary>
 public sealed class UpdateFilingStatusCommandHandler
     : ICommandHandler<UpdateFilingStatusCommand, Result<VoidResult, Error>>
 {
