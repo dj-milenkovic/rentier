@@ -10,23 +10,12 @@ using Rentier.Desktop.Services;
 
 namespace Rentier.Desktop.ViewModels;
 
-/// <summary>
-/// Main window ViewModel with sidebar navigation.
-/// FilingsViewModel and ManualFilingViewModel are created via ActivatorUtilities so that
-/// navigation delegates (closures) can be injected at construction time — the same pattern
-/// used by DashboardViewModel, ReportsViewModel and SyncViewModel.
-/// </summary>
 public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
 {
     public ViewModelActivator Activator { get; } = new();
 
     private ReactiveObject _currentViewModel;
     private NavigationEntry? _selectedEntry;
-
-    /// <summary>
-    /// Tracks the last content entry that was navigated to (for restoring selection after
-    /// a group header is clicked).
-    /// </summary>
     private NavigationEntry? _lastContentEntry;
 
     public IReadOnlyList<NavigationEntry> NavigationEntries { get; }
@@ -82,10 +71,6 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
         private set => this.RaiseAndSetIfChanged(ref _updateErrorMessage, value);
     }
 
-    /// <summary>
-    /// True when the update notification bar should be visible.
-    /// Visible in: UpdateAvailable, Downloading, Downloaded, Error states.
-    /// </summary>
     public bool UpdateBarVisible =>
         _currentUpdateState is UpdateState.UpdateAvailable
                             or UpdateState.Downloading
@@ -107,20 +92,23 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
     public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> RetryDownloadCommand { get; }
 
     private readonly IUpdateService _updateService;
+    private readonly IScheduler _outputScheduler;
 
     public MainWindowViewModel(
         IServiceProvider provider,
         ILocalizationService localizationService,
-        IUpdateService updateService)
+        IUpdateService updateService,
+        IScheduler? outputScheduler = null)
     {
         _updateService = updateService;
+        _outputScheduler = outputScheduler ?? RxApp.MainThreadScheduler;
 
         // ── Update commands setup ─────────────────────────────────────────────
         var canCheck = this.WhenAnyValue(x => x.CurrentUpdateState)
             .Select(s => s == UpdateState.Idle);
 
         var canDismiss = this.WhenAnyValue(x => x.CurrentUpdateState)
-            .Select(s => s == UpdateState.UpdateAvailable);
+            .Select(s => s == UpdateState.UpdateAvailable || s == UpdateState.Error);
 
         var canBeginUpdate = this.WhenAnyValue(x => x.CurrentUpdateState)
             .Select(s => s == UpdateState.UpdateAvailable);
@@ -135,18 +123,18 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
             .Select(s => s == UpdateState.Error);
 
         CheckForUpdateCommand = ReactiveCommand.CreateFromTask(
-            RunCheckForUpdateAsync, canCheck);
+            RunCheckForUpdateAsync, canCheck, outputScheduler: _outputScheduler);
 
         DismissUpdateCommand = ReactiveCommand.CreateFromTask(
             async () => { CurrentUpdateState = UpdateState.Dismissed; await Task.CompletedTask; },
-            canDismiss);
+            canDismiss, outputScheduler: _outputScheduler);
 
         BeginUpdateCommand = ReactiveCommand.CreateFromTask(
-            RunDownloadUpdateAsync, canBeginUpdate);
+            RunDownloadUpdateAsync, canBeginUpdate, outputScheduler: _outputScheduler);
 
         RestartNowCommand = ReactiveCommand.Create(
             () => updateService.ApplyUpdateAndRestart(),
-            canRestart);
+            canRestart, outputScheduler: _outputScheduler);
 
         DismissRestartCommand = ReactiveCommand.CreateFromTask(
             async () =>
@@ -155,14 +143,12 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
                 CurrentUpdateState = UpdateState.Idle;
                 await Task.CompletedTask;
             },
-            canDismissRestart);
+            canDismissRestart, outputScheduler: _outputScheduler);
 
         RetryDownloadCommand = ReactiveCommand.CreateFromTask(
-            RunDownloadUpdateAsync, canRetry);
+            RunDownloadUpdateAsync, canRetry, outputScheduler: _outputScheduler);
 
         // ── Dashboard navigation ──────────────────────────────────────────────
-        // filingsVm is declared here (before navigateToDashboardFilings) so all
-        // navigation callbacks can reference it via closure.
         FilingsViewModel? filingsVm = null;
         Action navigateToDashboardFilings = () =>
         {
@@ -175,7 +161,7 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
         var dashboardVm = ActivatorUtilities.CreateInstance<DashboardViewModel>(
             provider, navigateToDashboardFilings);
 
-        // ── Manual filing navigation (back to filings) ────────────────────────
+        // ── Manual filing navigation ──────────────────────────────────────────
         Action navigateToManualFiling = () =>
         {
             var manualVm = ActivatorUtilities.CreateInstance<ManualFilingViewModel>(
@@ -185,10 +171,6 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
                     var filingsEntry = NavigationEntries?.FirstOrDefault(e => e.ViewModel is FilingsViewModel);
                     if (filingsEntry is not null) SelectedEntry = filingsEntry;
                 }));
-
-            // Use a transient hidden entry (not in NavigationEntries) so the ListBox shows
-            // no sidebar highlight while the ManualFiling sub-page is active. The
-            // WhenAnyValue(SelectedEntry) subscription handles setting CurrentViewModel.
             SelectedEntry = new NavigationEntry(string.Empty, manualVm, IsVisible: false);
         };
 
@@ -219,32 +201,27 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
         var syncVm = ActivatorUtilities.CreateInstance<SyncViewModel>(
             provider, navigateToFilings_sync);
 
-        // ── Settings sub-ViewModels (singleton — resolved once per app session) ───
+        // ── Settings sub-ViewModels ───────────────────────────────────────────
         var profileVm    = provider.GetRequiredService<ProfileSettingsViewModel>();
         var holidayVm    = provider.GetRequiredService<HolidaySettingsViewModel>();
         var mailboxVm    = provider.GetRequiredService<MailboxSettingsViewModel>();
         var importerVm   = provider.GetRequiredService<ImporterSettingsViewModel>();
         var appearanceVm = provider.GetRequiredService<AppearanceSettingsViewModel>();
 
-        // ── Settings group: group header + 5 child entries ────────────────────
-        // Build the group header first (no children yet — set after children are created).
         var settingsGroup = new NavigationEntry(localizationService["Nav_Settings"], viewModel: null, Icon: NavIcon("NavSettingsIcon"))
         {
             IsGroup    = true,
             IsExpanded = true,
         };
 
-        // Build child entries with ParentGroup referencing the group header.
         var profileChild   = new NavigationEntry(localizationService["Nav_Settings_Profile"],    profileVm,    Icon: NavIcon("NavProfileIcon"))    { IndentLevel = 1, ParentGroup = settingsGroup };
         var holidaysChild  = new NavigationEntry(localizationService["Nav_Settings_Holidays"],   holidayVm,    Icon: NavIcon("NavHolidaysIcon"))    { IndentLevel = 1, ParentGroup = settingsGroup };
         var mailboxesChild = new NavigationEntry(localizationService["Nav_Settings_Mailboxes"],  mailboxVm,    Icon: NavIcon("NavMailboxesIcon"))   { IndentLevel = 1, ParentGroup = settingsGroup };
         var importersChild = new NavigationEntry(localizationService["Nav_Settings_Importers"],  importerVm,   Icon: NavIcon("NavImportersIcon"))   { IndentLevel = 1, ParentGroup = settingsGroup };
-        var languageChild  = new NavigationEntry(localizationService["Nav_Settings_Appearance"],   appearanceVm, Icon: NavIcon("NavLanguageIcon"))    { IndentLevel = 1, ParentGroup = settingsGroup };
+        var languageChild  = new NavigationEntry(localizationService["Nav_Settings_Appearance"], appearanceVm, Icon: NavIcon("NavLanguageIcon"))    { IndentLevel = 1, ParentGroup = settingsGroup };
 
-        // Wire children into the group header.
         settingsGroup.Children = new[] { profileChild, holidaysChild, mailboxesChild, importersChild, languageChild };
 
-        // ── Flat navigation list (group header + children are all siblings) ────
         NavigationEntries = new List<NavigationEntry>
         {
             new(localizationService["Nav_Dashboard"], dashboardVm, Icon: NavIcon("NavHomeIcon")),
@@ -252,11 +229,11 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
             new(localizationService["Nav_Reports"],   reportsVm,   Icon: NavIcon("NavReportsIcon")),
             new(localizationService["Nav_Sync"],      syncVm,      Icon: NavIcon("NavSyncIcon")),
             settingsGroup,
-            profileChild,    // index 5
-            holidaysChild,   // index 6
-            mailboxesChild,  // index 7
-            importersChild,  // index 8
-            languageChild,   // index 9
+            profileChild,
+            holidaysChild,
+            mailboxesChild,
+            importersChild,
+            languageChild,
         };
 
         _selectedEntry     = NavigationEntries[0];
@@ -264,7 +241,6 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
         _lastContentEntry  = NavigationEntries[0];
         NavigationEntries[0].IsActive = true;
 
-        // M1: subscription moved into WhenActivated so it is disposed on deactivation
         this.WhenActivated(disposables =>
         {
             this.WhenAnyValue(x => x.SelectedEntry)
@@ -274,12 +250,10 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
 
                     if (entry.IsGroup)
                     {
-                        // Toggle the group expand/collapse state; do NOT change CurrentViewModel.
                         entry.ToggleExpanded();
                     }
                     else if (entry.ViewModel is not null)
                     {
-                        // Deactivate the previous content entry, activate the new one.
                         if (_lastContentEntry is not null)
                             _lastContentEntry.IsActive = false;
                         entry.IsActive    = true;
@@ -287,15 +261,12 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
                         CurrentViewModel  = entry.ViewModel;
                     }
 
-                    // Always reset to null so the same item can be re-clicked immediately
-                    // without needing to click away first (ListBox won't fire SelectionChanged
-                    // for an item that stays selected; resetting to null breaks that lock).
                     SelectedEntry = null;
                 })
                 .DisposeWith(disposables);
 
             localizationService.CultureChanged
-                .ObserveOn(RxApp.MainThreadScheduler)
+                .ObserveOn(_outputScheduler)
                 .Subscribe(_ => UpdateNavigationLabels(localizationService))
                 .DisposeWith(disposables);
 
@@ -310,18 +281,15 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
     {
         CurrentUpdateState = UpdateState.Checking;
         var result = await _updateService.CheckForUpdatesAsync().ConfigureAwait(false);
-        RxApp.MainThreadScheduler.Schedule(() =>
+        if (result.IsUpdateAvailable)
         {
-            if (result.IsUpdateAvailable)
-            {
-                AvailableVersion = result.TargetVersion;
-                CurrentUpdateState = UpdateState.UpdateAvailable;
-            }
-            else
-            {
-                CurrentUpdateState = UpdateState.Idle;
-            }
-        });
+            AvailableVersion = result.TargetVersion;
+            CurrentUpdateState = UpdateState.UpdateAvailable;
+        }
+        else
+        {
+            CurrentUpdateState = UpdateState.Idle;
+        }
     }
 
     private async Task RunDownloadUpdateAsync()
@@ -334,16 +302,12 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
                     () => DownloadProgress = progress))
                 .ConfigureAwait(false);
 
-            RxApp.MainThreadScheduler.Schedule(
-                () => CurrentUpdateState = UpdateState.Downloaded);
+            CurrentUpdateState = UpdateState.Downloaded;
         }
         catch (Exception ex)
         {
-            RxApp.MainThreadScheduler.Schedule(() =>
-            {
-                UpdateErrorMessage = ex.Message;
-                CurrentUpdateState = UpdateState.Error;
-            });
+            UpdateErrorMessage = ex.Message;
+            CurrentUpdateState = UpdateState.Error;
         }
     }
 
@@ -378,8 +342,17 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
 
     private static StreamGeometry? NavIcon(string key)
     {
-        if (Avalonia.Application.Current?.TryGetResource(key, Avalonia.Styling.ThemeVariant.Default, out var resource) == true)
-            return resource as StreamGeometry;
+        try
+        {
+            if (Avalonia.Application.Current?.TryGetResource(key, Avalonia.Styling.ThemeVariant.Default, out var resource) == true)
+                return resource as StreamGeometry;
+        }
+        catch (InvalidOperationException)
+        {
+            // Returns null when called from a non-UI thread (e.g., tests running alongside
+            // Avalonia headless tests that have initialized Application.Current).
+        }
         return null;
     }
 }
+

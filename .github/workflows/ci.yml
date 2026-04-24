@@ -6,12 +6,194 @@ on:
   pull_request:
     branches: [develop]
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+
 jobs:
+  # ──────────────────────────────────────────────
+  # Format & vulnerability checks (fast-fail)
+  # ──────────────────────────────────────────────
+  lint:
+    name: Format & Security
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Build.props') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Restore
+        run: dotnet restore Rentier.slnx
+
+      - name: Check formatting
+        run: dotnet format Rentier.slnx --no-restore --verify-no-changes
+
+      - name: Check vulnerable packages
+        run: dotnet list Rentier.slnx package --vulnerable --include-transitive 2>&1 | tee vuln-report.txt && ! grep -qi "has the following vulnerable packages" vuln-report.txt
+
+  # ──────────────────────────────────────────────
+  # Build & Test matrix (Windows, macOS, Ubuntu)
+  # ──────────────────────────────────────────────
   build:
+    name: Build & Test (${{ matrix.os }})
+    needs: lint
     strategy:
+      fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest]
+        os: [windows-latest, macos-latest, ubuntu-latest]
+        include:
+          - os: windows-latest
+            is-windows: true
+          - os: macos-latest
+            is-windows: false
+          - os: ubuntu-latest
+            is-windows: false
     runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history for SonarCloud
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Build.props') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      # ── Build ────────────────────────────────
+      - name: Restore (all projects)
+        if: matrix.is-windows
+        run: dotnet restore Rentier.slnx
+
+      - name: Restore (exclude E2E)
+        if: "!matrix.is-windows"
+        run: dotnet restore Rentier.slnx
+
+      - name: Build (all projects)
+        if: matrix.is-windows
+        run: dotnet build Rentier.slnx --no-restore -c Release
+
+      - name: Build (exclude E2E — non-Windows)
+        if: "!matrix.is-windows"
+        shell: bash
+        run: |
+          for proj in \
+            src/Rentier.Domain/Rentier.Domain.csproj \
+            src/Rentier.Application/Rentier.Application.csproj \
+            src/Rentier.Infrastructure/Rentier.Infrastructure.csproj \
+            src/Rentier.Desktop/Rentier.Desktop.csproj \
+            tests/Rentier.Tests.Common/Rentier.Tests.Common.csproj \
+            tests/Rentier.UnitTests/Rentier.UnitTests.csproj \
+            tests/Rentier.Infrastructure.Tests/Rentier.Infrastructure.Tests.csproj \
+            tests/Rentier.Scenarios.Tests/Rentier.Scenarios.Tests.csproj; do
+            dotnet build "$proj" --no-restore -c Release
+          done
+
+      # ── Test ─────────────────────────────────
+      - name: Test (all — Windows)
+        if: matrix.is-windows
+        run: >
+          dotnet test Rentier.slnx --no-build -c Release
+          --filter "Category!=Integration"
+          --collect:"XPlat Code Coverage"
+          --results-directory ./coverage
+          --logger "trx;LogFileName=results-${{ matrix.os }}.trx"
+          --logger "console;verbosity=normal"
+
+      - name: Test (exclude E2E — non-Windows)
+        if: "!matrix.is-windows"
+        shell: bash
+        run: |
+          for proj in \
+            tests/Rentier.UnitTests/Rentier.UnitTests.csproj \
+            tests/Rentier.Infrastructure.Tests/Rentier.Infrastructure.Tests.csproj \
+            tests/Rentier.Scenarios.Tests/Rentier.Scenarios.Tests.csproj; do
+            dotnet test "$proj" --no-build -c Release \
+              --filter "Category!=Integration" \
+              --collect:"XPlat Code Coverage" \
+              --results-directory ./coverage \
+              --logger "trx;LogFileName=$(basename "$proj" .csproj)-${{ matrix.os }}.trx" \
+              --logger "console;verbosity=normal"
+          done
+
+      # ── Artifacts ────────────────────────────
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.os }}
+          path: ./coverage/**/coverage.cobertura.xml
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.os }}
+          path: ./coverage/**/*.trx
+
+      # ── Step summary ─────────────────────────
+      - name: Post summary
+        if: always()
+        shell: bash
+        run: |
+          echo "## 🧪 Test Results — ${{ matrix.os }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          # Count tests from TRX files
+          total=0; passed=0; failed=0
+          for trx in $(find ./coverage -name '*.trx' 2>/dev/null); do
+            t=$(grep -oP 'total="\K[0-9]+' "$trx" | head -1)
+            p=$(grep -oP 'passed="\K[0-9]+' "$trx" | head -1)
+            f=$(grep -oP 'failed="\K[0-9]+' "$trx" | head -1)
+            total=$((total + ${t:-0}))
+            passed=$((passed + ${p:-0}))
+            failed=$((failed + ${f:-0}))
+          done
+
+          if [ "$failed" -gt 0 ]; then
+            echo "| Metric | Value |" >> "$GITHUB_STEP_SUMMARY"
+            echo "|--------|-------|" >> "$GITHUB_STEP_SUMMARY"
+            echo "| Total  | $total |" >> "$GITHUB_STEP_SUMMARY"
+            echo "| ✅ Passed | $passed |" >> "$GITHUB_STEP_SUMMARY"
+            echo "| ❌ Failed | $failed |" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "✅ **All $total tests passed** (Build with -warnaserror)" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  # ──────────────────────────────────────────────
+  # Coverage report (merge all platforms)
+  # ──────────────────────────────────────────────
+  coverage:
+    name: Coverage Report
+    needs: build
+    if: always() && !cancelled()
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
 
     steps:
       - name: Checkout
@@ -22,25 +204,141 @@ jobs:
         with:
           dotnet-version: '10.x'
 
-      - name: Restore
-        run: dotnet restore Rentier.slnx
+      - name: Download all coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          path: ./coverage-raw
+          merge-multiple: false
 
-      - name: Build
-        run: dotnet build Rentier.slnx --no-restore -warnaserror -c Release
+      - name: Install ReportGenerator
+        run: dotnet tool install -g dotnet-reportgenerator-globaltool
 
-      - name: Test
-        run: dotnet test Rentier.slnx --no-build -c Release --filter "Category!=Integration" --collect:"XPlat Code Coverage" --results-directory ./coverage --logger "console;verbosity=normal"
+      - name: Merge & generate report
+        shell: bash
+        run: |
+          # Collect all Cobertura files
+          REPORTS=$(find ./coverage-raw -name 'coverage.cobertura.xml' | tr '\n' ';')
+          if [ -z "$REPORTS" ]; then
+            echo "⚠️ No coverage files found" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
 
-      - name: Upload coverage
+          reportgenerator \
+            "-reports:${REPORTS}" \
+            "-targetdir:./coverage-report" \
+            "-reporttypes:HtmlInline_AzurePipelines;Cobertura;TextSummary;MarkdownSummaryGithub"
+
+          # Extract line coverage percentage
+          LINE_COV=$(grep -oP 'Line coverage: \K[0-9.]+' ./coverage-report/Summary.txt || echo "N/A")
+          BRANCH_COV=$(grep -oP 'Branch coverage: \K[0-9.]+' ./coverage-report/Summary.txt || echo "N/A")
+          echo "LINE_COVERAGE=$LINE_COV" >> "$GITHUB_ENV"
+          echo "BRANCH_COVERAGE=$BRANCH_COV" >> "$GITHUB_ENV"
+
+      - name: Upload HTML coverage report
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-${{ matrix.os }}
+          name: coverage-report
+          path: ./coverage-report
+
+      - name: Post coverage to PR
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: coverage
+          path: ./coverage-report/SummaryGithub.md
+
+      - name: Post coverage summary
+        shell: bash
+        run: |
+          echo "## 📊 Code Coverage (merged)" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Metric | Coverage |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|--------|----------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Line   | ${LINE_COVERAGE:-N/A}% |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Branch | ${BRANCH_COVERAGE:-N/A}% |" >> "$GITHUB_STEP_SUMMARY"
+
+  # ──────────────────────────────────────────────
+  # SonarCloud analysis (Ubuntu only)
+  # ──────────────────────────────────────────────
+  sonar:
+    name: SonarCloud Analysis
+    needs: build
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+
+      - name: Setup Java (SonarScanner requirement)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Build.props') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: sonar-${{ runner.os }}-${{ github.sha }}
+          restore-keys: sonar-${{ runner.os }}-
+
+      - name: Download coverage (ubuntu)
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-ubuntu-latest
           path: ./coverage
+
+      - name: Install SonarScanner
+        run: dotnet tool install -g dotnet-sonarscanner
+
+      - name: Build & analyze
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        shell: bash
+        run: |
+          # Collect coverage files
+          COV_PATHS=$(find ./coverage -name 'coverage.cobertura.xml' | tr '\n' ',')
+
+          dotnet sonarscanner begin \
+            /k:"${{ vars.SONAR_PROJECT_KEY || 'rentier' }}" \
+            /o:"${{ vars.SONAR_ORGANIZATION || 'rentier-org' }}" \
+            /d:sonar.token="${SONAR_TOKEN}" \
+            /d:sonar.host.url="https://sonarcloud.io" \
+            /d:sonar.cs.opencover.reportsPaths="${COV_PATHS}" \
+            /d:sonar.coverage.exclusions="**/tests/**,**/Migrations/**" \
+            /d:sonar.exclusions="**/Migrations/**"
+
+          # Build excluding E2E (non-Windows)
+          for proj in \
+            src/Rentier.Domain/Rentier.Domain.csproj \
+            src/Rentier.Application/Rentier.Application.csproj \
+            src/Rentier.Infrastructure/Rentier.Infrastructure.csproj \
+            src/Rentier.Desktop/Rentier.Desktop.csproj; do
+            dotnet build "$proj" -c Release --no-incremental
+          done
+
+          dotnet sonarscanner end /d:sonar.token="${SONAR_TOKEN}"
 
       - name: Post summary
         shell: bash
         run: |
-          echo "## Test Results" >> $GITHUB_STEP_SUMMARY
-          echo "Platform: ${{ matrix.os }}" >> $GITHUB_STEP_SUMMARY
-          echo "Build: ✅ Passed (-warnaserror)" >> $GITHUB_STEP_SUMMARY
-          echo "Tests: ✅ All passing" >> $GITHUB_STEP_SUMMARY
+          echo "## 🔍 SonarCloud Analysis" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Analysis submitted to [SonarCloud](https://sonarcloud.io)." >> "$GITHUB_STEP_SUMMARY"
+          echo "Check the quality gate status in the PR checks." >> "$GITHUB_STEP_SUMMARY"

@@ -14,6 +14,7 @@ using Xunit;
 
 namespace Rentier.UnitTests;
 
+[Collection("MainWindowViewModelTests")]
 public class MainWindowViewModelSmokeTests
 {
     private static ProfileSettingsViewModel CreateProfileVm() =>
@@ -198,3 +199,4 @@ public class MainWindowViewModelSmokeTests
         vm.CurrentViewModel.Should().BeOfType<ProfileSettingsViewModel>();
     }
 }
+

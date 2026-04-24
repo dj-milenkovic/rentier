@@ -140,9 +140,91 @@
     </Border>
 
     <!-- ── Content area ──────────────────────────────────────────────────── -->
-    <ContentControl Content="{Binding CurrentViewModel}"
-                    Margin="0"
-                    Background="{DynamicResource RentierRegionBrush}" />
+    <DockPanel>
+
+      <!-- ── Update notification bar (DockPanel.Dock="Top", shown above content) ── -->
+      <Border DockPanel.Dock="Top"
+              AutomationProperties.Name="Update Notification Bar"
+              IsVisible="{Binding UpdateBarVisible}"
+              Padding="12,4">
+        <Panel>
+
+          <!-- UpdateAvailable panel -->
+          <Border Background="{DynamicResource RentierInfoBrush}"
+                  CornerRadius="4"
+                  Padding="12,6"
+                  IsVisible="{Binding IsUpdateAvailableState}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="{Binding AvailableVersion, StringFormat='Update v{0} available'}"
+                         VerticalAlignment="Center"
+                         Foreground="{DynamicResource RentierTextPrimaryBrush}" />
+              <Button Content="Update Now"
+                      Command="{Binding BeginUpdateCommand}"
+                      Classes="accent" />
+              <Button Content="Later"
+                      Command="{Binding DismissUpdateCommand}" />
+            </StackPanel>
+          </Border>
+
+          <!-- Downloading panel -->
+          <Border Background="{DynamicResource RentierInfoBrush}"
+                  CornerRadius="4"
+                  Padding="12,6"
+                  IsVisible="{Binding IsDownloadingState}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="{Binding DownloadProgress, StringFormat='Downloading update... {0}%'}"
+                         VerticalAlignment="Center"
+                         Foreground="{DynamicResource RentierTextPrimaryBrush}" />
+              <ProgressBar Value="{Binding DownloadProgress}"
+                           Minimum="0" Maximum="100"
+                           Width="120"
+                           AutomationProperties.Name="Download Progress"
+                           VerticalAlignment="Center" />
+            </StackPanel>
+          </Border>
+
+          <!-- Downloaded panel -->
+          <Border Background="{DynamicResource RentierInfoBrush}"
+                  CornerRadius="4"
+                  Padding="12,6"
+                  IsVisible="{Binding IsDownloadedState}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="Update ready. Restart to apply."
+                         VerticalAlignment="Center"
+                         Foreground="{DynamicResource RentierTextPrimaryBrush}" />
+              <Button Content="Restart Now"
+                      Command="{Binding RestartNowCommand}"
+                      Classes="accent" />
+              <Button Content="Later"
+                      Command="{Binding DismissRestartCommand}" />
+            </StackPanel>
+          </Border>
+
+          <!-- Error panel -->
+          <Border Background="{DynamicResource RentierErrorBrush}"
+                  CornerRadius="4"
+                  Padding="12,6"
+                  IsVisible="{Binding IsErrorState}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="{Binding UpdateErrorMessage, StringFormat='Update failed: {0}'}"
+                         VerticalAlignment="Center"
+                         Foreground="{DynamicResource RentierTextPrimaryBrush}" />
+              <Button Content="Retry"
+                      Command="{Binding RetryDownloadCommand}" />
+              <Button Content="Dismiss"
+                      Command="{Binding DismissUpdateCommand}" />
+            </StackPanel>
+          </Border>
+
+        </Panel>
+      </Border>
+
+      <!-- ── Main content ───────────────────────────────────────────────────── -->
+      <ContentControl Content="{Binding CurrentViewModel}"
+                      Margin="0"
+                      Background="{DynamicResource RentierRegionBrush}" />
+
+    </DockPanel>
 
   </DockPanel>
 </Window>
