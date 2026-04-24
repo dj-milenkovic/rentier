@@ -24,7 +24,7 @@ public sealed class UpdateMailboxCommandHandler
         var mailbox = await _repository.GetByIdAsync(command.Id, ct);
         if (mailbox is null)
             return Result<VoidResult, Error>.Failure(
-                new Error("NOT_FOUND", $"Mailbox {command.Id} not found"));
+                new Error(ErrorCodes.NOT_FOUND, $"Mailbox {command.Id} not found"));
 
         try
         {
@@ -32,7 +32,7 @@ public sealed class UpdateMailboxCommandHandler
         }
         catch (DomainException ex)
         {
-            return Result<VoidResult, Error>.Failure(new Error("DOMAIN_VALIDATION", ex.Message));
+            return Result<VoidResult, Error>.Failure(new Error(ErrorCodes.MAILBOX_VALIDATION_FAILED, ex.Message));
         }
 
         // Save credential before persisting to DB so a credential failure does not

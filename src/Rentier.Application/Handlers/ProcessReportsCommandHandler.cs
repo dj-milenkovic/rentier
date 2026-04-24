@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
@@ -126,16 +126,16 @@ public sealed class ProcessReportsCommandHandler
     {
         if (report.AttachmentContent == null || report.AttachmentContent.Length == 0)
             return Result<(int, int, int, List<FilingCreationError>), Error>.Failure(
-                new Error("NO_ATTACHMENT", "Report has no attachment content"));
+                new Error(ErrorCodes.REPORT_PROCESS_NO_ATTACHMENT, "Report has no attachment content"));
 
         var importer = await _importerRepository.GetByIdAsync(report.ImporterId, ct);
         if (importer is null)
             return Result<(int, int, int, List<FilingCreationError>), Error>.Failure(
-                new Error("IMPORTER_NOT_FOUND", $"Importer {report.ImporterId} not found"));
+                new Error(ErrorCodes.IMPORTER_NOT_FOUND, $"Importer {report.ImporterId} not found"));
 
         if (importer.TaxpayerProfileId == null)
             return Result<(int, int, int, List<FilingCreationError>), Error>.Failure(
-                new Error("NO_TAXPAYER_PROFILE", $"Importer {report.ImporterId} has no TaxpayerProfileId"));
+                new Error(ErrorCodes.REPORT_PROCESS_NO_TAXPAYER, $"Importer {report.ImporterId} has no TaxpayerProfileId"));
 
         var taxpayerProfileId = importer.TaxpayerProfileId.Value;
 
@@ -144,7 +144,7 @@ public sealed class ProcessReportsCommandHandler
 
         if (!parseResult.IsSuccess)
             return Result<(int, int, int, List<FilingCreationError>), Error>.Failure(
-                new Error("PARSE_FAILED", parseResult.Error.Message));
+                new Error(ErrorCodes.REPORT_PROCESS_PARSE_FAILED, parseResult.Error.Message));
 
         var parsed = parseResult.Value;
         var rateProvider = BuildRateProvider(parsed, holidays, ct);
@@ -200,7 +200,7 @@ public sealed class ProcessReportsCommandHandler
             }
             catch (Exception ex)
             {
-                errors.Add(new FilingCreationError(div.EntityName, div.Date, div.Currency, div.Amount, "DOMAIN_ERROR", ex.Message));
+                errors.Add(new FilingCreationError(div.EntityName, div.Date, div.Currency, div.Amount, ErrorCodes.DOMAIN_ERROR, ex.Message));
                 failed++;
             }
         }
@@ -252,7 +252,7 @@ public sealed class ProcessReportsCommandHandler
             }
             catch (Exception ex)
             {
-                errors.Add(new FilingCreationError(interest.EntityName, interest.Date, interest.Currency, interest.Amount, "DOMAIN_ERROR", ex.Message));
+                errors.Add(new FilingCreationError(interest.EntityName, interest.Date, interest.Currency, interest.Amount, ErrorCodes.DOMAIN_ERROR, ex.Message));
                 failed++;
             }
         }
@@ -289,3 +289,4 @@ public sealed class ProcessReportsCommandHandler
         };
     }
 }
+

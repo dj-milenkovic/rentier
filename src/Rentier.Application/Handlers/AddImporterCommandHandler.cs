@@ -30,29 +30,27 @@ public sealed class AddImporterCommandHandler
             }
             catch (ArgumentException ex)
             {
-                return Result<Guid, Error>.Failure(new Error("INVALID_REGEX", ex.Message));
+                return Result<Guid, Error>.Failure(new Error(ErrorCodes.IMPORTER_VALIDATION_INVALID_REGEX, ex.Message));
             }
         }
 
-        // (2) Create importer and update details
-        try
-        {
-            var importer = Importer.Create(command.DisplayName, command.ReportType);
-            importer.UpdateDetails(
-                command.DisplayName,
-                command.ReportType,
-                command.TaxpayerProfileId,
-                command.MailboxId,
-                command.FromFilter,
-                command.SubjectFilter,
-                command.AttachmentRegex,
-                command.PaymentNotes);
-            await _repository.AddAsync(importer, ct);
-            return Result<Guid, Error>.Success(importer.Id);
-        }
-        catch (DomainException ex)
-        {
-            return Result<Guid, Error>.Failure(new Error("DOMAIN_ERROR", ex.Message));
-        }
+        // (2) Create importer and update details via HandlerHelper
+        return await HandlerHelper.ExecuteAsync<Guid>(
+            async () =>
+            {
+                var importer = Importer.Create(command.DisplayName, command.ReportType);
+                importer.UpdateDetails(
+                    command.DisplayName,
+                    command.ReportType,
+                    command.TaxpayerProfileId,
+                    command.MailboxId,
+                    command.FromFilter,
+                    command.SubjectFilter,
+                    command.AttachmentRegex,
+                    command.PaymentNotes);
+                await _repository.AddAsync(importer, ct);
+                return Result<Guid, Error>.Success(importer.Id);
+            },
+            ErrorCodes.IMPORTER_VALIDATION_INVALID_REGEX);
     }
 }

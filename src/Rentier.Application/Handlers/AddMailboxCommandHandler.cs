@@ -29,7 +29,7 @@ public sealed class AddMailboxCommandHandler
         }
         catch (DomainException ex)
         {
-            return Result<Guid, Error>.Failure(new Error("DOMAIN_VALIDATION", ex.Message));
+            return Result<Guid, Error>.Failure(new Error(ErrorCodes.MAILBOX_VALIDATION_FAILED, ex.Message));
         }
 
         if (!string.IsNullOrEmpty(command.Password))

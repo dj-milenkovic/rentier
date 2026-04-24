@@ -31,17 +31,13 @@ public sealed class GetFilingsQueryHandler
                 new FilingsPageResult(linkedRows, linkedRows.Count, 1));
         }
 
-        if (query.Page < 1)
-            return Result<FilingsPageResult, Error>.Failure(
-                new Error("VALIDATION_ERROR", "Page must be >= 1."));
-
-        if (query.PageSize < 1 || query.PageSize > 100)
-            return Result<FilingsPageResult, Error>.Failure(
-                new Error("VALIDATION_ERROR", "PageSize must be between 1 and 100."));
+        var paginationFailure = PaginationValidator.Validate<FilingsPageResult>(query);
+        if (paginationFailure is not null)
+            return paginationFailure;
 
         if (!Enum.IsDefined(typeof(Enums.FilingSortColumn), query.SortColumn))
             return Result<FilingsPageResult, Error>.Failure(
-                new Error("VALIDATION_ERROR", "Invalid sort column."));
+                new Error(ErrorCodes.PAGINATION_VALIDATION_FAILED, "Invalid sort column."));
 
         var skip = (query.Page - 1) * query.PageSize;
         var (items, totalCount) = await _filings.GetPagedAsync(

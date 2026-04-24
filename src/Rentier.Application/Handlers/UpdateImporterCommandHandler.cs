@@ -23,7 +23,7 @@ public sealed class UpdateImporterCommandHandler
         var importer = await _repository.GetByIdAsync(command.Id, ct);
         if (importer is null)
             return Result<VoidResult, Error>.Failure(
-                new Error("IMPORTER_NOT_FOUND", $"Importer {command.Id} not found."));
+                new Error(ErrorCodes.IMPORTER_NOT_FOUND, $"Importer {command.Id} not found."));
 
         // (2) Validate AttachmentRegex if non-empty
         if (!string.IsNullOrEmpty(command.AttachmentRegex))
@@ -35,30 +35,28 @@ public sealed class UpdateImporterCommandHandler
             }
             catch (ArgumentException ex)
             {
-                return Result<VoidResult, Error>.Failure(new Error("INVALID_REGEX", ex.Message));
+                return Result<VoidResult, Error>.Failure(new Error(ErrorCodes.IMPORTER_VALIDATION_INVALID_REGEX, ex.Message));
             }
         }
 
-        // (3) Update details
-        try
-        {
-            importer.UpdateDetails(
-                command.DisplayName,
-                command.ReportType,
-                command.TaxpayerProfileId,
-                command.MailboxId,
-                command.FromFilter,
-                command.SubjectFilter,
-                command.AttachmentRegex,
-                command.PaymentNotes);
-        }
-        catch (DomainException ex)
-        {
-            return Result<VoidResult, Error>.Failure(new Error("DOMAIN_ERROR", ex.Message));
-        }
+        // (3) Update details via HandlerHelper
+        return await HandlerHelper.ExecuteAsync<VoidResult>(
+            async () =>
+            {
+                importer.UpdateDetails(
+                    command.DisplayName,
+                    command.ReportType,
+                    command.TaxpayerProfileId,
+                    command.MailboxId,
+                    command.FromFilter,
+                    command.SubjectFilter,
+                    command.AttachmentRegex,
+                    command.PaymentNotes);
 
-        // (4) Persist
-        await _repository.UpdateAsync(importer, ct);
-        return Result<VoidResult, Error>.Success(VoidResult.Value);
+                // (4) Persist
+                await _repository.UpdateAsync(importer, ct);
+                return Result<VoidResult, Error>.Success(VoidResult.Value);
+            },
+            ErrorCodes.IMPORTER_VALIDATION_INVALID_REGEX);
     }
 }
