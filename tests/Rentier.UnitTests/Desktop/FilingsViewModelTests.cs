@@ -463,9 +463,11 @@ public class FilingsViewModelTests
     public void ClearReportFilterCommand_WhenNoReportFilter_CannotExecute()
     {
         var vm = CreateVm();
+        var canExecute = true;
 
         // ReportIdFilter is null by default
-        vm.ClearReportFilterCommand.CanExecute(Unit.Default).Should().BeFalse();
+        vm.ClearReportFilterCommand.CanExecute.Subscribe(v => canExecute = v);
+        canExecute.Should().BeFalse();
     }
 
     [Fact]
