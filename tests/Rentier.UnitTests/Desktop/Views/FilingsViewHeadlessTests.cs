@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Reactive;
 using System.Reactive.Concurrency;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
@@ -229,7 +230,7 @@ public class FilingsViewHeadlessTests
     [AvaloniaFact]
     public void FilingsView_ActionAndHeaderColumns_RenderQaFixes()
     {
-        // Arrange
+// Arrange
         var rows = new[] { MakeFilingRowDto() };
         var getFilings = Substitute.For<IQueryHandler<GetFilingsQuery, Result<FilingsPageResult, Error>>>();
         getFilings.HandleAsync(Arg.Any<GetFilingsQuery>(), Arg.Any<CancellationToken>())
@@ -271,9 +272,100 @@ public class FilingsViewHeadlessTests
         window.Close();
     }
 
+    // ── Filter chip tests (T006 + T008) ─────────────────────────────────────
+
+    [AvaloniaFact]
+    public void FilterChip_WhenReportFilterActive_IsVisible()
+    {
+        // Arrange
+        var vm = CreateMinimalFilingsViewModel();
+        vm.ReportIdFilter = Guid.NewGuid();
+
+        var view = new FilingsView { DataContext = vm };
+        var window = new Window { Content = view, Width = 800, Height = 600 };
+        window.Show();
+        window.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
+
+        // Act — find the chip Border by checking for a visible Border with a StackPanel child
+        var chipBorder = FindChipBorder(window);
+
+        // Assert
+        chipBorder.Should().NotBeNull("chip Border should be present in visual tree when ReportIdFilter is set");
+        chipBorder!.IsVisible.Should().BeTrue();
+
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void FilterChip_WhenNoReportFilter_IsNotVisible()
+    {
+        // Arrange — no ReportIdFilter set
+        var vm = CreateMinimalFilingsViewModel();
+
+        var view = new FilingsView { DataContext = vm };
+        var window = new Window { Content = view, Width = 800, Height = 600 };
+        window.Show();
+        window.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
+
+        // Act
+        var chipBorder = FindChipBorder(window);
+
+        // Assert — chip Border either absent or not visible
+        var isChipVisible = chipBorder?.IsVisible ?? false;
+        isChipVisible.Should().BeFalse("chip Border should not be visible when no ReportIdFilter is active");
+
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void FilterChip_DismissButton_WhenClicked_ChipDisappears()
+    {
+        // Arrange
+        var vm = CreateMinimalFilingsViewModel();
+        vm.ReportIdFilter = Guid.NewGuid();
+
+        var view = new FilingsView { DataContext = vm };
+        var window = new Window { Content = view, Width = 800, Height = 600 };
+        window.Show();
+        window.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
+
+        // Verify chip is initially visible
+        var chipBorder = FindChipBorder(window);
+        chipBorder.Should().NotBeNull();
+        chipBorder!.IsVisible.Should().BeTrue();
+
+        // Act — execute the command directly (simulates ✕ button click)
+        vm.ClearReportFilterCommand.Execute(Unit.Default).Subscribe();
+        window.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
+
+        // Assert — chip Border is now hidden
+        chipBorder.IsVisible.Should().BeFalse("chip should collapse after ClearReportFilterCommand executes");
+
+        window.Close();
+    }
+
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Finds the report filter chip <see cref="Border"/> in the visual tree.
+    /// The chip is the Border whose direct child is a StackPanel containing a TextBlock and a Button (✕).
+    /// </summary>
+    private static Border? FindChipBorder(Window window)
+    {
+        return window.GetVisualDescendants()
+            .OfType<Border>()
+            .FirstOrDefault(b =>
+                b.Child is StackPanel sp &&
+                sp.Children.OfType<TextBlock>().Any() &&
+                sp.Children.OfType<Button>().Any(btn =>
+                    btn.Content is TextBlock tb && tb.Text == "✕"));
+    }
 
     /// <summary>
     /// Creates a minimal FilingsViewModel with all dependencies mocked.
