@@ -41,6 +41,7 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
     private FilingSortColumn _sortColumn = FilingSortColumn.FilingDeadline;
     private bool _sortDescending = true;
     private bool _isUpdatingSelection;
+    private readonly ObservableAsPropertyHelper<bool> _hasReportFilter;
     private readonly ObservableAsPropertyHelper<bool> _hasSelection;
     private readonly ObservableAsPropertyHelper<string> _deleteSelectedLabel;
 
@@ -114,6 +115,8 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
         private set => this.RaiseAndSetIfChanged(ref _sortDescending, value);
     }
 
+    public bool HasReportFilter => _hasReportFilter.Value;
+
     public bool HasSelection => _hasSelection.Value;
     public string DeleteSelectedLabel => _deleteSelectedLabel.Value;
 
@@ -158,6 +161,7 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
 
     public ObservableCollection<FilingRowViewModel> Rows { get; } = new();
 
+    public ReactiveCommand<Unit, Unit> ClearReportFilterCommand { get; }
     public ReactiveCommand<Unit, Unit> LoadPageCommand { get; }
     public ReactiveCommand<Unit, Unit> PreviousPageCommand { get; }
     public ReactiveCommand<Unit, Unit> NextPageCommand { get; }
@@ -197,6 +201,10 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
         _navigateToManualFiling = navigateToManualFiling;
         _scheduler = scheduler ?? RxApp.MainThreadScheduler;
 
+        _hasReportFilter = this.WhenAnyValue(x => x.ReportIdFilter)
+            .Select(id => id.HasValue)
+            .ToProperty(this, x => x.HasReportFilter, scheduler: _scheduler);
+
         _hasSelection = this.WhenAnyValue(x => x.SelectedCount)
             .Select(c => c > 0)
             .ToProperty(this, x => x.HasSelection, scheduler: _scheduler);
@@ -210,7 +218,12 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
         LoadPageCommand = ReactiveCommand.CreateFromTask(
             LoadPageAsync, outputScheduler: _scheduler);
 
-        PreviousPageCommand = ReactiveCommand.CreateFromTask(
+        ClearReportFilterCommand = ReactiveCommand.Create(
+            () => { ReportIdFilter = null; },
+            this.WhenAnyValue(x => x.HasReportFilter),
+            outputScheduler: _scheduler);
+
+        PreviousPageCommand= ReactiveCommand.CreateFromTask(
             async (CancellationToken ct) =>
             {
                 _currentPage--;
