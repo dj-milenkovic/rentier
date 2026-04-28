@@ -21,7 +21,7 @@
 
 **Purpose**: Confirm starting state before any changes.
 
-- [ ] T001 Verify feature branch `043-sync-per-report-log` is checked out and `dotnet build src/Rentier.Application/Rentier.Application.csproj` passes with zero errors (baseline gate before any edits)
+- [X] T001 Verify feature branch `043-sync-per-report-log` is checked out and `dotnet build src/Rentier.Application/Rentier.Application.csproj` passes with zero errors (baseline gate before any edits)
 
 ---
 
@@ -31,9 +31,9 @@
 
 **⚠️ CRITICAL**: T005–T010 cannot start until this phase is complete.
 
-- [ ] T002 [P] Create `ReportProcessingDetail` sealed record with `ClassifySeverity(int created, int failed)` static method (switch expression: `(_, 0)→Info`, `(>0, >0)→Warning`, `(0, >0)→Error`) and `ToLogMessage()` returning `"Report '{ReportName}': {FilingsCreated} filing(s) created, {FilingsFailed} failed."` in `src/Rentier.Application/DTOs/ReportProcessingDetail.cs`
-- [ ] T003 [P] Add optional `IProgress<SyncProgressEntry>? Progress = null` property to `ProcessReportsCommand` record in `src/Rentier.Application/Commands/ProcessReportsCommand.cs` (change `public sealed record ProcessReportsCommand;` to `public sealed record ProcessReportsCommand(IProgress<SyncProgressEntry>? Progress = null);`)
-- [ ] T004 Add optional `IReadOnlyList<ReportProcessingDetail>? ReportDetails = null` trailing parameter to `ProcessReportsResult` record after `ReportsPartialError = 0` in `src/Rentier.Application/DTOs/ProcessReportsResult.cs` (existing callers are backward-compatible via default value)
+- [X] T002 [P] Create `ReportProcessingDetail` sealed record with `ClassifySeverity(int created, int failed)` static method (switch expression: `(_, 0)→Info`, `(>0, >0)→Warning`, `(0, >0)→Error`) and `ToLogMessage()` returning `"Report '{ReportName}': {FilingsCreated} filing(s) created, {FilingsFailed} failed."` in `src/Rentier.Application/DTOs/ReportProcessingDetail.cs`
+- [X] T003 [P] Add optional `IProgress<SyncProgressEntry>? Progress = null` property to `ProcessReportsCommand` record in `src/Rentier.Application/Commands/ProcessReportsCommand.cs` (change `public sealed record ProcessReportsCommand;` to `public sealed record ProcessReportsCommand(IProgress<SyncProgressEntry>? Progress = null);`)
+- [X] T004 Add optional `IReadOnlyList<ReportProcessingDetail>? ReportDetails = null` trailing parameter to `ProcessReportsResult` record after `ReportsPartialError = 0` in `src/Rentier.Application/DTOs/ProcessReportsResult.cs` (existing callers are backward-compatible via default value)
 
 **Checkpoint**: `dotnet build src/Rentier.Application/Rentier.Application.csproj` must pass before proceeding.
 
@@ -51,13 +51,13 @@
 
 ### Tests for US1 + US2 ⚠️ (write first — verify they FAIL before T008)
 
-- [ ] T005 [P] [US1] Write `ReportProcessingDetailTests` covering all `ClassifySeverity` rules: `(created:3, failed:0)→Info`, `(created:2, failed:1)→Warning`, `(created:0, failed:2)→Error`, `(created:0, failed:0)→Info` (empty report), plus `ToLogMessage()` output format `"Report 'foo.csv': 3 filing(s) created, 0 failed."` in `tests/Rentier.Application.Tests/DTOs/ReportProcessingDetailTests.cs`
-- [ ] T006 [P] [US1] Write `ProcessReportsCommandHandlerTests` for per-report progress emission: (a) all-success report emits exactly one `SyncProgressEntry` with `Severity=Info` and correct `ToLogMessage()` text; (b) partial-error report emits `Severity=Warning`; (c) total-failure report emits `Severity=Error`; (d) `null` progress does not throw (null-safe `?.Report()`) in `tests/Rentier.Application.Tests/Handlers/ProcessReportsCommandHandlerTests.cs`
-- [ ] T007 [P] [US2] Add error-branch severity tests to `ProcessReportsCommandHandlerTests`: no-attachment report, importer-not-found report, parse-failure report, and unexpected-exception report each emit one Error-severity `SyncProgressEntry` whose message matches `"Report 'X': processing error — {detail}."` format in `tests/Rentier.Application.Tests/Handlers/ProcessReportsCommandHandlerTests.cs`
+- [X] T005 [P] [US1] Write `ReportProcessingDetailTests` covering all `ClassifySeverity` rules: `(created:3, failed:0)→Info`, `(created:2, failed:1)→Warning`, `(created:0, failed:2)→Error`, `(created:0, failed:0)→Info` (empty report), plus `ToLogMessage()` output format `"Report 'foo.csv': 3 filing(s) created, 0 failed."` in `tests/Rentier.Application.Tests/DTOs/ReportProcessingDetailTests.cs`
+- [X] T006 [P] [US1] Write `ProcessReportsCommandHandlerTests` for per-report progress emission: (a) all-success report emits exactly one `SyncProgressEntry` with `Severity=Info` and correct `ToLogMessage()` text; (b) partial-error report emits `Severity=Warning`; (c) total-failure report emits `Severity=Error`; (d) `null` progress does not throw (null-safe `?.Report()`) in `tests/Rentier.Application.Tests/Handlers/ProcessReportsCommandHandlerTests.cs`
+- [X] T007 [P] [US2] Add error-branch severity tests to `ProcessReportsCommandHandlerTests`: no-attachment report, importer-not-found report, parse-failure report, and unexpected-exception report each emit one Error-severity `SyncProgressEntry` whose message matches `"Report 'X': processing error — {detail}."` format in `tests/Rentier.Application.Tests/Handlers/ProcessReportsCommandHandlerTests.cs`
 
 ### Implementation for US1 + US2
 
-- [ ] T008 [US1] Modify `ProcessReportsCommandHandler.HandleAsync` in `src/Rentier.Application/Handlers/ProcessReportsCommandHandler.cs`:
+- [X] T008 [US1] Modify `ProcessReportsCommandHandler.HandleAsync` in `src/Rentier.Application/Handlers/ProcessReportsCommandHandler.cs`:
   1. Add `var reportDetails = new List<ReportProcessingDetail>();` before the `foreach` loop
   2. In the **success / partial-error / total-failure** branch: after computing `created` and `failed`, call `var severity = ReportProcessingDetail.ClassifySeverity(created, failed);`, create `var detail = new ReportProcessingDetail(report.ReportName, created, failed, severity);`, call `command.Progress?.Report(new SyncProgressEntry(DateTimeOffset.Now, detail.ToLogMessage(), severity));`, and `reportDetails.Add(detail);`
   3. In **each** existing error branch (no attachment, importer not found, parse failure, unexpected exception): emit `command.Progress?.Report(new SyncProgressEntry(DateTimeOffset.Now, $"Report '{report.ReportName}': processing error — {errorMessage}.", SyncProgressSeverity.Error));` and add matching `ReportProcessingDetail` (0/0/Error) to `reportDetails`
@@ -75,11 +75,11 @@
 
 ### Tests for US3 ⚠️ (write first — verify they FAIL before T010)
 
-- [ ] T009 [P] [US3] Write `SyncAllCommandHandlerTests` verifying: (a) the `ProcessReportsCommand` constructed inside `HandleAsync` has its `Progress` property set to the same `IProgress<SyncProgressEntry>` instance passed to `HandleAsync`; (b) after a successful report-processing run the aggregate "Processed N report(s), created M filing(s)." entry is still reported via `progress` after all per-report entries in `tests/Rentier.Application.Tests/Handlers/SyncAllCommandHandlerTests.cs`
+- [X] T009 [P] [US3] Write `SyncAllCommandHandlerTests` verifying: (a) the `ProcessReportsCommand` constructed inside `HandleAsync` has its `Progress` property set to the same `IProgress<SyncProgressEntry>` instance passed to `HandleAsync`; (b) after a successful report-processing run the aggregate "Processed N report(s), created M filing(s)." entry is still reported via `progress` after all per-report entries in `tests/Rentier.Application.Tests/Handlers/SyncAllCommandHandlerTests.cs`
 
 ### Implementation for US3
 
-- [ ] T010 [US3] Change `new ProcessReportsCommand()` to `new ProcessReportsCommand(Progress: progress)` on the single call-site in `SyncAllCommandHandler.HandleAsync` in `src/Rentier.Application/Handlers/SyncAllCommandHandler.cs`
+- [X] T010 [US3] Change `new ProcessReportsCommand()` to `new ProcessReportsCommand(Progress: progress)` on the single call-site in `SyncAllCommandHandler.HandleAsync` in `src/Rentier.Application/Handlers/SyncAllCommandHandler.cs`
 
 **Checkpoint**: `dotnet test tests/Rentier.Application.Tests/` with T009 test passing confirms US3 is complete and the aggregate line is preserved.
 
@@ -87,8 +87,8 @@
 
 ## Phase 5: Polish & Cross-Cutting Concerns
 
-- [ ] T011 [P] Run `dotnet build` on the full solution (`dotnet build Rentier.sln`) and resolve any compilation errors from type-signature changes to `ProcessReportsCommand` and `ProcessReportsResult` in `src/`
-- [ ] T012 [P] Run `dotnet test tests/Rentier.Application.Tests/` and confirm all 13+ new tests pass with zero failures; review coverage report to confirm Application handler coverage ≥ 90%
+- [X] T011 [P] Run `dotnet build` on the full solution (`dotnet build Rentier.sln`) and resolve any compilation errors from type-signature changes to `ProcessReportsCommand` and `ProcessReportsResult` in `src/`
+- [X] T012 [P] Run `dotnet test tests/Rentier.Application.Tests/` and confirm all 13+ new tests pass with zero failures; review coverage report to confirm Application handler coverage ≥ 90%
 - [ ] T013 Validate quickstart.md scenarios end-to-end: trigger a real sync with all-success, partial-error, and all-fail report files; confirm (a) per-report log lines appear in real time as each report finishes, (b) Info lines show green, Warning lines show amber, Error lines show red via `SyncSeverityBrushConverter`, (c) aggregate "Processed N report(s)…" line appears last
 
 ---
