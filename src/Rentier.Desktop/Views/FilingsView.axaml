@@ -23,6 +23,25 @@
         <RadioButton GroupName="FilingFilter"
                      IsChecked="{Binding ShowAll}"
                      Content="{Binding [Filings_Filter_All], Source={StaticResource Localizer}}" />
+        <!-- Report filter chip: visible only when a ReportIdFilter is active -->
+        <Border IsVisible="{Binding HasReportFilter}"
+                Background="{DynamicResource RentierCardElevatedBrush}"
+                BorderBrush="{DynamicResource RentierBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="10" Padding="8,2"
+                VerticalAlignment="Center">
+          <!-- TODO: replace RentierCardElevatedBrush with RentierChipBackgroundBrush once defined -->
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <TextBlock Text="{Binding [Filings_FilterChip_Report], Source={StaticResource Localizer}}"
+                       VerticalAlignment="Center" FontSize="12" />
+            <Button Command="{Binding ClearReportFilterCommand}"
+                    AutomationProperties.Name="{Binding [Filings_FilterChip_Dismiss], Source={StaticResource Localizer}}"
+                    Padding="2" Background="Transparent" BorderThickness="0"
+                    VerticalAlignment="Center" Cursor="Hand">
+              <TextBlock Text="✕" FontSize="12" />
+            </Button>
+          </StackPanel>
+        </Border>
         <TextBlock Text="{Binding SortIndicatorDisplay}" Foreground="{DynamicResource RentierTextSecondaryBrush}" FontSize="11" VerticalAlignment="Center" />
       </StackPanel>
       <Button Content="{Binding [ManualFiling_Title], Source={StaticResource Localizer}}"

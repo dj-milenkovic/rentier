@@ -313,6 +313,12 @@
   <data name="Filings_Filter_All" xml:space="preserve">
     <value>All</value>
   </data>
+  <data name="Filings_FilterChip_Report" xml:space="preserve">
+    <value>Filtered by report</value>
+  </data>
+  <data name="Filings_FilterChip_Dismiss" xml:space="preserve">
+    <value>Remove report filter</value>
+  </data>
   <data name="Filings_Page_Previous" xml:space="preserve">
     <value>← Previous</value>
   </data>

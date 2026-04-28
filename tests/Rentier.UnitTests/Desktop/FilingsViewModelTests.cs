@@ -1,3 +1,4 @@
+using System.Reactive;
 using System.Reactive.Concurrency;
 using FluentAssertions;
 using NSubstitute;
@@ -434,5 +435,70 @@ public class FilingsViewModelTests
         vm.ExportCommand.Execute(Guid.NewGuid()).Subscribe();
 
         vm.ErrorMessage.Should().Be("Export failed");
+    }
+
+    // ── HasReportFilter tests (T005) ─────────────────────────────────────────
+
+    [Fact]
+    public void HasReportFilter_WhenReportIdFilterIsNull_ReturnsFalse()
+    {
+        var vm = CreateVm();
+
+        vm.HasReportFilter.Should().BeFalse();
+    }
+
+    [Fact]
+    public void HasReportFilter_WhenReportIdFilterIsSet_ReturnsTrue()
+    {
+        var vm = CreateVm();
+
+        vm.ReportIdFilter = Guid.NewGuid();
+
+        vm.HasReportFilter.Should().BeTrue();
+    }
+
+    // ── ClearReportFilterCommand tests (T007) ────────────────────────────────
+
+    [Fact]
+    public void ClearReportFilterCommand_WhenNoReportFilter_CannotExecute()
+    {
+        var vm = CreateVm();
+        var canExecute = true;
+
+        // ReportIdFilter is null by default
+        vm.ClearReportFilterCommand.CanExecute.Subscribe(v => canExecute = v);
+        canExecute.Should().BeFalse();
+    }
+
+    [Fact]
+    public void ClearReportFilterCommand_WhenExecuted_SetsReportIdFilterToNull()
+    {
+        var vm = CreateVm();
+        vm.ReportIdFilter = Guid.NewGuid();
+
+        vm.ClearReportFilterCommand.Execute(Unit.Default).Subscribe();
+
+        vm.ReportIdFilter.Should().BeNull();
+        vm.HasReportFilter.Should().BeFalse();
+    }
+
+    [Fact]
+    public void ClearReportFilterCommand_WhenExecuted_TriggersLoadPageCommand()
+    {
+        var getFilings = MockGetFilings();
+        var vm = CreateVm(getFilings: getFilings);
+        vm.ReportIdFilter = Guid.NewGuid();
+
+        // Activate so the WhenAnyValue(ReportIdFilter).InvokeCommand(LoadPageCommand) subscription is live
+        using var _ = vm.Activator.Activate();
+
+        // Clear call count from activation load
+        getFilings.ClearReceivedCalls();
+
+        // Setting ReportIdFilter = null via the command triggers the reactive pipeline
+        vm.ClearReportFilterCommand.Execute(Unit.Default).Subscribe();
+
+        // LoadPageCommand should have fired due to ReportIdFilter change
+        getFilings.Received().HandleAsync(Arg.Any<GetFilingsQuery>(), Arg.Any<CancellationToken>());
     }
 }
