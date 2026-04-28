@@ -53,7 +53,7 @@ public sealed class SyncAllCommandHandler : ISyncAllCommandHandler
         // Phase 2: Process reports (always runs)
         progress.Report(new SyncProgressEntry(DateTimeOffset.Now, "Processing reports...", SyncProgressSeverity.Info));
 
-        var processResult = await _processReportsHandler.HandleAsync(new ProcessReportsCommand(), ct);
+        var processResult = await _processReportsHandler.HandleAsync(new ProcessReportsCommand(Progress: progress), ct);
 
         if (processResult.IsSuccess)
         {

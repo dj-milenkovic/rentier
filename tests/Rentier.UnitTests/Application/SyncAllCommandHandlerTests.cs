@@ -214,4 +214,52 @@ public class SyncAllCommandHandlerTests
         await syncHandler.Received(1)
             .HandleAsync(Arg.Any<SyncMailboxCommand>(), Arg.Any<CancellationToken>());
     }
+
+    // ── T009: IProgress passthrough to ProcessReportsCommand (US3) ───────────
+
+    [Fact]
+    public async Task HandleAsync_PassesProgressToProcessReportsCommand()
+    {
+        // T009(a): ProcessReportsCommand constructed inside HandleAsync has Progress set
+        // to the same IProgress<SyncProgressEntry> instance passed to HandleAsync.
+        ProcessReportsCommand? capturedCommand = null;
+
+        var processHandler = Substitute.For<ICommandHandler<ProcessReportsCommand, Result<ProcessReportsResult, Error>>>();
+        processHandler
+            .HandleAsync(Arg.Do<ProcessReportsCommand>(cmd => capturedCommand = cmd), Arg.Any<CancellationToken>())
+            .Returns(Result<ProcessReportsResult, Error>.Success(new ProcessReportsResult(0, 0, 0, [])));
+
+        var progress = Substitute.For<IProgress<SyncProgressEntry>>();
+
+        var handler = CreateHandler(processHandler: processHandler);
+        await handler.HandleAsync(DefaultCommand(), progress);
+
+        capturedCommand.Should().NotBeNull();
+        capturedCommand!.Progress.Should().BeSameAs(progress);
+    }
+
+    [Fact]
+    public async Task HandleAsync_AggregateLineAppearsAfterPerReportLines()
+    {
+        // T009(b): Aggregate "Processed N report(s)..." line appears last — after any
+        // per-report lines that would be emitted by ProcessReportsCommandHandler.
+        // In this unit test we stub the handler, so we verify the aggregate line is
+        // still reported by SyncAllCommandHandler after process completion.
+        var reported = new List<SyncProgressEntry>();
+        var progress = new Progress<SyncProgressEntry>(e => reported.Add(e));
+
+        var processHandler = MakeProcessReportsHandler(
+            Result<ProcessReportsResult, Error>.Success(new ProcessReportsResult(3, 2, 0, [])));
+
+        var handler = CreateHandler(processHandler: processHandler);
+        await handler.HandleAsync(DefaultCommand(), progress);
+        await Task.Delay(50);
+
+        var aggregateLine = reported.LastOrDefault(e =>
+            e.Message.StartsWith("Processed") && e.Message.Contains("report(s)"));
+
+        aggregateLine.Should().NotBeNull("aggregate summary line must still appear");
+        aggregateLine!.Severity.Should().Be(SyncProgressSeverity.Info);
+        aggregateLine.Message.Should().Be("Processed 2 report(s), created 3 filing(s).");
+    }
 }

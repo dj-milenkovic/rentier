@@ -50,6 +50,7 @@ public sealed class ProcessReportsCommandHandler
         var initReports = await _reportRepository.GetByStatusAsync(ReportStatus.Init, ct);
 
         var allEventErrors = new List<FilingCreationError>();
+        var reportDetails = new List<ReportProcessingDetail>();
         var filingsCreated = 0;
         var reportsProcessed = 0;
         var reportsErrored = 0;
@@ -71,6 +72,12 @@ public sealed class ProcessReportsCommandHandler
                     _logger.LogWarning(
                         "Report {ReportId} rejected: [{Code}] {Message}",
                         report.Id, processResult.Error.Code, processResult.Error.Message);
+                    var errorMsg = processResult.Error.Message;
+                    command.Progress?.Report(new SyncProgressEntry(
+                        DateTimeOffset.Now,
+                        $"Report '{report.ReportName}': processing error — {errorMsg}.",
+                        SyncProgressSeverity.Error));
+                    reportDetails.Add(new ReportProcessingDetail(report.ReportName, 0, 0, SyncProgressSeverity.Error));
                     continue;
                 }
 
@@ -102,6 +109,11 @@ public sealed class ProcessReportsCommandHandler
                 _logger.LogInformation(
                     "Report {ReportId}: {Total} events, {Created} filings, {Failed} failed -> {Status}",
                     report.Id, succeeded + failed, created, failed, status);
+
+                var severity = ReportProcessingDetail.ClassifySeverity(created, failed);
+                var detail = new ReportProcessingDetail(report.ReportName, created, failed, severity);
+                command.Progress?.Report(new SyncProgressEntry(DateTimeOffset.Now, detail.ToLogMessage(), severity));
+                reportDetails.Add(detail);
             }
             catch (OperationCanceledException)
             {
@@ -114,11 +126,16 @@ public sealed class ProcessReportsCommandHandler
                 await _reportRepository.UpdateAsync(report, ct);
                 reportsErrored++;
                 _logger.LogError(ex, "Report {ReportId} failed unexpectedly: {Message}", report.Id, ex.Message);
+                command.Progress?.Report(new SyncProgressEntry(
+                    DateTimeOffset.Now,
+                    $"Report '{report.ReportName}': processing error — {ex.Message}.",
+                    SyncProgressSeverity.Error));
+                reportDetails.Add(new ReportProcessingDetail(report.ReportName, 0, 0, SyncProgressSeverity.Error));
             }
         }
 
         return Result<ProcessReportsResult, Error>.Success(
-            new ProcessReportsResult(filingsCreated, reportsProcessed, reportsErrored, allEventErrors, reportsPartialError));
+            new ProcessReportsResult(filingsCreated, reportsProcessed, reportsErrored, allEventErrors, reportsPartialError, reportDetails));
     }
 
     private async Task<Result<(int created, int succeeded, int failed, List<FilingCreationError> errors), Error>>
