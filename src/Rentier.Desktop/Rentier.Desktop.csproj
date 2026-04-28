@@ -8,6 +8,11 @@
   <ItemGroup>
     <ProjectReference Include="..\Rentier.Application\Rentier.Application.csproj" />
     <ProjectReference Include="..\Rentier.Domain\Rentier.Domain.csproj" />
+    <!-- Runtime-only dependency: Desktop loads Infrastructure via Assembly.Load (reflection)
+         to preserve compile-time decoupling. The C# compiler omits unused references from
+         the assembly manifest, so the LayerDependencyTest still passes. This ProjectReference
+         ensures MSBuild copies Infrastructure + its transitive NuGet deps to the output. -->
+    <ProjectReference Include="..\Rentier.Infrastructure\Rentier.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>
