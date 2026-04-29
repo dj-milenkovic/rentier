@@ -794,4 +794,16 @@
   <data name="Update_Dismiss_Button" xml:space="preserve">
     <value>Dismiss</value>
   </data>
+  <data name="Reports_Filter_Name_Watermark" xml:space="preserve">
+    <value>Filter by name...</value>
+  </data>
+  <data name="Reports_Filter_Importer_Watermark" xml:space="preserve">
+    <value>Filter by importer...</value>
+  </data>
+  <data name="Reports_Filter_Clear" xml:space="preserve">
+    <value>Clear filters</value>
+  </data>
+  <data name="Reports_Filter_Status_All" xml:space="preserve">
+    <value>All</value>
+  </data>
 </root>

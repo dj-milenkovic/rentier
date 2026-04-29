@@ -8,9 +8,11 @@ using Rentier.Application.Commands;
 using Rentier.Domain.ValueObjects;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
+using Rentier.Application.Enums;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
 using Rentier.Desktop.Resources;
+using Rentier.Domain.Enums;
 
 namespace Rentier.Desktop.ViewModels;
 
@@ -39,8 +41,21 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
     private int _totalCount;
     private bool _sortDescending = true;
     private bool _isUpdatingSelection;
+
+    // Filter properties
+    private string? _nameFilter;
+    private string? _importerFilter;
+    private ComparisonOperator _importDateOperator = ComparisonOperator.Equals;
+    private DateOnly? _importDateFilter;
+    private ComparisonOperator _emailDateOperator = ComparisonOperator.Equals;
+    private DateOnly? _emailDateFilter;
+    private ComparisonOperator _filingCountOperator = ComparisonOperator.Equals;
+    private int? _filingCountFilter;
+    private ReportStatus? _statusFilter;
+
     private readonly ObservableAsPropertyHelper<bool> _hasSelection;
     private readonly ObservableAsPropertyHelper<string> _deleteSelectedLabel;
+    private readonly ObservableAsPropertyHelper<bool> _hasActiveFilters;
 
     public bool IsLoading
     {
@@ -80,6 +95,65 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
 
     public bool HasSelection => _hasSelection.Value;
     public string DeleteSelectedLabel => _deleteSelectedLabel.Value;
+    public bool HasActiveFilters => _hasActiveFilters.Value;
+
+    // Filter properties
+    public string? NameFilter
+    {
+        get => _nameFilter;
+        set => this.RaiseAndSetIfChanged(ref _nameFilter, value);
+    }
+
+    public string? ImporterFilter
+    {
+        get => _importerFilter;
+        set => this.RaiseAndSetIfChanged(ref _importerFilter, value);
+    }
+
+    public ComparisonOperator ImportDateOperator
+    {
+        get => _importDateOperator;
+        set => this.RaiseAndSetIfChanged(ref _importDateOperator, value);
+    }
+
+    public DateOnly? ImportDateFilter
+    {
+        get => _importDateFilter;
+        set => this.RaiseAndSetIfChanged(ref _importDateFilter, value);
+    }
+
+    public ComparisonOperator EmailDateOperator
+    {
+        get => _emailDateOperator;
+        set => this.RaiseAndSetIfChanged(ref _emailDateOperator, value);
+    }
+
+    public DateOnly? EmailDateFilter
+    {
+        get => _emailDateFilter;
+        set => this.RaiseAndSetIfChanged(ref _emailDateFilter, value);
+    }
+
+    public ComparisonOperator FilingCountOperator
+    {
+        get => _filingCountOperator;
+        set => this.RaiseAndSetIfChanged(ref _filingCountOperator, value);
+    }
+
+    public int? FilingCountFilter
+    {
+        get => _filingCountFilter;
+        set => this.RaiseAndSetIfChanged(ref _filingCountFilter, value);
+    }
+
+    public ReportStatus? StatusFilter
+    {
+        get => _statusFilter;
+        set => this.RaiseAndSetIfChanged(ref _statusFilter, value);
+    }
+
+    public IReadOnlyList<ReportStatus?> StatusFilterOptions { get; } =
+        new List<ReportStatus?> { null, ReportStatus.Init, ReportStatus.Processed, ReportStatus.Error, ReportStatus.PartialError }.AsReadOnly();
 
     public bool? IsAllSelected
     {
@@ -99,7 +173,6 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
                     SelectAllCommand.Execute().Subscribe();
                 else if (value == false)
                     ClearSelectionCommand.Execute().Subscribe();
-                // null → ignore; reactive pipeline recomputes
             }
             finally
             {
@@ -172,6 +245,7 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
     public ReactiveCommand<Unit, Unit> SelectAllCommand { get; }
     public ReactiveCommand<Unit, Unit> ClearSelectionCommand { get; }
     public ReactiveCommand<Unit, Unit> BulkDeleteCommand { get; }
+    public ReactiveCommand<Unit, Unit> ClearFiltersCommand { get; }
 
     // Keep LoadReportsCommand as an alias for backward compat with existing AXAML / tests
     public ReactiveCommand<Unit, Unit> LoadReportsCommand => LoadPageCommand;
@@ -208,6 +282,22 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
             .ToProperty(this, x => x.DeleteSelectedLabel,
                 initialValue: string.Format(Strings.BulkDelete_Button_Template, 0),
                 scheduler: _scheduler);
+
+        _hasActiveFilters = this.WhenAnyValue(
+                x => x.NameFilter,
+                x => x.ImporterFilter,
+                x => x.ImportDateFilter,
+                x => x.EmailDateFilter,
+                x => x.FilingCountFilter,
+                x => x.StatusFilter,
+                (name, importer, importDate, emailDate, filingCount, status) =>
+                    !string.IsNullOrEmpty(name) ||
+                    !string.IsNullOrEmpty(importer) ||
+                    importDate.HasValue ||
+                    emailDate.HasValue ||
+                    filingCount.HasValue ||
+                    status.HasValue)
+            .ToProperty(this, x => x.HasActiveFilters, scheduler: _scheduler);
 
         var canGoToPreviousPage = this.WhenAnyValue(
             x => x.CurrentPage,
@@ -256,6 +346,23 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
         ClearErrorCommand = ReactiveCommand.Create(
             () => { ErrorMessage = null; }, outputScheduler: _scheduler);
 
+        ClearFiltersCommand = ReactiveCommand.Create(
+            () =>
+            {
+                NameFilter = null;
+                ImporterFilter = null;
+                ImportDateOperator = ComparisonOperator.Equals;
+                ImportDateFilter = null;
+                EmailDateOperator = ComparisonOperator.Equals;
+                EmailDateFilter = null;
+                FilingCountOperator = ComparisonOperator.Equals;
+                FilingCountFilter = null;
+                StatusFilter = null;
+                CurrentPage = 1;
+            },
+            this.WhenAnyValue(x => x.HasActiveFilters),
+            outputScheduler: _scheduler);
+
         SyncCommand.IsExecuting.Subscribe(v => IsSyncing = v);
 
         var hasItemsObservable = this.WhenAnyValue(x => x.HasItems);
@@ -288,14 +395,78 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
         {
             LoadPageCommand.Execute().Subscribe().DisposeWith(disposables);
 
-            // M2: InvokeCommand pattern prevents undisposed Subscribe() call in SortDescending setter
+            // Sort descending change triggers reload
             this.WhenAnyValue(x => x.SortDescending)
                 .Skip(1)
                 .Select(_ => Unit.Default)
                 .InvokeCommand(LoadPageCommand)
                 .DisposeWith(disposables);
 
-            // C2: dispose row subscriptions on every deactivation cycle
+            // Text filters: debounced 300ms
+            this.WhenAnyValue(x => x.NameFilter, x => x.ImporterFilter)
+                .Skip(1)
+                .Throttle(TimeSpan.FromMilliseconds(300), _scheduler)
+                .Select(_ => Unit.Default)
+                .Do(_ => CurrentPage = 1)
+                .InvokeCommand(LoadPageCommand)
+                .DisposeWith(disposables);
+
+            // Date filters: immediate on value change
+            this.WhenAnyValue(x => x.ImportDateFilter)
+                .Skip(1)
+                .Select(_ => Unit.Default)
+                .Do(_ => CurrentPage = 1)
+                .InvokeCommand(LoadPageCommand)
+                .DisposeWith(disposables);
+
+            this.WhenAnyValue(x => x.ImportDateOperator)
+                .Skip(1)
+                .Where(_ => _importDateFilter.HasValue)
+                .Select(_ => Unit.Default)
+                .Do(_ => CurrentPage = 1)
+                .InvokeCommand(LoadPageCommand)
+                .DisposeWith(disposables);
+
+            this.WhenAnyValue(x => x.EmailDateFilter)
+                .Skip(1)
+                .Select(_ => Unit.Default)
+                .Do(_ => CurrentPage = 1)
+                .InvokeCommand(LoadPageCommand)
+                .DisposeWith(disposables);
+
+            this.WhenAnyValue(x => x.EmailDateOperator)
+                .Skip(1)
+                .Where(_ => _emailDateFilter.HasValue)
+                .Select(_ => Unit.Default)
+                .Do(_ => CurrentPage = 1)
+                .InvokeCommand(LoadPageCommand)
+                .DisposeWith(disposables);
+
+            // Numeric filter: immediate
+            this.WhenAnyValue(x => x.FilingCountFilter)
+                .Skip(1)
+                .Select(_ => Unit.Default)
+                .Do(_ => CurrentPage = 1)
+                .InvokeCommand(LoadPageCommand)
+                .DisposeWith(disposables);
+
+            this.WhenAnyValue(x => x.FilingCountOperator)
+                .Skip(1)
+                .Where(_ => _filingCountFilter.HasValue)
+                .Select(_ => Unit.Default)
+                .Do(_ => CurrentPage = 1)
+                .InvokeCommand(LoadPageCommand)
+                .DisposeWith(disposables);
+
+            // Status filter: immediate
+            this.WhenAnyValue(x => x.StatusFilter)
+                .Skip(1)
+                .Select(_ => Unit.Default)
+                .Do(_ => CurrentPage = 1)
+                .InvokeCommand(LoadPageCommand)
+                .DisposeWith(disposables);
+
+            // Dispose row subscriptions on deactivation
             Disposable.Create(() => _rowSubscriptions.Clear())
                 .DisposeWith(disposables);
 
@@ -340,8 +511,9 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
         ErrorMessage = null;
         try
         {
+            var filter = BuildFilter();
             var result = await _getReports.HandleAsync(
-                new GetReportsQuery(_currentPage, 30, _sortDescending), ct);
+                new GetReportsQuery(_currentPage, 30, _sortDescending, filter), ct);
 
             if (!result.IsSuccess)
             {
@@ -373,6 +545,30 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
             this.RaisePropertyChanged(nameof(HasPreviousPage));
             this.RaisePropertyChanged(nameof(HasNextPage));
         }
+    }
+
+    private ReportColumnFilter? BuildFilter()
+    {
+        var hasName = !string.IsNullOrWhiteSpace(_nameFilter);
+        var hasImporter = !string.IsNullOrWhiteSpace(_importerFilter);
+        var hasImportDate = _importDateFilter.HasValue;
+        var hasEmailDate = _emailDateFilter.HasValue;
+        var hasFilingCount = _filingCountFilter.HasValue;
+        var hasStatus = _statusFilter.HasValue;
+
+        if (!hasName && !hasImporter && !hasImportDate && !hasEmailDate && !hasFilingCount && !hasStatus)
+            return null;
+
+        return new ReportColumnFilter(
+            NameContains: hasName ? _nameFilter : null,
+            ImporterContains: hasImporter ? _importerFilter : null,
+            ImportDateOperator: _importDateOperator,
+            ImportDateValue: _importDateFilter,
+            EmailDateOperator: _emailDateOperator,
+            EmailDateValue: _emailDateFilter,
+            FilingCountOperator: _filingCountOperator,
+            FilingCountValue: _filingCountFilter,
+            StatusFilter: _statusFilter);
     }
 
     private async Task ImportAsync(CancellationToken ct = default)
@@ -416,7 +612,6 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
                 return;
             }
 
-            // Decrement page when last item on a non-first page is deleted
             if (Rows.Count == 1 && _currentPage > 1)
                 CurrentPage--;
 
@@ -452,14 +647,12 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
             return;
         }
 
-        // Decrement page when all visible items on a non-first page are deleted
         if (selectedIds.Count == Rows.Count && _currentPage > 1)
             CurrentPage--;
 
         await LoadPageAsync(ct);
     }
 
-    // Existing IMAP sync logic — preserved verbatim
     private async Task HandleSyncAsync(CancellationToken ct)
     {
         SyncStatusMessage = null;
