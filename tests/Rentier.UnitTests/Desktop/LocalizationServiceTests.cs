@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Rentier.Desktop.Resources;
 using Rentier.Desktop.Services;
 using Xunit;
 
@@ -113,5 +114,23 @@ public class LocalizationServiceTests
 
         afterEn.Should().Be("My user data");
         afterSr.Should().Be("My user data");
+    }
+
+    // ── FR-008: Translation parity — every English key must exist in Serbian ─
+
+    [Fact]
+    public void TranslationParity_AllEnglishKeysHaveSerbianTranslations()
+    {
+        var englishKeys = typeof(Strings)
+            .GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+            .Where(p => p.PropertyType == typeof(string))
+            .Select(p => p.Name)
+            .ToHashSet();
+
+        var serbianKeys = SrLatnStrings.All.Keys.ToHashSet();
+
+        serbianKeys.Should().BeEquivalentTo(
+            englishKeys,
+            because: "every English resource key must have a corresponding Serbian (Latin) translation");
     }
 }

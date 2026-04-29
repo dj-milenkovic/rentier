@@ -100,10 +100,11 @@ public class HolidaySettingsViewHeadlessTests
         // Assert
         vm.HasItems.Should().BeFalse();
 
-        // "No holidays configured..." TextBlock is bound to !HasItems — visible when HasItems=false
+        // "No holidays configured..." TextBlock is bound to !HasItems — visible when HasItems=false.
+        // Match by Opacity=0.6 (unique to this empty-state element) to remain locale-agnostic.
         var noItemsBlock = window.GetVisualDescendants()
             .OfType<TextBlock>()
-            .FirstOrDefault(tb => tb.IsVisible && tb.Text?.StartsWith("No holidays") == true);
+            .FirstOrDefault(tb => tb.IsVisible && Math.Abs(tb.Opacity - 0.6) < 0.01 && !string.IsNullOrEmpty(tb.Text));
         noItemsBlock.Should().NotBeNull();
 
         window.Close();

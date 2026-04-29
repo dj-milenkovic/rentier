@@ -137,7 +137,7 @@
         <DataGridTextColumn Header="{Binding [Reports_Col_FilingCount], Source={StaticResource Localizer}}"
                             Binding="{Binding FilingCount}"
                             Width="70" />
-        <DataGridTemplateColumn Header="Actions" Width="Auto">
+        <DataGridTemplateColumn Header="{Binding [Reports_Col_Actions], Source={StaticResource Localizer}}" Width="Auto">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <StackPanel Orientation="Horizontal" Spacing="4" Margin="4,0">

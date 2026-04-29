@@ -51,7 +51,7 @@
       <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsLoading}" />
     </StackPanel>
     <TextBlock DockPanel.Dock="Top"
-               Text="No holidays configured. Click Add or Fetch from web to get started."
+               Text="{Binding [Holidays_Empty_Text], Source={StaticResource Localizer}}"
                IsVisible="{Binding !HasItems}"
                HorizontalAlignment="Center" VerticalAlignment="Center"
                Opacity="0.6" Margin="8,16" />
