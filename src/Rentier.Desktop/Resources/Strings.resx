@@ -833,4 +833,16 @@
   <data name="Filter_IncomeInterest" xml:space="preserve">
     <value>Kamata</value>
   </data>
+  <data name="Filter_Search" xml:space="preserve">
+    <value>Pretraži...</value>
+  </data>
+  <data name="Filter_Apply" xml:space="preserve">
+    <value>Primeni</value>
+  </data>
+  <data name="Filter_SelectAll" xml:space="preserve">
+    <value>Sve</value>
+  </data>
+  <data name="Filter_Clear" xml:space="preserve">
+    <value>Nijedna</value>
+  </data>
 </root>

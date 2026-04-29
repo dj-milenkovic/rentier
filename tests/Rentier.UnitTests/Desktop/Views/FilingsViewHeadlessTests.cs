@@ -248,7 +248,12 @@ public class FilingsViewHeadlessTests
 
         // Assert
         var dataGrid = window.GetVisualDescendants().OfType<DataGrid>().First();
-        dataGrid.Columns[1].Header.Should().Be(Strings.Filings_Col_Status);
+        // Feature 050: column headers are StackPanels (label + filter button); find the TextBlock
+        var statusHeaderPanel = dataGrid.Columns[1].Header as Avalonia.Controls.StackPanel;
+        statusHeaderPanel.Should().NotBeNull("Status column header is a StackPanel with a label and filter button");
+        var statusLabelBlock = statusHeaderPanel!.GetVisualDescendants().OfType<TextBlock>().FirstOrDefault();
+        statusLabelBlock.Should().NotBeNull();
+        statusLabelBlock!.Text.Should().Be(Strings.Filings_Col_Status);
 
         var selectAllCheckbox = window.GetVisualDescendants()
             .OfType<CheckBox>()

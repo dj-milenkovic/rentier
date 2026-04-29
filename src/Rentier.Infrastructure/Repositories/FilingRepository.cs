@@ -108,6 +108,17 @@ public sealed class FilingRepository : IFilingRepository
                 query = query.Where(f => f.FilingDeadline == columnFilter.FilingDeadline.Value);
             if (!string.IsNullOrEmpty(columnFilter.PaymentReference))
                 query = query.Where(f => f.PaymentReference != null && EF.Functions.Like(f.PaymentReference, $"%{columnFilter.PaymentReference}%"));
+
+            // Feature 050: multi-select enum filters and text-based deadline search
+            if (columnFilter.Statuses is { Count: > 0 } statuses)
+                query = query.Where(f => statuses.Contains(f.Status));
+            if (columnFilter.IncomeTypes is { Count: > 0 } incomeTypes)
+                query = query.Where(f => incomeTypes.Contains(f.IncomeType));
+            if (!string.IsNullOrEmpty(columnFilter.FilingDeadlineText))
+            {
+                var dlPattern = $"%{columnFilter.FilingDeadlineText}%";
+                query = query.Where(f => EF.Functions.Like(f.FilingDeadline.ToString(), dlPattern));
+            }
         }
 
         var total = await query.CountAsync(ct);
