@@ -1,6 +1,5 @@
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
-using Rentier.Application.Enums;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
 using Rentier.Application.Repositories;
@@ -71,13 +70,7 @@ public sealed class GetReportsQueryHandler
                 if (query.Filter?.FilingCountValue.HasValue == true)
                 {
                     var fcVal = query.Filter.FilingCountValue.Value;
-                    var fcOp  = query.Filter.FilingCountOperator;
-                    dtos = dtos.Where(d => fcOp switch
-                    {
-                        ComparisonOperator.GreaterThan => d.FilingCount > fcVal,
-                        ComparisonOperator.LessThan    => d.FilingCount < fcVal,
-                        _                              => d.FilingCount == fcVal,
-                    }).ToList();
+                    dtos = dtos.Where(d => d.FilingCount == fcVal).ToList();
                 }
 
                 var totalPages = Math.Max(1, (int)Math.Ceiling((double)totalCount / query.PageSize));

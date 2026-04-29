@@ -308,7 +308,7 @@ public class ReportRepositoryTests : IAsyncLifetime
         _context.Reports.Update(r2);
         await _context.SaveChangesAsync();
 
-        var filter = new ReportColumnFilter(StatusFilter: Rentier.Domain.Enums.ReportStatus.Init);
+        var filter = new ReportColumnFilter(StatusFilters: new HashSet<Rentier.Domain.Enums.ReportStatus> { Rentier.Domain.Enums.ReportStatus.Init });
         var (items, total) = await _repository.GetPagedAsync(filter, 0, 10, true);
 
         total.Should().Be(1);

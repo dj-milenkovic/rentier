@@ -8,4 +8,8 @@ public sealed record FilingColumnFilter(
     IncomeType? IncomeType = null,
     string? PayingEntity = null,
     DateOnly? FilingDeadline = null,
-    string? PaymentReference = null);
+    string? PaymentReference = null,
+    // Feature 050: multi-select enum filters and text-based deadline search
+    IReadOnlySet<FilingStatus>? Statuses = null,
+    IReadOnlySet<IncomeType>? IncomeTypes = null,
+    string? FilingDeadlineText = null);
