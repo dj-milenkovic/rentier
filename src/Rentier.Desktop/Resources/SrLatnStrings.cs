@@ -255,5 +255,14 @@ public static class SrLatnStrings
         ["Reports_Filter_Importer_Watermark"] = "Filtriraj po uvozniku...",
         ["Reports_Filter_Clear"] = "Obriši filtere",
         ["Reports_Filter_Status_All"] = "Sve",
+        ["Filter_All"] = "Svi",
+        ["Filter_Placeholder"] = "Filter...",
+        ["Filter_ClearAll"] = "Obriši filtere",
+        ["Filter_NoResults"] = "Nema prijava koje odgovaraju aktivnim filterima",
+        ["Filter_StatusInit"] = "Inicijalan",
+        ["Filter_StatusFiled"] = "Podnet",
+        ["Filter_StatusPaid"] = "Plaćen",
+        ["Filter_IncomeDividend"] = "Dividenda",
+        ["Filter_IncomeInterest"] = "Kamata",
     };
 }

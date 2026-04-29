@@ -7,6 +7,7 @@ using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
+using Rentier.Desktop.Models;
 using Rentier.Desktop.ViewModels;
 using Rentier.Domain.Enums;
 using Rentier.Application.Enums;
@@ -576,5 +577,265 @@ public class FilingsViewModelTests
 
         // LoadPageCommand should have fired due to ReportIdFilter change
         getFilings.Received().HandleAsync(Arg.Any<GetFilingsQuery>(), Arg.Any<CancellationToken>());
+    }
+
+    // ── Feature 045: Column filter tests ─────────────────────────────────────
+
+    [Fact]
+    public void FilterStatus_WhenSet_TriggersLoadPageAndSetsHasActiveFilters()
+    {
+        var getFilings = MockGetFilings();
+        var vm = CreateVm(getFilings: getFilings);
+        using var _ = vm.Activator.Activate();
+        var initialCalls = getFilings.ReceivedCalls().Count();
+
+        vm.FilterStatus = FilingStatus.Init;
+
+        getFilings.ReceivedCalls().Count().Should().BeGreaterThan(initialCalls);
+        vm.HasActiveFilters.Should().BeTrue();
+    }
+
+    [Fact]
+    public void FilterStatus_WhenNull_HasActiveFiltersFalse()
+    {
+        var vm = CreateVm();
+        using var _ = vm.Activator.Activate();
+
+        vm.FilterStatus = null;
+
+        vm.HasActiveFilters.Should().BeFalse();
+    }
+
+    [Fact]
+    public void StatusFilterOptions_ContainsNullEntryAndAllStatusValues()
+    {
+        var vm = CreateVm();
+
+        vm.StatusFilterOptions.Should().Contain(o => o.Value == null);
+        vm.StatusFilterOptions.Should().Contain(o => o.Value == FilingStatus.Init);
+        vm.StatusFilterOptions.Should().Contain(o => o.Value == FilingStatus.Filed);
+        vm.StatusFilterOptions.Should().Contain(o => o.Value == FilingStatus.Paid);
+    }
+
+    [Fact]
+    public void FilterPayingEntity_WhenSet_SetsHasActiveFilters()
+    {
+        var vm = CreateVm();
+        using var _ = vm.Activator.Activate();
+
+        vm.FilterPayingEntity = "ACME";
+
+        vm.HasActiveFilters.Should().BeTrue();
+    }
+
+    [Fact]
+    public void FilterPayingEntity_WhenCleared_ClearsHasActiveFilters()
+    {
+        var vm = CreateVm();
+        using var _ = vm.Activator.Activate();
+        vm.FilterPayingEntity = "ACME";
+        vm.FilterPayingEntity = "";
+
+        vm.HasActiveFilters.Should().BeFalse();
+    }
+
+    [Fact]
+    public void FilterPaymentReference_WhenSet_SetsHasActiveFilters()
+    {
+        var vm = CreateVm();
+        using var _ = vm.Activator.Activate();
+
+        vm.FilterPaymentReference = "REF-001";
+
+        vm.HasActiveFilters.Should().BeTrue();
+    }
+
+    [Fact]
+    public void FilterIncomeType_WhenSet_TriggersLoadAndSetsHasActiveFilters()
+    {
+        var getFilings = MockGetFilings();
+        var vm = CreateVm(getFilings: getFilings);
+        using var _ = vm.Activator.Activate();
+        var initialCalls = getFilings.ReceivedCalls().Count();
+
+        vm.FilterIncomeType = IncomeType.Dividend;
+
+        getFilings.ReceivedCalls().Count().Should().BeGreaterThan(initialCalls);
+        vm.HasActiveFilters.Should().BeTrue();
+    }
+
+    [Fact]
+    public void IncomeTypeFilterOptions_ContainsNullEntryAndAllIncomeTypeValues()
+    {
+        var vm = CreateVm();
+
+        vm.IncomeTypeFilterOptions.Should().Contain(o => o.Value == null);
+        vm.IncomeTypeFilterOptions.Should().Contain(o => o.Value == IncomeType.Dividend);
+        vm.IncomeTypeFilterOptions.Should().Contain(o => o.Value == IncomeType.Interest);
+    }
+
+    [Fact]
+    public void FilterDeadline_WhenSet_TriggersLoadAndSetsHasActiveFilters()
+    {
+        var getFilings = MockGetFilings();
+        var vm = CreateVm(getFilings: getFilings);
+        using var _ = vm.Activator.Activate();
+        var initialCalls = getFilings.ReceivedCalls().Count();
+
+        vm.FilterDeadline = new DateTimeOffset(2024, 6, 15, 0, 0, 0, TimeSpan.Zero);
+
+        getFilings.ReceivedCalls().Count().Should().BeGreaterThan(initialCalls);
+        vm.HasActiveFilters.Should().BeTrue();
+    }
+
+    [Fact]
+    public void FilterDeadline_WhenNull_HasActiveFiltersFalse()
+    {
+        var vm = CreateVm();
+        using var _ = vm.Activator.Activate();
+
+        vm.FilterDeadline = null;
+
+        vm.HasActiveFilters.Should().BeFalse();
+    }
+
+    [Fact]
+    public void ClearFiltersCommand_ResetsAllFilterProperties()
+    {
+        var vm = CreateVm();
+        using var _ = vm.Activator.Activate();
+        vm.FilterStatus = FilingStatus.Init;
+        vm.FilterIncomeType = IncomeType.Dividend;
+        vm.FilterPayingEntity = "ACME";
+        vm.FilterPaymentReference = "REF";
+        vm.FilterDeadline = DateTimeOffset.UtcNow;
+
+        vm.ClearFiltersCommand.Execute().Subscribe();
+
+        vm.FilterStatus.Should().BeNull();
+        vm.FilterIncomeType.Should().BeNull();
+        vm.FilterPayingEntity.Should().BeNullOrEmpty();
+        vm.FilterPaymentReference.Should().BeNullOrEmpty();
+        vm.FilterDeadline.Should().BeNull();
+        vm.HasActiveFilters.Should().BeFalse();
+    }
+
+    [Fact]
+    public void ClearFiltersCommand_CanExecute_FalseWhenNoFilters()
+    {
+        var vm = CreateVm();
+        using var _ = vm.Activator.Activate();
+
+        bool canExecute = false;
+        vm.ClearFiltersCommand.CanExecute.Subscribe(v => canExecute = v);
+
+        canExecute.Should().BeFalse();
+    }
+
+    [Fact]
+    public void ClearFiltersCommand_CanExecute_TrueWhenFilterActive()
+    {
+        var vm = CreateVm();
+        using var _ = vm.Activator.Activate();
+
+        vm.FilterStatus = FilingStatus.Init;
+
+        bool canExecute = false;
+        vm.ClearFiltersCommand.CanExecute.Subscribe(v => canExecute = v);
+
+        canExecute.Should().BeTrue();
+    }
+
+    [Fact]
+    public void SetReportIdFilter_ClearsAllFilterProperties()
+    {
+        var vm = CreateVm();
+        using var _ = vm.Activator.Activate();
+        vm.FilterStatus = FilingStatus.Init;
+        vm.FilterIncomeType = IncomeType.Dividend;
+        vm.FilterPayingEntity = "ACME";
+
+        vm.ReportIdFilter = Guid.NewGuid();
+
+        vm.FilterStatus.Should().BeNull();
+        vm.FilterIncomeType.Should().BeNull();
+        vm.FilterPayingEntity.Should().BeNullOrEmpty();
+    }
+
+    [Fact]
+    public void IsFilterRowEnabled_FalseWhenReportIdFilterSet()
+    {
+        var vm = CreateVm();
+        using var _ = vm.Activator.Activate();
+
+        vm.ReportIdFilter = Guid.NewGuid();
+
+        vm.IsFilterRowEnabled.Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsFilterRowEnabled_TrueWhenReportIdFilterNull()
+    {
+        var vm = CreateVm();
+        using var _ = vm.Activator.Activate();
+
+        vm.IsFilterRowEnabled.Should().BeTrue();
+    }
+
+    [Fact]
+    public void ClearingReportIdFilter_ReEnablesFilterRow()
+    {
+        var vm = CreateVm();
+        using var _ = vm.Activator.Activate();
+        vm.ReportIdFilter = Guid.NewGuid();
+
+        vm.ReportIdFilter = null;
+
+        vm.IsFilterRowEnabled.Should().BeTrue();
+    }
+
+    [Fact]
+    public void LoadPage_WhenFilterStatus_IncludesColumnFilterInQuery()
+    {
+        GetFilingsQuery? capturedQuery = null;
+        var mock = Substitute.For<IQueryHandler<GetFilingsQuery, Result<FilingsPageResult, Error>>>();
+        mock.HandleAsync(Arg.Do<GetFilingsQuery>(q => capturedQuery = q), Arg.Any<CancellationToken>())
+            .Returns(Result<FilingsPageResult, Error>.Success(new FilingsPageResult([], 0, 1)));
+
+        var vm = CreateVm(getFilings: mock);
+        using var _ = vm.Activator.Activate();
+        capturedQuery = null; // reset after activation call
+
+        vm.FilterStatus = FilingStatus.Filed;
+
+        capturedQuery.Should().NotBeNull();
+        capturedQuery!.ColumnFilter.Should().NotBeNull();
+        capturedQuery.ColumnFilter!.Status.Should().Be(FilingStatus.Filed);
+    }
+
+    [Fact]
+    public void HasActiveFilters_TrueWhenMultipleFiltersActive()
+    {
+        var vm = CreateVm();
+        using var _ = vm.Activator.Activate();
+
+        vm.FilterStatus = FilingStatus.Init;
+        vm.FilterIncomeType = IncomeType.Dividend;
+
+        vm.HasActiveFilters.Should().BeTrue();
+    }
+
+    [Fact]
+    public void ChangingOneFilter_DoesNotResetOtherFilter()
+    {
+        var vm = CreateVm();
+        using var _ = vm.Activator.Activate();
+
+        vm.FilterStatus = FilingStatus.Init;
+        vm.FilterIncomeType = IncomeType.Dividend;
+
+        vm.FilterStatus = FilingStatus.Filed;
+
+        vm.FilterIncomeType.Should().Be(IncomeType.Dividend);
     }
 }

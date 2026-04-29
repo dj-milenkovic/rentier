@@ -8,5 +8,6 @@ public sealed record GetFilingsQuery(
     int PageSize = 30,
     Guid? ReportIdFilter = null,
     FilingSortColumn SortColumn = FilingSortColumn.FilingDeadline,
-    bool SortDescending = true) : IPaginatedQuery;
+    bool SortDescending = true,
+    FilingColumnFilter? ColumnFilter = null) : IPaginatedQuery;
 

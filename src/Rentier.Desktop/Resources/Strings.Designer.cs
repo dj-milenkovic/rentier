@@ -262,4 +262,13 @@ public static class Strings
     public static string Reports_Filter_Importer_Watermark => "Filter by importer...";
     public static string Reports_Filter_Clear => "Clear filters";
     public static string Reports_Filter_Status_All => "All";
+    public static string Filter_All => "Svi";
+    public static string Filter_Placeholder => "Filter...";
+    public static string Filter_ClearAll => "Obriši filtere";
+    public static string Filter_NoResults => "Nema prijava koje odgovaraju aktivnim filterima";
+    public static string Filter_StatusInit => "Inicijalan";
+    public static string Filter_StatusFiled => "Podnet";
+    public static string Filter_StatusPaid => "Plaćen";
+    public static string Filter_IncomeDividend => "Dividenda";
+    public static string Filter_IncomeInterest => "Kamata";
 }

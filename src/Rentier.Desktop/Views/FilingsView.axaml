@@ -84,12 +84,70 @@
     <!-- Filings DataGrid + empty-state hint; this Grid is the DockPanel fill child -->
     <Grid>
       <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
         <RowDefinition Height="*" />
         <RowDefinition Height="Auto" />
       </Grid.RowDefinitions>
 
+    <!-- Filter row — aligned with DataGrid columns -->
+    <Grid Grid.Row="0" Margin="8,0,8,2" IsEnabled="{Binding IsFilterRowEnabled}"
+          ColumnDefinitions="40,90,110,*,120,130,180,Auto">
+      <!-- Col 0: Checkbox (40) — empty -->
+      <!-- Col 1: Status filter (90) -->
+      <ComboBox Grid.Column="1"
+                ItemsSource="{Binding StatusFilterOptions}"
+                SelectedItem="{Binding FilterStatus, Mode=TwoWay}"
+                Margin="2,0"
+                HorizontalAlignment="Stretch"
+                MaxDropDownHeight="200">
+        <ComboBox.ItemTemplate>
+          <DataTemplate>
+            <TextBlock Text="{Binding Label}" />
+          </DataTemplate>
+        </ComboBox.ItemTemplate>
+      </ComboBox>
+      <!-- Col 2: Income Type filter (110) -->
+      <ComboBox Grid.Column="2"
+                ItemsSource="{Binding IncomeTypeFilterOptions}"
+                SelectedItem="{Binding FilterIncomeType, Mode=TwoWay}"
+                Margin="2,0"
+                HorizontalAlignment="Stretch"
+                MaxDropDownHeight="200">
+        <ComboBox.ItemTemplate>
+          <DataTemplate>
+            <TextBlock Text="{Binding Label}" />
+          </DataTemplate>
+        </ComboBox.ItemTemplate>
+      </ComboBox>
+      <!-- Col 3: Paying Entity filter (*) -->
+      <TextBox Grid.Column="3"
+               Text="{Binding FilterPayingEntity, Mode=TwoWay}"
+               Watermark="Filter..."
+               Margin="2,0" />
+      <!-- Col 4: Filing Deadline filter (120) -->
+      <CalendarDatePicker Grid.Column="4"
+                          SelectedDate="{Binding FilterDeadline, Mode=TwoWay}"
+                          Margin="2,0"
+                          HorizontalAlignment="Stretch" />
+      <!-- Col 5: Tax Payable (130) — no filter -->
+      <!-- Col 6: Payment Reference filter (180) -->
+      <TextBox Grid.Column="6"
+               Text="{Binding FilterPaymentReference, Mode=TwoWay}"
+               Watermark="Filter..."
+               Margin="2,0" />
+      <!-- Col 7: Clear filters button (Actions column) -->
+      <Button Grid.Column="7"
+              Command="{Binding ClearFiltersCommand}"
+              IsVisible="{Binding HasActiveFilters}"
+              Content="✕"
+              ToolTip.Tip="Obriši filtere"
+              Padding="4,2"
+              Margin="2,0"
+              Background="Transparent" />
+    </Grid>
+
     <!-- Filings DataGrid — always visible; column headers render even with zero rows -->
-    <DataGrid Grid.Row="0" x:Name="FilingsGrid"
+    <DataGrid Grid.Row="1" x:Name="FilingsGrid"
               ItemsSource="{Binding Rows}"
               AutoGenerateColumns="False"
               CanUserReorderColumns="False"
@@ -293,14 +351,18 @@
     </DataGrid>
 
     <!-- Empty state: subtle hint below the always-visible DataGrid -->
-    <TextBlock Grid.Row="1"
-               x:Name="EmptyStateHint"
-               IsVisible="{Binding IsEmpty}"
-               Text="{Binding [Filings_Empty], Source={StaticResource Localizer}}"
-               HorizontalAlignment="Center"
-               Foreground="{DynamicResource RentierTextSecondaryBrush}"
-               FontSize="13"
-               Margin="0,24" />
+    <StackPanel Grid.Row="2" HorizontalAlignment="Center" Margin="0,24">
+      <TextBlock x:Name="EmptyStateHint"
+                 IsVisible="{Binding IsEmpty}"
+                 Text="{Binding EmptyStateMessage}"
+                 HorizontalAlignment="Center"
+                 Foreground="{DynamicResource RentierTextSecondaryBrush}"
+                 FontSize="13" />
+      <Button HorizontalAlignment="Center" Margin="0,8,0,0"
+              IsVisible="{Binding IsEmptyWithFilters}"
+              Command="{Binding ClearFiltersCommand}"
+              Content="Obriši filtere" />
+    </StackPanel>
 
     </Grid>
 

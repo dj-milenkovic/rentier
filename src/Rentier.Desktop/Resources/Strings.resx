@@ -806,4 +806,31 @@
   <data name="Reports_Filter_Status_All" xml:space="preserve">
     <value>All</value>
   </data>
+  <data name="Filter_All" xml:space="preserve">
+    <value>Svi</value>
+  </data>
+  <data name="Filter_Placeholder" xml:space="preserve">
+    <value>Filter...</value>
+  </data>
+  <data name="Filter_ClearAll" xml:space="preserve">
+    <value>Obriši filtere</value>
+  </data>
+  <data name="Filter_NoResults" xml:space="preserve">
+    <value>Nema prijava koje odgovaraju aktivnim filterima</value>
+  </data>
+  <data name="Filter_StatusInit" xml:space="preserve">
+    <value>Inicijalan</value>
+  </data>
+  <data name="Filter_StatusFiled" xml:space="preserve">
+    <value>Podnet</value>
+  </data>
+  <data name="Filter_StatusPaid" xml:space="preserve">
+    <value>Plaćen</value>
+  </data>
+  <data name="Filter_IncomeDividend" xml:space="preserve">
+    <value>Dividenda</value>
+  </data>
+  <data name="Filter_IncomeInterest" xml:space="preserve">
+    <value>Kamata</value>
+  </data>
 </root>
