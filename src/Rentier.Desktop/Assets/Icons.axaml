@@ -56,4 +56,8 @@
   <StreamGeometry x:Key="SortAscIcon">M7 14 L12 9 L17 14</StreamGeometry>
   <StreamGeometry x:Key="SortDescIcon">M7 10 L12 15 L17 10</StreamGeometry>
 
+  <!-- Filter funnel — feature 050: column header filter flyout trigger icon -->
+  <!-- Lucide funnel / filter shape (24×24 viewport) -->
+  <StreamGeometry x:Key="FilterFunnelIcon">M3 4h18L13 12v7l-2 1v-8Z</StreamGeometry>
+
 </ResourceDictionary>

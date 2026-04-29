@@ -8,9 +8,9 @@ using Rentier.Application.Commands;
 using Rentier.Domain.ValueObjects;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
-using Rentier.Application.Enums;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
+using Rentier.Desktop.Models;
 using Rentier.Desktop.Resources;
 using Rentier.Domain.Enums;
 
@@ -41,17 +41,6 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
     private int _totalCount;
     private bool _sortDescending = true;
     private bool _isUpdatingSelection;
-
-    // Filter properties
-    private string? _nameFilter;
-    private string? _importerFilter;
-    private ComparisonOperator _importDateOperator = ComparisonOperator.Equals;
-    private DateOnly? _importDateFilter;
-    private ComparisonOperator _emailDateOperator = ComparisonOperator.Equals;
-    private DateOnly? _emailDateFilter;
-    private ComparisonOperator _filingCountOperator = ComparisonOperator.Equals;
-    private int? _filingCountFilter;
-    private ReportStatus? _statusFilter;
 
     private readonly ObservableAsPropertyHelper<bool> _hasSelection;
     private readonly ObservableAsPropertyHelper<string> _deleteSelectedLabel;
@@ -97,63 +86,13 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
     public string DeleteSelectedLabel => _deleteSelectedLabel.Value;
     public bool HasActiveFilters => _hasActiveFilters.Value;
 
-    // Filter properties
-    public string? NameFilter
-    {
-        get => _nameFilter;
-        set => this.RaiseAndSetIfChanged(ref _nameFilter, value);
-    }
-
-    public string? ImporterFilter
-    {
-        get => _importerFilter;
-        set => this.RaiseAndSetIfChanged(ref _importerFilter, value);
-    }
-
-    public ComparisonOperator ImportDateOperator
-    {
-        get => _importDateOperator;
-        set => this.RaiseAndSetIfChanged(ref _importDateOperator, value);
-    }
-
-    public DateOnly? ImportDateFilter
-    {
-        get => _importDateFilter;
-        set => this.RaiseAndSetIfChanged(ref _importDateFilter, value);
-    }
-
-    public ComparisonOperator EmailDateOperator
-    {
-        get => _emailDateOperator;
-        set => this.RaiseAndSetIfChanged(ref _emailDateOperator, value);
-    }
-
-    public DateOnly? EmailDateFilter
-    {
-        get => _emailDateFilter;
-        set => this.RaiseAndSetIfChanged(ref _emailDateFilter, value);
-    }
-
-    public ComparisonOperator FilingCountOperator
-    {
-        get => _filingCountOperator;
-        set => this.RaiseAndSetIfChanged(ref _filingCountOperator, value);
-    }
-
-    public int? FilingCountFilter
-    {
-        get => _filingCountFilter;
-        set => this.RaiseAndSetIfChanged(ref _filingCountFilter, value);
-    }
-
-    public ReportStatus? StatusFilter
-    {
-        get => _statusFilter;
-        set => this.RaiseAndSetIfChanged(ref _statusFilter, value);
-    }
-
-    public IReadOnlyList<ReportStatus?> StatusFilterOptions { get; } =
-        new List<ReportStatus?> { null, ReportStatus.Init, ReportStatus.Processed, ReportStatus.Error, ReportStatus.PartialError }.AsReadOnly();
+    // Filter flyout ViewModels
+    public TextFilterFlyoutViewModel NameFilter { get; }
+    public TextFilterFlyoutViewModel ImporterFilter { get; }
+    public TextFilterFlyoutViewModel ImportDateFilter { get; }
+    public TextFilterFlyoutViewModel EmailDateFilter { get; }
+    public TextFilterFlyoutViewModel FilingCountFilter { get; }
+    public EnumFilterFlyoutViewModel<ReportStatus> StatusFilter { get; }
 
     public bool? IsAllSelected
     {
@@ -283,20 +222,27 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
                 initialValue: string.Format(Strings.BulkDelete_Button_Template, 0),
                 scheduler: _scheduler);
 
-        _hasActiveFilters = this.WhenAnyValue(
-                x => x.NameFilter,
-                x => x.ImporterFilter,
-                x => x.ImportDateFilter,
-                x => x.EmailDateFilter,
-                x => x.FilingCountFilter,
-                x => x.StatusFilter,
-                (name, importer, importDate, emailDate, filingCount, status) =>
-                    !string.IsNullOrEmpty(name) ||
-                    !string.IsNullOrEmpty(importer) ||
-                    importDate.HasValue ||
-                    emailDate.HasValue ||
-                    filingCount.HasValue ||
-                    status.HasValue)
+        NameFilter = new TextFilterFlyoutViewModel();
+        ImporterFilter = new TextFilterFlyoutViewModel();
+        ImportDateFilter = new TextFilterFlyoutViewModel();
+        EmailDateFilter = new TextFilterFlyoutViewModel();
+        FilingCountFilter = new TextFilterFlyoutViewModel();
+        StatusFilter = new EnumFilterFlyoutViewModel<ReportStatus>(new[]
+        {
+            new CheckableItem<ReportStatus>(Strings.Filter_StatusInit ?? "Init", ReportStatus.Init),
+            new CheckableItem<ReportStatus>("Processed", ReportStatus.Processed),
+            new CheckableItem<ReportStatus>("Error", ReportStatus.Error),
+            new CheckableItem<ReportStatus>("Partial Error", ReportStatus.PartialError),
+        });
+
+        _hasActiveFilters = Observable.CombineLatest(
+            this.WhenAnyValue(x => x.NameFilter.IsActive),
+            this.WhenAnyValue(x => x.ImporterFilter.IsActive),
+            this.WhenAnyValue(x => x.ImportDateFilter.IsActive),
+            this.WhenAnyValue(x => x.EmailDateFilter.IsActive),
+            this.WhenAnyValue(x => x.FilingCountFilter.IsActive),
+            this.WhenAnyValue(x => x.StatusFilter.IsActive),
+            (a, b, c, d, e, f) => a || b || c || d || e || f)
             .ToProperty(this, x => x.HasActiveFilters, scheduler: _scheduler);
 
         var canGoToPreviousPage = this.WhenAnyValue(
@@ -349,16 +295,14 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
         ClearFiltersCommand = ReactiveCommand.Create(
             () =>
             {
-                NameFilter = null;
-                ImporterFilter = null;
-                ImportDateOperator = ComparisonOperator.Equals;
-                ImportDateFilter = null;
-                EmailDateOperator = ComparisonOperator.Equals;
-                EmailDateFilter = null;
-                FilingCountOperator = ComparisonOperator.Equals;
-                FilingCountFilter = null;
-                StatusFilter = null;
+                NameFilter.Clear();
+                ImporterFilter.Clear();
+                ImportDateFilter.Clear();
+                EmailDateFilter.Clear();
+                FilingCountFilter.Clear();
+                StatusFilter.Clear();
                 CurrentPage = 1;
+                LoadPageCommand.Execute().Subscribe();
             },
             this.WhenAnyValue(x => x.HasActiveFilters),
             outputScheduler: _scheduler);
@@ -402,66 +346,14 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
                 .InvokeCommand(LoadPageCommand)
                 .DisposeWith(disposables);
 
-            // Text filters: debounced 300ms
-            this.WhenAnyValue(x => x.NameFilter, x => x.ImporterFilter)
-                .Skip(1)
-                .Throttle(TimeSpan.FromMilliseconds(300), _scheduler)
-                .Select(_ => Unit.Default)
-                .Do(_ => CurrentPage = 1)
-                .InvokeCommand(LoadPageCommand)
-                .DisposeWith(disposables);
-
-            // Date filters: immediate on value change
-            this.WhenAnyValue(x => x.ImportDateFilter)
-                .Skip(1)
-                .Select(_ => Unit.Default)
-                .Do(_ => CurrentPage = 1)
-                .InvokeCommand(LoadPageCommand)
-                .DisposeWith(disposables);
-
-            this.WhenAnyValue(x => x.ImportDateOperator)
-                .Skip(1)
-                .Where(_ => _importDateFilter.HasValue)
-                .Select(_ => Unit.Default)
-                .Do(_ => CurrentPage = 1)
-                .InvokeCommand(LoadPageCommand)
-                .DisposeWith(disposables);
-
-            this.WhenAnyValue(x => x.EmailDateFilter)
-                .Skip(1)
-                .Select(_ => Unit.Default)
-                .Do(_ => CurrentPage = 1)
-                .InvokeCommand(LoadPageCommand)
-                .DisposeWith(disposables);
-
-            this.WhenAnyValue(x => x.EmailDateOperator)
-                .Skip(1)
-                .Where(_ => _emailDateFilter.HasValue)
-                .Select(_ => Unit.Default)
-                .Do(_ => CurrentPage = 1)
-                .InvokeCommand(LoadPageCommand)
-                .DisposeWith(disposables);
-
-            // Numeric filter: immediate
-            this.WhenAnyValue(x => x.FilingCountFilter)
-                .Skip(1)
-                .Select(_ => Unit.Default)
-                .Do(_ => CurrentPage = 1)
-                .InvokeCommand(LoadPageCommand)
-                .DisposeWith(disposables);
-
-            this.WhenAnyValue(x => x.FilingCountOperator)
-                .Skip(1)
-                .Where(_ => _filingCountFilter.HasValue)
-                .Select(_ => Unit.Default)
-                .Do(_ => CurrentPage = 1)
-                .InvokeCommand(LoadPageCommand)
-                .DisposeWith(disposables);
-
-            // Status filter: immediate
-            this.WhenAnyValue(x => x.StatusFilter)
-                .Skip(1)
-                .Select(_ => Unit.Default)
+            // All flyouts: applied → reset page + reload
+            Observable.Merge(
+                NameFilter.Applied,
+                ImporterFilter.Applied,
+                ImportDateFilter.Applied,
+                EmailDateFilter.Applied,
+                FilingCountFilter.Applied,
+                StatusFilter.Applied)
                 .Do(_ => CurrentPage = 1)
                 .InvokeCommand(LoadPageCommand)
                 .DisposeWith(disposables);
@@ -549,26 +441,28 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
 
     private ReportColumnFilter? BuildFilter()
     {
-        var hasName = !string.IsNullOrWhiteSpace(_nameFilter);
-        var hasImporter = !string.IsNullOrWhiteSpace(_importerFilter);
-        var hasImportDate = _importDateFilter.HasValue;
-        var hasEmailDate = _emailDateFilter.HasValue;
-        var hasFilingCount = _filingCountFilter.HasValue;
-        var hasStatus = _statusFilter.HasValue;
+        var nameContains = NameFilter.GetCommittedValue();
+        var importerContains = ImporterFilter.GetCommittedValue();
+        var importDateContains = ImportDateFilter.GetCommittedValue();
+        var emailDateContains = EmailDateFilter.GetCommittedValue();
+        var filingCountText = FilingCountFilter.GetCommittedValue();
+        var statusFilters = StatusFilter.GetCommittedValues();
 
-        if (!hasName && !hasImporter && !hasImportDate && !hasEmailDate && !hasFilingCount && !hasStatus)
+        int? filingCountValue = null;
+        if (int.TryParse(filingCountText, out var parsed))
+            filingCountValue = parsed;
+
+        if (nameContains is null && importerContains is null && importDateContains is null &&
+            emailDateContains is null && filingCountValue is null && statusFilters is null)
             return null;
 
         return new ReportColumnFilter(
-            NameContains: hasName ? _nameFilter : null,
-            ImporterContains: hasImporter ? _importerFilter : null,
-            ImportDateOperator: _importDateOperator,
-            ImportDateValue: _importDateFilter,
-            EmailDateOperator: _emailDateOperator,
-            EmailDateValue: _emailDateFilter,
-            FilingCountOperator: _filingCountOperator,
-            FilingCountValue: _filingCountFilter,
-            StatusFilter: _statusFilter);
+            NameContains: nameContains,
+            ImporterContains: importerContains,
+            ImportDateContains: importDateContains,
+            EmailDateContains: emailDateContains,
+            FilingCountValue: filingCountValue,
+            StatusFilters: statusFilters);
     }
 
     private async Task ImportAsync(CancellationToken ct = default)

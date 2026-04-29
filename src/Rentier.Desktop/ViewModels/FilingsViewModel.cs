@@ -46,12 +46,6 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
     private readonly ObservableAsPropertyHelper<bool> _hasSelection;
     private readonly ObservableAsPropertyHelper<string> _deleteSelectedLabel;
 
-    private FilingStatus? _filterStatus;
-    private IncomeType? _filterIncomeType;
-    private string? _filterPayingEntity;
-    private string? _filterPaymentReference;
-    private DateTimeOffset? _filterDeadline;
-    private bool _suppressFilterReload;
     private bool _hasActiveFilters;
 
     public bool IsLoading
@@ -87,13 +81,11 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
             this.RaisePropertyChanged(nameof(CurrentPage));
             if (value.HasValue)
             {
-                _suppressFilterReload = true;
-                _filterStatus = null; this.RaisePropertyChanged(nameof(FilterStatus));
-                _filterIncomeType = null; this.RaisePropertyChanged(nameof(FilterIncomeType));
-                _filterPayingEntity = null; this.RaisePropertyChanged(nameof(FilterPayingEntity));
-                _filterPaymentReference = null; this.RaisePropertyChanged(nameof(FilterPaymentReference));
-                _filterDeadline = null; this.RaisePropertyChanged(nameof(FilterDeadline));
-                _suppressFilterReload = false;
+                StatusFilter.Clear();
+                IncomeTypeFilter.Clear();
+                PayingEntityFilter.Clear();
+                PaymentReferenceFilter.Clear();
+                DeadlineFilter.Clear();
             }
             this.RaisePropertyChanged(nameof(IsFilterRowEnabled));
             UpdateHasActiveFilters();
@@ -184,60 +176,31 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
     public bool HasNextPage => _currentPage < _totalPages && !IsLoading;
     public string PageIndicator => string.Format(Strings.Filings_Page_Indicator, _currentPage, _totalPages);
 
-    public FilingStatus? FilterStatus
-    {
-        get => _filterStatus;
-        set => this.RaiseAndSetIfChanged(ref _filterStatus, value);
-    }
-
-    public IncomeType? FilterIncomeType
-    {
-        get => _filterIncomeType;
-        set => this.RaiseAndSetIfChanged(ref _filterIncomeType, value);
-    }
-
-    public string? FilterPayingEntity
-    {
-        get => _filterPayingEntity;
-        set => this.RaiseAndSetIfChanged(ref _filterPayingEntity, value);
-    }
-
-    public string? FilterPaymentReference
-    {
-        get => _filterPaymentReference;
-        set => this.RaiseAndSetIfChanged(ref _filterPaymentReference, value);
-    }
-
-    public DateTimeOffset? FilterDeadline
-    {
-        get => _filterDeadline;
-        set => this.RaiseAndSetIfChanged(ref _filterDeadline, value);
-    }
-
     public bool HasActiveFilters
     {
         get => _hasActiveFilters;
         private set => this.RaiseAndSetIfChanged(ref _hasActiveFilters, value);
     }
 
+    /// <summary>False when a ReportIdFilter is active (flyout filters are disabled while browsing by report).</summary>
     public bool IsFilterRowEnabled => _reportIdFilter == null;
 
-    public IReadOnlyList<FilterOption<FilingStatus?>> StatusFilterOptions { get; } =
-        new List<FilterOption<FilingStatus?>>
-        {
-            new(Strings.Filter_All, null),
-            new(Strings.Filter_StatusInit, FilingStatus.Init),
-            new(Strings.Filter_StatusFiled, FilingStatus.Filed),
-            new(Strings.Filter_StatusPaid, FilingStatus.Paid),
-        }.AsReadOnly();
+    // ── Feature 050: Column filter flyout ViewModels ──────────────────────────
 
-    public IReadOnlyList<FilterOption<IncomeType?>> IncomeTypeFilterOptions { get; } =
-        new List<FilterOption<IncomeType?>>
-        {
-            new(Strings.Filter_All, null),
-            new(Strings.Filter_IncomeDividend, IncomeType.Dividend),
-            new(Strings.Filter_IncomeInterest, IncomeType.Interest),
-        }.AsReadOnly();
+    /// <summary>Filter flyout for the Status column (multi-select enum).</summary>
+    public EnumFilterFlyoutViewModel<FilingStatus> StatusFilter { get; }
+
+    /// <summary>Filter flyout for the Income Type column (multi-select enum).</summary>
+    public EnumFilterFlyoutViewModel<IncomeType> IncomeTypeFilter { get; }
+
+    /// <summary>Filter flyout for the Paying Entity column (text search).</summary>
+    public TextFilterFlyoutViewModel PayingEntityFilter { get; }
+
+    /// <summary>Filter flyout for the Payment Reference column (text search).</summary>
+    public TextFilterFlyoutViewModel PaymentReferenceFilter { get; }
+
+    /// <summary>Filter flyout for the Deadline column (text search on formatted date string).</summary>
+    public TextFilterFlyoutViewModel DeadlineFilter { get; }
 
     public ObservableCollection<FilingRowViewModel> Rows { get; } = new();
 
@@ -281,6 +244,22 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
         _saveFile = saveFile;
         _navigateToManualFiling = navigateToManualFiling;
         _scheduler = scheduler ?? RxApp.MainThreadScheduler;
+
+        // Feature 050: initialise flyout filter ViewModels
+        StatusFilter = new EnumFilterFlyoutViewModel<FilingStatus>(new[]
+        {
+            new CheckableItem<FilingStatus>(Strings.Filter_StatusInit,  FilingStatus.Init),
+            new CheckableItem<FilingStatus>(Strings.Filter_StatusFiled, FilingStatus.Filed),
+            new CheckableItem<FilingStatus>(Strings.Filter_StatusPaid,  FilingStatus.Paid),
+        });
+        IncomeTypeFilter = new EnumFilterFlyoutViewModel<IncomeType>(new[]
+        {
+            new CheckableItem<IncomeType>(Strings.Filter_IncomeDividend, IncomeType.Dividend),
+            new CheckableItem<IncomeType>(Strings.Filter_IncomeInterest, IncomeType.Interest),
+        });
+        PayingEntityFilter   = new TextFilterFlyoutViewModel();
+        PaymentReferenceFilter = new TextFilterFlyoutViewModel();
+        DeadlineFilter       = new TextFilterFlyoutViewModel();
 
         _hasReportFilter = this.WhenAnyValue(x => x.ReportIdFilter)
             .Select(id => id.HasValue)
@@ -486,13 +465,11 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
         ClearFiltersCommand = ReactiveCommand.CreateFromTask(
             async (CancellationToken ct) =>
             {
-                _suppressFilterReload = true;
-                FilterStatus = null;
-                FilterIncomeType = null;
-                FilterPayingEntity = null;
-                FilterPaymentReference = null;
-                FilterDeadline = null;
-                _suppressFilterReload = false;
+                StatusFilter.Clear();
+                IncomeTypeFilter.Clear();
+                PayingEntityFilter.Clear();
+                PaymentReferenceFilter.Clear();
+                DeadlineFilter.Clear();
                 UpdateHasActiveFilters();
                 _currentPage = 1;
                 this.RaisePropertyChanged(nameof(CurrentPage));
@@ -518,26 +495,29 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
                 .InvokeCommand(LoadPageCommand)
                 .DisposeWith(disposables);
 
-            // Instant reload for dropdown/date filters
-            this.WhenAnyValue(x => x.FilterStatus, x => x.FilterIncomeType, x => x.FilterDeadline)
-                .Skip(1)
+            // Feature 050: when any flyout applies a filter → reset page + reload
+            Observable.Merge(
+                    StatusFilter.Applied,
+                    IncomeTypeFilter.Applied,
+                    PayingEntityFilter.Applied,
+                    PaymentReferenceFilter.Applied,
+                    DeadlineFilter.Applied)
+                .ObserveOn(_scheduler)
                 .Do(_ => UpdateHasActiveFilters())
-                .Where(_ => !_suppressFilterReload)
                 .Do(_ => { _currentPage = 1; this.RaisePropertyChanged(nameof(CurrentPage)); })
                 .Select(_ => Unit.Default)
                 .InvokeCommand(LoadPageCommand)
                 .DisposeWith(disposables);
 
-            // Debounced reload for text filters
-            this.WhenAnyValue(x => x.FilterPayingEntity, x => x.FilterPaymentReference)
-                .Skip(1)
-                .Do(_ => UpdateHasActiveFilters())
-                .Where(_ => !_suppressFilterReload)
-                .Throttle(TimeSpan.FromMilliseconds(300), RxApp.TaskpoolScheduler)
-                .ObserveOn(_scheduler)
-                .Do(_ => { _currentPage = 1; this.RaisePropertyChanged(nameof(CurrentPage)); })
-                .Select(_ => Unit.Default)
-                .InvokeCommand(LoadPageCommand)
+            // Feature 050: update HasActiveFilters whenever any flyout's IsActive changes
+            Observable.CombineLatest(
+                    this.WhenAnyValue(x => x.StatusFilter.IsActive),
+                    this.WhenAnyValue(x => x.IncomeTypeFilter.IsActive),
+                    this.WhenAnyValue(x => x.PayingEntityFilter.IsActive),
+                    this.WhenAnyValue(x => x.PaymentReferenceFilter.IsActive),
+                    this.WhenAnyValue(x => x.DeadlineFilter.IsActive),
+                    (s, i, p, r, d) => s || i || p || r || d)
+                .Subscribe(active => HasActiveFilters = active)
                 .DisposeWith(disposables);
 
             // C2: dispose row subscriptions on every deactivation cycle
@@ -574,11 +554,11 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
     private void UpdateHasActiveFilters()
     {
         HasActiveFilters =
-            _filterStatus.HasValue ||
-            _filterIncomeType.HasValue ||
-            !string.IsNullOrEmpty(_filterPayingEntity) ||
-            !string.IsNullOrEmpty(_filterPaymentReference) ||
-            _filterDeadline.HasValue;
+            StatusFilter.IsActive ||
+            IncomeTypeFilter.IsActive ||
+            PayingEntityFilter.IsActive ||
+            PaymentReferenceFilter.IsActive ||
+            DeadlineFilter.IsActive;
     }
 
     private void RebuildRowSubscriptions()
@@ -607,13 +587,11 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
             var filter = _showAll ? FilingFilterMode.All : FilingFilterMode.Unpaid;
             var sortColumn = _sortColumn ?? FilingSortColumn.FilingDeadline;
             var columnFilter = _reportIdFilter.HasValue ? null : new FilingColumnFilter(
-                Status: _filterStatus,
-                IncomeType: _filterIncomeType,
-                PayingEntity: string.IsNullOrEmpty(_filterPayingEntity) ? null : _filterPayingEntity,
-                FilingDeadline: _filterDeadline.HasValue
-                    ? DateOnly.FromDateTime(_filterDeadline.Value.ToLocalTime().DateTime)
-                    : null,
-                PaymentReference: string.IsNullOrEmpty(_filterPaymentReference) ? null : _filterPaymentReference);
+                PayingEntity: PayingEntityFilter.GetCommittedValue(),
+                PaymentReference: PaymentReferenceFilter.GetCommittedValue(),
+                Statuses: StatusFilter.GetCommittedValues(),
+                IncomeTypes: IncomeTypeFilter.GetCommittedValues(),
+                FilingDeadlineText: DeadlineFilter.GetCommittedValue());
 
             var result = await _getFilings.HandleAsync(
                 new GetFilingsQuery(filter, _currentPage, 30, _reportIdFilter, sortColumn, _sortDescending, columnFilter), ct);

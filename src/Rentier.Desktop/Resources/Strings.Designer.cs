@@ -271,4 +271,16 @@ public static class Strings
     public static string Filter_StatusPaid => "Plaćen";
     public static string Filter_IncomeDividend => "Dividenda";
     public static string Filter_IncomeInterest => "Kamata";
+
+    /// <summary>Flyout text-filter search placeholder: "Pretraži..."</summary>
+    public static string Filter_Search => "Pretraži...";
+
+    /// <summary>Flyout apply button label: "Primeni"</summary>
+    public static string Filter_Apply => "Primeni";
+
+    /// <summary>Flyout select-all button label: "Sve"</summary>
+    public static string Filter_SelectAll => "Sve";
+
+    /// <summary>Flyout clear-all button label: "Nijedna"</summary>
+    public static string Filter_Clear => "Nijedna";
 }

@@ -8,9 +8,7 @@
     x:Class="Rentier.Desktop.Views.ReportsView"
     x:CompileBindings="False">
   <reactive:ReactiveUserControl.Resources>
-    <local:ComparisonOperatorIndexConverter x:Key="ComparisonOperatorIndexConverter" />
-    <local:NullableDateOnlyConverter x:Key="NullableDateOnlyConverter" />
-    <local:NullableIntConverter x:Key="NullableIntConverter" />
+    <local:FilterActiveConverter x:Key="FilterActiveConverter" />
   </reactive:ReactiveUserControl.Resources>
   <DockPanel>
 
@@ -83,86 +81,6 @@
               Command="{Binding NextPageCommand}" />
     </StackPanel>
 
-    <!-- Filter row — mirrors DataGrid column widths (40, *, 110, 110, 160, 100, 70, Auto) -->
-    <Border DockPanel.Dock="Top" Margin="8,0,8,0"
-            BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"
-            BorderThickness="0,0,0,1">
-      <Grid ColumnDefinitions="40,*,110,110,160,100,70,Auto">
-        <!-- Col 0: checkbox placeholder -->
-        <Border Grid.Column="0" />
-        <!-- Col 1: Name filter -->
-        <TextBox Grid.Column="1"
-                 Watermark="{Binding [Reports_Filter_Name_Watermark], Source={StaticResource Localizer}}"
-                 Text="{Binding NameFilter, Mode=TwoWay}"
-                 Margin="2,2"
-                 Height="28"
-                 VerticalContentAlignment="Center" />
-        <!-- Col 2: Import Date filter (operator + date) -->
-        <Grid Grid.Column="2" ColumnDefinitions="38,*" Margin="2,2">
-          <ComboBox Grid.Column="0"
-                    SelectedIndex="{Binding ImportDateOperator, Mode=TwoWay, Converter={StaticResource ComparisonOperatorIndexConverter}}"
-                    Height="28" Padding="2,0">
-            <ComboBoxItem Content="=" />
-            <ComboBoxItem Content="&gt;" />
-            <ComboBoxItem Content="&lt;" />
-          </ComboBox>
-          <TextBox Grid.Column="1"
-                   Watermark="date"
-                   Text="{Binding ImportDateFilter, Mode=TwoWay, Converter={StaticResource NullableDateOnlyConverter}}"
-                   Height="28" VerticalContentAlignment="Center" />
-        </Grid>
-        <!-- Col 3: Email Date filter -->
-        <Grid Grid.Column="3" ColumnDefinitions="38,*" Margin="2,2">
-          <ComboBox Grid.Column="0"
-                    SelectedIndex="{Binding EmailDateOperator, Mode=TwoWay, Converter={StaticResource ComparisonOperatorIndexConverter}}"
-                    Height="28" Padding="2,0">
-            <ComboBoxItem Content="=" />
-            <ComboBoxItem Content="&gt;" />
-            <ComboBoxItem Content="&lt;" />
-          </ComboBox>
-          <TextBox Grid.Column="1"
-                   Watermark="date"
-                   Text="{Binding EmailDateFilter, Mode=TwoWay, Converter={StaticResource NullableDateOnlyConverter}}"
-                   Height="28" VerticalContentAlignment="Center" />
-        </Grid>
-        <!-- Col 4: Importer filter -->
-        <TextBox Grid.Column="4"
-                 Watermark="{Binding [Reports_Filter_Importer_Watermark], Source={StaticResource Localizer}}"
-                 Text="{Binding ImporterFilter, Mode=TwoWay}"
-                 Margin="2,2"
-                 Height="28"
-                 VerticalContentAlignment="Center" />
-        <!-- Col 5: Status filter -->
-        <ComboBox Grid.Column="5"
-                  ItemsSource="{Binding StatusFilterOptions}"
-                  SelectedItem="{Binding StatusFilter, Mode=TwoWay}"
-                  Margin="2,2"
-                  Height="28">
-          <ComboBox.ItemTemplate>
-            <DataTemplate>
-              <TextBlock Text="{Binding Converter={x:Static local:NullableReportStatusConverter.Instance}}" />
-            </DataTemplate>
-          </ComboBox.ItemTemplate>
-        </ComboBox>
-        <!-- Col 6: Filing Count filter -->
-        <Grid Grid.Column="6" ColumnDefinitions="35,*" Margin="2,2">
-          <ComboBox Grid.Column="0"
-                    SelectedIndex="{Binding FilingCountOperator, Mode=TwoWay, Converter={StaticResource ComparisonOperatorIndexConverter}}"
-                    Height="28" Padding="2,0">
-            <ComboBoxItem Content="=" />
-            <ComboBoxItem Content="&gt;" />
-            <ComboBoxItem Content="&lt;" />
-          </ComboBox>
-          <TextBox Grid.Column="1"
-                   Watermark="#"
-                   Text="{Binding FilingCountFilter, Mode=TwoWay, Converter={StaticResource NullableIntConverter}}"
-                   Height="28" VerticalContentAlignment="Center" />
-        </Grid>
-        <!-- Col 7: Actions placeholder -->
-        <Border Grid.Column="7" />
-      </Grid>
-    </Border>
-
     <!-- Reports DataGrid -->
     <DataGrid x:Name="ReportsGrid"
               ItemsSource="{Binding Rows}"
@@ -201,7 +119,46 @@
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
-        <DataGridTemplateColumn Header="{Binding [Reports_Col_Name], Source={StaticResource Localizer}}" Width="*">
+
+        <!-- Name column with text flyout -->
+        <DataGridTemplateColumn Width="*" CanUserSort="False">
+          <DataGridTemplateColumn.Header>
+            <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="{Binding [Reports_Col_Name], Source={StaticResource Localizer}}" VerticalAlignment="Center" />
+              <Button x:Name="NameFilterBtn"
+                      Padding="2" Background="Transparent" BorderThickness="0"
+                      Command="{Binding DataContext.NameFilter.ToggleOpenCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                      Cursor="Hand">
+                <PathIcon Data="{StaticResource FilterFunnelIcon}" Width="11" Height="11"
+                          Foreground="{Binding DataContext.NameFilter.IsActive,
+                                       RelativeSource={RelativeSource AncestorType=DataGrid},
+                                       Converter={StaticResource FilterActiveConverter}}" />
+              </Button>
+              <Popup PlacementTarget="{Binding #NameFilterBtn}"
+                     Placement="Bottom"
+                     IsOpen="{Binding DataContext.NameFilter.IsOpen,
+                              RelativeSource={RelativeSource AncestorType=DataGrid}, Mode=TwoWay}"
+                     IsLightDismissEnabled="True">
+                <Popup.DataContext>
+                  <Binding Path="DataContext.NameFilter" RelativeSource="{RelativeSource AncestorType=DataGrid}" />
+                </Popup.DataContext>
+                <Border Background="{DynamicResource RentierCardBrush}"
+                        BorderBrush="{DynamicResource RentierBorderBrush}"
+                        BorderThickness="1" CornerRadius="6" Padding="10,8" MinWidth="180">
+                  <StackPanel Spacing="6">
+                    <TextBox Text="{Binding WorkingText, Mode=TwoWay}"
+                             Watermark="{Binding [Filter_Search], Source={StaticResource Localizer}}"
+                             MinWidth="160" />
+                    <Button Content="{Binding [Filter_Apply], Source={StaticResource Localizer}}"
+                            Command="{Binding ApplyCommand}"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center"
+                            Padding="4,4" />
+                  </StackPanel>
+                </Border>
+              </Popup>
+            </StackPanel>
+          </DataGridTemplateColumn.Header>
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <TextBlock Text="{Binding DisplayName}"
@@ -210,21 +167,253 @@
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
-        <DataGridTextColumn Header="{Binding [Reports_Col_ImportDate], Source={StaticResource Localizer}}"
-                            Binding="{Binding ImportDateDisplay}"
-                            Width="110" />
-        <DataGridTextColumn Header="{Binding [Reports_Col_EmailDate], Source={StaticResource Localizer}}"
-                            Binding="{Binding EmailDateDisplay}"
-                            Width="110" />
-        <DataGridTextColumn Header="{Binding [Reports_Col_Importer], Source={StaticResource Localizer}}"
-                            Binding="{Binding ImporterName}"
-                            Width="160" />
-        <DataGridTextColumn Header="{Binding [Reports_Col_Status], Source={StaticResource Localizer}}"
-                            Binding="{Binding Status, Converter={x:Static local:ReportStatusDisplayConverter.Instance}}"
-                            Width="100" />
-        <DataGridTextColumn Header="{Binding [Reports_Col_FilingCount], Source={StaticResource Localizer}}"
-                            Binding="{Binding FilingCount}"
-                            Width="70" />
+
+        <!-- Import Date column with text flyout -->
+        <DataGridTemplateColumn Width="110" CanUserSort="False">
+          <DataGridTemplateColumn.Header>
+            <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="{Binding [Reports_Col_ImportDate], Source={StaticResource Localizer}}" VerticalAlignment="Center" />
+              <Button x:Name="ImportDateFilterBtn"
+                      Padding="2" Background="Transparent" BorderThickness="0"
+                      Command="{Binding DataContext.ImportDateFilter.ToggleOpenCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                      Cursor="Hand">
+                <PathIcon Data="{StaticResource FilterFunnelIcon}" Width="11" Height="11"
+                          Foreground="{Binding DataContext.ImportDateFilter.IsActive,
+                                       RelativeSource={RelativeSource AncestorType=DataGrid},
+                                       Converter={StaticResource FilterActiveConverter}}" />
+              </Button>
+              <Popup PlacementTarget="{Binding #ImportDateFilterBtn}"
+                     Placement="Bottom"
+                     IsOpen="{Binding DataContext.ImportDateFilter.IsOpen,
+                              RelativeSource={RelativeSource AncestorType=DataGrid}, Mode=TwoWay}"
+                     IsLightDismissEnabled="True">
+                <Popup.DataContext>
+                  <Binding Path="DataContext.ImportDateFilter" RelativeSource="{RelativeSource AncestorType=DataGrid}" />
+                </Popup.DataContext>
+                <Border Background="{DynamicResource RentierCardBrush}"
+                        BorderBrush="{DynamicResource RentierBorderBrush}"
+                        BorderThickness="1" CornerRadius="6" Padding="10,8" MinWidth="180">
+                  <StackPanel Spacing="6">
+                    <TextBox Text="{Binding WorkingText, Mode=TwoWay}"
+                             Watermark="{Binding [Filter_Search], Source={StaticResource Localizer}}"
+                             MinWidth="160" />
+                    <Button Content="{Binding [Filter_Apply], Source={StaticResource Localizer}}"
+                            Command="{Binding ApplyCommand}"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center"
+                            Padding="4,4" />
+                  </StackPanel>
+                </Border>
+              </Popup>
+            </StackPanel>
+          </DataGridTemplateColumn.Header>
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding ImportDateDisplay}" VerticalAlignment="Center" Margin="4,0" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+
+        <!-- Email Date column with text flyout -->
+        <DataGridTemplateColumn Width="110" CanUserSort="False">
+          <DataGridTemplateColumn.Header>
+            <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="{Binding [Reports_Col_EmailDate], Source={StaticResource Localizer}}" VerticalAlignment="Center" />
+              <Button x:Name="EmailDateFilterBtn"
+                      Padding="2" Background="Transparent" BorderThickness="0"
+                      Command="{Binding DataContext.EmailDateFilter.ToggleOpenCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                      Cursor="Hand">
+                <PathIcon Data="{StaticResource FilterFunnelIcon}" Width="11" Height="11"
+                          Foreground="{Binding DataContext.EmailDateFilter.IsActive,
+                                       RelativeSource={RelativeSource AncestorType=DataGrid},
+                                       Converter={StaticResource FilterActiveConverter}}" />
+              </Button>
+              <Popup PlacementTarget="{Binding #EmailDateFilterBtn}"
+                     Placement="Bottom"
+                     IsOpen="{Binding DataContext.EmailDateFilter.IsOpen,
+                              RelativeSource={RelativeSource AncestorType=DataGrid}, Mode=TwoWay}"
+                     IsLightDismissEnabled="True">
+                <Popup.DataContext>
+                  <Binding Path="DataContext.EmailDateFilter" RelativeSource="{RelativeSource AncestorType=DataGrid}" />
+                </Popup.DataContext>
+                <Border Background="{DynamicResource RentierCardBrush}"
+                        BorderBrush="{DynamicResource RentierBorderBrush}"
+                        BorderThickness="1" CornerRadius="6" Padding="10,8" MinWidth="180">
+                  <StackPanel Spacing="6">
+                    <TextBox Text="{Binding WorkingText, Mode=TwoWay}"
+                             Watermark="{Binding [Filter_Search], Source={StaticResource Localizer}}"
+                             MinWidth="160" />
+                    <Button Content="{Binding [Filter_Apply], Source={StaticResource Localizer}}"
+                            Command="{Binding ApplyCommand}"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center"
+                            Padding="4,4" />
+                  </StackPanel>
+                </Border>
+              </Popup>
+            </StackPanel>
+          </DataGridTemplateColumn.Header>
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding EmailDateDisplay}" VerticalAlignment="Center" Margin="4,0" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+
+        <!-- Importer column with text flyout -->
+        <DataGridTemplateColumn Width="160" CanUserSort="False">
+          <DataGridTemplateColumn.Header>
+            <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="{Binding [Reports_Col_Importer], Source={StaticResource Localizer}}" VerticalAlignment="Center" />
+              <Button x:Name="ImporterFilterBtn"
+                      Padding="2" Background="Transparent" BorderThickness="0"
+                      Command="{Binding DataContext.ImporterFilter.ToggleOpenCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                      Cursor="Hand">
+                <PathIcon Data="{StaticResource FilterFunnelIcon}" Width="11" Height="11"
+                          Foreground="{Binding DataContext.ImporterFilter.IsActive,
+                                       RelativeSource={RelativeSource AncestorType=DataGrid},
+                                       Converter={StaticResource FilterActiveConverter}}" />
+              </Button>
+              <Popup PlacementTarget="{Binding #ImporterFilterBtn}"
+                     Placement="Bottom"
+                     IsOpen="{Binding DataContext.ImporterFilter.IsOpen,
+                              RelativeSource={RelativeSource AncestorType=DataGrid}, Mode=TwoWay}"
+                     IsLightDismissEnabled="True">
+                <Popup.DataContext>
+                  <Binding Path="DataContext.ImporterFilter" RelativeSource="{RelativeSource AncestorType=DataGrid}" />
+                </Popup.DataContext>
+                <Border Background="{DynamicResource RentierCardBrush}"
+                        BorderBrush="{DynamicResource RentierBorderBrush}"
+                        BorderThickness="1" CornerRadius="6" Padding="10,8" MinWidth="180">
+                  <StackPanel Spacing="6">
+                    <TextBox Text="{Binding WorkingText, Mode=TwoWay}"
+                             Watermark="{Binding [Filter_Search], Source={StaticResource Localizer}}"
+                             MinWidth="160" />
+                    <Button Content="{Binding [Filter_Apply], Source={StaticResource Localizer}}"
+                            Command="{Binding ApplyCommand}"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center"
+                            Padding="4,4" />
+                  </StackPanel>
+                </Border>
+              </Popup>
+            </StackPanel>
+          </DataGridTemplateColumn.Header>
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding ImporterName}" VerticalAlignment="Center" Margin="4,0" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+
+        <!-- Status column with enum flyout -->
+        <DataGridTemplateColumn Width="100" CanUserSort="False">
+          <DataGridTemplateColumn.Header>
+            <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="{Binding [Reports_Col_Status], Source={StaticResource Localizer}}" VerticalAlignment="Center" />
+              <Button x:Name="StatusFilterBtn"
+                      Padding="2" Background="Transparent" BorderThickness="0"
+                      Command="{Binding DataContext.StatusFilter.ToggleOpenCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                      Cursor="Hand">
+                <PathIcon Data="{StaticResource FilterFunnelIcon}" Width="11" Height="11"
+                          Foreground="{Binding DataContext.StatusFilter.IsActive,
+                                       RelativeSource={RelativeSource AncestorType=DataGrid},
+                                       Converter={StaticResource FilterActiveConverter}}" />
+              </Button>
+              <Popup PlacementTarget="{Binding #StatusFilterBtn}"
+                     Placement="Bottom"
+                     IsOpen="{Binding DataContext.StatusFilter.IsOpen,
+                              RelativeSource={RelativeSource AncestorType=DataGrid}, Mode=TwoWay}"
+                     IsLightDismissEnabled="True">
+                <Popup.DataContext>
+                  <Binding Path="DataContext.StatusFilter" RelativeSource="{RelativeSource AncestorType=DataGrid}" />
+                </Popup.DataContext>
+                <Border Background="{DynamicResource RentierCardBrush}"
+                        BorderBrush="{DynamicResource RentierBorderBrush}"
+                        BorderThickness="1" CornerRadius="6" Padding="10,8" MinWidth="160">
+                  <StackPanel Spacing="4">
+                    <ItemsControl ItemsSource="{Binding WorkingItems}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                          <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}"
+                                    Content="{Binding Label}" Margin="0,2" />
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Separator Margin="0,4" />
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                      <Button Content="{Binding [Filter_SelectAll], Source={StaticResource Localizer}}"
+                              Command="{Binding SelectAllCommand}"
+                              Padding="4,2" FontSize="11" />
+                      <Button Content="{Binding [Filter_Clear], Source={StaticResource Localizer}}"
+                              Command="{Binding ClearAllCommand}"
+                              Padding="4,2" FontSize="11" />
+                    </StackPanel>
+                    <Button Content="{Binding [Filter_Apply], Source={StaticResource Localizer}}"
+                            Command="{Binding ApplyCommand}"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center"
+                            Padding="4,4" />
+                  </StackPanel>
+                </Border>
+              </Popup>
+            </StackPanel>
+          </DataGridTemplateColumn.Header>
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding Status, Converter={x:Static local:ReportStatusDisplayConverter.Instance}}"
+                         VerticalAlignment="Center" Margin="4,0" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+
+        <!-- Filing Count column with text flyout -->
+        <DataGridTemplateColumn Width="70" CanUserSort="False">
+          <DataGridTemplateColumn.Header>
+            <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="{Binding [Reports_Col_FilingCount], Source={StaticResource Localizer}}" VerticalAlignment="Center" />
+              <Button x:Name="FilingCountFilterBtn"
+                      Padding="2" Background="Transparent" BorderThickness="0"
+                      Command="{Binding DataContext.FilingCountFilter.ToggleOpenCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                      Cursor="Hand">
+                <PathIcon Data="{StaticResource FilterFunnelIcon}" Width="11" Height="11"
+                          Foreground="{Binding DataContext.FilingCountFilter.IsActive,
+                                       RelativeSource={RelativeSource AncestorType=DataGrid},
+                                       Converter={StaticResource FilterActiveConverter}}" />
+              </Button>
+              <Popup PlacementTarget="{Binding #FilingCountFilterBtn}"
+                     Placement="Bottom"
+                     IsOpen="{Binding DataContext.FilingCountFilter.IsOpen,
+                              RelativeSource={RelativeSource AncestorType=DataGrid}, Mode=TwoWay}"
+                     IsLightDismissEnabled="True">
+                <Popup.DataContext>
+                  <Binding Path="DataContext.FilingCountFilter" RelativeSource="{RelativeSource AncestorType=DataGrid}" />
+                </Popup.DataContext>
+                <Border Background="{DynamicResource RentierCardBrush}"
+                        BorderBrush="{DynamicResource RentierBorderBrush}"
+                        BorderThickness="1" CornerRadius="6" Padding="10,8" MinWidth="180">
+                  <StackPanel Spacing="6">
+                    <TextBox Text="{Binding WorkingText, Mode=TwoWay}"
+                             Watermark="{Binding [Filter_Search], Source={StaticResource Localizer}}"
+                             MinWidth="160" />
+                    <Button Content="{Binding [Filter_Apply], Source={StaticResource Localizer}}"
+                            Command="{Binding ApplyCommand}"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center"
+                            Padding="4,4" />
+                  </StackPanel>
+                </Border>
+              </Popup>
+            </StackPanel>
+          </DataGridTemplateColumn.Header>
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding FilingCount}" VerticalAlignment="Center" Margin="4,0" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+
+        <!-- Actions column (unchanged) -->
         <DataGridTemplateColumn Header="{Binding [Reports_Col_Actions], Source={StaticResource Localizer}}" Width="Auto">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>

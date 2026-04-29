@@ -1,4 +1,3 @@
-using Rentier.Application.Enums;
 using Rentier.Domain.Enums;
 
 namespace Rentier.Application.DTOs;
@@ -12,10 +11,7 @@ public sealed record ReportColumnFilter(
     string? NameContains = null,
     string? ImporterContains = null,
     IReadOnlyList<Guid>? ImporterIds = null,
-    ComparisonOperator ImportDateOperator = ComparisonOperator.Equals,
-    DateOnly? ImportDateValue = null,
-    ComparisonOperator EmailDateOperator = ComparisonOperator.Equals,
-    DateOnly? EmailDateValue = null,
-    ComparisonOperator FilingCountOperator = ComparisonOperator.Equals,
+    string? ImportDateContains = null,
+    string? EmailDateContains = null,
     int? FilingCountValue = null,
-    ReportStatus? StatusFilter = null);
+    IReadOnlySet<ReportStatus>? StatusFilters = null);
