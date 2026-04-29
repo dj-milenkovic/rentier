@@ -264,5 +264,10 @@ public static class SrLatnStrings
         ["Filter_StatusPaid"] = "Plaćen",
         ["Filter_IncomeDividend"] = "Dividenda",
         ["Filter_IncomeInterest"] = "Kamata",
+        // Feature 050: column header flyout filter labels
+        ["Filter_Search"] = "Pretraži...",
+        ["Filter_Apply"] = "Primeni",
+        ["Filter_SelectAll"] = "Sve",
+        ["Filter_Clear"] = "Nijedna",
     };
 }
