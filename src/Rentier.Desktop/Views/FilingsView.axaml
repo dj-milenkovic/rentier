@@ -86,18 +86,17 @@
               Command="{Binding NextPageCommand}" />
     </StackPanel>
 
-    <!-- Empty state -->
-    <TextBlock DockPanel.Dock="Top"
-               IsVisible="{Binding IsEmpty}"
-               Text="{Binding [Filings_Empty], Source={StaticResource Localizer}}"
-               HorizontalAlignment="Center" VerticalAlignment="Center"
-               Margin="0,40" />
+    <!-- Filings DataGrid + empty-state hint; this Grid is the DockPanel fill child -->
+    <Grid>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="*" />
+        <RowDefinition Height="Auto" />
+      </Grid.RowDefinitions>
 
-    <!-- Filings DataGrid -->
-    <DataGrid x:Name="FilingsGrid"
+    <!-- Filings DataGrid — always visible; column headers render even with zero rows -->
+    <DataGrid Grid.Row="0" x:Name="FilingsGrid"
               ItemsSource="{Binding Rows}"
               AutoGenerateColumns="False"
-              IsVisible="{Binding HasItems}"
               CanUserReorderColumns="False"
               CanUserResizeColumns="True"
               CanUserSortColumns="True"
@@ -221,6 +220,18 @@
 
       </DataGrid.Columns>
     </DataGrid>
+
+    <!-- Empty state: subtle hint below the always-visible DataGrid -->
+    <TextBlock Grid.Row="1"
+               x:Name="EmptyStateHint"
+               IsVisible="{Binding IsEmpty}"
+               Text="{Binding [Filings_Empty], Source={StaticResource Localizer}}"
+               HorizontalAlignment="Center"
+               Foreground="{DynamicResource RentierTextSecondaryBrush}"
+               FontSize="13"
+               Margin="0,24" />
+
+    </Grid>
 
   </DockPanel>
 </reactive:ReactiveUserControl>
