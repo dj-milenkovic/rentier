@@ -114,7 +114,7 @@ public static class Strings
     public static string Filings_Page_Previous => "← Previous";
     public static string Filings_Page_Next => "Next →";
     public static string Filings_Page_Indicator => "Page {0} of {1}";
-    public static string Filings_Empty => "No filings found.";
+    public static string Filings_Empty => "No filings yet.";
     public static string Filings_Delete_Confirmation_Title => "Delete Filing";
     public static string Filings_Delete_Confirmation_Message => "Are you sure you want to delete this filing? This action cannot be undone.";
     public static string Filings_Delete_Action_Button => "Delete";
@@ -168,6 +168,7 @@ public static class Strings
     public static string ReportStatus_Init => "Init";
     public static string ReportStatus_Processed => "Processed";
     public static string ReportStatus_Error => "Error";
+    public static string ReportStatus_PartialError => "Partial Error";
     public static string Sync_Mode_Incremental => "Incremental";
     public static string Sync_Mode_ReplayFromDate => "Replay from Date";
     public static string Sync_Mode_FullReplay => "Full Replay";
@@ -257,4 +258,17 @@ public static class Strings
     public static string Theme_Dark => "Dark";
     public static string Theme_ImmediateNote => "Changes take effect immediately.";
     public static string Language_Header => "Language";
+    public static string Reports_Filter_Name_Watermark => "Filter by name...";
+    public static string Reports_Filter_Importer_Watermark => "Filter by importer...";
+    public static string Reports_Filter_Clear => "Clear filters";
+    public static string Reports_Filter_Status_All => "All";
+    public static string Filter_All => "Svi";
+    public static string Filter_Placeholder => "Filter...";
+    public static string Filter_ClearAll => "Obriši filtere";
+    public static string Filter_NoResults => "Nema prijava koje odgovaraju aktivnim filterima";
+    public static string Filter_StatusInit => "Inicijalan";
+    public static string Filter_StatusFiled => "Podnet";
+    public static string Filter_StatusPaid => "Plaćen";
+    public static string Filter_IncomeDividend => "Dividenda";
+    public static string Filter_IncomeInterest => "Kamata";
 }

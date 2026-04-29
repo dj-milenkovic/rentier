@@ -56,20 +56,43 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
     public string? AvailableVersion
     {
         get => _availableVersion;
-        private set => this.RaiseAndSetIfChanged(ref _availableVersion, value);
+        private set
+        {
+            this.RaiseAndSetIfChanged(ref _availableVersion, value);
+            this.RaisePropertyChanged(nameof(UpdateAvailableText));
+        }
     }
 
     public int DownloadProgress
     {
         get => _downloadProgress;
-        private set => this.RaiseAndSetIfChanged(ref _downloadProgress, value);
+        private set
+        {
+            this.RaiseAndSetIfChanged(ref _downloadProgress, value);
+            this.RaisePropertyChanged(nameof(DownloadingText));
+        }
     }
 
     public string? UpdateErrorMessage
     {
         get => _updateErrorMessage;
-        private set => this.RaiseAndSetIfChanged(ref _updateErrorMessage, value);
+        private set
+        {
+            this.RaiseAndSetIfChanged(ref _updateErrorMessage, value);
+            this.RaisePropertyChanged(nameof(UpdateFailedText));
+        }
     }
+
+    // ── Localized format-string properties for the update notification bar ───
+
+    public string UpdateAvailableText =>
+        string.Format(_localizationService["Update_Available_Message"], AvailableVersion);
+
+    public string DownloadingText =>
+        string.Format(_localizationService["Update_Downloading_Message"], DownloadProgress);
+
+    public string UpdateFailedText =>
+        string.Format(_localizationService["Update_Error_Message"], UpdateErrorMessage);
 
     public bool UpdateBarVisible =>
         _currentUpdateState is UpdateState.UpdateAvailable
@@ -92,6 +115,7 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
     public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> RetryDownloadCommand { get; }
 
     private readonly IUpdateService _updateService;
+    private readonly ILocalizationService _localizationService;
     private readonly IScheduler _outputScheduler;
 
     public MainWindowViewModel(
@@ -101,6 +125,7 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
         IScheduler? outputScheduler = null)
     {
         _updateService = updateService;
+        _localizationService = localizationService;
         _outputScheduler = outputScheduler ?? RxApp.MainThreadScheduler;
 
         // ── Update commands setup ─────────────────────────────────────────────
@@ -267,7 +292,13 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
 
             localizationService.CultureChanged
                 .ObserveOn(_outputScheduler)
-                .Subscribe(_ => UpdateNavigationLabels(localizationService))
+                .Subscribe(_ =>
+                {
+                    UpdateNavigationLabels(localizationService);
+                    this.RaisePropertyChanged(nameof(UpdateAvailableText));
+                    this.RaisePropertyChanged(nameof(DownloadingText));
+                    this.RaisePropertyChanged(nameof(UpdateFailedText));
+                })
                 .DisposeWith(disposables);
 
             // Auto-check for updates in background on activation

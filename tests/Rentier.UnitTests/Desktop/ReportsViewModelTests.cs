@@ -468,6 +468,101 @@ public class ReportsViewModelTests
         vm2.TotalPages.Should().Be(1);
     }
 
+    // ── 048: Sync refresh ────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task SyncCommand_WhenSucceeds_RefreshesReportsList()
+    {
+        var getReports = MakeGetReports();
+        var vm = CreateVm(
+            syncHandler: MakeSyncHandler(new SyncResult(1, [])),
+            getReports: getReports);
+
+        using var _activation = vm.Activator.Activate();
+        await vm.SyncCommand.Execute().FirstAsync();
+
+        // 1 call on activation + 1 call after successful sync
+        await getReports.Received(2).HandleAsync(
+            Arg.Any<GetReportsQuery>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task SyncCommand_WhenSucceeds_PreservesSortOrder()
+    {
+        var getReports = MakeGetReports();
+        var vm = CreateVm(
+            syncHandler: MakeSyncHandler(new SyncResult(1, [])),
+            getReports: getReports);
+
+        using var _activation = vm.Activator.Activate();
+        vm.SortDescending = false; // triggers an extra LoadPage via reactive subscription
+
+        await vm.SyncCommand.Execute().FirstAsync();
+
+        var lastQuery = getReports.ReceivedCalls().Last().GetArguments()[0] as GetReportsQuery;
+        lastQuery!.SortDescending.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task SyncCommand_WhenSucceeds_PreservesCurrentPage()
+    {
+        var getReports = MakePagedGetReports(75, 3, [MakeDto()]);
+        var vm = CreateVm(
+            syncHandler: MakeSyncHandler(new SyncResult(1, [])),
+            getReports: getReports);
+
+        using var _activation = vm.Activator.Activate();
+        await vm.NextPageCommand.Execute().FirstAsync(); // move to page 2
+
+        await vm.SyncCommand.Execute().FirstAsync();
+
+        var lastQuery = getReports.ReceivedCalls().Last().GetArguments()[0] as GetReportsQuery;
+        lastQuery!.Page.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task SyncCommand_WhenFails_DoesNotRefreshReportsList()
+    {
+        var getReports = MakeGetReports();
+        var failingSync = Substitute.For<ICommandHandler<SyncMailboxCommand, Result<SyncResult, Error>>>();
+        failingSync.HandleAsync(Arg.Any<SyncMailboxCommand>(), Arg.Any<CancellationToken>())
+            .Returns(Result<SyncResult, Error>.Failure(Error.Infrastructure("Sync failed")));
+
+        var vm = CreateVm(syncHandler: failingSync, getReports: getReports);
+
+        using var _activation = vm.Activator.Activate();
+        await vm.SyncCommand.Execute().FirstAsync();
+
+        // Only 1 call: from activation. No post-sync refresh when sync fails.
+        await getReports.Received(1).HandleAsync(
+            Arg.Any<GetReportsQuery>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task SyncCommand_WhenSucceeds_NewRowsAppearInCollection()
+    {
+        var firstPageRows  = new[] { MakeDto("report1.csv") };
+        var secondPageRows = new[] { MakeDto("report1.csv"), MakeDto("report2.csv") };
+
+        var firstPage  = new ReportsPageResult(firstPageRows,  1, 1);
+        var secondPage = new ReportsPageResult(secondPageRows, 2, 1);
+
+        var getReports = Substitute.For<IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>>>();
+        getReports.HandleAsync(Arg.Any<GetReportsQuery>(), Arg.Any<CancellationToken>())
+            .Returns(
+                Task.FromResult(Result<ReportsPageResult, Error>.Success(firstPage)),
+                Task.FromResult(Result<ReportsPageResult, Error>.Success(secondPage)));
+
+        var vm = CreateVm(
+            syncHandler: MakeSyncHandler(new SyncResult(1, [])),
+            getReports: getReports);
+
+        using var _activation = vm.Activator.Activate(); // call 1 → firstPage → Rows.Count = 1
+        await vm.SyncCommand.Execute().FirstAsync();     // call 2 → secondPage → Rows.Count = 2
+
+        vm.Rows.Count.Should().Be(2);
+    }
+
     // ── T016: Page reset on sort change ──────────────────────────────────────
 
     [Fact]

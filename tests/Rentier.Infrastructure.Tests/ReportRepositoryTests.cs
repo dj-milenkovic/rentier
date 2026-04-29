@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Rentier.Application.DTOs;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 using Rentier.Infrastructure.Persistence;
@@ -256,5 +257,114 @@ public class ReportRepositoryTests : IAsyncLifetime
         var act = async () => await _repository.DeleteManyAsync([]);
 
         await act.Should().NotThrowAsync();
+    }
+
+    // ── GetPagedAsync tests (feature 047) ─────────────────────────────────────
+
+    [Fact]
+    public async Task GetPagedAsync_NoFilter_ReturnsAllRowsPaged()
+    {
+        var importer = MakeImporter();
+        await _context.Importers.AddAsync(importer);
+        for (int i = 0; i < 5; i++)
+            await _context.Reports.AddAsync(MakeReport(importer.Id, $"r{i}.csv"));
+        await _context.SaveChangesAsync();
+
+        var (items, total) = await _repository.GetPagedAsync(null, 0, 3, true);
+
+        total.Should().Be(5);
+        items.Should().HaveCount(3);
+    }
+
+    [Fact]
+    public async Task GetPagedAsync_NameContains_ReturnsMatchingRows()
+    {
+        var importer = MakeImporter();
+        await _context.Importers.AddAsync(importer);
+        await _context.Reports.AddAsync(MakeReport(importer.Id, "ibkr_2024.csv"));
+        await _context.Reports.AddAsync(MakeReport(importer.Id, "schwab_2024.csv"));
+        await _context.SaveChangesAsync();
+
+        var filter = new ReportColumnFilter(NameContains: "ibkr");
+        var (items, total) = await _repository.GetPagedAsync(filter, 0, 10, true);
+
+        total.Should().Be(1);
+        items.Should().HaveCount(1);
+        items[0].ReportName.Should().Be("ibkr_2024.csv");
+    }
+
+    [Fact]
+    public async Task GetPagedAsync_StatusFilter_ReturnsMatchingRows()
+    {
+        var importer = MakeImporter();
+        await _context.Importers.AddAsync(importer);
+        var r1 = MakeReport(importer.Id, "r1.csv");
+        var r2 = MakeReport(importer.Id, "r2.csv");
+        await _context.Reports.AddRangeAsync(r1, r2);
+        await _context.SaveChangesAsync();
+
+        // Update r2 status
+        r2.SetStatus(Rentier.Domain.Enums.ReportStatus.Processed);
+        _context.Reports.Update(r2);
+        await _context.SaveChangesAsync();
+
+        var filter = new ReportColumnFilter(StatusFilter: Rentier.Domain.Enums.ReportStatus.Init);
+        var (items, total) = await _repository.GetPagedAsync(filter, 0, 10, true);
+
+        total.Should().Be(1);
+        items[0].ReportName.Should().Be("r1.csv");
+    }
+
+    [Fact]
+    public async Task GetPagedAsync_SkipTake_PaginatesCorrectly()
+    {
+        var importer = MakeImporter();
+        await _context.Importers.AddAsync(importer);
+        for (int i = 0; i < 10; i++)
+            await _context.Reports.AddAsync(MakeReport(importer.Id, $"r{i}.csv"));
+        await _context.SaveChangesAsync();
+
+        var (page1, total1) = await _repository.GetPagedAsync(null, 0, 5, true);
+        var (page2, total2) = await _repository.GetPagedAsync(null, 5, 5, true);
+
+        total1.Should().Be(10);
+        total2.Should().Be(10);
+        page1.Should().HaveCount(5);
+        page2.Should().HaveCount(5);
+        page1.Select(r => r.Id).Should().NotIntersectWith(page2.Select(r => r.Id));
+    }
+
+    [Fact]
+    public async Task GetPagedAsync_TotalCountReflectsFilterNotPageSize()
+    {
+        var importer = MakeImporter();
+        await _context.Importers.AddAsync(importer);
+        await _context.Reports.AddAsync(MakeReport(importer.Id, "ibkr_q1.csv"));
+        await _context.Reports.AddAsync(MakeReport(importer.Id, "ibkr_q2.csv"));
+        await _context.Reports.AddAsync(MakeReport(importer.Id, "schwab.csv"));
+        await _context.SaveChangesAsync();
+
+        var filter = new ReportColumnFilter(NameContains: "ibkr");
+        var (items, total) = await _repository.GetPagedAsync(filter, 0, 1, true); // take only 1
+
+        total.Should().Be(2); // total is 2, not 1
+        items.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public async Task GetPagedAsync_ImporterIds_FiltersToMatchingImporters()
+    {
+        var imp1 = MakeImporter();
+        var imp2 = Importer.Create("Other Importer");
+        await _context.Importers.AddRangeAsync(imp1, imp2);
+        await _context.Reports.AddAsync(MakeReport(imp1.Id, "imp1_report.csv"));
+        await _context.Reports.AddAsync(MakeReport(imp2.Id, "imp2_report.csv"));
+        await _context.SaveChangesAsync();
+
+        var filter = new ReportColumnFilter(ImporterIds: new List<Guid> { imp1.Id }.AsReadOnly());
+        var (items, total) = await _repository.GetPagedAsync(filter, 0, 10, true);
+
+        total.Should().Be(1);
+        items[0].ReportName.Should().Be("imp1_report.csv");
     }
 }

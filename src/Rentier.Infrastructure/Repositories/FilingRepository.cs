@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Rentier.Application.Enums;
+using Rentier.Application.Queries;
 using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
@@ -86,6 +87,7 @@ public sealed class FilingRepository : IFilingRepository
         FilingFilterMode filter, int skip, int take,
         FilingSortColumn sortColumn = FilingSortColumn.FilingDeadline,
         bool sortDescending = true,
+        FilingColumnFilter? columnFilter = null,
         CancellationToken ct = default)
     {
         var query = _db.Filings.AsNoTracking();
@@ -93,6 +95,20 @@ public sealed class FilingRepository : IFilingRepository
         if (filter == FilingFilterMode.Unpaid)
             query = query.Where(f =>
                 f.Status == FilingStatus.Init || f.Status == FilingStatus.Filed);
+
+        if (columnFilter is not null)
+        {
+            if (columnFilter.Status.HasValue)
+                query = query.Where(f => f.Status == columnFilter.Status.Value);
+            if (columnFilter.IncomeType.HasValue)
+                query = query.Where(f => f.IncomeType == columnFilter.IncomeType.Value);
+            if (!string.IsNullOrEmpty(columnFilter.PayingEntity))
+                query = query.Where(f => EF.Functions.Like(f.PayingEntity, $"%{columnFilter.PayingEntity}%"));
+            if (columnFilter.FilingDeadline.HasValue)
+                query = query.Where(f => f.FilingDeadline == columnFilter.FilingDeadline.Value);
+            if (!string.IsNullOrEmpty(columnFilter.PaymentReference))
+                query = query.Where(f => f.PaymentReference != null && EF.Functions.Like(f.PaymentReference, $"%{columnFilter.PaymentReference}%"));
+        }
 
         var total = await query.CountAsync(ct);
 
