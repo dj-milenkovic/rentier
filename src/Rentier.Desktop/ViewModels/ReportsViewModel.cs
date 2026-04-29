@@ -469,6 +469,7 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
 
         if (result.IsSuccess)
         {
+            await LoadPageAsync(ct);
             SyncProgressValue = 100;
             var r = result.Value;
             SyncStatusMessage = r.Errors.Count > 0
