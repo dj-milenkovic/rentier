@@ -32,13 +32,13 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
 
     private bool _isLoading;
     private string? _errorMessage;
-    private bool _showAll;
+    private bool _showAll = true;
     private int _currentPage = 1;
     private int _totalPages = 1;
     private int _totalCount;
     private Guid? _reportIdFilter;
     private int _selectedCount;
-    private FilingSortColumn _sortColumn = FilingSortColumn.FilingDeadline;
+    private FilingSortColumn? _sortColumn = FilingSortColumn.FilingDeadline;
     private bool _sortDescending = true;
     private bool _isUpdatingSelection;
     private readonly ObservableAsPropertyHelper<bool> _hasReportFilter;
@@ -103,7 +103,7 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
         private set => this.RaiseAndSetIfChanged(ref _selectedCount, value);
     }
 
-    public FilingSortColumn SortColumn
+    public FilingSortColumn? SortColumn
     {
         get => _sortColumn;
         private set => this.RaiseAndSetIfChanged(ref _sortColumn, value);
@@ -121,9 +121,7 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
     public string DeleteSelectedLabel => _deleteSelectedLabel.Value;
 
     /// <summary>Shows the current sort column and direction in the filter toolbar.</summary>
-    public string SortIndicatorDisplay => SortDescending
-        ? $"↓ {SortColumn}"
-        : $"↑ {SortColumn}";
+    // REMOVED: SortIndicatorDisplay — replaced by per-column PathIcon arrows (feature 046, FR-009).
 
     public bool? IsAllSelected
     {
@@ -360,31 +358,41 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
             this.WhenAnyValue(x => x.HasSelection),
             outputScheduler: _scheduler);
 
-        // FR-009 / FR-010: Server-side column sort command.
-        // Same column  → toggle direction, keep page.
-        // New column   → set ascending, reset to page 1.
+        // Feature 046: Server-side column sort command with 3-state cycle.
+        // Same column, ascending  → descending (keep page).
+        // Same column, descending → null/unsorted (keep page).
+        // Different column or null → ascending, reset to page 1.
         ApplySortCommand = ReactiveCommand.CreateFromTask<(string ColumnTag, bool? CurrentDirection)>(
             async (args, ct) =>
             {
                 if (!Enum.TryParse<FilingSortColumn>(args.ColumnTag, out var newColumn))
                     return;
 
-                if (newColumn == _sortColumn)
+                if (_sortColumn == newColumn)
                 {
-                    // FR-009: same column → toggle direction, keep current page
-                    _sortDescending = !_sortDescending;
-                    this.RaisePropertyChanged(nameof(SortDescending));
-                    this.RaisePropertyChanged(nameof(SortIndicatorDisplay));
+                    if (!_sortDescending)
+                    {
+                        // Ascending → descending (second click on same column); keep page.
+                        _sortDescending = true;
+                        this.RaisePropertyChanged(nameof(SortDescending));
+                    }
+                    else
+                    {
+                        // Descending → null/unsorted (third click on same column); keep page.
+                        _sortColumn = null;
+                        _sortDescending = false;
+                        this.RaisePropertyChanged(nameof(SortColumn));
+                        this.RaisePropertyChanged(nameof(SortDescending));
+                    }
                 }
                 else
                 {
-                    // FR-010: different column → ascending, reset to page 1
+                    // Different column (or currently unsorted) → ascending, reset to page 1.
                     _sortColumn = newColumn;
                     _sortDescending = false;
                     _currentPage = 1;
                     this.RaisePropertyChanged(nameof(SortColumn));
                     this.RaisePropertyChanged(nameof(SortDescending));
-                    this.RaisePropertyChanged(nameof(SortIndicatorDisplay));
                     this.RaisePropertyChanged(nameof(CurrentPage));
                 }
 
@@ -461,8 +469,9 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
         try
         {
             var filter = _showAll ? FilingFilterMode.All : FilingFilterMode.Unpaid;
+            var sortColumn = _sortColumn ?? FilingSortColumn.FilingDeadline;
             var result = await _getFilings.HandleAsync(
-                new GetFilingsQuery(filter, _currentPage, 30, _reportIdFilter, _sortColumn, _sortDescending), ct);
+                new GetFilingsQuery(filter, _currentPage, 30, _reportIdFilter, sortColumn, _sortDescending), ct);
 
             if (!result.IsSuccess)
             {

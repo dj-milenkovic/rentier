@@ -52,4 +52,8 @@
   <!-- Lucide chevron-right — used as collapsible group indicator (rotated 90° when expanded) -->
   <StreamGeometry x:Key="NavChevronIcon">M9 18 15 12 9 6</StreamGeometry>
 
+  <!-- Sort arrow chevrons — feature 046: ascending (↑) and descending (↓) indicators -->
+  <StreamGeometry x:Key="SortAscIcon">M7 14 L12 9 L17 14</StreamGeometry>
+  <StreamGeometry x:Key="SortDescIcon">M7 10 L12 15 L17 10</StreamGeometry>
+
 </ResourceDictionary>
