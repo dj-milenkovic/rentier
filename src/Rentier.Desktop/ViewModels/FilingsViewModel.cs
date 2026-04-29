@@ -10,6 +10,7 @@ using Rentier.Application.DTOs;
 using Rentier.Application.Enums;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
+using Rentier.Desktop.Models;
 using Rentier.Desktop.Resources;
 using Rentier.Domain.Enums;
 
@@ -45,6 +46,14 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
     private readonly ObservableAsPropertyHelper<bool> _hasSelection;
     private readonly ObservableAsPropertyHelper<string> _deleteSelectedLabel;
 
+    private FilingStatus? _filterStatus;
+    private IncomeType? _filterIncomeType;
+    private string? _filterPayingEntity;
+    private string? _filterPaymentReference;
+    private DateTimeOffset? _filterDeadline;
+    private bool _suppressFilterReload;
+    private bool _hasActiveFilters;
+
     public bool IsLoading
     {
         get => _isLoading;
@@ -76,6 +85,18 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
             this.RaiseAndSetIfChanged(ref _reportIdFilter, value);
             _currentPage = 1;
             this.RaisePropertyChanged(nameof(CurrentPage));
+            if (value.HasValue)
+            {
+                _suppressFilterReload = true;
+                _filterStatus = null; this.RaisePropertyChanged(nameof(FilterStatus));
+                _filterIncomeType = null; this.RaisePropertyChanged(nameof(FilterIncomeType));
+                _filterPayingEntity = null; this.RaisePropertyChanged(nameof(FilterPayingEntity));
+                _filterPaymentReference = null; this.RaisePropertyChanged(nameof(FilterPaymentReference));
+                _filterDeadline = null; this.RaisePropertyChanged(nameof(FilterDeadline));
+                _suppressFilterReload = false;
+            }
+            this.RaisePropertyChanged(nameof(IsFilterRowEnabled));
+            UpdateHasActiveFilters();
         }
     }
 
@@ -153,9 +174,70 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
 
     public bool HasItems => Rows.Count > 0;
     public bool IsEmpty => Rows.Count == 0 && !IsLoading;
+    public bool IsEmptyWithFilters => IsEmpty && HasActiveFilters;
+
+    public string EmptyStateMessage => HasActiveFilters
+        ? Strings.Filter_NoResults
+        : Strings.Filings_Empty;
+
     public bool HasPreviousPage => _currentPage > 1 && !IsLoading;
     public bool HasNextPage => _currentPage < _totalPages && !IsLoading;
     public string PageIndicator => string.Format(Strings.Filings_Page_Indicator, _currentPage, _totalPages);
+
+    public FilingStatus? FilterStatus
+    {
+        get => _filterStatus;
+        set => this.RaiseAndSetIfChanged(ref _filterStatus, value);
+    }
+
+    public IncomeType? FilterIncomeType
+    {
+        get => _filterIncomeType;
+        set => this.RaiseAndSetIfChanged(ref _filterIncomeType, value);
+    }
+
+    public string? FilterPayingEntity
+    {
+        get => _filterPayingEntity;
+        set => this.RaiseAndSetIfChanged(ref _filterPayingEntity, value);
+    }
+
+    public string? FilterPaymentReference
+    {
+        get => _filterPaymentReference;
+        set => this.RaiseAndSetIfChanged(ref _filterPaymentReference, value);
+    }
+
+    public DateTimeOffset? FilterDeadline
+    {
+        get => _filterDeadline;
+        set => this.RaiseAndSetIfChanged(ref _filterDeadline, value);
+    }
+
+    public bool HasActiveFilters
+    {
+        get => _hasActiveFilters;
+        private set => this.RaiseAndSetIfChanged(ref _hasActiveFilters, value);
+    }
+
+    public bool IsFilterRowEnabled => _reportIdFilter == null;
+
+    public IReadOnlyList<FilterOption<FilingStatus?>> StatusFilterOptions { get; } =
+        new List<FilterOption<FilingStatus?>>
+        {
+            new(Strings.Filter_All, null),
+            new(Strings.Filter_StatusInit, FilingStatus.Init),
+            new(Strings.Filter_StatusFiled, FilingStatus.Filed),
+            new(Strings.Filter_StatusPaid, FilingStatus.Paid),
+        }.AsReadOnly();
+
+    public IReadOnlyList<FilterOption<IncomeType?>> IncomeTypeFilterOptions { get; } =
+        new List<FilterOption<IncomeType?>>
+        {
+            new(Strings.Filter_All, null),
+            new(Strings.Filter_IncomeDividend, IncomeType.Dividend),
+            new(Strings.Filter_IncomeInterest, IncomeType.Interest),
+        }.AsReadOnly();
 
     public ObservableCollection<FilingRowViewModel> Rows { get; } = new();
 
@@ -173,6 +255,7 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
     public ReactiveCommand<Unit, Unit> ClearSelectionCommand { get; }
     public ReactiveCommand<Unit, Unit> BulkDeleteCommand { get; }
     public ReactiveCommand<(string ColumnTag, bool? CurrentDirection), Unit> ApplySortCommand { get; }
+    public ReactiveCommand<Unit, Unit> ClearFiltersCommand { get; }
 
     private readonly CompositeDisposable _rowSubscriptions = new();
 
@@ -400,6 +483,24 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
             },
             outputScheduler: _scheduler);
 
+        ClearFiltersCommand = ReactiveCommand.CreateFromTask(
+            async (CancellationToken ct) =>
+            {
+                _suppressFilterReload = true;
+                FilterStatus = null;
+                FilterIncomeType = null;
+                FilterPayingEntity = null;
+                FilterPaymentReference = null;
+                FilterDeadline = null;
+                _suppressFilterReload = false;
+                UpdateHasActiveFilters();
+                _currentPage = 1;
+                this.RaisePropertyChanged(nameof(CurrentPage));
+                await LoadPageAsync(ct);
+            },
+            this.WhenAnyValue(x => x.HasActiveFilters),
+            outputScheduler: _scheduler);
+
         this.WhenActivated(disposables =>
         {
             LoadPageCommand.Execute().Subscribe().DisposeWith(disposables);
@@ -413,6 +514,28 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
 
             this.WhenAnyValue(x => x.ReportIdFilter)
                 .Skip(1)
+                .Select(_ => Unit.Default)
+                .InvokeCommand(LoadPageCommand)
+                .DisposeWith(disposables);
+
+            // Instant reload for dropdown/date filters
+            this.WhenAnyValue(x => x.FilterStatus, x => x.FilterIncomeType, x => x.FilterDeadline)
+                .Skip(1)
+                .Do(_ => UpdateHasActiveFilters())
+                .Where(_ => !_suppressFilterReload)
+                .Do(_ => { _currentPage = 1; this.RaisePropertyChanged(nameof(CurrentPage)); })
+                .Select(_ => Unit.Default)
+                .InvokeCommand(LoadPageCommand)
+                .DisposeWith(disposables);
+
+            // Debounced reload for text filters
+            this.WhenAnyValue(x => x.FilterPayingEntity, x => x.FilterPaymentReference)
+                .Skip(1)
+                .Do(_ => UpdateHasActiveFilters())
+                .Where(_ => !_suppressFilterReload)
+                .Throttle(TimeSpan.FromMilliseconds(300), RxApp.TaskpoolScheduler)
+                .ObserveOn(_scheduler)
+                .Do(_ => { _currentPage = 1; this.RaisePropertyChanged(nameof(CurrentPage)); })
                 .Select(_ => Unit.Default)
                 .InvokeCommand(LoadPageCommand)
                 .DisposeWith(disposables);
@@ -442,7 +565,20 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
             ApplySortCommand.ThrownExceptions
                 .Subscribe(ex => ErrorMessage = ex.Message)
                 .DisposeWith(disposables);
+            ClearFiltersCommand.ThrownExceptions
+                .Subscribe(ex => ErrorMessage = ex.Message)
+                .DisposeWith(disposables);
         });
+    }
+
+    private void UpdateHasActiveFilters()
+    {
+        HasActiveFilters =
+            _filterStatus.HasValue ||
+            _filterIncomeType.HasValue ||
+            !string.IsNullOrEmpty(_filterPayingEntity) ||
+            !string.IsNullOrEmpty(_filterPaymentReference) ||
+            _filterDeadline.HasValue;
     }
 
     private void RebuildRowSubscriptions()
@@ -470,8 +606,17 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
         {
             var filter = _showAll ? FilingFilterMode.All : FilingFilterMode.Unpaid;
             var sortColumn = _sortColumn ?? FilingSortColumn.FilingDeadline;
+            var columnFilter = _reportIdFilter.HasValue ? null : new FilingColumnFilter(
+                Status: _filterStatus,
+                IncomeType: _filterIncomeType,
+                PayingEntity: string.IsNullOrEmpty(_filterPayingEntity) ? null : _filterPayingEntity,
+                FilingDeadline: _filterDeadline.HasValue
+                    ? DateOnly.FromDateTime(_filterDeadline.Value.ToLocalTime().DateTime)
+                    : null,
+                PaymentReference: string.IsNullOrEmpty(_filterPaymentReference) ? null : _filterPaymentReference);
+
             var result = await _getFilings.HandleAsync(
-                new GetFilingsQuery(filter, _currentPage, 30, _reportIdFilter, sortColumn, _sortDescending), ct);
+                new GetFilingsQuery(filter, _currentPage, 30, _reportIdFilter, sortColumn, _sortDescending, columnFilter), ct);
 
             if (!result.IsSuccess)
             {
@@ -500,6 +645,8 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
             }
 
             this.RaisePropertyChanged(nameof(IsEmpty));
+            this.RaisePropertyChanged(nameof(IsEmptyWithFilters));
+            this.RaisePropertyChanged(nameof(EmptyStateMessage));
             this.RaisePropertyChanged(nameof(HasItems));
             this.RaisePropertyChanged(nameof(HasPreviousPage));
             this.RaisePropertyChanged(nameof(HasNextPage));

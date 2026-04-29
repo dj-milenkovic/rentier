@@ -2,6 +2,7 @@ using FluentAssertions;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Rentier.Application.Enums;
+using Rentier.Application.Queries;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 using Rentier.Infrastructure.Persistence;
@@ -699,5 +700,144 @@ public class FilingRepositoryTests : IAsyncLifetime
 
         items[0].PaymentReference.Should().Be("ZZZ-999");
         items[1].PaymentReference.Should().Be("AAA-001");
+    }
+
+    // ── GetPagedAsync column filter tests (feature 045) ─────────────────────
+
+    [Fact]
+    public async Task GetPagedAsync_FilterByStatus_ReturnsOnlyMatchingFilings()
+    {
+        var profile = MakeProfile();
+        await _context.TaxpayerProfiles.AddAsync(profile);
+        await _context.SaveChangesAsync();
+
+        var init1 = MakeFiling(profile.Id, "CompanyA");
+        var init2 = MakeFiling(profile.Id, "CompanyB");
+        var filed = MakeFiling(profile.Id, "CompanyC");
+        filed.AdvanceStatus(FilingStatus.Filed);
+        await _repository.AddAsync(init1);
+        await _repository.AddAsync(init2);
+        await _repository.AddAsync(filed);
+
+        var cf = new FilingColumnFilter(Status: FilingStatus.Init);
+        var (items, total) = await _repository.GetPagedAsync(FilingFilterMode.All, 0, 30, columnFilter: cf);
+
+        total.Should().Be(2);
+        items.Should().AllSatisfy(f => f.Status.Should().Be(FilingStatus.Init));
+    }
+
+    [Fact]
+    public async Task GetPagedAsync_FilterByIncomeType_ReturnsOnlyMatchingFilings()
+    {
+        var profile = MakeProfile();
+        await _context.TaxpayerProfiles.AddAsync(profile);
+        await _context.SaveChangesAsync();
+
+        var div = Filing.CreateFromIncome(profile.Id, IncomeType.Dividend, "DivCo",
+            new DateOnly(2024, 3, 1), 1000m, 150m, 150m, 0m, new DateOnly(2024, 6, 15));
+        var interest = Filing.CreateFromIncome(profile.Id, IncomeType.Interest, "IntCo",
+            new DateOnly(2024, 3, 2), 500m, 75m, 75m, 0m, new DateOnly(2024, 6, 16));
+        await _repository.AddAsync(div);
+        await _repository.AddAsync(interest);
+
+        var cf = new FilingColumnFilter(IncomeType: IncomeType.Dividend);
+        var (items, total) = await _repository.GetPagedAsync(FilingFilterMode.All, 0, 30, columnFilter: cf);
+
+        total.Should().Be(1);
+        items[0].PayingEntity.Should().Be("DivCo");
+    }
+
+    [Fact]
+    public async Task GetPagedAsync_FilterByPayingEntityContains_CaseInsensitive()
+    {
+        var profile = MakeProfile();
+        await _context.TaxpayerProfiles.AddAsync(profile);
+        await _context.SaveChangesAsync();
+
+        await _repository.AddAsync(MakeFiling(profile.Id, "ACME Corporation"));
+        await _repository.AddAsync(MakeFiling(profile.Id, "Globex Corp"));
+        await _repository.AddAsync(MakeFiling(profile.Id, "Initech Ltd"));
+
+        var cf = new FilingColumnFilter(PayingEntity: "corp");
+        var (items, total) = await _repository.GetPagedAsync(FilingFilterMode.All, 0, 30, columnFilter: cf);
+
+        total.Should().Be(2);
+        items.Should().Contain(f => f.PayingEntity == "ACME Corporation");
+        items.Should().Contain(f => f.PayingEntity == "Globex Corp");
+    }
+
+    [Fact]
+    public async Task GetPagedAsync_FilterByFilingDeadlineExact()
+    {
+        var profile = MakeProfile();
+        await _context.TaxpayerProfiles.AddAsync(profile);
+        await _context.SaveChangesAsync();
+
+        var target = new DateOnly(2024, 7, 15);
+        await _repository.AddAsync(MakeFiling(profile.Id, "A", target));
+        await _repository.AddAsync(MakeFiling(profile.Id, "B", new DateOnly(2024, 8, 15)));
+
+        var cf = new FilingColumnFilter(FilingDeadline: target.AddDays(30));
+        var (items, total) = await _repository.GetPagedAsync(FilingFilterMode.All, 0, 30, columnFilter: cf);
+
+        total.Should().Be(1);
+        items[0].FilingDeadline.Should().Be(target.AddDays(30));
+    }
+
+    [Fact]
+    public async Task GetPagedAsync_CombinedFilter_StatusAndIncomeType()
+    {
+        var profile = MakeProfile();
+        await _context.TaxpayerProfiles.AddAsync(profile);
+        await _context.SaveChangesAsync();
+
+        var f1 = Filing.CreateFromIncome(profile.Id, IncomeType.Dividend, "DivInit",
+            new DateOnly(2024, 3, 1), 1000m, 150m, 150m, 0m, new DateOnly(2024, 6, 15));
+        var f2 = Filing.CreateFromIncome(profile.Id, IncomeType.Interest, "IntInit",
+            new DateOnly(2024, 3, 2), 500m, 75m, 75m, 0m, new DateOnly(2024, 6, 16));
+        var f3 = Filing.CreateFromIncome(profile.Id, IncomeType.Dividend, "DivFiled",
+            new DateOnly(2024, 3, 3), 800m, 120m, 120m, 0m, new DateOnly(2024, 6, 17));
+        f3.AdvanceStatus(FilingStatus.Filed);
+        await _repository.AddAsync(f1);
+        await _repository.AddAsync(f2);
+        await _repository.AddAsync(f3);
+
+        var cf = new FilingColumnFilter(Status: FilingStatus.Init, IncomeType: IncomeType.Dividend);
+        var (items, total) = await _repository.GetPagedAsync(FilingFilterMode.All, 0, 30, columnFilter: cf);
+
+        total.Should().Be(1);
+        items[0].PayingEntity.Should().Be("DivInit");
+    }
+
+    [Fact]
+    public async Task GetPagedAsync_FilterWithNoMatch_ReturnsEmpty()
+    {
+        var profile = MakeProfile();
+        await _context.TaxpayerProfiles.AddAsync(profile);
+        await _context.SaveChangesAsync();
+
+        await _repository.AddAsync(MakeFiling(profile.Id, "ACME"));
+
+        var cf = new FilingColumnFilter(PayingEntity: "XYZ_NOT_FOUND");
+        var (items, total) = await _repository.GetPagedAsync(FilingFilterMode.All, 0, 30, columnFilter: cf);
+
+        total.Should().Be(0);
+        items.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetPagedAsync_NullColumnFilter_ReturnsSameResultsAsNoFilter()
+    {
+        var profile = MakeProfile();
+        await _context.TaxpayerProfiles.AddAsync(profile);
+        await _context.SaveChangesAsync();
+
+        await _repository.AddAsync(MakeFiling(profile.Id, "A"));
+        await _repository.AddAsync(MakeFiling(profile.Id, "B"));
+
+        var (items, total) = await _repository.GetPagedAsync(FilingFilterMode.All, 0, 30, columnFilter: null);
+
+        total.Should().Be(2);
+        items.Should().HaveCount(2);
     }
 }
