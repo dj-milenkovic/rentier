@@ -1,4 +1,5 @@
 using Rentier.Application.Enums;
+using Rentier.Application.Queries;
 using Rentier.Domain.Entities;
 
 namespace Rentier.Application.Repositories;
@@ -21,6 +22,7 @@ public interface IFilingRepository
         int take,
         FilingSortColumn sortColumn = FilingSortColumn.FilingDeadline,
         bool sortDescending = true,
+        FilingColumnFilter? columnFilter = null,
         CancellationToken ct = default);
 
     /// <summary>

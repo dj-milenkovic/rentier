@@ -3,6 +3,7 @@ using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
+using Rentier.Application.Enums;
 using Rentier.Application.Handlers;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
@@ -34,11 +35,32 @@ public class GetReportsQueryHandlerTests
     private static Importer MakeImporter(string display = "Test Importer")
         => Importer.Create(display);
 
+    private void SetupPagedReports(IReadOnlyList<Report> reports, int? totalCount = null)
+    {
+        var tc = totalCount ?? reports.Count;
+        _reportRepo.GetPagedAsync(
+            Arg.Any<ReportColumnFilter?>(),
+            Arg.Any<int>(),
+            Arg.Any<int>(),
+            Arg.Any<bool>(),
+            Arg.Any<CancellationToken>())
+            .Returns((reports, tc));
+    }
+
+    private void SetupPagedReports(int count)
+    {
+        var importer = MakeImporter();
+        var reports = Enumerable.Range(0, count).Select(_ => MakeReport(importer.Id)).ToArray();
+        SetupPagedReports(reports, count);
+        _importerRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([importer]);
+        _filingRepo.GetFilingCountByReportIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(0);
+        _filingRepo.GetEarliestIncomeDateByReportIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((DateOnly?)null);
+    }
+
     [Fact]
     public async Task HandleAsync_WithNoReports_ReturnsEmptyList()
     {
-        _reportRepo.GetAllAsync(Arg.Any<bool>(), Arg.Any<CancellationToken>())
-            .Returns(Array.Empty<Report>());
+        SetupPagedReports(Array.Empty<Report>());
         _importerRepo.GetAllAsync(Arg.Any<CancellationToken>())
             .Returns(Array.Empty<Importer>());
 
@@ -54,7 +76,7 @@ public class GetReportsQueryHandlerTests
         var importer = MakeImporter("IBKR EU");
         var report   = MakeReport(importer.Id, "stmt_2024.csv");
         var earliest = new DateOnly(2024, 3, 15);
-        _reportRepo.GetAllAsync(Arg.Any<bool>(), Arg.Any<CancellationToken>()).Returns([report]);
+        SetupPagedReports([report]);
         _importerRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([importer]);
         _filingRepo.GetFilingCountByReportIdAsync(report.Id, Arg.Any<CancellationToken>()).Returns(7);
         _filingRepo.GetEarliestIncomeDateByReportIdAsync(report.Id, Arg.Any<CancellationToken>()).Returns(earliest);
@@ -77,7 +99,7 @@ public class GetReportsQueryHandlerTests
     {
         var importer = MakeImporter("My Broker");
         var report   = MakeReport(importer.Id, "stmt.csv");
-        _reportRepo.GetAllAsync(Arg.Any<bool>(), Arg.Any<CancellationToken>()).Returns([report]);
+        SetupPagedReports([report]);
         _importerRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([importer]);
         _filingRepo.GetFilingCountByReportIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(0);
         _filingRepo.GetEarliestIncomeDateByReportIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((DateOnly?)null);
@@ -94,7 +116,7 @@ public class GetReportsQueryHandlerTests
     {
         var importer = MakeImporter("My Broker");
         var report   = MakeReport(importer.Id);
-        _reportRepo.GetAllAsync(Arg.Any<bool>(), Arg.Any<CancellationToken>()).Returns([report]);
+        SetupPagedReports([report]);
         _importerRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([importer]);
         _filingRepo.GetFilingCountByReportIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(0);
         _filingRepo.GetEarliestIncomeDateByReportIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((DateOnly?)null);
@@ -108,7 +130,7 @@ public class GetReportsQueryHandlerTests
     public async Task HandleAsync_WhenImporterNotFound_UsesUnknownFallback()
     {
         var report = MakeReport(Guid.NewGuid());
-        _reportRepo.GetAllAsync(Arg.Any<bool>(), Arg.Any<CancellationToken>()).Returns([report]);
+        SetupPagedReports([report]);
         _importerRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(Array.Empty<Importer>());
         _filingRepo.GetFilingCountByReportIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(0);
         _filingRepo.GetEarliestIncomeDateByReportIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((DateOnly?)null);
@@ -124,7 +146,7 @@ public class GetReportsQueryHandlerTests
         var importer = MakeImporter();
         var r1 = MakeReport(importer.Id, "r1.csv");
         var r2 = MakeReport(importer.Id, "r2.csv");
-        _reportRepo.GetAllAsync(Arg.Any<bool>(), Arg.Any<CancellationToken>()).Returns([r1, r2]);
+        SetupPagedReports([r1, r2]);
         _importerRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([importer]);
         _filingRepo.GetFilingCountByReportIdAsync(r1.Id, Arg.Any<CancellationToken>()).Returns(5);
         _filingRepo.GetFilingCountByReportIdAsync(r2.Id, Arg.Any<CancellationToken>()).Returns(2);
@@ -140,8 +162,15 @@ public class GetReportsQueryHandlerTests
     [Fact]
     public async Task HandleAsync_WhenRepositoryThrows_ReturnsFailure()
     {
-        _reportRepo.GetAllAsync(Arg.Any<bool>(), Arg.Any<CancellationToken>())
+        _reportRepo.GetPagedAsync(
+            Arg.Any<ReportColumnFilter?>(),
+            Arg.Any<int>(),
+            Arg.Any<int>(),
+            Arg.Any<bool>(),
+            Arg.Any<CancellationToken>())
             .Throws(new InvalidOperationException("DB failure"));
+        _importerRepo.GetAllAsync(Arg.Any<CancellationToken>())
+            .Returns(Array.Empty<Importer>());
 
         var result = await _sut.HandleAsync(new GetReportsQuery());
 
@@ -150,76 +179,89 @@ public class GetReportsQueryHandlerTests
         result.Error.Message.Should().Contain("DB failure");
     }
 
-    // -- Sort parameter tests (feature 027) -----------------------------------
-
     [Fact]
-    public async Task HandleAsync_DefaultQuery_PassesSortDescendingTrueToRepository()
+    public async Task HandleAsync_DefaultQuery_CallsGetPagedAsyncWithSortDescendingTrue()
     {
-        _reportRepo.GetAllAsync(Arg.Any<bool>(), Arg.Any<CancellationToken>())
-            .Returns(Array.Empty<Report>());
-        _importerRepo.GetAllAsync(Arg.Any<CancellationToken>())
-            .Returns(Array.Empty<Importer>());
+        SetupPagedReports(0);
 
         await _sut.HandleAsync(new GetReportsQuery());
 
-        await _reportRepo.Received(1).GetAllAsync(true, Arg.Any<CancellationToken>());
+        await _reportRepo.Received(1).GetPagedAsync(
+            Arg.Any<ReportColumnFilter?>(),
+            Arg.Any<int>(),
+            Arg.Any<int>(),
+            true,
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task HandleAsync_SortDescendingFalse_ForwardedToRepository()
     {
-        _reportRepo.GetAllAsync(Arg.Any<bool>(), Arg.Any<CancellationToken>())
-            .Returns(Array.Empty<Report>());
-        _importerRepo.GetAllAsync(Arg.Any<CancellationToken>())
-            .Returns(Array.Empty<Importer>());
+        SetupPagedReports(0);
 
         await _sut.HandleAsync(new GetReportsQuery(SortDescending: false));
 
-        await _reportRepo.Received(1).GetAllAsync(false, Arg.Any<CancellationToken>());
+        await _reportRepo.Received(1).GetPagedAsync(
+            Arg.Any<ReportColumnFilter?>(),
+            Arg.Any<int>(),
+            Arg.Any<int>(),
+            false,
+            Arg.Any<CancellationToken>());
     }
 
-    // -- Pagination tests (feature 029) ----------------------------------------
+    [Fact]
+    public async Task HandleAsync_Page1PageSize30_PassesSkip0Take30ToRepository()
+    {
+        SetupPagedReports(0);
 
-    private void SetupReports(int count)
+        await _sut.HandleAsync(new GetReportsQuery(Page: 1, PageSize: 30));
+
+        await _reportRepo.Received(1).GetPagedAsync(
+            Arg.Any<ReportColumnFilter?>(),
+            0,
+            30,
+            Arg.Any<bool>(),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_Page2PageSize30_PassesSkip30Take30ToRepository()
+    {
+        SetupPagedReports(0);
+
+        await _sut.HandleAsync(new GetReportsQuery(Page: 2, PageSize: 30));
+
+        await _reportRepo.Received(1).GetPagedAsync(
+            Arg.Any<ReportColumnFilter?>(),
+            30,
+            30,
+            Arg.Any<bool>(),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_TotalCountFrom_Repository_DrivesTotalPages()
     {
         var importer = MakeImporter();
-        var reports = Enumerable.Range(0, count).Select(_ => MakeReport(importer.Id)).ToArray();
-        _reportRepo.GetAllAsync(Arg.Any<bool>(), Arg.Any<CancellationToken>()).Returns(reports);
+        var pageReports = Enumerable.Range(0, 30).Select(_ => MakeReport(importer.Id)).ToArray();
+        _reportRepo.GetPagedAsync(
+            Arg.Any<ReportColumnFilter?>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
+            .Returns(((IReadOnlyList<Report>)pageReports, 75));
         _importerRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([importer]);
         _filingRepo.GetFilingCountByReportIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(0);
         _filingRepo.GetEarliestIncomeDateByReportIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((DateOnly?)null);
-    }
-
-    [Fact]
-    public async Task HandleAsync_PaginationSlicing_Page1Of3Returns30Rows()
-    {
-        SetupReports(75);
 
         var result = await _sut.HandleAsync(new GetReportsQuery(Page: 1, PageSize: 30));
 
-        result.IsSuccess.Should().BeTrue();
+        result.Value.TotalCount.Should().Be(75);
+        result.Value.TotalPages.Should().Be(3);
         result.Value.Rows.Should().HaveCount(30);
-        result.Value.TotalCount.Should().Be(75);
-        result.Value.TotalPages.Should().Be(3);
-    }
-
-    [Fact]
-    public async Task HandleAsync_PaginationSlicing_LastPageReturnsRemainder()
-    {
-        SetupReports(75);
-
-        var result = await _sut.HandleAsync(new GetReportsQuery(Page: 3, PageSize: 30));
-
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Rows.Should().HaveCount(15);
-        result.Value.TotalCount.Should().Be(75);
-        result.Value.TotalPages.Should().Be(3);
     }
 
     [Fact]
     public async Task HandleAsync_EmptyCollection_ReturnsTotalPagesOne()
     {
-        SetupReports(0);
+        SetupPagedReports(0);
 
         var result = await _sut.HandleAsync(new GetReportsQuery());
 
@@ -255,5 +297,62 @@ public class GetReportsQueryHandlerTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("PAGINATION_VALIDATION_FAILED");
+    }
+
+    [Fact]
+    public async Task HandleAsync_ImporterContains_PreResolvesImporterIds()
+    {
+        var importer = MakeImporter("IBKR Europe");
+        var report = MakeReport(importer.Id);
+        SetupPagedReports([report]);
+        _importerRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([importer]);
+        _filingRepo.GetFilingCountByReportIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(0);
+        _filingRepo.GetEarliestIncomeDateByReportIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((DateOnly?)null);
+
+        var filter = new ReportColumnFilter(ImporterContains: "IBKR");
+        var result = await _sut.HandleAsync(new GetReportsQuery(Filter: filter));
+
+        result.IsSuccess.Should().BeTrue();
+        await _reportRepo.Received(1).GetPagedAsync(
+            Arg.Is<ReportColumnFilter?>(f => f != null && f.ImporterIds != null && f.ImporterIds.Contains(importer.Id)),
+            Arg.Any<int>(),
+            Arg.Any<int>(),
+            Arg.Any<bool>(),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_FilingCountFilter_PostFiltersPageResults()
+    {
+        var importer = MakeImporter();
+        var r1 = MakeReport(importer.Id, "r1.csv");
+        var r2 = MakeReport(importer.Id, "r2.csv");
+        SetupPagedReports([r1, r2]);
+        _importerRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([importer]);
+        _filingRepo.GetFilingCountByReportIdAsync(r1.Id, Arg.Any<CancellationToken>()).Returns(3);
+        _filingRepo.GetFilingCountByReportIdAsync(r2.Id, Arg.Any<CancellationToken>()).Returns(7);
+        _filingRepo.GetEarliestIncomeDateByReportIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((DateOnly?)null);
+
+        var filter = new ReportColumnFilter(FilingCountValue: 5, FilingCountOperator: ComparisonOperator.GreaterThan);
+        var result = await _sut.HandleAsync(new GetReportsQuery(Filter: filter));
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Rows.Should().HaveCount(1);
+        result.Value.Rows[0].Id.Should().Be(r2.Id);
+    }
+
+    [Fact]
+    public async Task HandleAsync_NullFilter_PassesNullFilterToRepository()
+    {
+        SetupPagedReports(0);
+
+        await _sut.HandleAsync(new GetReportsQuery());
+
+        await _reportRepo.Received(1).GetPagedAsync(
+            null,
+            Arg.Any<int>(),
+            Arg.Any<int>(),
+            Arg.Any<bool>(),
+            Arg.Any<CancellationToken>());
     }
 }

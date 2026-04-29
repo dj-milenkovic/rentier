@@ -41,7 +41,8 @@ public sealed class GetFilingsQueryHandler
 
         var skip = (query.Page - 1) * query.PageSize;
         var (items, totalCount) = await _filings.GetPagedAsync(
-            query.Filter, skip, query.PageSize, query.SortColumn, query.SortDescending, ct);
+            query.Filter, skip, query.PageSize, query.SortColumn, query.SortDescending,
+            columnFilter: query.ColumnFilter, ct: ct);
 
         var dtos = items
             .Select(f => new FilingRowDto(

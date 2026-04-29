@@ -1,12 +1,12 @@
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
+using Rentier.Application.Enums;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
 using Rentier.Application.Repositories;
 
 namespace Rentier.Application.Handlers;
 
-/// <summary>Returns a paged list of reports as display rows with resolved importer name and filing count.</summary>
 public sealed class GetReportsQueryHandler
     : IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>>
 {
@@ -30,12 +30,33 @@ public sealed class GetReportsQueryHandler
             () => PaginationValidator.Validate<ReportsPageResult>(query),
             async () =>
             {
-                var reports = await _reports.GetAllAsync(query.SortDescending, ct);
+                // Always load importers (needed for name resolution and optionally for filtering)
                 var importerList = await _importers.GetAllAsync(ct);
                 var importerNames = importerList.ToDictionary(i => i.Id, i => i.DisplayName);
 
-                var dtos = new List<ReportRowDto>(reports.Count);
-                foreach (var r in reports)
+                // Pre-resolve importer IDs if ImporterContains is set
+                IReadOnlyList<Guid>? importerIds = null;
+                if (!string.IsNullOrWhiteSpace(query.Filter?.ImporterContains))
+                {
+                    var term = query.Filter.ImporterContains.Trim();
+                    importerIds = importerList
+                        .Where(i => i.DisplayName.Contains(term, StringComparison.OrdinalIgnoreCase))
+                        .Select(i => i.Id)
+                        .ToList()
+                        .AsReadOnly();
+                }
+
+                // Build effective filter with resolved importer IDs
+                var effectiveFilter = query.Filter is null && importerIds is null
+                    ? null
+                    : (query.Filter ?? new ReportColumnFilter()) with { ImporterIds = importerIds };
+
+                var skip = (query.Page - 1) * query.PageSize;
+                var (pageReports, totalCount) = await _reports.GetPagedAsync(
+                    effectiveFilter, skip, query.PageSize, query.SortDescending, ct);
+
+                var dtos = new List<ReportRowDto>(pageReports.Count);
+                foreach (var r in pageReports)
                 {
                     ct.ThrowIfCancellationRequested();
                     var count        = await _filings.GetFilingCountByReportIdAsync(r.Id, ct);
@@ -46,16 +67,22 @@ public sealed class GetReportsQueryHandler
                     dtos.Add(new ReportRowDto(r.Id, r.ReportName, r.ImportDate, r.EmailDate, importerName, r.Status, count, displayName, earliest));
                 }
 
-                var totalCount = dtos.Count;
-                var totalPages = Math.Max(1, (int)Math.Ceiling((double)totalCount / query.PageSize));
-                var slicedRows = (IReadOnlyList<ReportRowDto>)dtos
-                    .Skip((query.Page - 1) * query.PageSize)
-                    .Take(query.PageSize)
-                    .ToList()
-                    .AsReadOnly();
+                // Post-filter by filing count (computed, not in DB)
+                if (query.Filter?.FilingCountValue.HasValue == true)
+                {
+                    var fcVal = query.Filter.FilingCountValue.Value;
+                    var fcOp  = query.Filter.FilingCountOperator;
+                    dtos = dtos.Where(d => fcOp switch
+                    {
+                        ComparisonOperator.GreaterThan => d.FilingCount > fcVal,
+                        ComparisonOperator.LessThan    => d.FilingCount < fcVal,
+                        _                              => d.FilingCount == fcVal,
+                    }).ToList();
+                }
 
+                var totalPages = Math.Max(1, (int)Math.Ceiling((double)totalCount / query.PageSize));
                 return Result<ReportsPageResult, Error>.Success(
-                    new ReportsPageResult(slicedRows, totalCount, totalPages));
+                    new ReportsPageResult(dtos.AsReadOnly(), totalCount, totalPages));
             },
             ErrorCodes.REPORT_QUERY_FAILED);
 }
