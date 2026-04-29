@@ -1,3 +1,4 @@
+using Rentier.Application.DTOs;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 
@@ -19,4 +20,14 @@ public interface IReportRepository
     /// An empty list is a no-op.
     /// </summary>
     Task DeleteManyAsync(IReadOnlyList<Guid> ids, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns a paged, filtered list of reports and the total count matching the filter.
+    /// </summary>
+    Task<(IReadOnlyList<Report> Items, int TotalCount)> GetPagedAsync(
+        ReportColumnFilter? filter,
+        int skip,
+        int take,
+        bool sortDescending,
+        CancellationToken ct = default);
 }

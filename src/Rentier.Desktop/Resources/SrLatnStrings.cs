@@ -251,5 +251,9 @@ public static class SrLatnStrings
         ["Theme_Dark"] = "Tamna",
         ["Theme_ImmediateNote"] = "Izmene stupaju na snagu odmah.",
         ["Language_Header"] = "Jezik",
+        ["Reports_Filter_Name_Watermark"] = "Filtriraj po nazivu...",
+        ["Reports_Filter_Importer_Watermark"] = "Filtriraj po uvozniku...",
+        ["Reports_Filter_Clear"] = "Obriši filtere",
+        ["Reports_Filter_Status_All"] = "Sve",
     };
 }

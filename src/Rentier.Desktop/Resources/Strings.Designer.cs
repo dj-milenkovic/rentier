@@ -258,4 +258,8 @@ public static class Strings
     public static string Theme_Dark => "Dark";
     public static string Theme_ImmediateNote => "Changes take effect immediately.";
     public static string Language_Header => "Language";
+    public static string Reports_Filter_Name_Watermark => "Filter by name...";
+    public static string Reports_Filter_Importer_Watermark => "Filter by importer...";
+    public static string Reports_Filter_Clear => "Clear filters";
+    public static string Reports_Filter_Status_All => "All";
 }
