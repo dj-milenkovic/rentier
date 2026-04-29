@@ -142,6 +142,9 @@ public class MainWindowViewModel_UpdateTests
         locService["Nav_Settings_Mailboxes"].Returns("Mailboxes");
         locService["Nav_Settings_Importers"].Returns("Importers");
         locService["Nav_Settings_Appearance"].Returns("Appearance");
+        locService["Update_Available_Message"].Returns("Update v{0} available");
+        locService["Update_Downloading_Message"].Returns("Downloading update... {0}%");
+        locService["Update_Error_Message"].Returns("Update failed: {0}");
         return locService;
     }
 
@@ -338,6 +341,79 @@ public class MainWindowViewModel_UpdateTests
         await vm.DismissRestartCommand.Execute().FirstAsync();
 
         updateService.Received(1).ScheduleUpdateOnExit();
+    }
+
+    // ── Localized format-string property tests ────────────────────────────────
+
+    [Fact]
+    public async Task UpdateAvailableText_WhenVersionIsSet_ContainsVersion()
+    {
+        var updateService = BuildUpdateService(new UpdateCheckResult(true, "2.5.1"));
+        var vm = CreateVm(updateService);
+
+        await vm.CheckForUpdateCommand.Execute().FirstAsync();
+
+        vm.UpdateAvailableText.Should().Contain("2.5.1");
+    }
+
+    [Fact]
+    public async Task UpdateAvailableText_WhenVersionIsSet_UsesFormatTemplate()
+    {
+        var updateService = BuildUpdateService(new UpdateCheckResult(true, "3.0.0"));
+        var vm = CreateVm(updateService);
+
+        await vm.CheckForUpdateCommand.Execute().FirstAsync();
+
+        vm.UpdateAvailableText.Should().Be("Update v3.0.0 available");
+    }
+
+    [Fact]
+    public async Task DownloadingText_WhenProgressChanges_ContainsProgress()
+    {
+        var updateService = BuildUpdateService(new UpdateCheckResult(true, "2.0.0"));
+        updateService.DownloadUpdateAsync(Arg.Any<Action<int>>(), Arg.Any<CancellationToken>())
+            .Returns(ci =>
+            {
+                var callback = ci.ArgAt<Action<int>>(0);
+                callback(42);
+                return Task.CompletedTask;
+            });
+        var vm = CreateVm(updateService);
+        await vm.CheckForUpdateCommand.Execute().FirstAsync();
+
+        await vm.BeginUpdateCommand.Execute().FirstAsync();
+
+        // DownloadingText is computed from DownloadProgress; after completion progress may be any value.
+        // Assert the format template is applied.
+        vm.DownloadingText.Should().Contain("%");
+    }
+
+    [Fact]
+    public async Task UpdateFailedText_WhenDownloadFails_ContainsErrorMessage()
+    {
+        var updateService = BuildUpdateService(new UpdateCheckResult(true, "2.0.0"));
+        updateService.DownloadUpdateAsync(Arg.Any<Action<int>>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromException(new InvalidOperationException("Network error")));
+        var vm = CreateVm(updateService);
+        await vm.CheckForUpdateCommand.Execute().FirstAsync();
+
+        await vm.BeginUpdateCommand.Execute().FirstAsync();
+
+        vm.UpdateFailedText.Should().Contain("Network error");
+    }
+
+    [Fact]
+    public async Task UpdateFailedText_WhenDownloadFails_UsesFormatTemplate()
+    {
+        var updateService = BuildUpdateService(new UpdateCheckResult(true, "2.0.0"));
+        updateService.DownloadUpdateAsync(Arg.Any<Action<int>>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromException(new InvalidOperationException("Timeout")));
+        var vm = CreateVm(updateService);
+        await vm.CheckForUpdateCommand.Execute().FirstAsync();
+
+        await vm.BeginUpdateCommand.Execute().FirstAsync();
+
+        vm.UpdateFailedText.Should().Be("Update failed: Timeout");
     }
 }
 

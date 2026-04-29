@@ -155,13 +155,13 @@
                   Padding="12,6"
                   IsVisible="{Binding IsUpdateAvailableState}">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <TextBlock Text="{Binding AvailableVersion, StringFormat='Update v{0} available'}"
+              <TextBlock Text="{Binding UpdateAvailableText}"
                          VerticalAlignment="Center"
                          Foreground="{DynamicResource RentierTextPrimaryBrush}" />
-              <Button Content="Update Now"
+              <Button Content="{Binding [Update_Now_Button], Source={StaticResource Localizer}}"
                       Command="{Binding BeginUpdateCommand}"
                       Classes="accent" />
-              <Button Content="Later"
+              <Button Content="{Binding [Update_Later_Button], Source={StaticResource Localizer}}"
                       Command="{Binding DismissUpdateCommand}" />
             </StackPanel>
           </Border>
@@ -172,7 +172,7 @@
                   Padding="12,6"
                   IsVisible="{Binding IsDownloadingState}">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <TextBlock Text="{Binding DownloadProgress, StringFormat='Downloading update... {0}%'}"
+              <TextBlock Text="{Binding DownloadingText}"
                          VerticalAlignment="Center"
                          Foreground="{DynamicResource RentierTextPrimaryBrush}" />
               <ProgressBar Value="{Binding DownloadProgress}"
@@ -189,13 +189,13 @@
                   Padding="12,6"
                   IsVisible="{Binding IsDownloadedState}">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <TextBlock Text="Update ready. Restart to apply."
+              <TextBlock Text="{Binding [Update_Ready_Message], Source={StaticResource Localizer}}"
                          VerticalAlignment="Center"
                          Foreground="{DynamicResource RentierTextPrimaryBrush}" />
-              <Button Content="Restart Now"
+              <Button Content="{Binding [Update_Restart_Button], Source={StaticResource Localizer}}"
                       Command="{Binding RestartNowCommand}"
                       Classes="accent" />
-              <Button Content="Later"
+              <Button Content="{Binding [Update_Later_Button], Source={StaticResource Localizer}}"
                       Command="{Binding DismissRestartCommand}" />
             </StackPanel>
           </Border>
@@ -206,12 +206,12 @@
                   Padding="12,6"
                   IsVisible="{Binding IsErrorState}">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <TextBlock Text="{Binding UpdateErrorMessage, StringFormat='Update failed: {0}'}"
+              <TextBlock Text="{Binding UpdateFailedText}"
                          VerticalAlignment="Center"
                          Foreground="{DynamicResource RentierTextPrimaryBrush}" />
-              <Button Content="Retry"
+              <Button Content="{Binding [Update_Retry_Button], Source={StaticResource Localizer}}"
                       Command="{Binding RetryDownloadCommand}" />
-              <Button Content="Dismiss"
+              <Button Content="{Binding [Update_Dismiss_Button], Source={StaticResource Localizer}}"
                       Command="{Binding DismissUpdateCommand}" />
             </StackPanel>
           </Border>
