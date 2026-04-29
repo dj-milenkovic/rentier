@@ -10,6 +10,8 @@
   <reactive:ReactiveUserControl.Resources>
     <StreamGeometry x:Key="AdvanceStatusIcon">M9 18 L15 12 L9 6</StreamGeometry>
     <StreamGeometry x:Key="ExportPpOpoXmlIcon">M12 3 L12 15 M7 10 L12 15 L17 10 M5 21 L19 21</StreamGeometry>
+    <!-- T006: SortArrowConverter — registered here (view-scoped; only used in FilingsView column headers) -->
+    <local:SortArrowConverter x:Key="SortArrowConverter" />
   </reactive:ReactiveUserControl.Resources>
 
   <DockPanel>
@@ -17,12 +19,6 @@
     <!-- Filter toggle bar -->
     <DockPanel DockPanel.Dock="Top" Margin="8,8,8,4">
       <StackPanel Orientation="Horizontal" Spacing="8">
-        <RadioButton GroupName="FilingFilter"
-                     IsChecked="{Binding ShowAll, Converter={x:Static local:InvertBoolConverter.Instance}}"
-                     Content="{Binding [Filings_Filter_Unpaid], Source={StaticResource Localizer}}" />
-        <RadioButton GroupName="FilingFilter"
-                     IsChecked="{Binding ShowAll}"
-                     Content="{Binding [Filings_Filter_All], Source={StaticResource Localizer}}" />
         <!-- Report filter chip: visible only when a ReportIdFilter is active -->
         <Border IsVisible="{Binding HasReportFilter}"
                 Background="{DynamicResource RentierCardElevatedBrush}"
@@ -42,7 +38,6 @@
             </Button>
           </StackPanel>
         </Border>
-        <TextBlock Text="{Binding SortIndicatorDisplay}" Foreground="{DynamicResource RentierTextSecondaryBrush}" FontSize="11" VerticalAlignment="Center" />
       </StackPanel>
       <Button Content="{Binding [ManualFiling_Title], Source={StaticResource Localizer}}"
               Command="{Binding NewFilingCommand}"
@@ -154,21 +149,97 @@
         <!-- Status column: ComboBox showing valid next statuses -->
         <!-- REMOVED: replaced by Actions column icon buttons (feat/030) -->
 
-        <!-- Income Type column -->
-        <DataGridTextColumn Header="{Binding [Filings_Col_IncomeType], Source={StaticResource Localizer}}" Width="110" Tag="IncomeType"
-          Binding="{Binding IncomeType, Converter={x:Static local:IncomeTypeDisplayConverter.Instance}}" />
+        <!-- Income Type column — sortable with ↑/↓ arrow (feature 046) -->
+        <DataGridTemplateColumn Width="110" Tag="IncomeType" CanUserSort="True">
+          <DataGridTemplateColumn.Header>
+            <StackPanel Orientation="Horizontal" Spacing="4" Cursor="Hand">
+              <TextBlock Text="{Binding [Filings_Col_IncomeType], Source={StaticResource Localizer}}"
+                         VerticalAlignment="Center" />
+              <PathIcon Width="12" Height="12">
+                <PathIcon.Data>
+                  <MultiBinding Converter="{StaticResource SortArrowConverter}" ConverterParameter="IncomeType">
+                    <Binding Path="DataContext.SortColumn" RelativeSource="{RelativeSource AncestorType=DataGrid}" />
+                    <Binding Path="DataContext.SortDescending" RelativeSource="{RelativeSource AncestorType=DataGrid}" />
+                  </MultiBinding>
+                </PathIcon.Data>
+              </PathIcon>
+            </StackPanel>
+          </DataGridTemplateColumn.Header>
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding IncomeType, Converter={x:Static local:IncomeTypeDisplayConverter.Instance}}" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
 
-        <!-- Paying Entity column -->
-        <DataGridTextColumn Header="{Binding [Filings_Col_PayingEntity], Source={StaticResource Localizer}}" Width="*" Tag="PayingEntity"
-          Binding="{Binding PayingEntity}" />
+        <!-- Paying Entity column — sortable with ↑/↓ arrow (feature 046) -->
+        <DataGridTemplateColumn Width="*" Tag="PayingEntity" CanUserSort="True">
+          <DataGridTemplateColumn.Header>
+            <StackPanel Orientation="Horizontal" Spacing="4" Cursor="Hand">
+              <TextBlock Text="{Binding [Filings_Col_PayingEntity], Source={StaticResource Localizer}}"
+                         VerticalAlignment="Center" />
+              <PathIcon Width="12" Height="12">
+                <PathIcon.Data>
+                  <MultiBinding Converter="{StaticResource SortArrowConverter}" ConverterParameter="PayingEntity">
+                    <Binding Path="DataContext.SortColumn" RelativeSource="{RelativeSource AncestorType=DataGrid}" />
+                    <Binding Path="DataContext.SortDescending" RelativeSource="{RelativeSource AncestorType=DataGrid}" />
+                  </MultiBinding>
+                </PathIcon.Data>
+              </PathIcon>
+            </StackPanel>
+          </DataGridTemplateColumn.Header>
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding PayingEntity}" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
 
-        <!-- Filing Deadline column -->
-        <DataGridTextColumn Header="{Binding [Filings_Col_Deadline], Source={StaticResource Localizer}}" Width="120" Tag="FilingDeadline"
-          Binding="{Binding DeadlineDisplay}" />
+        <!-- Filing Deadline column — sortable with ↑/↓ arrow (feature 046) -->
+        <DataGridTemplateColumn Width="120" Tag="FilingDeadline" CanUserSort="True">
+          <DataGridTemplateColumn.Header>
+            <StackPanel Orientation="Horizontal" Spacing="4" Cursor="Hand">
+              <TextBlock Text="{Binding [Filings_Col_Deadline], Source={StaticResource Localizer}}"
+                         VerticalAlignment="Center" />
+              <PathIcon Width="12" Height="12">
+                <PathIcon.Data>
+                  <MultiBinding Converter="{StaticResource SortArrowConverter}" ConverterParameter="FilingDeadline">
+                    <Binding Path="DataContext.SortColumn" RelativeSource="{RelativeSource AncestorType=DataGrid}" />
+                    <Binding Path="DataContext.SortDescending" RelativeSource="{RelativeSource AncestorType=DataGrid}" />
+                  </MultiBinding>
+                </PathIcon.Data>
+              </PathIcon>
+            </StackPanel>
+          </DataGridTemplateColumn.Header>
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding DeadlineDisplay}" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
 
-        <!-- Tax Payable column -->
-        <DataGridTextColumn Header="{Binding [Filings_Col_TaxPayable], Source={StaticResource Localizer}}" Width="130" Tag="TaxPayable"
-          Binding="{Binding TaxPayableDisplay}" />
+        <!-- Tax Payable column — sortable with ↑/↓ arrow (feature 046) -->
+        <DataGridTemplateColumn Width="130" Tag="TaxPayable" CanUserSort="True">
+          <DataGridTemplateColumn.Header>
+            <StackPanel Orientation="Horizontal" Spacing="4" Cursor="Hand">
+              <TextBlock Text="{Binding [Filings_Col_TaxPayable], Source={StaticResource Localizer}}"
+                         VerticalAlignment="Center" />
+              <PathIcon Width="12" Height="12">
+                <PathIcon.Data>
+                  <MultiBinding Converter="{StaticResource SortArrowConverter}" ConverterParameter="TaxPayable">
+                    <Binding Path="DataContext.SortColumn" RelativeSource="{RelativeSource AncestorType=DataGrid}" />
+                    <Binding Path="DataContext.SortDescending" RelativeSource="{RelativeSource AncestorType=DataGrid}" />
+                  </MultiBinding>
+                </PathIcon.Data>
+              </PathIcon>
+            </StackPanel>
+          </DataGridTemplateColumn.Header>
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding TaxPayableDisplay}" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
 
         <!-- Payment Reference column: editable TextBox for Filed rows only -->
         <DataGridTemplateColumn Header="{Binding [Filings_Col_PaymentRef], Source={StaticResource Localizer}}" Width="180" Tag="PaymentReference" CanUserSort="False">

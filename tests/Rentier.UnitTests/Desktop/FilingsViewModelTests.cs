@@ -78,7 +78,7 @@ public class FilingsViewModelTests
     }
 
     [Fact]
-    public void OnActivation_TriggersLoadPageWithDefaultUnpaidFilter()
+    public void OnActivation_TriggersLoadPageWithDefaultAllFilter()
     {
         var getFilings = MockGetFilings();
         var vm = CreateVm(getFilings: getFilings);
@@ -86,7 +86,7 @@ public class FilingsViewModelTests
         using var _ = vm.Activator.Activate();
 
         getFilings.Received(1).HandleAsync(
-            Arg.Is<GetFilingsQuery>(q => q.Filter == FilingFilterMode.Unpaid),
+            Arg.Is<GetFilingsQuery>(q => q.Filter == FilingFilterMode.All),
             Arg.Any<CancellationToken>());
     }
 
@@ -251,25 +251,27 @@ public class FilingsViewModelTests
         var vm = CreateVm(getFilings: getFilings);
         using var _ = vm.Activator.Activate();
 
-        vm.ShowAll = true;
+        // ShowAll defaults to true now (FR-008); toggle to false to trigger a load.
+        vm.ShowAll = false;
 
         // LoadPage: 1 activation + 1 filter change
         getFilings.Received(2).HandleAsync(Arg.Any<GetFilingsQuery>(), Arg.Any<CancellationToken>());
 
-        // Second call should use All filter
+        // Second call should use Unpaid filter
         getFilings.Received(1).HandleAsync(
             Arg.Is<GetFilingsQuery>(q =>
-                q.Filter == FilingFilterMode.All && q.Page == 1),
+                q.Filter == FilingFilterMode.Unpaid && q.Page == 1),
             Arg.Any<CancellationToken>());
     }
 
-    // -- Sort state tests (feature 027) ---------------------------------------
+    // -- Sort state tests (feature 027, updated for 3-state cycle in feature 046) -----------
 
     [Fact]
     public void InitialSortState_IsFilingDeadlineDescending()
     {
         var vm = CreateVm();
 
+        // SortColumn is now FilingSortColumn? (nullable) — value is still FilingDeadline by default.
         vm.SortColumn.Should().Be(FilingSortColumn.FilingDeadline);
         vm.SortDescending.Should().BeTrue();
     }
@@ -290,31 +292,105 @@ public class FilingsViewModelTests
     }
 
     [Fact]
+    public void ApplySortCommand_SameColumn_AscendingToDescending()
+    {
+        // Setup: get VM into ascending state by clicking a different column first.
+        var getFilings = MockGetFilings(new FilingsPageResult([MakeDto()], 40, 2));
+        var vm = CreateVm(getFilings: getFilings);
+        using var _ = vm.Activator.Activate();
+
+        // Click TaxPayable (different column → ascending, page resets to 1)
+        vm.ApplySortCommand.Execute(("TaxPayable", null)).Subscribe();
+        vm.SortColumn.Should().Be(FilingSortColumn.TaxPayable);
+        vm.SortDescending.Should().BeFalse();
+
+        // Click TaxPayable again (same column, ascending → descending, page kept)
+        vm.ApplySortCommand.Execute(("TaxPayable", null)).Subscribe();
+
+        vm.SortDescending.Should().BeTrue();
+        vm.SortColumn.Should().Be(FilingSortColumn.TaxPayable);
+    }
+
+    [Fact]
     public void ApplySortCommand_SameColumn_TogglesDirectionKeepsPage()
+    {
+        // Alias for ApplySortCommand_SameColumn_AscendingToDescending — kept for backwards-compat naming.
+        var getFilings = MockGetFilings(new FilingsPageResult([MakeDto()], 40, 2));
+        var vm = CreateVm(getFilings: getFilings);
+        using var _ = vm.Activator.Activate();
+
+        // Navigate to page 2 via TaxPayable (ascending)
+        vm.ApplySortCommand.Execute(("TaxPayable", null)).Subscribe();
+
+        // Same column second click: ascending → descending; page stays
+        var pageBefore = vm.CurrentPage;
+        vm.ApplySortCommand.Execute(("TaxPayable", null)).Subscribe();
+
+        vm.SortDescending.Should().BeTrue();
+        vm.SortColumn.Should().Be(FilingSortColumn.TaxPayable);
+        vm.CurrentPage.Should().Be(pageBefore);
+    }
+
+    [Fact]
+    public void ApplySortCommand_SameColumn_ThirdClick_ClearsSortToUnsorted()
+    {
+        var getFilings = MockGetFilings(new FilingsPageResult([MakeDto()], 10, 1));
+        var vm = CreateVm(getFilings: getFilings);
+        using var _ = vm.Activator.Activate();
+
+        // 1st click: different column → ascending
+        vm.ApplySortCommand.Execute(("IncomeType", null)).Subscribe();
+        vm.SortColumn.Should().Be(FilingSortColumn.IncomeType);
+        vm.SortDescending.Should().BeFalse();
+
+        // 2nd click: same column, ascending → descending
+        vm.ApplySortCommand.Execute(("IncomeType", null)).Subscribe();
+        vm.SortDescending.Should().BeTrue();
+
+        // 3rd click: same column, descending → null (unsorted)
+        vm.ApplySortCommand.Execute(("IncomeType", null)).Subscribe();
+
+        vm.SortColumn.Should().BeNull("third click on the same column clears the sort");
+        vm.SortDescending.Should().BeFalse();
+    }
+
+    [Fact]
+    public void ApplySortCommand_UnsortedColumn_FirstClick_SetsAscending()
+    {
+        var getFilings = MockGetFilings(new FilingsPageResult([MakeDto()], 10, 1));
+        var vm = CreateVm(getFilings: getFilings);
+        using var _ = vm.Activator.Activate();
+
+        // Get to null (unsorted) by clicking FilingDeadline three times
+        // (FilingDeadline DESC → null → ascending → descending → null)
+        // Simpler: descending then null in two clicks from initial DESC state.
+        vm.ApplySortCommand.Execute(("FilingDeadline", null)).Subscribe(); // DESC → null
+        vm.SortColumn.Should().BeNull();
+
+        // Now in null state: click TaxPayable → ascending on TaxPayable
+        vm.ApplySortCommand.Execute(("TaxPayable", null)).Subscribe();
+
+        vm.SortColumn.Should().Be(FilingSortColumn.TaxPayable);
+        vm.SortDescending.Should().BeFalse("first click from unsorted sets ascending");
+    }
+
+    [Fact]
+    public void ApplySortCommand_DifferentColumn_ResetsToAscendingOnNewColumn()
     {
         var getFilings = MockGetFilings(new FilingsPageResult([MakeDto()], 40, 2));
         var vm = CreateVm(getFilings: getFilings);
         using var _ = vm.Activator.Activate();
 
-        // Initial state: FilingDeadline DESC, page 1
-        // Simulate being on page 2 by updating getFilings to return page 2 state
-        getFilings.HandleAsync(Arg.Any<GetFilingsQuery>(), Arg.Any<CancellationToken>())
-            .Returns(Result<FilingsPageResult, Error>.Success(
-                new FilingsPageResult([MakeDto()], 40, 2)));
+        // Navigate to page 2 via NextPage
+        vm.NextPageCommand.Execute().Subscribe();
+        vm.CurrentPage.Should().Be(2);
 
-        // Execute ApplySortCommand with the same column (FilingDeadline)
-        vm.ApplySortCommand.Execute(("FilingDeadline", true)).Subscribe();
+        // Click IncomeType (different from current FilingDeadline)
+        vm.ApplySortCommand.Execute(("IncomeType", null)).Subscribe();
 
-        // Direction should be toggled to ascending
-        vm.SortDescending.Should().BeFalse();
-        vm.SortColumn.Should().Be(FilingSortColumn.FilingDeadline);
-
-        // Query sent after toggle should use the new direction
-        getFilings.Received().HandleAsync(
-            Arg.Is<GetFilingsQuery>(q =>
-                q.SortColumn == FilingSortColumn.FilingDeadline &&
-                q.SortDescending == false),
-            Arg.Any<CancellationToken>());
+        vm.SortColumn.Should().Be(FilingSortColumn.IncomeType, "arrow should move to new column");
+        vm.SortDescending.Should().BeFalse("clicking a new column always starts ascending");
+        vm.CurrentPage.Should().Be(1, "changing column resets pagination to page 1");
     }
 
     [Fact]
@@ -329,7 +405,7 @@ public class FilingsViewModelTests
         vm.NextPageCommand.Execute().Subscribe();
         vm.CurrentPage.Should().Be(2);
 
-        // Toggle same column — page should stay at 2
+        // Toggle same column — page should stay at 2 (regardless of direction change)
         vm.ApplySortCommand.Execute(("FilingDeadline", true)).Subscribe();
 
         vm.CurrentPage.Should().Be(2);

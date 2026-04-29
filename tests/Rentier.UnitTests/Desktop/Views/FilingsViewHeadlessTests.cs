@@ -510,6 +510,98 @@ public class FilingsViewHeadlessTests
         window.Close();
     }
 
+    // ── 046: Sort arrow headers and toolbar cleanup tests (T005, T010, T012) ─
+
+    /// <summary>T005 — Sortable column headers contain a PathIcon for the sort arrow.</summary>
+    [AvaloniaFact]
+    public void FilingsView_SortableColumnHeaders_ContainArrowPathIcon()
+    {
+        // Arrange
+        var vm = CreateMinimalFilingsViewModel();
+        var view = new FilingsView { DataContext = vm };
+        var window = new Window { Content = view, Width = 800, Height = 600 };
+        window.Show();
+
+        using var activation = vm.Activator.Activate();
+        window.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
+
+        // Act — access the DataGrid and inspect column header objects.
+        var dataGrid = window.GetVisualDescendants().OfType<DataGrid>().First();
+
+        // Columns 2-5: IncomeType, PayingEntity, FilingDeadline, TaxPayable
+        var sortableIndices = new[] { 2, 3, 4, 5 };
+        foreach (var idx in sortableIndices)
+        {
+            var header = dataGrid.Columns[idx].Header;
+            header.Should().BeOfType<StackPanel>(
+                $"sortable column {idx} header must be a StackPanel");
+            var sp = (StackPanel)header;
+            sp.Children.OfType<PathIcon>().Should().ContainSingle(
+                $"sortable column {idx} header must contain exactly one PathIcon for the sort arrow");
+        }
+
+        window.Close();
+    }
+
+    /// <summary>T010 — Toolbar contains no RadioButton filter toggles (US2 removal).</summary>
+    [AvaloniaFact]
+    public void FilingsView_WhenRendered_RadioButtonsNotPresent()
+    {
+        // Arrange
+        var vm = CreateMinimalFilingsViewModel();
+        var view = new FilingsView { DataContext = vm };
+        var window = new Window { Content = view, Width = 800, Height = 600 };
+        window.Show();
+
+        window.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
+
+        // Assert — Unpaid/All radio buttons removed from toolbar (FR-007)
+        var radioButtons = window.GetVisualDescendants().OfType<RadioButton>().ToList();
+        radioButtons.Should().BeEmpty(
+            "the Unpaid/All filter RadioButton controls must be removed from the toolbar (feature 046, FR-007)");
+
+        window.Close();
+    }
+
+    /// <summary>T012 — Non-sortable column headers (checkbox, status, payment ref, actions) contain no PathIcon.</summary>
+    [AvaloniaFact]
+    public void FilingsView_NonSortableColumns_DoNotHaveArrowIcons()
+    {
+        // Arrange
+        var vm = CreateMinimalFilingsViewModel();
+        var view = new FilingsView { DataContext = vm };
+        var window = new Window { Content = view, Width = 800, Height = 600 };
+        window.Show();
+
+        using var activation = vm.Activator.Activate();
+        window.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
+
+        var dataGrid = window.GetVisualDescendants().OfType<DataGrid>().First();
+
+        // Columns 0=checkbox, 1=status, 6=paymentRef, 7=actions — non-sortable
+        var nonSortableIndices = new[] { 0, 1, 6, 7 };
+        foreach (var idx in nonSortableIndices)
+        {
+            var header = dataGrid.Columns[idx].Header;
+            if (header is StackPanel sp)
+            {
+                sp.Children.OfType<PathIcon>().Should().BeEmpty(
+                    $"non-sortable column {idx} header must not contain a PathIcon sort arrow");
+            }
+            else
+            {
+                // header is a string, Grid, or null — no PathIcon possible
+                header.Should().NotBeOfType<StackPanel>(
+                    $"non-sortable column {idx} should not use a sort-arrow StackPanel header");
+            }
+        }
+
+        window.Close();
+    }
+
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
