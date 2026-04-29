@@ -3,7 +3,6 @@ using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
-using Rentier.Application.Enums;
 using Rentier.Application.Handlers;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
@@ -333,7 +332,7 @@ public class GetReportsQueryHandlerTests
         _filingRepo.GetFilingCountByReportIdAsync(r2.Id, Arg.Any<CancellationToken>()).Returns(7);
         _filingRepo.GetEarliestIncomeDateByReportIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((DateOnly?)null);
 
-        var filter = new ReportColumnFilter(FilingCountValue: 5, FilingCountOperator: ComparisonOperator.GreaterThan);
+        var filter = new ReportColumnFilter(FilingCountValue: 7);
         var result = await _sut.HandleAsync(new GetReportsQuery(Filter: filter));
 
         result.IsSuccess.Should().BeTrue();

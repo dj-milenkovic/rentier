@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Rentier.Application.DTOs;
-using Rentier.Application.Enums;
 using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
@@ -113,17 +112,21 @@ public sealed class ReportRepository : IReportRepository
             if (!string.IsNullOrWhiteSpace(filter.NameContains))
                 query = query.Where(r => r.ReportName.Contains(filter.NameContains));
 
-            if (filter.ImportDateValue.HasValue)
-                query = ApplyImportDateFilter(query, filter.ImportDateOperator, filter.ImportDateValue.Value);
-
-            if (filter.EmailDateValue.HasValue)
+            if (!string.IsNullOrWhiteSpace(filter.ImportDateContains))
             {
-                query = query.Where(r => r.EmailDate != null);
-                query = ApplyEmailDateFilter(query, filter.EmailDateOperator, filter.EmailDateValue.Value);
+                var term = filter.ImportDateContains;
+                query = query.Where(r => EF.Functions.Like(r.ImportDate.ToString(), $"%{term}%"));
             }
 
-            if (filter.StatusFilter.HasValue)
-                query = query.Where(r => r.Status == filter.StatusFilter.Value);
+            if (!string.IsNullOrWhiteSpace(filter.EmailDateContains))
+            {
+                var term = filter.EmailDateContains;
+                query = query.Where(r => r.EmailDate != null &&
+                    EF.Functions.Like(r.EmailDate.Value.ToString(), $"%{term}%"));
+            }
+
+            if (filter.StatusFilters is { Count: > 0 })
+                query = query.Where(r => filter.StatusFilters.Contains(r.Status));
 
             if (filter.ImporterIds is { Count: > 0 })
                 query = query.Where(r => filter.ImporterIds.Contains(r.ImporterId));
@@ -142,23 +145,4 @@ public sealed class ReportRepository : IReportRepository
         return (items.AsReadOnly(), totalCount);
     }
 
-    private static IQueryable<Report> ApplyImportDateFilter(
-        IQueryable<Report> query,
-        ComparisonOperator op,
-        DateOnly value) => op switch
-    {
-        ComparisonOperator.GreaterThan => query.Where(r => r.ImportDate > value),
-        ComparisonOperator.LessThan    => query.Where(r => r.ImportDate < value),
-        _                              => query.Where(r => r.ImportDate == value),
-    };
-
-    private static IQueryable<Report> ApplyEmailDateFilter(
-        IQueryable<Report> query,
-        ComparisonOperator op,
-        DateOnly value) => op switch
-    {
-        ComparisonOperator.GreaterThan => query.Where(r => r.EmailDate > value),
-        ComparisonOperator.LessThan    => query.Where(r => r.EmailDate < value),
-        _                              => query.Where(r => r.EmailDate == value),
-    };
 }
