@@ -3,10 +3,10 @@ using Rentier.Domain.Enums;
 namespace Rentier.Application.Commands;
 
 public sealed record CalculateManualFilingCommand(
-    Guid       TaxpayerProfileId,
+    Guid TaxpayerProfileId,
     IncomeType IncomeType,
-    string     Ticker,
-    DateOnly   IncomeDate,
-    string     Currency,
-    decimal    GrossAmount,
-    decimal?   NetReceived);
+    string Ticker,
+    DateOnly IncomeDate,
+    string Currency,
+    decimal GrossAmount,
+    decimal? NetReceived);
