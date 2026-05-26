@@ -42,7 +42,7 @@
 
   <PropertyGroup>
     <!-- Enable cross-platform restore for Avalonia runtime assets. -->
-    <RuntimeIdentifiers>win-x64;linux-x64;osx-x64</RuntimeIdentifiers>
+    <RuntimeIdentifiers>win-x64;linux-x64;osx-x64;osx-arm64</RuntimeIdentifiers>
   </PropertyGroup>
 
   <ItemGroup>
