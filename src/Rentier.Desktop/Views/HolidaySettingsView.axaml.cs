@@ -1,4 +1,4 @@
-﻿using Avalonia.ReactiveUI;
+using Avalonia.ReactiveUI;
 using ReactiveUI;
 using Rentier.Desktop.ViewModels;
 

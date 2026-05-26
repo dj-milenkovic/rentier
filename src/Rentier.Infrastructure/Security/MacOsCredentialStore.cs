@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Runtime.Versioning;
 using Rentier.Application.Common;
 using Rentier.Application.Interfaces;

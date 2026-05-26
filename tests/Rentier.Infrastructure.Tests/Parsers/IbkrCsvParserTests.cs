@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using FluentAssertions;
 using Rentier.Application.Parsing;
 using Rentier.Infrastructure.Parsing;

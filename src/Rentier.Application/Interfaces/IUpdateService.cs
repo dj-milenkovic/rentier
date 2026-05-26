@@ -1,4 +1,4 @@
-﻿using Rentier.Application.DTOs;
+using Rentier.Application.DTOs;
 
 namespace Rentier.Application.Interfaces;
 

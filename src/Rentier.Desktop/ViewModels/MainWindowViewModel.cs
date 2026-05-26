@@ -1,4 +1,4 @@
-﻿using Avalonia.Media;
+using Avalonia.Media;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reactive.Concurrency;
 using System.Reactive.Disposables;

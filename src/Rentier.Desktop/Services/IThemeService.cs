@@ -1,4 +1,4 @@
-﻿namespace Rentier.Desktop.Services;
+namespace Rentier.Desktop.Services;
 
 public enum ThemePreference { System, Light, Dark }
 

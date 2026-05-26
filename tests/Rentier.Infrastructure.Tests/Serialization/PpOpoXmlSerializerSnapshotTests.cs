@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 using Rentier.Infrastructure.Serialization;

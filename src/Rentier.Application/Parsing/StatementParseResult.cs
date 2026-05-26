@@ -1,4 +1,4 @@
-﻿namespace Rentier.Application.Parsing;
+namespace Rentier.Application.Parsing;
 
 public sealed record StatementParseResult(
     IReadOnlyList<DividendRecord> Dividends,

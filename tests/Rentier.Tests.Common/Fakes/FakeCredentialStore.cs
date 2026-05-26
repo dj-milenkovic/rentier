@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using Rentier.Application.Common;
 using Rentier.Application.Interfaces;
 

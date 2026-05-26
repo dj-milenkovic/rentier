@@ -1,4 +1,4 @@
-﻿namespace Rentier.Infrastructure.Security;
+namespace Rentier.Infrastructure.Security;
 
 /// <summary>
 /// Identifies the active credential store provider selected at startup.

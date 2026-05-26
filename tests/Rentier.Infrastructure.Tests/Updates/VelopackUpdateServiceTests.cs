@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using Rentier.Application.DTOs;
 using Rentier.Infrastructure.Updates;
 using Xunit;

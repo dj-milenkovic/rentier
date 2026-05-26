@@ -1,4 +1,4 @@
-﻿namespace Rentier.Application.DTOs;
+namespace Rentier.Application.DTOs;
 
 /// <summary>Paged result returned by GetReportsQueryHandler.</summary>
 public sealed record ReportsPageResult(

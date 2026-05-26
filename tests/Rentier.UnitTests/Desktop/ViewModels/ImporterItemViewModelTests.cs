@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using Rentier.Application.DTOs;
 using Rentier.Desktop.ViewModels;
 using Rentier.Domain.Enums;

@@ -1,4 +1,4 @@
-﻿using Rentier.Infrastructure.Parsing;
+using Rentier.Infrastructure.Parsing;
 
 namespace Rentier.Infrastructure.Tests.Serialization;
 

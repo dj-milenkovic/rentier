@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using Rentier.Desktop.Resources;
 using Rentier.Desktop.Services;
 using Xunit;

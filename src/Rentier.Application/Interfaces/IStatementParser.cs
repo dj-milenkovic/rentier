@@ -1,4 +1,4 @@
-﻿using Rentier.Application.Common;
+using Rentier.Application.Common;
 using Rentier.Application.Parsing;
 
 namespace Rentier.Application.Interfaces;

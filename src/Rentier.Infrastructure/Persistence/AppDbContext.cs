@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Rentier.Domain.Entities;
 using Rentier.Domain.ValueObjects;
 using Rentier.Infrastructure.Persistence.Configurations;

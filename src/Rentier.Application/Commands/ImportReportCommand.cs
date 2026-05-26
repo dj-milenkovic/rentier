@@ -1,4 +1,4 @@
-﻿namespace Rentier.Application.Commands;
+namespace Rentier.Application.Commands;
 
 /// <summary>
 /// Imports a CSV brokerage statement manually.

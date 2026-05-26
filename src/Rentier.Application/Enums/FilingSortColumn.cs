@@ -1,4 +1,4 @@
-﻿namespace Rentier.Application.Enums;
+namespace Rentier.Application.Enums;
 
 /// <summary>
 /// Identifies the column by which filings should be sorted in GetFilingsQuery.

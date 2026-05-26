@@ -1,4 +1,4 @@
-﻿namespace Rentier.Domain.ValueObjects;
+namespace Rentier.Domain.ValueObjects;
 
 /// <summary>
 /// Discriminated union representing the last-synced position in a mailbox.

@@ -1,4 +1,4 @@
-﻿namespace Rentier.Application.Commands;
+namespace Rentier.Application.Commands;
 
 public sealed record AddMailboxCommand(
     string Host,

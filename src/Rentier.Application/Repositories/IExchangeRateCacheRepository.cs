@@ -1,4 +1,4 @@
-﻿using Rentier.Domain.ValueObjects;
+using Rentier.Domain.ValueObjects;
 
 namespace Rentier.Application.Repositories;
 

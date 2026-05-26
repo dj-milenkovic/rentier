@@ -1,4 +1,4 @@
-﻿namespace Rentier.Application.Interfaces;
+namespace Rentier.Application.Interfaces;
 
 /// <summary>
 /// Execute a command that mutates domain state.

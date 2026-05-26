@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Rentier.Application.Enums;
 using Rentier.Application.Queries;
 using Rentier.Application.Repositories;

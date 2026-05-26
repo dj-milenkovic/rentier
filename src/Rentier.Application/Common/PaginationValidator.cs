@@ -1,4 +1,4 @@
-﻿using Rentier.Application.Queries;
+using Rentier.Application.Queries;
 
 namespace Rentier.Application.Common;
 

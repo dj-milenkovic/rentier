@@ -1,4 +1,4 @@
-﻿namespace Rentier.Infrastructure.Updates;
+namespace Rentier.Infrastructure.Updates;
 
 /// <summary>
 /// Internal abstraction over Velopack's UpdateManager.

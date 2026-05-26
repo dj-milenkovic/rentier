@@ -1,4 +1,4 @@
-﻿namespace Rentier.Application.Interfaces;
+namespace Rentier.Application.Interfaces;
 
 /// <summary>
 /// Contract for initializing the database (applying migrations, creating schema).

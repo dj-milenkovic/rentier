@@ -1,4 +1,4 @@
-﻿using System.Reactive.Linq;
+using System.Reactive.Linq;
 using ReactiveUI;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;

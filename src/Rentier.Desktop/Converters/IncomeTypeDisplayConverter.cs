@@ -1,4 +1,4 @@
-﻿using Avalonia.Data.Converters;
+using Avalonia.Data.Converters;
 using Rentier.Desktop.Extensions;
 using Rentier.Domain.Enums;
 

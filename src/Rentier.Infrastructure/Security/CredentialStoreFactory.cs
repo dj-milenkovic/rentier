@@ -1,4 +1,4 @@
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 using DBus.Services.Secrets;
 using Rentier.Application.Common;
 using Rentier.Application.Interfaces;

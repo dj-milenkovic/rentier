@@ -1,4 +1,4 @@
-﻿using Xunit;
+using Xunit;
 using FluentAssertions;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;

@@ -1,4 +1,4 @@
-﻿namespace Rentier.Desktop.Resources;
+namespace Rentier.Desktop.Resources;
 
 /// <summary>
 /// Serbian (Latin) translations for all strings in the application.

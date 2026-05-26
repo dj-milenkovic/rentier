@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using Avalonia.Data;
 using FluentAssertions;
 using Rentier.Desktop.Converters;

@@ -1,4 +1,4 @@
-﻿using Rentier.Application.Commands;
+using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Repositories;

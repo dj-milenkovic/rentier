@@ -1,4 +1,4 @@
-﻿namespace Rentier.Application.Common;
+namespace Rentier.Application.Common;
 
 /// <summary>
 /// Centralized registry of all error code constants used by CQRS handlers.

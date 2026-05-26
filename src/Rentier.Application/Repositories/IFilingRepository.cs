@@ -1,4 +1,4 @@
-﻿using Rentier.Application.Enums;
+using Rentier.Application.Enums;
 using Rentier.Application.Queries;
 using Rentier.Domain.Entities;
 
