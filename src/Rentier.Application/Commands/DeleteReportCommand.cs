@@ -1,4 +1,4 @@
-namespace Rentier.Application.Commands;
+﻿namespace Rentier.Application.Commands;
 
 /// <summary>
 /// Deletes a Report and all linked Filings.

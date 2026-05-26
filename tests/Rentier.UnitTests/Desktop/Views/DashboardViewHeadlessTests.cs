@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Reactive.Concurrency;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;

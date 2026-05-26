@@ -1,4 +1,4 @@
-namespace Rentier.Domain.Enums;
+﻿namespace Rentier.Domain.Enums;
 
 /// <summary>
 /// Controls how the IMAP query start position is determined for a sync run.

@@ -1,4 +1,4 @@
-namespace Rentier.Application.Interfaces;
+﻿namespace Rentier.Application.Interfaces;
 
 /// <summary>
 /// Execute a read-only query. Returns structured result; never throws for empty-result cases.

@@ -1,4 +1,4 @@
-using Rentier.Domain.Exceptions;
+﻿using Rentier.Domain.Exceptions;
 using Rentier.Domain.ValueObjects;
 
 namespace Rentier.Domain.Entities;

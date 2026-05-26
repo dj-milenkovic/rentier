@@ -1,4 +1,4 @@
-namespace Rentier.Application.Enums;
+﻿namespace Rentier.Application.Enums;
 
 /// <summary>Comparison operator for date and numeric column filters.</summary>
 public enum ComparisonOperator

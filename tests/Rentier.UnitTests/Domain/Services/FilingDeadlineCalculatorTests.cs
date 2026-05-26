@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using Rentier.Domain.Exceptions;
 using Rentier.Domain.Services;
 using Rentier.Domain.ValueObjects;

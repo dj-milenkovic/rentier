@@ -1,3 +1,3 @@
-namespace Rentier.Application.Parsing;
+﻿namespace Rentier.Application.Parsing;
 
 public enum InterestType { Credit, Debit }

@@ -1,4 +1,4 @@
-namespace Rentier.Application.DTOs;
+﻿namespace Rentier.Application.DTOs;
 
 /// <summary>
 /// Result of an update availability check.

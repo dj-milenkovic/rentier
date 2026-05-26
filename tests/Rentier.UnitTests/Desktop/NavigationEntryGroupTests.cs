@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using Rentier.Desktop.ViewModels;
 using Xunit;
 

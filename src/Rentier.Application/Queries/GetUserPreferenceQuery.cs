@@ -1,3 +1,3 @@
-namespace Rentier.Application.Queries;
+﻿namespace Rentier.Application.Queries;
 
 public sealed record GetUserPreferenceQuery(string Key);

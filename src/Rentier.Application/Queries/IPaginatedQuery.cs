@@ -1,4 +1,4 @@
-namespace Rentier.Application.Queries;
+﻿namespace Rentier.Application.Queries;
 
 /// <summary>
 /// Contract for queries that support pagination.

@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Rentier.Application.Repositories;
 using Rentier.Domain.ValueObjects;
 using Rentier.Infrastructure.Persistence;

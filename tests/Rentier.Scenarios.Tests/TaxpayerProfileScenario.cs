@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using Rentier.Application.Commands;
 using Rentier.Application.Handlers;
 using Rentier.Application.Queries;

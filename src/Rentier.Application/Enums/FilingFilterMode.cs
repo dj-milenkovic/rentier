@@ -1,4 +1,4 @@
-namespace Rentier.Application.Enums;
+﻿namespace Rentier.Application.Enums;
 
 /// <summary>Filter mode for paged filing queries.</summary>
 public enum FilingFilterMode

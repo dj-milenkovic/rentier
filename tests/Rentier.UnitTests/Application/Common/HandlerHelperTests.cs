@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using Rentier.Application.Common;
 using Rentier.Domain.Exceptions;
 using Xunit;

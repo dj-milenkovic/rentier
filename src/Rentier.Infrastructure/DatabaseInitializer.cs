@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Rentier.Application.Interfaces;
 using Rentier.Infrastructure.Persistence;
 

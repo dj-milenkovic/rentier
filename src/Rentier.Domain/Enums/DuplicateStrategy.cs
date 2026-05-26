@@ -1,4 +1,4 @@
-namespace Rentier.Domain.Enums;
+﻿namespace Rentier.Domain.Enums;
 
 /// <summary>
 /// Determines what happens when a replay run encounters a report that already exists in the database.

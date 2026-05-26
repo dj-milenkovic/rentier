@@ -1,4 +1,4 @@
-namespace Rentier.Application.Common;
+﻿namespace Rentier.Application.Common;
 
 /// <summary>
 /// Single source of truth for credential key format.

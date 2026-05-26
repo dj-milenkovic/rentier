@@ -1,4 +1,4 @@
-using Rentier.Application.Enums;
+﻿using Rentier.Application.Enums;
 
 namespace Rentier.Application.Queries;
 

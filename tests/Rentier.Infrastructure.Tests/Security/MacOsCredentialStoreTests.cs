@@ -1,4 +1,4 @@
-using System.Runtime.Versioning;
+﻿using System.Runtime.Versioning;
 using FluentAssertions;
 using Rentier.Infrastructure.Security;
 using Xunit;

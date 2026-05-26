@@ -1,4 +1,4 @@
-namespace Rentier.Application.DTOs;
+﻿namespace Rentier.Application.DTOs;
 
 public sealed record TaxpayerProfileDto(
     Guid Id,

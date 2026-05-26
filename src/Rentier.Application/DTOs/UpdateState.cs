@@ -1,4 +1,4 @@
-namespace Rentier.Application.DTOs;
+﻿namespace Rentier.Application.DTOs;
 
 /// <summary>
 /// Represents the current state of the auto-update workflow.

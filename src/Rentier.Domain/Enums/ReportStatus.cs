@@ -1,4 +1,4 @@
-namespace Rentier.Domain.Enums;
+﻿namespace Rentier.Domain.Enums;
 
 public enum ReportStatus
 {

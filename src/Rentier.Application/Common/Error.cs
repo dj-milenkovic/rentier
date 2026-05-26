@@ -1,4 +1,4 @@
-namespace Rentier.Application.Common;
+﻿namespace Rentier.Application.Common;
 
 public sealed record Error(string Code, string Message)
 {

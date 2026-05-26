@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using NSubstitute;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;

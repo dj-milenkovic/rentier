@@ -1,4 +1,4 @@
-namespace Rentier.Application.DTOs;
+﻿namespace Rentier.Application.DTOs;
 
 /// <summary>
 /// Carries download progress information for an in-progress update download.

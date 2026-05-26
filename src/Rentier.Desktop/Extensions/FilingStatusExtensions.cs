@@ -1,4 +1,4 @@
-using Rentier.Desktop.Resources;
+﻿using Rentier.Desktop.Resources;
 using Rentier.Domain.Enums;
 
 namespace Rentier.Desktop.Extensions;

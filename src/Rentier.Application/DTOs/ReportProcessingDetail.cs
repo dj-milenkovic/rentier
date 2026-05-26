@@ -1,4 +1,4 @@
-namespace Rentier.Application.DTOs;
+﻿namespace Rentier.Application.DTOs;
 
 /// <summary>
 /// Per-report outcome emitted during sync report processing.

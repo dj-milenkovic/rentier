@@ -1,4 +1,4 @@
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using FluentAssertions;
 using Rentier.Application.Common;
 using Rentier.Infrastructure.Security;
