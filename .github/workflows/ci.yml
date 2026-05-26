@@ -86,36 +86,13 @@ jobs:
 
       # ── Build ────────────────────────────────
       - name: Restore (all projects)
-        if: matrix.is-windows
-        run: dotnet restore Rentier.slnx
-
-      - name: Restore (exclude E2E)
-        if: "!matrix.is-windows"
         run: dotnet restore Rentier.slnx
 
       - name: Build (all projects)
-        if: matrix.is-windows
         run: dotnet build Rentier.slnx --no-restore -c Release
 
-      - name: Build (exclude E2E — non-Windows)
-        if: "!matrix.is-windows"
-        shell: bash
-        run: |
-          for proj in \
-            src/Rentier.Domain/Rentier.Domain.csproj \
-            src/Rentier.Application/Rentier.Application.csproj \
-            src/Rentier.Infrastructure/Rentier.Infrastructure.csproj \
-            src/Rentier.Desktop/Rentier.Desktop.csproj \
-            tests/Rentier.Tests.Common/Rentier.Tests.Common.csproj \
-            tests/Rentier.UnitTests/Rentier.UnitTests.csproj \
-            tests/Rentier.Infrastructure.Tests/Rentier.Infrastructure.Tests.csproj \
-            tests/Rentier.Scenarios.Tests/Rentier.Scenarios.Tests.csproj; do
-            dotnet build "$proj" --no-restore -c Release
-          done
-
       # ── Test ─────────────────────────────────
-      - name: Test (all — Windows)
-        if: matrix.is-windows
+      - name: Test         
         run: >
           dotnet test Rentier.slnx --no-build -c Release
           --filter "Category!=Integration"
@@ -123,23 +100,7 @@ jobs:
           --results-directory ./coverage
           --logger "trx;LogFileName=results-${{ matrix.os }}.trx"
           --logger "console;verbosity=normal"
-
-      - name: Test (exclude E2E — non-Windows)
-        if: "!matrix.is-windows"
-        shell: bash
-        run: |
-          for proj in \
-            tests/Rentier.UnitTests/Rentier.UnitTests.csproj \
-            tests/Rentier.Infrastructure.Tests/Rentier.Infrastructure.Tests.csproj \
-            tests/Rentier.Scenarios.Tests/Rentier.Scenarios.Tests.csproj; do
-            dotnet test "$proj" --no-build -c Release \
-              --filter "Category!=Integration" \
-              --collect:"XPlat Code Coverage" \
-              --results-directory ./coverage \
-              --logger "trx;LogFileName=$(basename "$proj" .csproj)-${{ matrix.os }}.trx" \
-              --logger "console;verbosity=normal"
-          done
-
+     
       # ── Artifacts ────────────────────────────
       - name: Upload coverage
         if: always()
