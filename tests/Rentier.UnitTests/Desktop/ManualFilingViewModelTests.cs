@@ -57,12 +57,12 @@ public class ManualFilingViewModelTests
 
     private static ManualFilingPreviewDto MakePreviewDto()
         => new ManualFilingPreviewDto(
-            GrossIncomeRsd:        10850.00m,
-            WhtPaidRsd:            1627.50m,
-            GrossTaxPayableRsd:    1627.50m,
-            TaxPayableRsd:         0.00m,
-            FilingDeadline:        new DateOnly(2024, 7, 17),
-            ExchangeRateValue:     108.50m,
+            GrossIncomeRsd: 10850.00m,
+            WhtPaidRsd: 1627.50m,
+            GrossTaxPayableRsd: 1627.50m,
+            TaxPayableRsd: 0.00m,
+            FilingDeadline: new DateOnly(2024, 7, 17),
+            ExchangeRateValue: 108.50m,
             ExchangeRateSourceDate: TestDate,
             ExchangeRateSourceType: ExchangeRateSourceType.Exact);
 
@@ -72,10 +72,10 @@ public class ManualFilingViewModelTests
         IQueryHandler<GetTaxpayerProfileQuery, Result<TaxpayerProfileDto?, Error>>? profileQueryHandler = null,
         Action? navigateBack = null)
         => new ManualFilingViewModel(
-            calcHandler         ?? MockCalculateHandler(),
-            createHandler       ?? MockCreateHandler(),
+            calcHandler ?? MockCalculateHandler(),
+            createHandler ?? MockCreateHandler(),
             profileQueryHandler ?? MockProfileQueryHandler(),
-            navigateBack        ?? (() => { }),
+            navigateBack ?? (() => { }),
             ImmediateScheduler.Instance);
 
     private static ManualFilingViewModel CreateFilledVm(
@@ -85,8 +85,8 @@ public class ManualFilingViewModelTests
         Action? navigateBack = null)
     {
         var vm = CreateVm(calcHandler, createHandler, profileQueryHandler, navigateBack);
-        vm.Ticker          = "AAPL";
-        vm.IncomeDate      = new DateTimeOffset(TestDate.ToDateTime(TimeOnly.MinValue));
+        vm.Ticker = "AAPL";
+        vm.IncomeDate = new DateTimeOffset(TestDate.ToDateTime(TimeOnly.MinValue));
         vm.GrossAmountText = "100.00";
         vm.NetReceivedText = "85.00";
         return vm;
@@ -118,7 +118,7 @@ public class ManualFilingViewModelTests
     [Fact]
     public void Constructor_InitialState_SaveCommandCannotExecute()
     {
-        var vm       = CreateVm();
+        var vm = CreateVm();
         bool canSave = false;
         vm.SaveCommand.CanExecute.Subscribe(x => canSave = x);
 
@@ -128,8 +128,8 @@ public class ManualFilingViewModelTests
     [Fact]
     public void Constructor_EmptyTicker_CalculateCommandCannotExecute()
     {
-        var vm         = CreateVm();
-        bool canCalc   = true;
+        var vm = CreateVm();
+        bool canCalc = true;
         vm.CalculateCommand.CanExecute.Subscribe(x => canCalc = x);
         // Ticker is empty by default
         canCalc.Should().BeFalse();
@@ -150,7 +150,7 @@ public class ManualFilingViewModelTests
     [Fact]
     public async Task CalculateCommand_Execute_EnablesSaveCommand()
     {
-        var vm       = CreateFilledVm();
+        var vm = CreateFilledVm();
         bool canSave = false;
 
         await vm.CalculateCommand.Execute();
@@ -163,7 +163,7 @@ public class ManualFilingViewModelTests
     public async Task CalculateCommand_Execute_PreviewHasAllFields()
     {
         var dto = MakePreviewDto();
-        var vm  = CreateFilledVm(calcHandler: MockCalculateHandler(dto));
+        var vm = CreateFilledVm(calcHandler: MockCalculateHandler(dto));
 
         await vm.CalculateCommand.Execute();
 
@@ -182,8 +182,8 @@ public class ManualFilingViewModelTests
     public async Task CalculateCommand_Execute_SetsIsLoadingDuringExecution()
     {
         var loadingStates = new List<bool>();
-        var tcs           = new TaskCompletionSource<Result<ManualFilingPreviewDto, Error>>();
-        var calcHandler   = Substitute.For<ICommandHandler<CalculateManualFilingCommand, Result<ManualFilingPreviewDto, Error>>>();
+        var tcs = new TaskCompletionSource<Result<ManualFilingPreviewDto, Error>>();
+        var calcHandler = Substitute.For<ICommandHandler<CalculateManualFilingCommand, Result<ManualFilingPreviewDto, Error>>>();
         calcHandler.HandleAsync(Arg.Any<CalculateManualFilingCommand>(), Arg.Any<CancellationToken>())
             .Returns(_ => tcs.Task);
 
@@ -221,7 +221,7 @@ public class ManualFilingViewModelTests
     public async Task SaveCommand_Execute_CallsNavigateBack()
     {
         var navigateCalled = false;
-        var vm             = CreateFilledVm(navigateBack: () => navigateCalled = true);
+        var vm = CreateFilledVm(navigateBack: () => navigateCalled = true);
 
         await vm.CalculateCommand.Execute();
         await vm.SaveCommand.Execute();
@@ -233,7 +233,7 @@ public class ManualFilingViewModelTests
     public async Task SaveCommand_Execute_CallsCreateHandler()
     {
         var createHandler = MockCreateHandler(success: true);
-        var vm            = CreateFilledVm(createHandler: createHandler);
+        var vm = CreateFilledVm(createHandler: createHandler);
 
         await vm.CalculateCommand.Execute();
         await vm.SaveCommand.Execute();
@@ -246,8 +246,8 @@ public class ManualFilingViewModelTests
     public async Task SaveCommand_DuplicateError_SetsErrorMessageAndNoNavigation()
     {
         var navigateCalled = false;
-        var createHandler  = MockCreateHandler(success: false);
-        var vm             = CreateFilledVm(
+        var createHandler = MockCreateHandler(success: false);
+        var vm = CreateFilledVm(
             createHandler: createHandler,
             navigateBack: () => navigateCalled = true);
 
@@ -332,7 +332,7 @@ public class ManualFilingViewModelTests
     [Fact]
     public async Task TickerChange_AfterCalculate_DisablesSaveCommand()
     {
-        var vm       = CreateFilledVm();
+        var vm = CreateFilledVm();
         bool canSave = false;
 
         await vm.CalculateCommand.Execute();
@@ -348,7 +348,7 @@ public class ManualFilingViewModelTests
     public async Task CancelCommand_Execute_InvokesNavigateBack()
     {
         var navigateCalled = false;
-        var vm             = CreateVm(navigateBack: () => navigateCalled = true);
+        var vm = CreateVm(navigateBack: () => navigateCalled = true);
 
         await vm.CancelCommand.Execute();
 
@@ -358,7 +358,7 @@ public class ManualFilingViewModelTests
     [Fact]
     public async Task CancelCommand_AlwaysEnabled_EvenWithEmptyForm()
     {
-        var vm     = CreateVm();
+        var vm = CreateVm();
         bool canRun = false;
         vm.CancelCommand.CanExecute.Subscribe(x => canRun = x);
 
@@ -369,7 +369,7 @@ public class ManualFilingViewModelTests
     public async Task CancelCommand_Execute_DoesNotCallCreateHandler()
     {
         var createHandler = MockCreateHandler();
-        var vm            = CreateVm(createHandler: createHandler);
+        var vm = CreateVm(createHandler: createHandler);
 
         await vm.CancelCommand.Execute();
 

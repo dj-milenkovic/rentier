@@ -9,22 +9,22 @@ namespace Rentier.Domain.ValueObjects;
 /// </summary>
 public sealed record FilingInfo
 {
-    public IncomeType IncomeType       { get; }
-    public string     PayingEntity     { get; }
-    public DateOnly   IncomeDate       { get; }
-    public decimal    GrossIncomeRsd   { get; }
-    public decimal    WhtPaidRsd       { get; }
-    public decimal    GrossTaxPayableRsd { get; }
-    public decimal    TaxPayableRsd    { get; }
+    public IncomeType IncomeType { get; }
+    public string PayingEntity { get; }
+    public DateOnly IncomeDate { get; }
+    public decimal GrossIncomeRsd { get; }
+    public decimal WhtPaidRsd { get; }
+    public decimal GrossTaxPayableRsd { get; }
+    public decimal TaxPayableRsd { get; }
 
     public FilingInfo(
         IncomeType incomeType,
-        string     payingEntity,
-        DateOnly   incomeDate,
-        decimal    grossIncomeRsd,
-        decimal    whtPaidRsd,
-        decimal    grossTaxPayableRsd,
-        decimal    taxPayableRsd)
+        string payingEntity,
+        DateOnly incomeDate,
+        decimal grossIncomeRsd,
+        decimal whtPaidRsd,
+        decimal grossTaxPayableRsd,
+        decimal taxPayableRsd)
     {
         if (string.IsNullOrWhiteSpace(payingEntity))
             throw new DomainException("PayingEntity must not be null or whitespace");
@@ -37,12 +37,12 @@ public sealed record FilingInfo
         if (taxPayableRsd < 0)
             throw new DomainException("TaxPayableRsd must not be negative");
 
-        IncomeType         = incomeType;
-        PayingEntity       = payingEntity;
-        IncomeDate         = incomeDate;
-        GrossIncomeRsd     = grossIncomeRsd;
-        WhtPaidRsd         = whtPaidRsd;
+        IncomeType = incomeType;
+        PayingEntity = payingEntity;
+        IncomeDate = incomeDate;
+        GrossIncomeRsd = grossIncomeRsd;
+        WhtPaidRsd = whtPaidRsd;
         GrossTaxPayableRsd = grossTaxPayableRsd;
-        TaxPayableRsd      = taxPayableRsd;
+        TaxPayableRsd = taxPayableRsd;
     }
 }

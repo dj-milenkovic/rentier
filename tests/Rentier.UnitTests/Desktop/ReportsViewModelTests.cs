@@ -77,12 +77,12 @@ public class ReportsViewModelTests
         Action<Guid>? navigateToFilings = null)
     {
         return new ReportsViewModel(
-            syncHandler      ?? MakeSyncHandler(),
-            getReports       ?? MakeGetReports(),
-            importHandler    ?? MakeImportHandler(),
-            deleteHandler    ?? MakeDeleteHandler(),
+            syncHandler ?? MakeSyncHandler(),
+            getReports ?? MakeGetReports(),
+            importHandler ?? MakeImportHandler(),
+            deleteHandler ?? MakeDeleteHandler(),
             MockBulkDeleteReports(),
-            confirmDelete    ?? ((_, _) => Task.FromResult(false)),
+            confirmDelete ?? ((_, _) => Task.FromResult(false)),
             showImportDialog ?? (() => Task.FromResult<(Guid, string, byte[])?>(null)),
             navigateToFilings ?? (_ => { }),
             ImmediateScheduler.Instance);
@@ -541,10 +541,10 @@ public class ReportsViewModelTests
     [Fact]
     public async Task SyncCommand_WhenSucceeds_NewRowsAppearInCollection()
     {
-        var firstPageRows  = new[] { MakeDto("report1.csv") };
+        var firstPageRows = new[] { MakeDto("report1.csv") };
         var secondPageRows = new[] { MakeDto("report1.csv"), MakeDto("report2.csv") };
 
-        var firstPage  = new ReportsPageResult(firstPageRows,  1, 1);
+        var firstPage = new ReportsPageResult(firstPageRows, 1, 1);
         var secondPage = new ReportsPageResult(secondPageRows, 2, 1);
 
         var getReports = Substitute.For<IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>>>();

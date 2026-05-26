@@ -10,15 +10,15 @@ namespace Rentier.Desktop.ViewModels;
 /// </summary>
 public sealed class ReportRowViewModel : ReactiveObject
 {
-    public Guid         Id           { get; }
-    public string       ReportName   { get; }
-    public DateOnly     ImportDate   { get; }
-    public DateOnly?    EmailDate    { get; }
-    public string       ImporterName { get; }
-    public ReportStatus Status       { get; }
-    public int          FilingCount  { get; }
+    public Guid Id { get; }
+    public string ReportName { get; }
+    public DateOnly ImportDate { get; }
+    public DateOnly? EmailDate { get; }
+    public string ImporterName { get; }
+    public ReportStatus Status { get; }
+    public int FilingCount { get; }
     /// <summary>Friendly display name: "&lt;ImporterName&gt; – &lt;EarliestIncomeDate&gt;" or import date fallback.</summary>
-    public string       DisplayName  { get; }
+    public string DisplayName { get; }
 
     private bool _isSelected;
     public bool IsSelected
@@ -35,14 +35,14 @@ public sealed class ReportRowViewModel : ReactiveObject
 
     private ReportRowViewModel(ReportRowDto dto)
     {
-        Id           = dto.Id;
-        ReportName   = dto.ReportName;
-        ImportDate   = dto.ImportDate;
-        EmailDate    = dto.EmailDate;
+        Id = dto.Id;
+        ReportName = dto.ReportName;
+        ImportDate = dto.ImportDate;
+        EmailDate = dto.EmailDate;
         ImporterName = dto.ImporterName;
-        Status       = dto.Status;
-        FilingCount  = dto.FilingCount;
-        DisplayName  = dto.DisplayName;
+        Status = dto.Status;
+        FilingCount = dto.FilingCount;
+        DisplayName = dto.DisplayName;
     }
 
     /// <summary>Creates a ReportRowViewModel from a ReportRowDto.</summary>

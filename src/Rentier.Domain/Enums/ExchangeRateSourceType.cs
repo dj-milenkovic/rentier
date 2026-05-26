@@ -1,4 +1,4 @@
-﻿namespace Rentier.Domain.Enums;
+namespace Rentier.Domain.Enums;
 
 /// <summary>Indicates whether the exchange rate used was from the exact income date or a fallback business day.</summary>
 public enum ExchangeRateSourceType

@@ -1,4 +1,4 @@
-﻿using Rentier.Application.Commands;
+using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Repositories;
@@ -50,7 +50,7 @@ public sealed class EnsureHolidaysSeededCommandHandler
             seededHolidays.Add(PublicHoliday.Create(new DateOnly(year, 4, 12), "Easter Day"));
             seededHolidays.Add(PublicHoliday.Create(new DateOnly(year, 4, 13), "Easter Monday"));
             seededHolidays.Add(PublicHoliday.Create(new DateOnly(year, 5, 1), "Labor holiday"));
-            seededHolidays.Add(PublicHoliday.Create(new DateOnly(year, 5, 2), "Labor Day Holiday"));            
+            seededHolidays.Add(PublicHoliday.Create(new DateOnly(year, 5, 2), "Labor Day Holiday"));
             seededHolidays.Add(PublicHoliday.Create(new DateOnly(year, 11, 11), "Armistice Day"));
         }
 

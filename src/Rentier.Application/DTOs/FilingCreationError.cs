@@ -1,4 +1,4 @@
-﻿namespace Rentier.Application.DTOs;
+namespace Rentier.Application.DTOs;
 
 /// <summary>Structured per-event error recorded when a filing could not be created for an income event.</summary>
 public sealed record FilingCreationError(

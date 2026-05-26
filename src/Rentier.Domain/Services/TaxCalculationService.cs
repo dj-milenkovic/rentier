@@ -38,7 +38,7 @@ public static class TaxCalculationService
             throw new DomainException("Rate provider must not be null");
 
         var upperIncome = incomeCurrency.ToUpperInvariant();
-        var upperWht    = whtCurrency.ToUpperInvariant();
+        var upperWht = whtCurrency.ToUpperInvariant();
 
         if (whtAmount > 0 && upperWht != upperIncome)
             throw new DomainException("WHT currency must match income currency");
@@ -61,7 +61,7 @@ public static class TaxCalculationService
         }
 
         var grossTaxPayableRsd = Round(grossIncomeRsd * TaxRate);
-        var taxPayableRsd      = Math.Max(grossTaxPayableRsd - whtPaidRsd, 0m);
+        var taxPayableRsd = Math.Max(grossTaxPayableRsd - whtPaidRsd, 0m);
 
         return new FilingInfo(
             incomeType,

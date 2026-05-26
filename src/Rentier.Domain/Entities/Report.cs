@@ -56,9 +56,9 @@ public sealed class Report
     {
         var isValid = (Status, status) switch
         {
-            (ReportStatus.Init, ReportStatus.Processed)    => true,
+            (ReportStatus.Init, ReportStatus.Processed) => true,
             (ReportStatus.Init, ReportStatus.PartialError) => true,
-            (ReportStatus.Init, ReportStatus.Error)        => true,
+            (ReportStatus.Init, ReportStatus.Error) => true,
             _ => false
         };
 

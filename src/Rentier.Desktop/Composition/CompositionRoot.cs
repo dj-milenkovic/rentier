@@ -141,36 +141,36 @@ public static class CompositionRoot
         services.AddTransient<Func<ExportFilingResult, Task>>(provider =>
             async (ExportFilingResult result) =>
             {
-            var lifetime = Avalonia.Application.Current?.ApplicationLifetime
-                as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime;
-            var topLevel = Avalonia.Controls.TopLevel.GetTopLevel(lifetime?.MainWindow);
-            if (topLevel is null) return;
+                var lifetime = Avalonia.Application.Current?.ApplicationLifetime
+                    as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime;
+                var topLevel = Avalonia.Controls.TopLevel.GetTopLevel(lifetime?.MainWindow);
+                if (topLevel is null) return;
 
-            var file = await topLevel.StorageProvider.SaveFilePickerAsync(
-                new Avalonia.Platform.Storage.FilePickerSaveOptions
-                {
-                    Title = Strings.Filings_Export_SaveDialog_Title,
-                    SuggestedFileName = result.SuggestedFileName,
-                    FileTypeChoices =
-                    [
-                        new Avalonia.Platform.Storage.FilePickerFileType(
+                var file = await topLevel.StorageProvider.SaveFilePickerAsync(
+                    new Avalonia.Platform.Storage.FilePickerSaveOptions
+                    {
+                        Title = Strings.Filings_Export_SaveDialog_Title,
+                        SuggestedFileName = result.SuggestedFileName,
+                        FileTypeChoices =
+                        [
+                            new Avalonia.Platform.Storage.FilePickerFileType(
                             Strings.Filings_Export_Filter_Xml) { Patterns = ["*.xml"] }
-                    ]
-                });
+                        ]
+                    });
 
-            if (file is null) return;
+                if (file is null) return;
 
-            await using var stream = await file.OpenWriteAsync();
-            try
-            {
-                await stream.WriteAsync(result.Bytes);
-            }
-            catch
-            {
-                await file.DeleteAsync();
-                throw;
-            }
-        });
+                await using var stream = await file.OpenWriteAsync();
+                try
+                {
+                    await stream.WriteAsync(result.Bytes);
+                }
+                catch
+                {
+                    await file.DeleteAsync();
+                    throw;
+                }
+            });
 
         // Manual Filing handlers
         services.AddTransient<
