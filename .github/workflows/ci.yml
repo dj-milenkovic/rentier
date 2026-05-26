@@ -127,9 +127,9 @@ jobs:
           # Count tests from TRX files
           total=0; passed=0; failed=0
           for trx in $(find ./coverage -name '*.trx' 2>/dev/null); do
-            t=$(grep -Eo 'total="\K[0-9]+' "$trx" | head -1)
-            p=$(grep -Eo 'passed="\K[0-9]+' "$trx" | head -1)
-            f=$(grep -Eo 'failed="\K[0-9]+' "$trx" | head -1)
+            t=$(grep -Eo 'total="[0-9]+' "$trx" | cut -d'"' -f2 | head -1)
+            p=$(grep -Eo 'passed="[0-9]+' "$trx" | cut -d'"' -f2 | head -1)
+            f=$(grep -Eo 'failed="[0-9]+' "$trx" | cut -d'"' -f2 | head -1)
             total=$((total + ${t:-0}))
             passed=$((passed + ${p:-0}))
             failed=$((failed + ${f:-0}))
