@@ -316,6 +316,8 @@ jobs:
         timeout-minutes: 5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          scanMetadataReportFile: .sonarqube/out/report-task.txt
           
       - name: Post summary
         shell: bash
