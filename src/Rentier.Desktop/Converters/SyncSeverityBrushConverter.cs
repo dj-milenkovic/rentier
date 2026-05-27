@@ -10,9 +10,9 @@ public static class SyncSeverityBrushConverter
     public static readonly IValueConverter Instance =
         new FuncValueConverter<SyncProgressSeverity, IBrush>(s => s switch
         {
-            SyncProgressSeverity.Error   => GetBrush("RentierDangerForegroundBrush"),
+            SyncProgressSeverity.Error => GetBrush("RentierDangerForegroundBrush"),
             SyncProgressSeverity.Warning => GetBrush("RentierWarningForegroundBrush"),
-            _                            => GetBrush("RentierTextSecondaryBrush")
+            _ => GetBrush("RentierTextSecondaryBrush")
         });
 
     private static IBrush GetBrush(string key)

@@ -115,7 +115,7 @@ internal static class ImportDialogHelper
         };
 
         var confirmButton = new Button { Content = Strings.ImportDialog_Import_Button, Margin = new Thickness(0, 0, 4, 0), IsDefault = true };
-        var cancelButton  = new Button { Content = "Cancel", IsCancel = true };
+        var cancelButton = new Button { Content = "Cancel", IsCancel = true };
 
         var dialog = new Window
         {
@@ -144,7 +144,7 @@ internal static class ImportDialogHelper
         };
 
         confirmButton.Click += (_, _) => dialog.Close(true);
-        cancelButton.Click  += (_, _) => dialog.Close(false);
+        cancelButton.Click += (_, _) => dialog.Close(false);
 
         var confirmed = await dialog.ShowDialog<bool>(owner);
         if (!confirmed || comboBox.SelectedItem is not ImporterDto selected)

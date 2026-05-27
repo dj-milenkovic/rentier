@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using FluentAssertions;
 using NSubstitute;
 using Rentier.Application.Repositories;
@@ -54,7 +54,7 @@ public class NbsWebScraperTests
             .Returns((ExchangeRate?)null);
         var scraper = new NbsWebScraper(
             new HttpClient(new FakeHandler(new HttpResponseMessage(HttpStatusCode.OK)
-                { Content = new StringContent(ValidHtmlTable) })), cache);
+            { Content = new StringContent(ValidHtmlTable) })), cache);
 
         var result = await scraper.FetchRateAsync(TestDate, "USD");
 
@@ -72,7 +72,7 @@ public class NbsWebScraperTests
             "<tr><td>EUR</td><td>E</td><td>EU</td><td>1</td><td>117,0539</td><td>117,0539</td></tr>" +
             "</tbody></table></body></html>";
         var result = await Make(new HttpResponseMessage(HttpStatusCode.OK)
-            { Content = new StringContent(html) }).FetchRateAsync(TestDate, "EUR");
+        { Content = new StringContent(html) }).FetchRateAsync(TestDate, "EUR");
         result.IsSuccess.Should().BeTrue();
         result.Value.RateToRsd.Should().Be(117.0539m);
     }
@@ -82,7 +82,7 @@ public class NbsWebScraperTests
     {
         const string html = "<html><body><table><thead><tr><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th></tr></thead><tbody></tbody></table></body></html>";
         var result = await Make(new HttpResponseMessage(HttpStatusCode.OK)
-            { Content = new StringContent(html) }).FetchRateAsync(TestDate, "USD");
+        { Content = new StringContent(html) }).FetchRateAsync(TestDate, "USD");
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("RATE_NOT_FOUND");
     }
@@ -91,7 +91,7 @@ public class NbsWebScraperTests
     public async Task FetchRateAsync_NoTableFound_ReturnsNbsScrapeError()
     {
         var result = await Make(new HttpResponseMessage(HttpStatusCode.OK)
-            { Content = new StringContent("<html><body><p>no table</p></body></html>") })
+        { Content = new StringContent("<html><body><p>no table</p></body></html>") })
             .FetchRateAsync(TestDate, "USD");
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().BeOneOf("RATE_NOT_FOUND", "NBS_SCRAPE_ERROR");
@@ -102,7 +102,7 @@ public class NbsWebScraperTests
     {
         const string html = "<html><body><table><tbody><tr><td>EUR</td><td>E</td><td>EU</td></tr></tbody></table></body></html>";
         var result = await Make(new HttpResponseMessage(HttpStatusCode.OK)
-            { Content = new StringContent(html) }).FetchRateAsync(TestDate, "USD");
+        { Content = new StringContent(html) }).FetchRateAsync(TestDate, "USD");
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("RATE_NOT_FOUND");
     }

@@ -100,10 +100,10 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
                             or UpdateState.Downloaded
                             or UpdateState.Error;
 
-    public bool IsUpdateAvailableState  => _currentUpdateState == UpdateState.UpdateAvailable;
-    public bool IsDownloadingState      => _currentUpdateState == UpdateState.Downloading;
-    public bool IsDownloadedState       => _currentUpdateState == UpdateState.Downloaded;
-    public bool IsErrorState            => _currentUpdateState == UpdateState.Error;
+    public bool IsUpdateAvailableState => _currentUpdateState == UpdateState.UpdateAvailable;
+    public bool IsDownloadingState => _currentUpdateState == UpdateState.Downloading;
+    public bool IsDownloadedState => _currentUpdateState == UpdateState.Downloaded;
+    public bool IsErrorState => _currentUpdateState == UpdateState.Error;
 
     // ── Update commands ───────────────────────────────────────────────────────
 
@@ -227,23 +227,23 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
             provider, navigateToFilings_sync);
 
         // ── Settings sub-ViewModels ───────────────────────────────────────────
-        var profileVm    = provider.GetRequiredService<ProfileSettingsViewModel>();
-        var holidayVm    = provider.GetRequiredService<HolidaySettingsViewModel>();
-        var mailboxVm    = provider.GetRequiredService<MailboxSettingsViewModel>();
-        var importerVm   = provider.GetRequiredService<ImporterSettingsViewModel>();
+        var profileVm = provider.GetRequiredService<ProfileSettingsViewModel>();
+        var holidayVm = provider.GetRequiredService<HolidaySettingsViewModel>();
+        var mailboxVm = provider.GetRequiredService<MailboxSettingsViewModel>();
+        var importerVm = provider.GetRequiredService<ImporterSettingsViewModel>();
         var appearanceVm = provider.GetRequiredService<AppearanceSettingsViewModel>();
 
         var settingsGroup = new NavigationEntry(localizationService["Nav_Settings"], viewModel: null, Icon: NavIcon("NavSettingsIcon"))
         {
-            IsGroup    = true,
+            IsGroup = true,
             IsExpanded = true,
         };
 
-        var profileChild   = new NavigationEntry(localizationService["Nav_Settings_Profile"],    profileVm,    Icon: NavIcon("NavProfileIcon"))    { IndentLevel = 1, ParentGroup = settingsGroup };
-        var holidaysChild  = new NavigationEntry(localizationService["Nav_Settings_Holidays"],   holidayVm,    Icon: NavIcon("NavHolidaysIcon"))    { IndentLevel = 1, ParentGroup = settingsGroup };
-        var mailboxesChild = new NavigationEntry(localizationService["Nav_Settings_Mailboxes"],  mailboxVm,    Icon: NavIcon("NavMailboxesIcon"))   { IndentLevel = 1, ParentGroup = settingsGroup };
-        var importersChild = new NavigationEntry(localizationService["Nav_Settings_Importers"],  importerVm,   Icon: NavIcon("NavImportersIcon"))   { IndentLevel = 1, ParentGroup = settingsGroup };
-        var languageChild  = new NavigationEntry(localizationService["Nav_Settings_Appearance"], appearanceVm, Icon: NavIcon("NavLanguageIcon"))    { IndentLevel = 1, ParentGroup = settingsGroup };
+        var profileChild = new NavigationEntry(localizationService["Nav_Settings_Profile"], profileVm, Icon: NavIcon("NavProfileIcon")) { IndentLevel = 1, ParentGroup = settingsGroup };
+        var holidaysChild = new NavigationEntry(localizationService["Nav_Settings_Holidays"], holidayVm, Icon: NavIcon("NavHolidaysIcon")) { IndentLevel = 1, ParentGroup = settingsGroup };
+        var mailboxesChild = new NavigationEntry(localizationService["Nav_Settings_Mailboxes"], mailboxVm, Icon: NavIcon("NavMailboxesIcon")) { IndentLevel = 1, ParentGroup = settingsGroup };
+        var importersChild = new NavigationEntry(localizationService["Nav_Settings_Importers"], importerVm, Icon: NavIcon("NavImportersIcon")) { IndentLevel = 1, ParentGroup = settingsGroup };
+        var languageChild = new NavigationEntry(localizationService["Nav_Settings_Appearance"], appearanceVm, Icon: NavIcon("NavLanguageIcon")) { IndentLevel = 1, ParentGroup = settingsGroup };
 
         settingsGroup.Children = new[] { profileChild, holidaysChild, mailboxesChild, importersChild, languageChild };
 
@@ -261,9 +261,9 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
             languageChild,
         };
 
-        _selectedEntry     = NavigationEntries[0];
-        _currentViewModel  = dashboardVm;
-        _lastContentEntry  = NavigationEntries[0];
+        _selectedEntry = NavigationEntries[0];
+        _currentViewModel = dashboardVm;
+        _lastContentEntry = NavigationEntries[0];
         NavigationEntries[0].IsActive = true;
 
         this.WhenActivated(disposables =>
@@ -281,9 +281,9 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
                     {
                         if (_lastContentEntry is not null)
                             _lastContentEntry.IsActive = false;
-                        entry.IsActive    = true;
+                        entry.IsActive = true;
                         _lastContentEntry = entry;
-                        CurrentViewModel  = entry.ViewModel;
+                        CurrentViewModel = entry.ViewModel;
                     }
 
                     SelectedEntry = null;
@@ -354,16 +354,16 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
 
             var key = entry.ViewModel switch
             {
-                DashboardViewModel          => "Nav_Dashboard",
-                FilingsViewModel            => "Nav_Filings",
-                ReportsViewModel            => "Nav_Reports",
-                SyncViewModel               => "Nav_Sync",
-                ProfileSettingsViewModel    => "Nav_Settings_Profile",
-                HolidaySettingsViewModel    => "Nav_Settings_Holidays",
-                MailboxSettingsViewModel    => "Nav_Settings_Mailboxes",
-                ImporterSettingsViewModel   => "Nav_Settings_Importers",
+                DashboardViewModel => "Nav_Dashboard",
+                FilingsViewModel => "Nav_Filings",
+                ReportsViewModel => "Nav_Reports",
+                SyncViewModel => "Nav_Sync",
+                ProfileSettingsViewModel => "Nav_Settings_Profile",
+                HolidaySettingsViewModel => "Nav_Settings_Holidays",
+                MailboxSettingsViewModel => "Nav_Settings_Mailboxes",
+                ImporterSettingsViewModel => "Nav_Settings_Importers",
                 AppearanceSettingsViewModel => "Nav_Settings_Appearance",
-                _                           => null,
+                _ => null,
             };
 
             if (key is not null)

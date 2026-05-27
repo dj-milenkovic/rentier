@@ -73,7 +73,7 @@ public class GetReportsQueryHandlerTests
     public async Task HandleAsync_MapsAllDtoFieldsCorrectly()
     {
         var importer = MakeImporter("IBKR EU");
-        var report   = MakeReport(importer.Id, "stmt_2024.csv");
+        var report = MakeReport(importer.Id, "stmt_2024.csv");
         var earliest = new DateOnly(2024, 3, 15);
         SetupPagedReports([report]);
         _importerRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([importer]);
@@ -97,7 +97,7 @@ public class GetReportsQueryHandlerTests
     public async Task HandleAsync_DisplayName_FallsBackToImportDateWhenNoFilings()
     {
         var importer = MakeImporter("My Broker");
-        var report   = MakeReport(importer.Id, "stmt.csv");
+        var report = MakeReport(importer.Id, "stmt.csv");
         SetupPagedReports([report]);
         _importerRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([importer]);
         _filingRepo.GetFilingCountByReportIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(0);
@@ -114,7 +114,7 @@ public class GetReportsQueryHandlerTests
     public async Task HandleAsync_ResolvesImporterNameFromDictionary()
     {
         var importer = MakeImporter("My Broker");
-        var report   = MakeReport(importer.Id);
+        var report = MakeReport(importer.Id);
         SetupPagedReports([report]);
         _importerRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([importer]);
         _filingRepo.GetFilingCountByReportIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(0);

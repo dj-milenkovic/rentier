@@ -6,6 +6,6 @@ namespace Rentier.Application.Commands;
 /// BEFORE this command is dispatched — the handler never touches the file system.
 /// </summary>
 public sealed record ImportReportCommand(
-    Guid   ImporterId,
+    Guid ImporterId,
     string FileName,
     byte[] CsvContent);

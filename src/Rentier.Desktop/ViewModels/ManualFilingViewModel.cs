@@ -25,18 +25,18 @@ public sealed class ManualFilingViewModel : ReactiveObject, IActivatableViewMode
 
     // ── Backing fields ───────────────────────────────────────────────────────
 
-    private IncomeType       _selectedIncomeType = IncomeType.Dividend;
-    private string           _ticker             = "";
-    private DateTimeOffset?  _incomeDate         = null;
-    private string           _selectedCurrency   = "USD";
-    private string           _grossAmountText    = "";
-    private string           _netReceivedText    = "";
-    private ManualFilingPreviewDto? _preview      = null;
-    private string?          _errorMessage       = null;
-    private bool             _isLoading          = false;
-    private bool             _hasNoProfile       = false;
-    private bool             _isDirty            = false;
-    private Guid?            _taxpayerProfileId  = null;
+    private IncomeType _selectedIncomeType = IncomeType.Dividend;
+    private string _ticker = "";
+    private DateTimeOffset? _incomeDate = null;
+    private string _selectedCurrency = "USD";
+    private string _grossAmountText = "";
+    private string _netReceivedText = "";
+    private ManualFilingPreviewDto? _preview = null;
+    private string? _errorMessage = null;
+    private bool _isLoading = false;
+    private bool _hasNoProfile = false;
+    private bool _isDirty = false;
+    private Guid? _taxpayerProfileId = null;
 
     private readonly IScheduler _scheduler;
     private readonly ICommandHandler<CalculateManualFilingCommand, Result<ManualFilingPreviewDto, Error>> _calculateHandler;
@@ -156,8 +156,8 @@ public sealed class ManualFilingViewModel : ReactiveObject, IActivatableViewMode
     // ── Commands ─────────────────────────────────────────────────────────────
 
     public ReactiveCommand<Unit, Unit> CalculateCommand { get; }
-    public ReactiveCommand<Unit, Unit> SaveCommand      { get; }
-    public ReactiveCommand<Unit, Unit> CancelCommand    { get; }
+    public ReactiveCommand<Unit, Unit> SaveCommand { get; }
+    public ReactiveCommand<Unit, Unit> CancelCommand { get; }
     public ReactiveCommand<Unit, Unit> ClearErrorCommand { get; }
 
     // ── Constructor ──────────────────────────────────────────────────────────
@@ -169,11 +169,11 @@ public sealed class ManualFilingViewModel : ReactiveObject, IActivatableViewMode
         Action navigateBackToFilings,
         IScheduler? scheduler = null)
     {
-        _calculateHandler       = calculateHandler;
-        _createHandler          = createHandler;
-        _profileQueryHandler    = profileQueryHandler;
-        _navigateBackToFilings  = navigateBackToFilings;
-        _scheduler              = scheduler ?? RxApp.MainThreadScheduler;
+        _calculateHandler = calculateHandler;
+        _createHandler = createHandler;
+        _profileQueryHandler = profileQueryHandler;
+        _navigateBackToFilings = navigateBackToFilings;
+        _scheduler = scheduler ?? RxApp.MainThreadScheduler;
 
         // CalculateCommand canExecute: ticker not blank, gross > 0, date set, not loading
         var canCalculate = this.WhenAnyValue(
@@ -261,8 +261,8 @@ public sealed class ManualFilingViewModel : ReactiveObject, IActivatableViewMode
             else if (result.Value is null)
             {
                 // Show as an informational callout rather than a red error
-                HasNoProfile  = true;
-                ErrorMessage  = Strings.ManualFiling_Error_NoProfile; // kept for test compatibility
+                HasNoProfile = true;
+                ErrorMessage = Strings.ManualFiling_Error_NoProfile; // kept for test compatibility
             }
             else
                 _taxpayerProfileId = result.Value.Id;
@@ -275,7 +275,7 @@ public sealed class ManualFilingViewModel : ReactiveObject, IActivatableViewMode
 
     private async Task CalculateAsync(CancellationToken ct)
     {
-        IsLoading    = true;
+        IsLoading = true;
         ErrorMessage = null;
         try
         {
@@ -321,7 +321,7 @@ public sealed class ManualFilingViewModel : ReactiveObject, IActivatableViewMode
 
     private async Task SaveAsync(CancellationToken ct)
     {
-        IsLoading    = true;
+        IsLoading = true;
         ErrorMessage = null;
         try
         {

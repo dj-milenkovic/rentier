@@ -21,7 +21,7 @@ public class FilingDeadlineCalculatorTests
         string incomeStr, string expectedStr)
     {
         var incomeDate = DateOnly.Parse(incomeStr);
-        var expected   = DateOnly.Parse(expectedStr);
+        var expected = DateOnly.Parse(expectedStr);
 
         FilingDeadlineCalculator.CalculateDeadline(incomeDate, NoHolidays)
             .Should().Be(expected);

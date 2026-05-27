@@ -1,4 +1,4 @@
-﻿using Rentier.Domain.Enums;
+using Rentier.Domain.Enums;
 using Rentier.Domain.Exceptions;
 
 namespace Rentier.Domain.Entities;

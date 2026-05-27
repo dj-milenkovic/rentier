@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
@@ -34,9 +34,6 @@ public sealed class ExchangeRateResolver : IExchangeRateResolver
         var exactResult = await _fetcher.FetchRateAsync(date, currency, ct);
         if (exactResult.IsSuccess)
         {
-            _logger.LogInformation(
-                "Rate resolved (exact): {Currency} on {Date} = {Rate}",
-                currency, date, exactResult.Value.RateToRsd);
             return Result<RateResolution, Error>.Success(
                 new RateResolution(exactResult.Value, date, ExchangeRateSourceType.Exact));
         }

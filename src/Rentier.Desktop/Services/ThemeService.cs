@@ -37,9 +37,9 @@ public sealed class ThemeService : IThemeService
     {
         var variant = preference switch
         {
-            ThemePreference.Dark  => ThemeVariant.Dark,
+            ThemePreference.Dark => ThemeVariant.Dark,
             ThemePreference.Light => ThemeVariant.Light,
-            _                     => ThemeVariant.Default
+            _ => ThemeVariant.Default
         };
 
         // Always marshal to UI thread; this may be called from a background context.

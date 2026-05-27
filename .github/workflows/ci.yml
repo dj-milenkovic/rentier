@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [develop, main]
+    branches: [main]
   pull_request:
-    branches: [develop]
+    branches: [main]
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -24,15 +24,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.2
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5.2.0
         with:
           dotnet-version: '10.x'
 
       - name: Cache NuGet packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5.0.5
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Build.props', 'Directory.Packages.props') }}
@@ -68,17 +68,17 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.2
         with:
           fetch-depth: 0  # full history for SonarCloud
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5.2.0
         with:
           dotnet-version: '10.x'
 
       - name: Cache NuGet packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5.0.5
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Build.props', 'Directory.Packages.props') }}
@@ -86,71 +86,34 @@ jobs:
 
       # ── Build ────────────────────────────────
       - name: Restore (all projects)
-        if: matrix.is-windows
-        run: dotnet restore Rentier.slnx
-
-      - name: Restore (exclude E2E)
-        if: "!matrix.is-windows"
         run: dotnet restore Rentier.slnx
 
       - name: Build (all projects)
-        if: matrix.is-windows
         run: dotnet build Rentier.slnx --no-restore -c Release
 
-      - name: Build (exclude E2E — non-Windows)
-        if: "!matrix.is-windows"
-        shell: bash
-        run: |
-          for proj in \
-            src/Rentier.Domain/Rentier.Domain.csproj \
-            src/Rentier.Application/Rentier.Application.csproj \
-            src/Rentier.Infrastructure/Rentier.Infrastructure.csproj \
-            src/Rentier.Desktop/Rentier.Desktop.csproj \
-            tests/Rentier.Tests.Common/Rentier.Tests.Common.csproj \
-            tests/Rentier.UnitTests/Rentier.UnitTests.csproj \
-            tests/Rentier.Infrastructure.Tests/Rentier.Infrastructure.Tests.csproj \
-            tests/Rentier.Scenarios.Tests/Rentier.Scenarios.Tests.csproj; do
-            dotnet build "$proj" --no-restore -c Release
-          done
-
       # ── Test ─────────────────────────────────
-      - name: Test (all — Windows)
-        if: matrix.is-windows
-        run: >
-          dotnet test Rentier.slnx --no-build -c Release
-          --filter "Category!=Integration"
-          --collect:"XPlat Code Coverage"
-          --results-directory ./coverage
-          --logger "trx;LogFileName=results-${{ matrix.os }}.trx"
-          --logger "console;verbosity=normal"
-
-      - name: Test (exclude E2E — non-Windows)
-        if: "!matrix.is-windows"
+      - name: Test
         shell: bash
         run: |
-          for proj in \
-            tests/Rentier.UnitTests/Rentier.UnitTests.csproj \
-            tests/Rentier.Infrastructure.Tests/Rentier.Infrastructure.Tests.csproj \
-            tests/Rentier.Scenarios.Tests/Rentier.Scenarios.Tests.csproj; do
-            dotnet test "$proj" --no-build -c Release \
-              --filter "Category!=Integration" \
-              --collect:"XPlat Code Coverage" \
-              --results-directory ./coverage \
-              --logger "trx;LogFileName=$(basename "$proj" .csproj)-${{ matrix.os }}.trx" \
-              --logger "console;verbosity=normal"
-          done
-
+          dotnet test Rentier.slnx --no-build -c Release \
+            --filter "Category!=Integration" \
+            --collect:"XPlat Code Coverage" \
+            --settings coverlet.runsettings \
+            --results-directory ./coverage \
+            --logger "trx;LogFileName=results-${{ matrix.os }}.trx" \
+            --logger "console;verbosity=normal"
+     
       # ── Artifacts ────────────────────────────
       - name: Upload coverage
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: coverage-${{ matrix.os }}
-          path: ./coverage/**/coverage.cobertura.xml
+          path: ./coverage/**/coverage.opencover.xml
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: test-results-${{ matrix.os }}
           path: ./coverage/**/*.trx
@@ -166,9 +129,9 @@ jobs:
           # Count tests from TRX files
           total=0; passed=0; failed=0
           for trx in $(find ./coverage -name '*.trx' 2>/dev/null); do
-            t=$(grep -oP 'total="\K[0-9]+' "$trx" | head -1)
-            p=$(grep -oP 'passed="\K[0-9]+' "$trx" | head -1)
-            f=$(grep -oP 'failed="\K[0-9]+' "$trx" | head -1)
+            t=$(grep -Eo 'total="[0-9]+' "$trx" | cut -d'"' -f2 | head -1)
+            p=$(grep -Eo 'passed="[0-9]+' "$trx" | cut -d'"' -f2 | head -1)
+            f=$(grep -Eo 'failed="[0-9]+' "$trx" | cut -d'"' -f2 | head -1)
             total=$((total + ${t:-0}))
             passed=$((passed + ${p:-0}))
             failed=$((failed + ${f:-0}))
@@ -197,15 +160,15 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.2
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5.2.0
         with:
           dotnet-version: '10.x'
 
       - name: Download all coverage artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8.0.1
         with:
           pattern: coverage-*
           path: ./coverage-raw
@@ -217,10 +180,12 @@ jobs:
       - name: Merge & generate report
         shell: bash
         run: |
-          # Collect all Cobertura files
-          REPORTS=$(find ./coverage-raw -name 'coverage.cobertura.xml' | tr '\n' ';')
+          # Collect all Cobertura files (accounting for artifact nesting from merge-multiple: false)
+          REPORTS=$(find ./coverage-raw -name 'coverage.opencover.xml' -type f | tr '\n' ';')
           if [ -z "$REPORTS" ]; then
-            echo "⚠️ No coverage files found" >> "$GITHUB_STEP_SUMMARY"
+            echo "⚠️ No coverage files found in ./coverage-raw" >> "$GITHUB_STEP_SUMMARY"
+            echo "Available files:" >> "$GITHUB_STEP_SUMMARY"
+            find ./coverage-raw -type f 2>/dev/null | head -20 >> "$GITHUB_STEP_SUMMARY" || echo "Directory not found or empty"
             exit 0
           fi
 
@@ -230,20 +195,25 @@ jobs:
             "-reporttypes:HtmlInline_AzurePipelines;Cobertura;TextSummary;MarkdownSummaryGithub"
 
           # Extract line coverage percentage
-          LINE_COV=$(grep -oP 'Line coverage: \K[0-9.]+' ./coverage-report/Summary.txt || echo "N/A")
-          BRANCH_COV=$(grep -oP 'Branch coverage: \K[0-9.]+' ./coverage-report/Summary.txt || echo "N/A")
+          if [ -f ./coverage-report/Summary.txt ]; then
+            LINE_COV=$(grep -oP 'Line coverage: \K[0-9.]+' ./coverage-report/Summary.txt || echo "N/A")
+            BRANCH_COV=$(grep -oP 'Branch coverage: \K[0-9.]+' ./coverage-report/Summary.txt || echo "N/A")
+          else
+            LINE_COV="N/A"
+            BRANCH_COV="N/A"
+          fi
           echo "LINE_COVERAGE=$LINE_COV" >> "$GITHUB_ENV"
           echo "BRANCH_COVERAGE=$BRANCH_COV" >> "$GITHUB_ENV"
 
       - name: Upload HTML coverage report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: coverage-report
           path: ./coverage-report
 
       - name: Post coverage to PR
         if: github.event_name == 'pull_request'
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@v3.0.4
         with:
           header: coverage
           path: ./coverage-report/SummaryGithub.md
@@ -269,40 +239,41 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.2
         with:
           fetch-depth: 0
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5.2.0
         with:
           dotnet-version: '10.x'
 
       - name: Setup Java (SonarScanner requirement)
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5.2.0
         with:
           distribution: 'temurin'
           java-version: '17'
 
       - name: Cache NuGet packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5.0.5
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Build.props', 'Directory.Packages.props') }}
           restore-keys: nuget-${{ runner.os }}-
 
       - name: Cache SonarCloud packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5.0.5
         with:
           path: ~/.sonar/cache
-          key: sonar-${{ runner.os }}-${{ github.sha }}
+          key: sonar-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
           restore-keys: sonar-${{ runner.os }}-
 
-      - name: Download coverage (ubuntu)
-        uses: actions/download-artifact@v4
+      - name: Download merged coverage
+        uses: actions/download-artifact@v8.0.1
         with:
-          name: coverage-ubuntu-latest
-          path: ./coverage
+          pattern: coverage-*
+          path: ./coverage-raw
+          merge-multiple: false
 
       - name: Install SonarScanner
         run: dotnet tool install -g dotnet-sonarscanner
@@ -310,21 +281,25 @@ jobs:
       - name: Build & analyze
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY }}
+          SONAR_ORGANIZATION: ${{ secrets.SONAR_ORGANIZATION }}
         shell: bash
         run: |
-          # Collect coverage files
-          COV_PATHS=$(find ./coverage -name 'coverage.cobertura.xml' | tr '\n' ',')
+          COV_PATHS=$(find ./coverage-raw -name 'coverage.opencover.xml' | paste -sd ',' -)
 
           dotnet sonarscanner begin \
-            /k:"${{ vars.SONAR_PROJECT_KEY || 'rentier' }}" \
-            /o:"${{ vars.SONAR_ORGANIZATION || 'rentier-org' }}" \
+            /k:"${SONAR_PROJECT_KEY}" \
+            /o:"${SONAR_ORGANIZATION}" \
             /d:sonar.token="${SONAR_TOKEN}" \
             /d:sonar.host.url="https://sonarcloud.io" \
             /d:sonar.cs.opencover.reportsPaths="${COV_PATHS}" \
-            /d:sonar.coverage.exclusions="**/tests/**,**/Migrations/**" \
-            /d:sonar.exclusions="**/Migrations/**"
+            /d:sonar.exclusions="**/Migrations/**,**/obj/**,**/bin/**,**/Properties/**,**/*.Designer.cs,**/*.g.cs,**/*.axaml.cs,**/AssemblyInfo.cs" \
+            /d:sonar.coverage.exclusions="**/*.Tests/**,**/Migrations/**,**/Program.cs,**/*.axaml.cs,**/Properties/**" \
+            /d:sonar.cpd.exclusions="**/*.Tests/**,**/*.g.cs" \
+            /d:sonar.test.inclusions="**/*.Tests/**,**/*Tests.cs" \
+            /d:sonar.scanner.skipJreProvisioning=true \
+            /d:sonar.scanner.javaExePath="${JAVA_HOME}/bin/java"
 
-          # Build excluding E2E (non-Windows)
           for proj in \
             src/Rentier.Domain/Rentier.Domain.csproj \
             src/Rentier.Application/Rentier.Application.csproj \
@@ -335,6 +310,14 @@ jobs:
 
           dotnet sonarscanner end /d:sonar.token="${SONAR_TOKEN}"
 
+      - name: Check Quality Gate
+        uses: sonarsource/sonarqube-quality-gate-action@master
+        timeout-minutes: 5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          scanMetadataReportFile: .sonarqube/out/.sonar/report-task.txt
+          
       - name: Post summary
         shell: bash
         run: |

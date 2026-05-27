@@ -23,9 +23,9 @@ public class NavigationEntryGroupTests
     private static NavigationEntry MakeGroup(string label, IReadOnlyList<NavigationEntry>? children = null) =>
         new(label)
         {
-            IsGroup    = true,
+            IsGroup = true,
             IsExpanded = true,
-            Children   = children ?? [],
+            Children = children ?? [],
         };
 
     // ── ToggleExpanded tests ──────────────────────────────────────────────────
@@ -35,11 +35,11 @@ public class NavigationEntryGroupTests
     {
         var child1 = new NavigationEntry("Child 1") { IsVisible = true };
         var child2 = new NavigationEntry("Child 2") { IsVisible = true };
-        var group  = new NavigationEntry("Group")
+        var group = new NavigationEntry("Group")
         {
-            IsGroup    = true,
+            IsGroup = true,
             IsExpanded = true,
-            Children   = [child1, child2],
+            Children = [child1, child2],
         };
 
         group.ToggleExpanded();
@@ -53,11 +53,11 @@ public class NavigationEntryGroupTests
     {
         var child1 = new NavigationEntry("Child 1") { IsVisible = false };
         var child2 = new NavigationEntry("Child 2") { IsVisible = false };
-        var group  = new NavigationEntry("Group")
+        var group = new NavigationEntry("Group")
         {
-            IsGroup    = true,
+            IsGroup = true,
             IsExpanded = false,
-            Children   = [child1, child2],
+            Children = [child1, child2],
         };
 
         group.ToggleExpanded();
@@ -71,7 +71,7 @@ public class NavigationEntryGroupTests
     {
         var group = new NavigationEntry("Group")
         {
-            IsGroup    = true,
+            IsGroup = true,
             IsExpanded = true,
         };
 
@@ -87,7 +87,7 @@ public class NavigationEntryGroupTests
     {
         var group = new NavigationEntry("EmptyGroup")
         {
-            IsGroup    = true,
+            IsGroup = true,
             IsExpanded = true,
         };
 
@@ -121,17 +121,17 @@ public class NavigationEntryGroupTests
     public void GroupEntry_Children_AreInCorrectOrder_ByLabel()
     {
         // Simulate the Settings group children in production order (Profile → Language)
-        var profile   = new NavigationEntry("Profile")   { IndentLevel = 1 };
-        var holidays  = new NavigationEntry("Holidays")  { IndentLevel = 1 };
+        var profile = new NavigationEntry("Profile") { IndentLevel = 1 };
+        var holidays = new NavigationEntry("Holidays") { IndentLevel = 1 };
         var mailboxes = new NavigationEntry("Mailboxes") { IndentLevel = 1 };
         var importers = new NavigationEntry("Importers") { IndentLevel = 1 };
-        var language  = new NavigationEntry("Language")  { IndentLevel = 1 };
+        var language = new NavigationEntry("Language") { IndentLevel = 1 };
 
         var group = new NavigationEntry("Settings")
         {
-            IsGroup    = true,
+            IsGroup = true,
             IsExpanded = true,
-            Children   = [profile, holidays, mailboxes, importers, language],
+            Children = [profile, holidays, mailboxes, importers, language],
         };
 
         group.Children.Should().HaveCount(5);

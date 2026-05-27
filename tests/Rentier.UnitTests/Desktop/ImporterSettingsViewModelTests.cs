@@ -229,8 +229,8 @@ public sealed class ImporterSettingsViewModelTests
     [Fact]
     public async Task SaveCommand_EditMode_RepopulatesAllFieldsFromRefreshedDto()
     {
-        var profileId  = Guid.NewGuid();
-        var mailboxId  = Guid.NewGuid();
+        var profileId = Guid.NewGuid();
+        var mailboxId = Guid.NewGuid();
         var importerId = Guid.NewGuid();
 
         var refreshedDto = new ImporterDto(
@@ -277,7 +277,7 @@ public sealed class ImporterSettingsViewModelTests
     {
         var profileId = Guid.NewGuid();
         var mailboxId = Guid.NewGuid();
-        var newId     = Guid.NewGuid();
+        var newId = Guid.NewGuid();
 
         var savedDto = new ImporterDto(
             newId, "Saved Importer", ReportType.IbkrCsv,
@@ -301,7 +301,7 @@ public sealed class ImporterSettingsViewModelTests
         vm.AvailableMailboxes.Add(mailbox);
 
         vm.DisplayName = "Saved Importer";
-        vm.IsEditMode  = false;
+        vm.IsEditMode = false;
 
         await vm.SaveCommand.Execute().FirstAsync();
 
@@ -319,8 +319,8 @@ public sealed class ImporterSettingsViewModelTests
     [Fact]
     public void SelectedImporter_SetToNull_ClearsAllFormFields()
     {
-        var dto  = MakeImporterDto("Full Importer");
-        var vm   = CreateVm();
+        var dto = MakeImporterDto("Full Importer");
+        var vm = CreateVm();
         var item = ImporterItemViewModel.From(dto);
         vm.ImporterItems.Add(item);
         vm.SelectedImporter = item;
@@ -358,7 +358,7 @@ public sealed class ImporterSettingsViewModelTests
             null, null,
             "b@x.com", "Subject B", string.Empty, "Notes B");
 
-        var vm    = CreateVm();
+        var vm = CreateVm();
         var itemA = ImporterItemViewModel.From(dtoA);
         var itemB = ImporterItemViewModel.From(dtoB);
         vm.ImporterItems.Add(itemA);
@@ -398,7 +398,7 @@ public sealed class ImporterSettingsViewModelTests
             .Returns(Result<IReadOnlyList<ImporterDto>, Error>.Success(
                 new List<ImporterDto>().AsReadOnly())); // item not in refreshed list
 
-        var vm   = CreateVm(getImporters: getImporters, update: updateHandler);
+        var vm = CreateVm(getImporters: getImporters, update: updateHandler);
         var item = ImporterItemViewModel.From(dto);
         vm.ImporterItems.Add(item);
         vm.SelectedImporter = item;
@@ -426,16 +426,16 @@ public sealed class ImporterSettingsViewModelTests
         updateHandler.HandleAsync(Arg.Any<UpdateImporterCommand>(), Arg.Any<CancellationToken>())
             .Returns(Result<VoidResult, Error>.Failure(new Error("ERR_SAVE", "Save failed")));
 
-        var vm   = CreateVm(update: updateHandler);
+        var vm = CreateVm(update: updateHandler);
         var item = ImporterItemViewModel.From(dto);
         vm.ImporterItems.Add(item);
         vm.SelectedImporter = item;
 
-        vm.DisplayName     = "User Typed Name";
-        vm.FromFilter      = "typed@x.com";
-        vm.SubjectFilter   = "Typed Subject";
+        vm.DisplayName = "User Typed Name";
+        vm.FromFilter = "typed@x.com";
+        vm.SubjectFilter = "Typed Subject";
         vm.AttachmentRegex = @"typed\d+";
-        vm.PaymentNotes    = "Typed Notes";
+        vm.PaymentNotes = "Typed Notes";
 
         await vm.SaveCommand.Execute().FirstAsync();
 
@@ -458,7 +458,7 @@ public sealed class ImporterSettingsViewModelTests
             profileId, mailboxId,
             "full@x.com", "Full Subject", @"full\d+", "Full Notes");
 
-        var vm   = CreateVm();
+        var vm = CreateVm();
         var item = ImporterItemViewModel.From(dto);
         vm.ImporterItems.Add(item);
 
@@ -499,7 +499,7 @@ public sealed class ImporterSettingsViewModelTests
         getImporters.HandleAsync(Arg.Any<GetImportersQuery>(), Arg.Any<CancellationToken>())
             .Returns(Result<IReadOnlyList<ImporterDto>, Error>.Success(new List<ImporterDto>().AsReadOnly()));
 
-        var vm   = CreateVm(getImporters: getImporters, delete: deleteHandler);
+        var vm = CreateVm(getImporters: getImporters, delete: deleteHandler);
         var item = ImporterItemViewModel.From(MakeImporterDto("To Delete"));
         vm.ImporterItems.Add(item);
         vm.SelectedImporter = item; // triggers PopulateFormFromDto → IsEditMode = true
@@ -518,7 +518,7 @@ public sealed class ImporterSettingsViewModelTests
         deleteHandler.HandleAsync(Arg.Any<DeleteImporterCommand>(), Arg.Any<CancellationToken>())
             .Returns(Result<VoidResult, Error>.Failure(new Error("ERR_DELETE", "Delete failed")));
 
-        var vm   = CreateVm(delete: deleteHandler);
+        var vm = CreateVm(delete: deleteHandler);
         var item = ImporterItemViewModel.From(MakeImporterDto("To Delete"));
         vm.ImporterItems.Add(item);
         vm.SelectedImporter = item; // triggers PopulateFormFromDto → IsEditMode = true

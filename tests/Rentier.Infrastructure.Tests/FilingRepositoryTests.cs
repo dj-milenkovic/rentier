@@ -188,9 +188,9 @@ public class FilingRepositoryTests : IAsyncLifetime
         await _context.TaxpayerProfiles.AddAsync(profile);
         await _context.SaveChangesAsync();
 
-        var init   = MakeFiling(profile.Id, date: new DateOnly(2024, 1, 1));
-        var filed  = MakeFiling(profile.Id, date: new DateOnly(2024, 2, 1));
-        var paid   = MakeFiling(profile.Id, date: new DateOnly(2024, 3, 1));
+        var init = MakeFiling(profile.Id, date: new DateOnly(2024, 1, 1));
+        var filed = MakeFiling(profile.Id, date: new DateOnly(2024, 2, 1));
+        var paid = MakeFiling(profile.Id, date: new DateOnly(2024, 3, 1));
 
         filed.AdvanceStatus(FilingStatus.Filed);
         paid.AdvanceStatus(FilingStatus.Filed);
@@ -214,9 +214,9 @@ public class FilingRepositoryTests : IAsyncLifetime
         await _context.TaxpayerProfiles.AddAsync(profile);
         await _context.SaveChangesAsync();
 
-        var init  = MakeFiling(profile.Id, date: new DateOnly(2024, 1, 1));
+        var init = MakeFiling(profile.Id, date: new DateOnly(2024, 1, 1));
         var filed = MakeFiling(profile.Id, date: new DateOnly(2024, 2, 1));
-        var paid  = MakeFiling(profile.Id, date: new DateOnly(2024, 3, 1));
+        var paid = MakeFiling(profile.Id, date: new DateOnly(2024, 3, 1));
 
         filed.AdvanceStatus(FilingStatus.Filed);
         paid.AdvanceStatus(FilingStatus.Filed);
@@ -239,9 +239,9 @@ public class FilingRepositoryTests : IAsyncLifetime
         await _context.TaxpayerProfiles.AddAsync(profile);
         await _context.SaveChangesAsync();
 
-        var later   = MakeFiling(profile.Id, date: new DateOnly(2024, 6, 1));
+        var later = MakeFiling(profile.Id, date: new DateOnly(2024, 6, 1));
         var earlier = MakeFiling(profile.Id, date: new DateOnly(2024, 1, 1));
-        var middle  = MakeFiling(profile.Id, date: new DateOnly(2024, 3, 1));
+        var middle = MakeFiling(profile.Id, date: new DateOnly(2024, 3, 1));
 
         await _repository.AddAsync(later);
         await _repository.AddAsync(earlier);
@@ -355,9 +355,9 @@ public class FilingRepositoryTests : IAsyncLifetime
         await _context.TaxpayerProfiles.AddAsync(profile);
         await _context.SaveChangesAsync();
 
-        var fInit  = MakeFiling(profile.Id, date: new DateOnly(2024, 1, 1));
+        var fInit = MakeFiling(profile.Id, date: new DateOnly(2024, 1, 1));
         var fFiled = MakeFiling(profile.Id, date: new DateOnly(2024, 2, 1));
-        var fPaid  = MakeFiling(profile.Id, date: new DateOnly(2024, 3, 1));
+        var fPaid = MakeFiling(profile.Id, date: new DateOnly(2024, 3, 1));
         fFiled.AdvanceStatus(FilingStatus.Filed);
         fPaid.AdvanceStatus(FilingStatus.Filed);
         fPaid.AdvanceStatus(FilingStatus.Paid);

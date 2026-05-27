@@ -202,15 +202,15 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
         Action<Guid> navigateToFilings,
         IScheduler? scheduler = null)
     {
-        _syncHandler       = syncHandler;
-        _getReports        = getReports;
-        _importReport      = importReport;
-        _deleteReport      = deleteReport;
+        _syncHandler = syncHandler;
+        _getReports = getReports;
+        _importReport = importReport;
+        _deleteReport = deleteReport;
         _bulkDeleteReports = bulkDeleteReports;
-        _confirmDelete     = confirmDelete;
-        _showImportDialog  = showImportDialog;
+        _confirmDelete = confirmDelete;
+        _showImportDialog = showImportDialog;
         _navigateToFilings = navigateToFilings;
-        _scheduler         = scheduler ?? RxApp.MainThreadScheduler;
+        _scheduler = scheduler ?? RxApp.MainThreadScheduler;
 
         _hasSelection = this.WhenAnyValue(x => x.SelectedCount)
             .Select(c => c > 0)

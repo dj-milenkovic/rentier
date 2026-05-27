@@ -8,7 +8,8 @@ using Rentier.Application.Interfaces;
 using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
 using Rentier.Domain.ValueObjects;
-using Rentier.Domain.Enums;using Xunit;
+using Rentier.Domain.Enums;
+using Xunit;
 
 namespace Rentier.UnitTests;
 

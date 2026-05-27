@@ -230,7 +230,7 @@ public class FilingsViewHeadlessTests
     [AvaloniaFact]
     public void FilingsView_ActionAndHeaderColumns_RenderQaFixes()
     {
-// Arrange
+        // Arrange
         var rows = new[] { MakeFilingRowDto() };
         var getFilings = Substitute.For<IQueryHandler<GetFilingsQuery, Result<FilingsPageResult, Error>>>();
         getFilings.HandleAsync(Arg.Any<GetFilingsQuery>(), Arg.Any<CancellationToken>())

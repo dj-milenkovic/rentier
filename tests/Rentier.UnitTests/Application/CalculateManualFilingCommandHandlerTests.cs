@@ -16,7 +16,7 @@ namespace Rentier.UnitTests;
 
 public class CalculateManualFilingCommandHandlerTests
 {
-    private static readonly Guid ProfileId  = Guid.NewGuid();
+    private static readonly Guid ProfileId = Guid.NewGuid();
     private static readonly DateOnly TestDate = new(2024, 6, 17);
 
     // ── Helpers ──────────────────────────────────────────────────────────────
@@ -45,7 +45,7 @@ public class CalculateManualFilingCommandHandlerTests
 
     private static CalculateManualFilingCommandHandler MakeHandler(
         IExchangeRateFetcher? fetcher = null,
-        IHolidayRepository?  holidayRepo = null)
+        IHolidayRepository? holidayRepo = null)
     {
         var calculator = new ManualFilingCalculator(MakeResolver(fetcher), holidayRepo ?? MakeHolidayRepo());
         return new CalculateManualFilingCommandHandler(calculator);
@@ -60,7 +60,7 @@ public class CalculateManualFilingCommandHandlerTests
     public async Task HandleAsync_ValidCommandWithWht_ReturnsSuccessPreviewDto()
     {
         var handler = MakeHandler();
-        var cmd     = ValidCommand(netReceived: 85.00m);
+        var cmd = ValidCommand(netReceived: 85.00m);
 
         var result = await handler.HandleAsync(cmd);
 
@@ -79,7 +79,7 @@ public class CalculateManualFilingCommandHandlerTests
     public async Task HandleAsync_ValidCommandWithWht_ComputesCorrectGrossIncomeRsd()
     {
         var handler = MakeHandler();
-        var cmd     = ValidCommand(netReceived: 85.00m);
+        var cmd = ValidCommand(netReceived: 85.00m);
 
         var result = await handler.HandleAsync(cmd);
 
@@ -92,7 +92,7 @@ public class CalculateManualFilingCommandHandlerTests
     public async Task HandleAsync_ValidCommandWithWht_WhtPaidRsdGreaterThanZero()
     {
         var handler = MakeHandler();
-        var cmd     = ValidCommand(netReceived: 85.00m);
+        var cmd = ValidCommand(netReceived: 85.00m);
 
         var result = await handler.HandleAsync(cmd);
 
@@ -107,7 +107,7 @@ public class CalculateManualFilingCommandHandlerTests
     public async Task HandleAsync_NoWht_WhtPaidRsdIsZero()
     {
         var handler = MakeHandler();
-        var cmd     = ValidCommand(netReceived: null);
+        var cmd = ValidCommand(netReceived: null);
 
         var result = await handler.HandleAsync(cmd);
 
@@ -119,7 +119,7 @@ public class CalculateManualFilingCommandHandlerTests
     public async Task HandleAsync_NoWht_TaxPayableEqualsGrossTaxPayable()
     {
         var handler = MakeHandler();
-        var cmd     = ValidCommand(netReceived: null);
+        var cmd = ValidCommand(netReceived: null);
 
         var result = await handler.HandleAsync(cmd);
 
@@ -135,7 +135,7 @@ public class CalculateManualFilingCommandHandlerTests
     public async Task HandleAsync_BlankTicker_ReturnsTickerRequiredError(string ticker)
     {
         var handler = MakeHandler();
-        var cmd     = new CalculateManualFilingCommand(ProfileId, IncomeType.Dividend, ticker, TestDate, "USD", 100m, null);
+        var cmd = new CalculateManualFilingCommand(ProfileId, IncomeType.Dividend, ticker, TestDate, "USD", 100m, null);
 
         var result = await handler.HandleAsync(cmd);
 
@@ -147,7 +147,7 @@ public class CalculateManualFilingCommandHandlerTests
     public async Task HandleAsync_GrossAmountZero_ReturnsGrossRequiredError()
     {
         var handler = MakeHandler();
-        var cmd     = new CalculateManualFilingCommand(ProfileId, IncomeType.Dividend, "AAPL", TestDate, "USD", 0m, null);
+        var cmd = new CalculateManualFilingCommand(ProfileId, IncomeType.Dividend, "AAPL", TestDate, "USD", 0m, null);
 
         var result = await handler.HandleAsync(cmd);
 
@@ -159,7 +159,7 @@ public class CalculateManualFilingCommandHandlerTests
     public async Task HandleAsync_DefaultIncomeDate_ReturnsDateRequiredError()
     {
         var handler = MakeHandler();
-        var cmd     = new CalculateManualFilingCommand(ProfileId, IncomeType.Dividend, "AAPL", default, "USD", 100m, null);
+        var cmd = new CalculateManualFilingCommand(ProfileId, IncomeType.Dividend, "AAPL", default, "USD", 100m, null);
 
         var result = await handler.HandleAsync(cmd);
 
@@ -171,7 +171,7 @@ public class CalculateManualFilingCommandHandlerTests
     public async Task HandleAsync_NetExceedsGross_ReturnsNetExceedsGrossError()
     {
         var handler = MakeHandler();
-        var cmd     = new CalculateManualFilingCommand(ProfileId, IncomeType.Dividend, "AAPL", TestDate, "USD", 100m, 150m);
+        var cmd = new CalculateManualFilingCommand(ProfileId, IncomeType.Dividend, "AAPL", TestDate, "USD", 100m, 150m);
 
         var result = await handler.HandleAsync(cmd);
 
@@ -183,7 +183,7 @@ public class CalculateManualFilingCommandHandlerTests
     public async Task HandleAsync_NegativeNetReceived_ReturnsNetNegativeError()
     {
         var handler = MakeHandler();
-        var cmd     = new CalculateManualFilingCommand(ProfileId, IncomeType.Dividend, "AAPL", TestDate, "USD", 100m, -1m);
+        var cmd = new CalculateManualFilingCommand(ProfileId, IncomeType.Dividend, "AAPL", TestDate, "USD", 100m, -1m);
 
         var result = await handler.HandleAsync(cmd);
 
@@ -201,7 +201,7 @@ public class CalculateManualFilingCommandHandlerTests
             .Returns(Result<ExchangeRate, Error>.Failure(new Error("RATE_NOT_FOUND", "No rate")));
 
         var handler = MakeHandler(fetcher: fetcher);
-        var cmd     = ValidCommand();
+        var cmd = ValidCommand();
 
         var result = await handler.HandleAsync(cmd);
 
@@ -217,7 +217,7 @@ public class CalculateManualFilingCommandHandlerTests
             .Returns<Result<ExchangeRate, Error>>(_ => throw new HttpRequestException("network down"));
 
         var handler = MakeHandler(fetcher: fetcher);
-        var cmd     = ValidCommand();
+        var cmd = ValidCommand();
 
         var result = await handler.HandleAsync(cmd);
 
