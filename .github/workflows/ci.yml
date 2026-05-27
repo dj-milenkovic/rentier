@@ -311,6 +311,20 @@ jobs:
 
           dotnet sonarscanner end /d:sonar.token="${SONAR_TOKEN}"
 
+      - name: Debug — find report-task.txt
+        if: always()
+        shell: bash
+        run: |
+          echo "=== Searching for report-task.txt ==="
+          find . -name 'report-task.txt' 2>/dev/null || echo "Not found anywhere"
+          
+          echo "=== .sonarqube directory structure ==="
+          find . -name '.sonarqube' -type d 2>/dev/null | head -5
+          ls -la .sonarqube/ 2>/dev/null || echo ".sonarqube dir not found"
+          
+          echo "=== .scannerwork directory structure ==="
+          ls -la .scannerwork/ 2>/dev/null || echo ".scannerwork dir not found"
+
       - name: Check Quality Gate
         uses: sonarsource/sonarqube-quality-gate-action@master
         timeout-minutes: 5
