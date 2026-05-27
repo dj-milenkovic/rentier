@@ -97,6 +97,7 @@ jobs:
         run: |
           dotnet test Rentier.slnx --no-build -c Release \
             --filter "Category!=Integration" \
+            --collect:"XPlat Code Coverage" \
             --settings coverlet.runsettings \
             --results-directory ./coverage \
             --logger "trx;LogFileName=results-${{ matrix.os }}.trx" \
