@@ -296,9 +296,9 @@ jobs:
             /d:sonar.token="${SONAR_TOKEN}" \
             /d:sonar.host.url="https://sonarcloud.io" \
             /d:sonar.cs.opencover.reportsPaths="./coverage-merged/Cobertura.xml" \
-            /d:sonar.exclusions="**/Migrations/**,**/obj/**,**/bin/**,**/*.Designer.cs,**/AssemblyInfo.cs" \
-            /d:sonar.coverage.exclusions="**/*.Tests/**,**/Migrations/**,**/Program.cs" \
-            /d:sonar.cpd.exclusions="**/*.Tests/**" \
+            /d:sonar.exclusions="**/Migrations/**,**/obj/**,**/bin/**,**/Properties/**,**/*.Designer.cs,**/*.g.cs,**/*.axaml.cs,**/AssemblyInfo.cs" \
+            /d:sonar.coverage.exclusions="**/*.Tests/**,**/Migrations/**,**/Program.cs,**/*.axaml.cs,**/Properties/**" \
+            /d:sonar.cpd.exclusions="**/*.Tests/**,**/*.g.cs" \
             /d:sonar.test.inclusions="**/*.Tests/**,**/*Tests.cs"
 
           for proj in \

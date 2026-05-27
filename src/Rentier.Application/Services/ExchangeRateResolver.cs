@@ -33,10 +33,7 @@ public sealed class ExchangeRateResolver : IExchangeRateResolver
         // Step 1: Try exact date
         var exactResult = await _fetcher.FetchRateAsync(date, currency, ct);
         if (exactResult.IsSuccess)
-        {
-            _logger.LogInformation(
-                "Rate resolved (exact): {Currency} on {Date} = {Rate}",
-                currency, date, exactResult.Value.RateToRsd);
+        {            
             return Result<RateResolution, Error>.Success(
                 new RateResolution(exactResult.Value, date, ExchangeRateSourceType.Exact));
         }
