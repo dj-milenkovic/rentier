@@ -93,6 +93,7 @@ jobs:
 
       # ── Test ─────────────────────────────────
       - name: Test
+        shell: bash
         run: |
           dotnet test Rentier.slnx --no-build -c Release \
             --filter "Category!=Integration" \
