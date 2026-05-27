@@ -108,7 +108,8 @@ jobs:
         uses: actions/upload-artifact@v7.0.1
         with:
           name: coverage-${{ matrix.os }}
-          path: ./coverage/**/coverage.opencover.xml
+          path: ./coverage/coverage.opencover.xml
+          if-no-files-found: ignore
 
       - name: Upload test results
         if: always()
@@ -179,23 +180,25 @@ jobs:
       - name: Merge & generate report
         shell: bash
         run: |
-          # Collect all Cobertura files
-          REPORTS=$(find ./coverage-raw -name 'coverage.opencover.xml' | tr '\n' ';')
+         # Collect all Cobertura files (accounting for artifact nesting from merge-multiple: false)
+         REPORTS=$(find ./coverage-raw -name 'coverage.opencover.xml' -type f | tr '\n' ';')
           if [ -z "$REPORTS" ]; then
-            echo "⚠️ No coverage files found" >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
+           echo "⚠️ No coverage files found in ./coverage-raw" >> "$GITHUB_STEP_SUMMARY"
+           echo "Contents of ./coverage-raw:" >> "$GITHUB_STEP_SUMMARY"
+           find ./coverage-raw -type f | head -20 >> "$GITHUB_STEP_SUMMARY" || echo "Directory not found or empty"
+           exit 0
+         fi
 
-          reportgenerator \
-            "-reports:${REPORTS}" \
-            "-targetdir:./coverage-report" \
-            "-reporttypes:HtmlInline_AzurePipelines;Cobertura;TextSummary;MarkdownSummaryGithub"
+         reportgenerator \
+           "-reports:${REPORTS}" \
+           "-targetdir:./coverage-report" \
+           "-reporttypes:HtmlInline_AzurePipelines;Cobertura;TextSummary;MarkdownSummaryGithub"
 
-          # Extract line coverage percentage
-          LINE_COV=$(grep -oP 'Line coverage: \K[0-9.]+' ./coverage-report/Summary.txt || echo "N/A")
-          BRANCH_COV=$(grep -oP 'Branch coverage: \K[0-9.]+' ./coverage-report/Summary.txt || echo "N/A")
-          echo "LINE_COVERAGE=$LINE_COV" >> "$GITHUB_ENV"
-          echo "BRANCH_COVERAGE=$BRANCH_COV" >> "$GITHUB_ENV"
+         # Extract line coverage percentage
+         LINE_COV=$(grep -oP 'Line coverage: \K[0-9.]+' ./coverage-report/Summary.txt || echo "N/A")
+         BRANCH_COV=$(grep -oP 'Branch coverage: \K[0-9.]+' ./coverage-report/Summary.txt || echo "N/A")
+         echo "LINE_COVERAGE=$LINE_COV" >> "$GITHUB_ENV"
+         echo "BRANCH_COVERAGE=$BRANCH_COV" >> "$GITHUB_ENV"
       
       - name: Upload merged Cobertura for Sonar
         uses: actions/upload-artifact@v7.0.1
