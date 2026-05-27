@@ -204,7 +204,7 @@ jobs:
 
       - name: Post coverage to PR
         if: github.event_name == 'pull_request'
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@v3.0.4
         with:
           header: coverage
           path: ./coverage-report/SummaryGithub.md
@@ -277,9 +277,9 @@ jobs:
           COV_PATHS=$(find ./coverage -name 'coverage.cobertura.xml' | tr '\n' ',')
 
           dotnet sonarscanner begin \
-            /k:"${{ vars.SONAR_PROJECT_KEY || 'rentier' }}" \
-            /o:"${{ vars.SONAR_ORGANIZATION || 'rentier-org' }}" \
-            /d:sonar.token="${SONAR_TOKEN}" \
+            /k:"${{ secrets.SONAR_PROJECT_KEY }}" \
+            /o:"${{ secrets.SONAR_ORGANIZATION }}" \
+            /d:sonar.token="${{ secrets.SONAR_TOKEN }}" \
             /d:sonar.host.url="https://sonarcloud.io" \
             /d:sonar.cs.opencover.reportsPaths="${COV_PATHS}" \
             /d:sonar.coverage.exclusions="**/tests/**,**/Migrations/**" \
