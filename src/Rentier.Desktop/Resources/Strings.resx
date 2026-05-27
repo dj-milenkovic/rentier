@@ -493,9 +493,6 @@
   <data name="ReportStatus_PartialError" xml:space="preserve">
     <value>Partial Error</value>
   </data>
-  <data name="ReportStatus_PartialError" xml:space="preserve">
-    <value>Partial Error</value>
-  </data>
   <data name="Dashboard_UpcomingDeadlines" xml:space="preserve">
     <value>📋 Upcoming Deadlines (30 days)</value>
   </data>
