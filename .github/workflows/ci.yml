@@ -294,7 +294,12 @@ jobs:
             /k:"${SONAR_PROJECT_KEY}" \
             /o:"${SONAR_ORGANIZATION}" \
             /d:sonar.token="${SONAR_TOKEN}" \
-            /d:sonar.host.url="https://sonarcloud.io"
+            /d:sonar.host.url="https://sonarcloud.io" \
+            /d:sonar.cs.opencover.reportsPaths="./coverage-merged/Cobertura.xml" \
+            /d:sonar.exclusions="**/Migrations/**,**/obj/**,**/bin/**,**/*.Designer.cs,**/AssemblyInfo.cs" \
+            /d:sonar.coverage.exclusions="**/*.Tests/**,**/Migrations/**,**/Program.cs" \
+            /d:sonar.cpd.exclusions="**/*.Tests/**" \
+            /d:sonar.test.inclusions="**/*.Tests/**,**/*Tests.cs"
 
           for proj in \
             src/Rentier.Domain/Rentier.Domain.csproj \
