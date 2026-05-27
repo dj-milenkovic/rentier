@@ -125,17 +125,17 @@ public sealed class FilingRepository : IFilingRepository
 
         IOrderedQueryable<Filing> ordered = (sortColumn, sortDescending) switch
         {
-            (FilingSortColumn.FilingDeadline,   true)  => query.OrderByDescending(f => f.FilingDeadline),
-            (FilingSortColumn.FilingDeadline,   false) => query.OrderBy(f => f.FilingDeadline),
-            (FilingSortColumn.Status,           true)  => query.OrderByDescending(f => (int)f.Status),
-            (FilingSortColumn.Status,           false) => query.OrderBy(f => (int)f.Status),
-            (FilingSortColumn.IncomeType,       true)  => query.OrderByDescending(f => (int)f.IncomeType),
-            (FilingSortColumn.IncomeType,       false) => query.OrderBy(f => (int)f.IncomeType),
-            (FilingSortColumn.PayingEntity,     true)  => query.OrderByDescending(f => f.PayingEntity),
-            (FilingSortColumn.PayingEntity,     false) => query.OrderBy(f => f.PayingEntity),
-            (FilingSortColumn.TaxPayable,       true)  => query.OrderByDescending(f => f.TaxPayableRsd),
-            (FilingSortColumn.TaxPayable,       false) => query.OrderBy(f => f.TaxPayableRsd),
-            (FilingSortColumn.PaymentReference, true)  => query.OrderByDescending(f => f.PaymentReference),
+            (FilingSortColumn.FilingDeadline, true) => query.OrderByDescending(f => f.FilingDeadline),
+            (FilingSortColumn.FilingDeadline, false) => query.OrderBy(f => f.FilingDeadline),
+            (FilingSortColumn.Status, true) => query.OrderByDescending(f => (int)f.Status),
+            (FilingSortColumn.Status, false) => query.OrderBy(f => (int)f.Status),
+            (FilingSortColumn.IncomeType, true) => query.OrderByDescending(f => (int)f.IncomeType),
+            (FilingSortColumn.IncomeType, false) => query.OrderBy(f => (int)f.IncomeType),
+            (FilingSortColumn.PayingEntity, true) => query.OrderByDescending(f => f.PayingEntity),
+            (FilingSortColumn.PayingEntity, false) => query.OrderBy(f => f.PayingEntity),
+            (FilingSortColumn.TaxPayable, true) => query.OrderByDescending(f => f.TaxPayableRsd),
+            (FilingSortColumn.TaxPayable, false) => query.OrderBy(f => f.TaxPayableRsd),
+            (FilingSortColumn.PaymentReference, true) => query.OrderByDescending(f => f.PaymentReference),
             (FilingSortColumn.PaymentReference, false) => query.OrderBy(f => f.PaymentReference),
             _ => throw new ArgumentOutOfRangeException(nameof(sortColumn))
         };
@@ -198,9 +198,9 @@ public sealed class FilingRepository : IFilingRepository
             .Select(f => f.TaxPayableRsd)
             .ToListAsync(ct);
 
-        var initCount   = counts.FirstOrDefault(g => g.Status == FilingStatus.Init)?.Count  ?? 0;
-        var filedCount  = counts.FirstOrDefault(g => g.Status == FilingStatus.Filed)?.Count ?? 0;
-        var paidCount   = counts.FirstOrDefault(g => g.Status == FilingStatus.Paid)?.Count  ?? 0;
+        var initCount = counts.FirstOrDefault(g => g.Status == FilingStatus.Init)?.Count ?? 0;
+        var filedCount = counts.FirstOrDefault(g => g.Status == FilingStatus.Filed)?.Count ?? 0;
+        var paidCount = counts.FirstOrDefault(g => g.Status == FilingStatus.Paid)?.Count ?? 0;
         var totalUnpaid = unpaidAmounts.Sum();
         return (initCount, filedCount, paidCount, totalUnpaid);
     }

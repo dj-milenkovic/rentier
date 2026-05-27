@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using AngleSharp;
 using AngleSharp.Dom;
 using Rentier.Application.Common;

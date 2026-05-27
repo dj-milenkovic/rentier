@@ -17,7 +17,7 @@ namespace Rentier.UnitTests;
 
 public class CreateManualFilingCommandHandlerTests
 {
-    private static readonly Guid ProfileId  = Guid.NewGuid();
+    private static readonly Guid ProfileId = Guid.NewGuid();
     private static readonly DateOnly TestDate = new(2024, 6, 17);
 
     // ── Helpers ──────────────────────────────────────────────────────────────
@@ -53,9 +53,9 @@ public class CreateManualFilingCommandHandlerTests
     }
 
     private static CreateManualFilingCommandHandler MakeHandler(
-        IExchangeRateFetcher? fetcher     = null,
-        IHolidayRepository?  holidayRepo  = null,
-        IFilingRepository?   filingRepo   = null)
+        IExchangeRateFetcher? fetcher = null,
+        IHolidayRepository? holidayRepo = null,
+        IFilingRepository? filingRepo = null)
     {
         var calculator = new ManualFilingCalculator(MakeResolver(fetcher), holidayRepo ?? MakeHolidayRepo());
         return new CreateManualFilingCommandHandler(calculator, filingRepo ?? MakeFilingRepo());
@@ -70,8 +70,8 @@ public class CreateManualFilingCommandHandlerTests
     public async Task HandleAsync_ValidCommandWithWht_ReturnsSuccessWithFilingId()
     {
         var filingRepo = MakeFilingRepo(exists: false);
-        var handler    = MakeHandler(filingRepo: filingRepo);
-        var cmd        = ValidCommand(netReceived: 85.00m);
+        var handler = MakeHandler(filingRepo: filingRepo);
+        var cmd = ValidCommand(netReceived: 85.00m);
 
         var result = await handler.HandleAsync(cmd);
 
@@ -83,8 +83,8 @@ public class CreateManualFilingCommandHandlerTests
     public async Task HandleAsync_ValidCommandWithWht_CallsAddAsyncOnce()
     {
         var filingRepo = MakeFilingRepo(exists: false);
-        var handler    = MakeHandler(filingRepo: filingRepo);
-        var cmd        = ValidCommand(netReceived: 85.00m);
+        var handler = MakeHandler(filingRepo: filingRepo);
+        var cmd = ValidCommand(netReceived: 85.00m);
 
         await handler.HandleAsync(cmd);
 
@@ -95,8 +95,8 @@ public class CreateManualFilingCommandHandlerTests
     public async Task HandleAsync_ValidCommandWithWht_TickerIsUppercasedInFiling()
     {
         var filingRepo = MakeFilingRepo(exists: false);
-        var handler    = MakeHandler(filingRepo: filingRepo);
-        var cmd        = new CreateManualFilingCommand(ProfileId, IncomeType.Dividend, "aapl", TestDate, "USD", 100.00m, 85.00m);
+        var handler = MakeHandler(filingRepo: filingRepo);
+        var cmd = new CreateManualFilingCommand(ProfileId, IncomeType.Dividend, "aapl", TestDate, "USD", 100.00m, 85.00m);
 
         await handler.HandleAsync(cmd);
 
@@ -109,8 +109,8 @@ public class CreateManualFilingCommandHandlerTests
     public async Task HandleAsync_ValidCommandWithWht_FilingHasReportIdNull()
     {
         var filingRepo = MakeFilingRepo(exists: false);
-        var handler    = MakeHandler(filingRepo: filingRepo);
-        var cmd        = ValidCommand(netReceived: 85.00m);
+        var handler = MakeHandler(filingRepo: filingRepo);
+        var cmd = ValidCommand(netReceived: 85.00m);
 
         await handler.HandleAsync(cmd);
 
@@ -123,8 +123,8 @@ public class CreateManualFilingCommandHandlerTests
     public async Task HandleAsync_ValidCommandWithWht_FilingStatusIsInit()
     {
         var filingRepo = MakeFilingRepo(exists: false);
-        var handler    = MakeHandler(filingRepo: filingRepo);
-        var cmd        = ValidCommand(netReceived: 85.00m);
+        var handler = MakeHandler(filingRepo: filingRepo);
+        var cmd = ValidCommand(netReceived: 85.00m);
 
         await handler.HandleAsync(cmd);
 
@@ -139,8 +139,8 @@ public class CreateManualFilingCommandHandlerTests
     public async Task HandleAsync_NoWht_FilingWhtPaidRsdIsZero()
     {
         var filingRepo = MakeFilingRepo(exists: false);
-        var handler    = MakeHandler(filingRepo: filingRepo);
-        var cmd        = ValidCommand(netReceived: null);
+        var handler = MakeHandler(filingRepo: filingRepo);
+        var cmd = ValidCommand(netReceived: null);
 
         await handler.HandleAsync(cmd);
 
@@ -153,7 +153,7 @@ public class CreateManualFilingCommandHandlerTests
     public async Task HandleAsync_NoWht_ReturnsSuccess()
     {
         var handler = MakeHandler(filingRepo: MakeFilingRepo(exists: false));
-        var cmd     = ValidCommand(netReceived: null);
+        var cmd = ValidCommand(netReceived: null);
 
         var result = await handler.HandleAsync(cmd);
 
@@ -166,8 +166,8 @@ public class CreateManualFilingCommandHandlerTests
     public async Task HandleAsync_DuplicateFiling_ReturnsDuplicateFilingError()
     {
         var filingRepo = MakeFilingRepo(exists: true);
-        var handler    = MakeHandler(filingRepo: filingRepo);
-        var cmd        = ValidCommand();
+        var handler = MakeHandler(filingRepo: filingRepo);
+        var cmd = ValidCommand();
 
         var result = await handler.HandleAsync(cmd);
 
@@ -179,8 +179,8 @@ public class CreateManualFilingCommandHandlerTests
     public async Task HandleAsync_DuplicateFiling_AddAsyncNotCalled()
     {
         var filingRepo = MakeFilingRepo(exists: true);
-        var handler    = MakeHandler(filingRepo: filingRepo);
-        var cmd        = ValidCommand();
+        var handler = MakeHandler(filingRepo: filingRepo);
+        var cmd = ValidCommand();
 
         await handler.HandleAsync(cmd);
 
@@ -193,7 +193,7 @@ public class CreateManualFilingCommandHandlerTests
     public async Task HandleAsync_BlankTicker_ReturnsTickerRequiredError()
     {
         var handler = MakeHandler();
-        var cmd     = new CreateManualFilingCommand(ProfileId, IncomeType.Dividend, " ", TestDate, "USD", 100m, null);
+        var cmd = new CreateManualFilingCommand(ProfileId, IncomeType.Dividend, " ", TestDate, "USD", 100m, null);
 
         var result = await handler.HandleAsync(cmd);
 
@@ -205,7 +205,7 @@ public class CreateManualFilingCommandHandlerTests
     public async Task HandleAsync_GrossAmountZero_ReturnsGrossRequiredError()
     {
         var handler = MakeHandler();
-        var cmd     = new CreateManualFilingCommand(ProfileId, IncomeType.Dividend, "AAPL", TestDate, "USD", 0m, null);
+        var cmd = new CreateManualFilingCommand(ProfileId, IncomeType.Dividend, "AAPL", TestDate, "USD", 0m, null);
 
         var result = await handler.HandleAsync(cmd);
 
@@ -217,7 +217,7 @@ public class CreateManualFilingCommandHandlerTests
     public async Task HandleAsync_NetExceedsGross_ReturnsNetExceedsGrossError()
     {
         var handler = MakeHandler();
-        var cmd     = new CreateManualFilingCommand(ProfileId, IncomeType.Dividend, "AAPL", TestDate, "USD", 100m, 200m);
+        var cmd = new CreateManualFilingCommand(ProfileId, IncomeType.Dividend, "AAPL", TestDate, "USD", 100m, 200m);
 
         var result = await handler.HandleAsync(cmd);
 
@@ -229,7 +229,7 @@ public class CreateManualFilingCommandHandlerTests
     public async Task HandleAsync_DefaultIncomeDate_ReturnsDateRequiredError()
     {
         var handler = MakeHandler();
-        var cmd     = new CreateManualFilingCommand(ProfileId, IncomeType.Dividend, "AAPL", default, "USD", 100m, null);
+        var cmd = new CreateManualFilingCommand(ProfileId, IncomeType.Dividend, "AAPL", default, "USD", 100m, null);
 
         var result = await handler.HandleAsync(cmd);
 
@@ -241,7 +241,7 @@ public class CreateManualFilingCommandHandlerTests
     public async Task HandleAsync_NegativeNetReceived_ReturnsNetNegativeError()
     {
         var handler = MakeHandler();
-        var cmd     = new CreateManualFilingCommand(ProfileId, IncomeType.Dividend, "AAPL", TestDate, "USD", 100m, -1m);
+        var cmd = new CreateManualFilingCommand(ProfileId, IncomeType.Dividend, "AAPL", TestDate, "USD", 100m, -1m);
 
         var result = await handler.HandleAsync(cmd);
 
@@ -259,7 +259,7 @@ public class CreateManualFilingCommandHandlerTests
             .Returns<Result<ExchangeRate, Error>>(_ => throw new HttpRequestException("network down"));
 
         var handler = MakeHandler(fetcher: fetcher);
-        var cmd     = ValidCommand();
+        var cmd = ValidCommand();
 
         var result = await handler.HandleAsync(cmd);
 

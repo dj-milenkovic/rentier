@@ -10,10 +10,10 @@ public static class FilingStatusBrushConverter
     public static readonly IValueConverter Instance =
         new FuncValueConverter<FilingStatus, IBrush>(s => s switch
         {
-            FilingStatus.Init  => GetBrush("RentierStatusInitBrush"),
+            FilingStatus.Init => GetBrush("RentierStatusInitBrush"),
             FilingStatus.Filed => GetBrush("RentierStatusFiledBrush"),
-            FilingStatus.Paid  => GetBrush("RentierStatusPaidBrush"),
-            _                  => Brushes.Transparent
+            FilingStatus.Paid => GetBrush("RentierStatusPaidBrush"),
+            _ => Brushes.Transparent
         });
 
     private static IBrush GetBrush(string key)

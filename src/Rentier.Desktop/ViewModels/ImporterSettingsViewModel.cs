@@ -182,30 +182,30 @@ public sealed class ImporterSettingsViewModel : ReactiveObject, IActivatableView
 
     private void PopulateFormFromDto(ImporterDto dto)
     {
-        DisplayName     = dto.DisplayName;
-        ReportType      = dto.ReportType;
+        DisplayName = dto.DisplayName;
+        ReportType = dto.ReportType;
         SelectedProfile = AvailableProfiles.FirstOrDefault(p => p.Id == dto.TaxpayerProfileId);
         SelectedMailbox = AvailableMailboxes.FirstOrDefault(m => m.Id == dto.MailboxId);
-        FromFilter      = dto.FromFilter;
-        SubjectFilter   = dto.SubjectFilter;
+        FromFilter = dto.FromFilter;
+        SubjectFilter = dto.SubjectFilter;
         AttachmentRegex = dto.AttachmentRegex;
-        PaymentNotes    = dto.PaymentNotes;
-        IsEditMode      = true;
+        PaymentNotes = dto.PaymentNotes;
+        IsEditMode = true;
     }
 
     private void ClearForm()
     {
-        DisplayName     = string.Empty;
-        ReportType      = ReportType.IbkrCsv;
+        DisplayName = string.Empty;
+        ReportType = ReportType.IbkrCsv;
         SelectedProfile = null;
         SelectedMailbox = null;
-        FromFilter      = string.Empty;
-        SubjectFilter   = string.Empty;
+        FromFilter = string.Empty;
+        SubjectFilter = string.Empty;
         AttachmentRegex = string.Empty;
-        PaymentNotes    = string.Empty;
-        IsEditMode      = false;
-        ErrorMessage    = null;
-        SuccessMessage  = null;
+        PaymentNotes = string.Empty;
+        IsEditMode = false;
+        ErrorMessage = null;
+        SuccessMessage = null;
     }
 
     private void OnAddNew()

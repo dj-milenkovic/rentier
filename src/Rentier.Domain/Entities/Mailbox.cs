@@ -79,8 +79,8 @@ public sealed class Mailbox
         (_cursorDate, _cursorUid) = cursor switch
         {
             MailboxCursor.NeverSynced => ((DateOnly?)null, (long?)null),
-            MailboxCursor.SyncedTo s  => (s.Date, s.Uid),
-            _                         => throw new DomainException("Unknown MailboxCursor subtype")
+            MailboxCursor.SyncedTo s => (s.Date, s.Uid),
+            _ => throw new DomainException("Unknown MailboxCursor subtype")
         };
     }
 }

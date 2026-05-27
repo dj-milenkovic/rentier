@@ -86,8 +86,8 @@ public class FilingDeadlineProperties
         var deadline = FilingDeadlineCalculator.CalculateDeadline(incomeDate, conf);
 
         bool notSaturday = deadline.DayOfWeek != DayOfWeek.Saturday;
-        bool notSunday   = deadline.DayOfWeek != DayOfWeek.Sunday;
-        bool notHoliday  = !conf.ContainsHoliday(deadline);
+        bool notSunday = deadline.DayOfWeek != DayOfWeek.Sunday;
+        bool notHoliday = !conf.ContainsHoliday(deadline);
 
         return (notSaturday && notSunday && notHoliday).ToProperty();
     }

@@ -23,7 +23,7 @@ internal sealed class FakeHttpMessageHandler : HttpMessageHandler
     {
         CallCount++;
         return Task.FromResult(new HttpResponseMessage(_statusCode)
-            { Content = new StringContent(_response) });
+        { Content = new StringContent(_response) });
     }
 }
 

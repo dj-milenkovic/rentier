@@ -25,7 +25,7 @@ internal static class ConfirmDialogHelper
             return false;
 
         var confirmButton = new Button { Content = confirmText, Margin = new Thickness(0, 0, 4, 0), IsDefault = true };
-        var cancelButton  = new Button { Content = cancelText, IsCancel = true };
+        var cancelButton = new Button { Content = cancelText, IsCancel = true };
 
         var dialog = new Window
         {
@@ -53,7 +53,7 @@ internal static class ConfirmDialogHelper
         };
 
         confirmButton.Click += (_, _) => dialog.Close(true);
-        cancelButton.Click  += (_, _) => dialog.Close(false);
+        cancelButton.Click += (_, _) => dialog.Close(false);
 
         return await dialog.ShowDialog<bool>(owner);
     }

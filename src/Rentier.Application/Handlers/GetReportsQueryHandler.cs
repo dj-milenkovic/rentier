@@ -58,11 +58,11 @@ public sealed class GetReportsQueryHandler
                 foreach (var r in pageReports)
                 {
                     ct.ThrowIfCancellationRequested();
-                    var count        = await _filings.GetFilingCountByReportIdAsync(r.Id, ct);
-                    var earliest     = await _filings.GetEarliestIncomeDateByReportIdAsync(r.Id, ct);
+                    var count = await _filings.GetFilingCountByReportIdAsync(r.Id, ct);
+                    var earliest = await _filings.GetEarliestIncomeDateByReportIdAsync(r.Id, ct);
                     var importerName = importerNames.GetValueOrDefault(r.ImporterId, "Unknown");
-                    var datePart     = (r.EmailDate ?? earliest ?? r.ImportDate).ToString("yyyy-MM-dd");
-                    var displayName  = $"{importerName} \u2013 {datePart}";
+                    var datePart = (r.EmailDate ?? earliest ?? r.ImportDate).ToString("yyyy-MM-dd");
+                    var displayName = $"{importerName} \u2013 {datePart}";
                     dtos.Add(new ReportRowDto(r.Id, r.ReportName, r.ImportDate, r.EmailDate, importerName, r.Status, count, displayName, earliest));
                 }
 

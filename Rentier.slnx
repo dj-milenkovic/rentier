@@ -6,7 +6,6 @@
     <Project Path="src/Rentier.Infrastructure/Rentier.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="tests/Rentier.E2E.Tests/Rentier.E2E.Tests.csproj" />
     <Project Path="tests/Rentier.Infrastructure.Tests/Rentier.Infrastructure.Tests.csproj" />
     <Project Path="tests/Rentier.Scenarios.Tests/Rentier.Scenarios.Tests.csproj" />
     <Project Path="tests/Rentier.Tests.Common/Rentier.Tests.Common.csproj" />

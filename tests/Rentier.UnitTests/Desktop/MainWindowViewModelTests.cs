@@ -98,16 +98,16 @@ public class MainWindowViewModelTests
 
     private static HolidaySettingsViewModel BuildHolidayVm()
     {
-        var getHolidays   = Substitute.For<IQueryHandler<GetHolidayConfQuery, Result<HolidayConfDto, Error>>>();
-        var saveHolidays  = Substitute.For<ICommandHandler<SaveHolidayConfCommand, Result<VoidResult, Error>>>();
+        var getHolidays = Substitute.For<IQueryHandler<GetHolidayConfQuery, Result<HolidayConfDto, Error>>>();
+        var saveHolidays = Substitute.For<ICommandHandler<SaveHolidayConfCommand, Result<VoidResult, Error>>>();
         var fetchHolidays = Substitute.For<ICommandHandler<FetchHolidaysFromWebCommand, Result<IReadOnlyList<HolidayEntryDto>, Error>>>();
         return new HolidaySettingsViewModel(getHolidays, saveHolidays, fetchHolidays);
     }
 
     private static MailboxSettingsViewModel BuildMailboxVm()
     {
-        var getMailboxes  = Substitute.For<IQueryHandler<GetMailboxesQuery, Result<IReadOnlyList<MailboxDto>, Error>>>();
-        var addMailbox    = Substitute.For<ICommandHandler<AddMailboxCommand, Result<Guid, Error>>>();
+        var getMailboxes = Substitute.For<IQueryHandler<GetMailboxesQuery, Result<IReadOnlyList<MailboxDto>, Error>>>();
+        var addMailbox = Substitute.For<ICommandHandler<AddMailboxCommand, Result<Guid, Error>>>();
         var updateMailbox = Substitute.For<ICommandHandler<UpdateMailboxCommand, Result<VoidResult, Error>>>();
         var deleteMailbox = Substitute.For<ICommandHandler<DeleteMailboxCommand, Result<VoidResult, Error>>>();
         return new MailboxSettingsViewModel(getMailboxes, addMailbox, updateMailbox, deleteMailbox);
@@ -116,9 +116,9 @@ public class MainWindowViewModelTests
     private static ImporterSettingsViewModel BuildImporterVm(
         IQueryHandler<GetTaxpayerProfileQuery, Result<TaxpayerProfileDto?, Error>> getProfile)
     {
-        var getImporters   = Substitute.For<IQueryHandler<GetImportersQuery, Result<IReadOnlyList<ImporterDto>, Error>>>();
-        var getMailboxes   = Substitute.For<IQueryHandler<GetMailboxesQuery, Result<IReadOnlyList<MailboxDto>, Error>>>();
-        var addImporter    = Substitute.For<ICommandHandler<AddImporterCommand, Result<Guid, Error>>>();
+        var getImporters = Substitute.For<IQueryHandler<GetImportersQuery, Result<IReadOnlyList<ImporterDto>, Error>>>();
+        var getMailboxes = Substitute.For<IQueryHandler<GetMailboxesQuery, Result<IReadOnlyList<MailboxDto>, Error>>>();
+        var addImporter = Substitute.For<ICommandHandler<AddImporterCommand, Result<Guid, Error>>>();
         var updateImporter = Substitute.For<ICommandHandler<UpdateImporterCommand, Result<VoidResult, Error>>>();
         var deleteImporter = Substitute.For<ICommandHandler<DeleteImporterCommand, Result<VoidResult, Error>>>();
         return new ImporterSettingsViewModel(

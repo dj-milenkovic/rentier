@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
@@ -18,7 +18,6 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
 
     private readonly ISyncAllCommandHandler _handler;
     private readonly Action _navigateToFilings;
-    private readonly IScheduler _scheduler;
     private CancellationTokenSource? _cts;
 
     // ── Running state ────────────────────────────────────────────────────────
@@ -36,12 +35,8 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
         private set => this.RaiseAndSetIfChanged(ref _errorMessage, value);
     }
 
-    private ObservableCollection<SyncProgressEntryViewModel> _logEntries = new();
-    public ObservableCollection<SyncProgressEntryViewModel> LogEntries
-    {
-        get => _logEntries;
-        private set => this.RaiseAndSetIfChanged(ref _logEntries, value);
-    }
+    private readonly ObservableCollection<SyncProgressEntryViewModel> _logEntries = new();
+    public ObservableCollection<SyncProgressEntryViewModel> LogEntries => _logEntries;
 
     private string _summaryMessage = string.Empty;
     public string SummaryMessage
@@ -122,7 +117,7 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
     {
         _handler = handler;
         _navigateToFilings = navigateToFilings;
-        _scheduler = scheduler ?? RxApp.MainThreadScheduler;
+        var effectiveScheduler = scheduler ?? RxApp.MainThreadScheduler;
 
         var modeStream = this.WhenAnyValue(x => x.SelectedSyncMode);
         var strategyStream = this.WhenAnyValue(x => x.SelectedDuplicateStrategy);
@@ -187,12 +182,12 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
         var canSync = this.WhenAnyValue(x => x.ValidationError)
             .Select(e => e == null);
 
-        SyncCommand = ReactiveCommand.CreateFromTask(RunSyncAsync, canSync, outputScheduler: _scheduler);
+        SyncCommand = ReactiveCommand.CreateFromTask(RunSyncAsync, canSync, outputScheduler: effectiveScheduler);
 
         CancelCommand = ReactiveCommand.Create(
             () => _cts?.Cancel(),
             this.WhenAnyValue(x => x.IsRunning),
-            outputScheduler: _scheduler);
+            outputScheduler: effectiveScheduler);
 
         this.WhenActivated(disposables =>
         {

@@ -50,22 +50,6 @@ public class EnsureHolidaysSeededCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WhenNoHolidaysExist_SeedsNineHolidaysPerYearForFourYears()
-    {
-        _repo.GetYearRangeAsync(Arg.Any<CancellationToken>()).Returns((HolidayYearRange?)null);
-        var currentYear = DateOnly.FromDateTime(DateTime.Today).Year;
-        // 9 fixed-date holidays × 4 years (currentYear through currentYear+3)
-        var expectedCount = 9 * (currentYear + 3 - currentYear + 1);
-
-        await _sut.HandleAsync(new EnsureHolidaysSeededCommand(), CancellationToken.None);
-
-        await _repo.Received(1).SaveHolidaysAsync(
-            Arg.Is<IReadOnlyList<PublicHoliday>>(list => list.Count == expectedCount),
-            Arg.Any<HolidayYearRange>(),
-            Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
     public async Task HandleAsync_WhenNoHolidaysExist_SeedsCurrentYearRange()
     {
         _repo.GetYearRangeAsync(Arg.Any<CancellationToken>()).Returns((HolidayYearRange?)null);

@@ -2,11 +2,9 @@ name: CodeQL
 
 on:
   pull_request:
-    branches: [develop]
+    branches: [main]
   push:
     branches: [main]
-  schedule:
-    - cron: '0 6 * * 1'  # Every Monday at 06:00 UTC
 
 concurrency:
   group: codeql-${{ github.ref }}
@@ -28,22 +26,22 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.2
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5.2.0
         with:
           dotnet-version: '10.x'
 
       - name: Cache NuGet packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5.0.5
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Build.props') }}
           restore-keys: nuget-${{ runner.os }}-
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: csharp
 
@@ -54,4 +52,4 @@ jobs:
         run: dotnet build Rentier.slnx -c Release --no-restore
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4

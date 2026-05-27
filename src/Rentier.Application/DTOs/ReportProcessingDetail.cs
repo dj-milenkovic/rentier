@@ -16,10 +16,10 @@ public sealed record ReportProcessingDetail(
     public static SyncProgressSeverity ClassifySeverity(int created, int failed)
         => (created, failed) switch
         {
-            (_, 0)     => SyncProgressSeverity.Info,    // All success or empty report
-            (> 0, > 0) => SyncProgressSeverity.Warning, // Mixed results
-            (0, > 0)   => SyncProgressSeverity.Error,   // Total failure
-            _          => SyncProgressSeverity.Info      // Unreachable, defensive
+            (_, 0) => SyncProgressSeverity.Info,    // All success or empty report
+            ( > 0, > 0) => SyncProgressSeverity.Warning, // Mixed results
+            (0, > 0) => SyncProgressSeverity.Error,   // Total failure
+            _ => SyncProgressSeverity.Info      // Unreachable, defensive
         };
 
     /// <summary>

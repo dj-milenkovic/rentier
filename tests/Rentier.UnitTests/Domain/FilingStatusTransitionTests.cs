@@ -9,11 +9,11 @@ namespace Rentier.UnitTests;
 public class FilingStatusTransitionTests
 {
     [Theory]
-    [InlineData(FilingStatus.Init,  FilingStatus.Filed, false)]  // Init → Filed: valid
-    [InlineData(FilingStatus.Filed, FilingStatus.Paid,  false)]  // Filed → Paid: valid
-    [InlineData(FilingStatus.Paid,  FilingStatus.Init,  true)]   // Paid → Init: invalid
-    [InlineData(FilingStatus.Init,  FilingStatus.Paid,  true)]   // Init → Paid: invalid (skip Filed)
-    [InlineData(FilingStatus.Filed, FilingStatus.Init,  true)]   // Filed → Init: invalid
+    [InlineData(FilingStatus.Init, FilingStatus.Filed, false)]  // Init → Filed: valid
+    [InlineData(FilingStatus.Filed, FilingStatus.Paid, false)]  // Filed → Paid: valid
+    [InlineData(FilingStatus.Paid, FilingStatus.Init, true)]   // Paid → Init: invalid
+    [InlineData(FilingStatus.Init, FilingStatus.Paid, true)]   // Init → Paid: invalid (skip Filed)
+    [InlineData(FilingStatus.Filed, FilingStatus.Init, true)]   // Filed → Init: invalid
     public void AdvanceStatus_Transition_BehavesCorrectly(
         FilingStatus fromStatus, FilingStatus toStatus, bool shouldThrow)
     {

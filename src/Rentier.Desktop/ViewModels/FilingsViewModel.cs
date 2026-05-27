@@ -257,9 +257,9 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
             new CheckableItem<IncomeType>(Strings.Filter_IncomeDividend, IncomeType.Dividend),
             new CheckableItem<IncomeType>(Strings.Filter_IncomeInterest, IncomeType.Interest),
         });
-        PayingEntityFilter   = new TextFilterFlyoutViewModel();
+        PayingEntityFilter = new TextFilterFlyoutViewModel();
         PaymentReferenceFilter = new TextFilterFlyoutViewModel();
-        DeadlineFilter       = new TextFilterFlyoutViewModel();
+        DeadlineFilter = new TextFilterFlyoutViewModel();
 
         _hasReportFilter = this.WhenAnyValue(x => x.ReportIdFilter)
             .Select(id => id.HasValue)
@@ -283,7 +283,7 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
             this.WhenAnyValue(x => x.HasReportFilter),
             outputScheduler: _scheduler);
 
-        PreviousPageCommand= ReactiveCommand.CreateFromTask(
+        PreviousPageCommand = ReactiveCommand.CreateFromTask(
             async (CancellationToken ct) =>
             {
                 _currentPage--;
