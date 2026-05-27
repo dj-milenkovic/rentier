@@ -204,12 +204,6 @@ jobs:
           fi
           echo "LINE_COVERAGE=$LINE_COV" >> "$GITHUB_ENV"
           echo "BRANCH_COVERAGE=$BRANCH_COV" >> "$GITHUB_ENV"
-      
-      - name: Upload merged Cobertura for Sonar
-        uses: actions/upload-artifact@v7.0.1
-        with:
-          name: coverage-merged-cobertura      
-          path: ./coverage-report/Cobertura.xml
 
       - name: Upload HTML coverage report
         uses: actions/upload-artifact@v7.0.1
@@ -239,7 +233,7 @@ jobs:
   # ──────────────────────────────────────────────
   sonar:
     name: SonarCloud Analysis
-    needs: [build, coverage]
+    needs: build
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
 
@@ -277,8 +271,9 @@ jobs:
       - name: Download merged coverage
         uses: actions/download-artifact@v8.0.1
         with:
-          name: coverage-merged-cobertura
-          path: ./coverage-merged
+          pattern: coverage-*
+          path: ./coverage-raw
+          merge-multiple: false
 
       - name: Install SonarScanner
         run: dotnet tool install -g dotnet-sonarscanner
@@ -290,16 +285,20 @@ jobs:
           SONAR_ORGANIZATION: ${{ secrets.SONAR_ORGANIZATION }}
         shell: bash
         run: |
+          COV_PATHS=$(find ./coverage-raw -name 'coverage.opencover.xml' | paste -sd ',' -)
+
           dotnet sonarscanner begin \
             /k:"${SONAR_PROJECT_KEY}" \
             /o:"${SONAR_ORGANIZATION}" \
             /d:sonar.token="${SONAR_TOKEN}" \
             /d:sonar.host.url="https://sonarcloud.io" \
-            /d:sonar.coverageReportPaths="./coverage-merged/Cobertura.xml" \
+            /d:sonar.cs.opencover.reportsPaths="${COV_PATHS}" \
             /d:sonar.exclusions="**/Migrations/**,**/obj/**,**/bin/**,**/Properties/**,**/*.Designer.cs,**/*.g.cs,**/*.axaml.cs,**/AssemblyInfo.cs" \
             /d:sonar.coverage.exclusions="**/*.Tests/**,**/Migrations/**,**/Program.cs,**/*.axaml.cs,**/Properties/**" \
             /d:sonar.cpd.exclusions="**/*.Tests/**,**/*.g.cs" \
-            /d:sonar.test.inclusions="**/*.Tests/**,**/*Tests.cs"
+            /d:sonar.test.inclusions="**/*.Tests/**,**/*Tests.cs" \
+            /d:sonar.scanner.skipJreProvisioning=true \
+            /d:sonar.scanner.javaExePath="${JAVA_HOME}/bin/java"
 
           for proj in \
             src/Rentier.Domain/Rentier.Domain.csproj \
