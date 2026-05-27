@@ -92,15 +92,14 @@ jobs:
         run: dotnet build Rentier.slnx --no-restore -c Release
 
       # ── Test ─────────────────────────────────
-      - name: Test         
+      - name: Test
         run: |
           dotnet test Rentier.slnx --no-build -c Release \
             --filter "Category!=Integration" \
-            --collect:"XPlat Code Coverage" \
+            --settings coverlet.runsettings \
             --results-directory ./coverage \
             --logger "trx;LogFileName=results-${{ matrix.os }}.trx" \
-            --logger "console;verbosity=normal" \
-            --DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+            --logger "console;verbosity=normal"
      
       # ── Artifacts ────────────────────────────
       - name: Upload coverage
@@ -280,19 +279,12 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         shell: bash
         run: |
-          # Collect coverage files
-          COV_PATHS="./coverage-merged/Cobertura.xml"
-
           dotnet sonarscanner begin \
             /k:"${{ secrets.SONAR_PROJECT_KEY }}" \
             /o:"${{ secrets.SONAR_ORGANIZATION }}" \
             /d:sonar.token="${{ secrets.SONAR_TOKEN }}" \
-            /d:sonar.host.url="https://sonarcloud.io" \
-            /d:sonar.cs.opencover.reportsPaths="${COV_PATHS}" \
-            /d:sonar.coverage.exclusions="**/*.Tests/**,**/Migrations/**"
-            /d:sonar.exclusions="**/Migrations/**"
+            /d:sonar.host.url="https://sonarcloud.io"
 
-          # Build excluding E2E (non-Windows)
           for proj in \
             src/Rentier.Domain/Rentier.Domain.csproj \
             src/Rentier.Application/Rentier.Application.csproj \
