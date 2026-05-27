@@ -97,19 +97,19 @@ jobs:
         run: |
           dotnet test Rentier.slnx --no-build -c Release \
             --filter "Category!=Integration" \
+            --collect:"XPlat Code Coverage" \
             --settings coverlet.runsettings \
             --results-directory ./coverage \
             --logger "trx;LogFileName=results-${{ matrix.os }}.trx" \
             --logger "console;verbosity=normal"
-     
+      
       # ── Artifacts ────────────────────────────
       - name: Upload coverage
         if: always()
         uses: actions/upload-artifact@v7.0.1
         with:
           name: coverage-${{ matrix.os }}
-          path: tests/**/bin/Release/coverage/coverage.opencover.xml
-          if-no-files-found: ignore
+          path: ./coverage/**/coverage.cobertura.xml
 
       - name: Upload test results
         if: always()
@@ -180,12 +180,12 @@ jobs:
       - name: Merge & generate report
         shell: bash
         run: |
-          # Collect all Cobertura files (accounting for artifact nesting from merge-multiple: false)
-          REPORTS=$(find ./coverage-raw -name 'coverage.opencover.xml' -type f | tr '\n' ';')
+         # Collect all Cobertura files
+         REPORTS=$(find ./coverage-raw -name 'coverage.cobertura.xml' -type f | tr '\n' ';')
           if [ -z "$REPORTS" ]; then
             echo "⚠️ No coverage files found in ./coverage-raw" >> "$GITHUB_STEP_SUMMARY"
             echo "Available files:" >> "$GITHUB_STEP_SUMMARY"
-            find ./coverage-raw -type f 2>/dev/null | head -20 >> "$GITHUB_STEP_SUMMARY" || echo "Directory not found or empty"
+           find ./coverage-raw -type f 2>/dev/null || echo "Directory not found or empty"
             exit 0
           fi
 
