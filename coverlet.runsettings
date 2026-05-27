@@ -1,7 +1,7 @@
 <RunSettings>
   <DataCollectionRunSettings>
     <DataCollectors>
-      <DataCollector friendlyName="Rentier Code Coverage">
+      <DataCollector friendlyName="Code Coverage">
         <Configuration>
           <Format>opencover</Format>
           <ExcludeByFile>**/Migrations/**,**/obj/**,**/*.Designer.cs</ExcludeByFile>
