@@ -109,7 +109,6 @@ jobs:
         with:
           name: coverage-${{ matrix.os }}
           path: ./coverage/coverage.opencover.xml
-          if-no-files-found: ignore
 
       - name: Upload test results
         if: always()
