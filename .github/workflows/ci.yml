@@ -108,7 +108,7 @@ jobs:
         uses: actions/upload-artifact@v7.0.1
         with:
           name: coverage-${{ matrix.os }}
-          path: ./coverage/**/coverage.cobertura.xml
+          path: ./coverage/**/coverage.opencover.xml
 
       - name: Upload test results
         if: always()
@@ -180,7 +180,7 @@ jobs:
         shell: bash
         run: |
           # Collect all Cobertura files
-          REPORTS=$(find ./coverage-raw -name 'coverage.cobertura.xml' | tr '\n' ';')
+          REPORTS=$(find ./coverage-raw -name 'coverage.opencover.xml' | tr '\n' ';')
           if [ -z "$REPORTS" ]; then
             echo "⚠️ No coverage files found" >> "$GITHUB_STEP_SUMMARY"
             exit 0
