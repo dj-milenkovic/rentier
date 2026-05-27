@@ -93,12 +93,13 @@ jobs:
 
       # ── Test ─────────────────────────────────
       - name: Test         
-        run: >
-           dotnet test Rentier.slnx --no-build -c Release
-            --filter "Category!=Integration"
-            --collect:"XPlat Code Coverage"
-            --results-directory ./coverage
-            --logger "trx;LogFileName=results-${{ matrix.os }}.trx"
+        run: |
+          dotnet test Rentier.slnx --no-build -c Release \
+            --filter "Category!=Integration" \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./coverage \
+            --logger "trx;LogFileName=results-${{ matrix.os }}.trx" \
+            --logger "console;verbosity=normal" \
             --DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
      
       # ── Artifacts ────────────────────────────
