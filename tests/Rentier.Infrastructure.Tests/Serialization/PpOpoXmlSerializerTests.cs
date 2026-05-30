@@ -91,11 +91,13 @@ public class PpOpoXmlSerializerTests
         section.Should().NotBeNull();
         section.Element(Ns1 + "VrstaPrijave")!.Value.Should().Be("1");
         section.Element(Ns1 + "ObracunskiPeriod")!.Value.Should().Be("2025-03");
+        section.Element(Ns1 + "DatumOstvarivanjaPrihoda")!.Value.Should().Be("2025-03-15");
         section.Element(Ns1 + "Rok")!.Value.Should().Be("1");
+        section.Element(Ns1 + "DatumDospelostiObaveze")!.Value.Should().Be("2025-04-30");
     }
 
     [Fact]
-    public void Serialize_PodaciOPoreskomObvezniku_ContainsNestedJmbgAndAllFields()
+    public void Serialize_PodaciOPoreskomObvezniku_ContainsFlatPibJmbgSiblingAndAllFields()
     {
         var profile = MakeProfile(
             jmbg: "1234567890123",
@@ -109,26 +111,52 @@ public class PpOpoXmlSerializerTests
         var section = root.Element(Ns1 + "PodaciOPoreskomObvezniku")!;
 
         section.Should().NotBeNull();
-        // Nested JMBG
+        // PoreskiIdentifikacioniBroj is now a flat text element (no child element)
         var pid = section.Element(Ns1 + "PoreskiIdentifikacioniBroj")!;
         pid.Should().NotBeNull();
-        pid.Element(Ns1 + "JMBGPodnosiocaPrijave")!.Value.Should().Be("1234567890123");
-        // Plain-text fields (no CDATA)
-        section.Element(Ns1 + "ImePrezimeObveznika")!.Value.Should().Be("John Doe");
-        section.Element(Ns1 + "UlicaBrojPoreskogObveznika")!.Value.Should().Be("Main St 1");
+        pid.HasElements.Should().BeFalse("PoreskiIdentifikacioniBroj must be a flat text element");
+        pid.Value.Should().Be("1234567890123");
+        // JMBGPodnosiocaPrijave is a direct sibling of ImePrezimeObveznika etc.
+        section.Element(Ns1 + "JMBGPodnosiocaPrijave")!.Value.Should().Be("1234567890123");
+        // CDATA-wrapped fields — XDocument.Parse strips CDATA markers; trim whitespace padding
+        section.Element(Ns1 + "ImePrezimeObveznika")!.Value.Trim().Should().Be("John Doe");
+        section.Element(Ns1 + "UlicaBrojPoreskogObveznika")!.Value.Trim().Should().Be("Main St 1");
         section.Element(Ns1 + "PrebivalisteOpstina")!.Value.Should().Be("110");
         section.Element(Ns1 + "TelefonKontaktOsobe")!.Value.Should().Be("0611234567");
         section.Element(Ns1 + "ElektronskaPosta")!.Value.Should().Be("john@example.com");
     }
 
     [Fact]
-    public void Serialize_PodaciOPoreskomObvezniku_NoPlainTextCdataInRawXml()
+    public void Serialize_ImePrezimeObveznika_IsCdataWrappedInRawXml()
     {
-        var profile = MakeProfile(fullName: "Jovan Jovanovic & Co", address: "Knez Mihailova 1 <Belgrade>");
+        var profile = MakeProfile(fullName: "Jovan Jovanovic");
         var bytes = _sut.Serialize(MakeFiling(), profile, string.Empty).Value;
         var xml = Encoding.UTF8.GetString(bytes);
 
-        xml.Should().NotContain("<![CDATA[");
+        xml.Should().Contain("<![CDATA[");
+        xml.Should().Contain("Jovan Jovanovic");
+    }
+
+    [Fact]
+    public void Serialize_UlicaBrojPoreskogObveznika_IsCdataWrappedInRawXml()
+    {
+        var profile = MakeProfile(address: "Main St 1");
+        var bytes = _sut.Serialize(MakeFiling(), profile, string.Empty).Value;
+        var xml = Encoding.UTF8.GetString(bytes);
+
+        // Address must be inside CDATA — check the raw XML contains CDATA and the address value
+        xml.Should().Contain("<![CDATA[");
+        xml.Should().Contain("Main St 1");
+    }
+
+    [Fact]
+    public void Serialize_DeklarisaniPodaciOVrstamaPrihoda_WrapperExists()
+    {
+        var bytes = _sut.Serialize(MakeFiling(), MakeProfile(), string.Empty).Value;
+        var root = ParseRoot(bytes);
+
+        root.Element(Ns1 + "DeklarisaniPodaciOVrstamaPrihoda").Should().NotBeNull(
+            "income rows must be wrapped in DeklarisaniPodaciOVrstamaPrihoda");
     }
 
     [Fact]
@@ -136,11 +164,29 @@ public class PpOpoXmlSerializerTests
     {
         var bytes = _sut.Serialize(MakeFiling(IncomeType.Dividend), MakeProfile(), string.Empty).Value;
         var root = ParseRoot(bytes);
-        var section = root.Element(Ns1 + "PodaciOVrstamaPrihoda")!;
+        // Income row is now nested inside DeklarisaniPodaciOVrstamaPrihoda
+        var wrapper = root.Element(Ns1 + "DeklarisaniPodaciOVrstamaPrihoda")!;
+        var section = wrapper.Element(Ns1 + "PodaciOVrstamaPrihoda")!;
 
         section.Should().NotBeNull();
         section.Element(Ns1 + "RedniBroj")!.Value.Should().Be("1");
         section.Element(Ns1 + "SifraVrstePrihoda")!.Value.Should().Be("111402000");
+    }
+
+    [Fact]
+    public void Serialize_PodaciOVrstamaPrihoda_DoesNotContainDatesOrContributionFields()
+    {
+        var bytes = _sut.Serialize(MakeFiling(), MakeProfile(), string.Empty).Value;
+        var root = ParseRoot(bytes);
+        var incomeRow = root.Element(Ns1 + "DeklarisaniPodaciOVrstamaPrihoda")!
+                           .Element(Ns1 + "PodaciOVrstamaPrihoda")!;
+
+        // Dates moved to PodaciOPrijavi; contribution fields removed entirely
+        incomeRow.Element(Ns1 + "DatumOstvarivanjaPrihoda").Should().BeNull();
+        incomeRow.Element(Ns1 + "DatumDospelostiObaveze").Should().BeNull();
+        incomeRow.Element(Ns1 + "NormaraniTroskovi").Should().BeNull();
+        incomeRow.Element(Ns1 + "PorezZaUplatu").Should().BeNull();
+        incomeRow.Element(Ns1 + "OsnovicaZaDoprinose").Should().BeNull();
     }
 
     [Fact]
@@ -160,11 +206,19 @@ public class PpOpoXmlSerializerTests
         var root = ParseRoot(bytes);
         var ukupno = root.Element(Ns1 + "Ukupno")!;
 
+        ukupno.Element(Ns1 + "FondSati")!.Value.Should().Be("0.00");
         ukupno.Element(Ns1 + "BrutoPrihod")!.Value.Should().Be("12345.50");
         ukupno.Element(Ns1 + "OsnovicaZaPorez")!.Value.Should().Be("12345.50");
         ukupno.Element(Ns1 + "ObracunatiPorez")!.Value.Should().Be("1234.55");
         ukupno.Element(Ns1 + "PorezPlacenDrugojDrzavi")!.Value.Should().Be("123.45");
         ukupno.Element(Ns1 + "PorezZaUplatu")!.Value.Should().Be("1111.10");
+        ukupno.Element(Ns1 + "OsnovicaZaDoprinose")!.Value.Should().Be("0.00");
+        ukupno.Element(Ns1 + "PIO")!.Value.Should().Be("0.00");
+        ukupno.Element(Ns1 + "ZDRAVSTVO")!.Value.Should().Be("0.00");
+        ukupno.Element(Ns1 + "NEZAPOSLENOST")!.Value.Should().Be("0.00");
+        // Old fields that no longer exist
+        ukupno.Element(Ns1 + "NormaraniTroskovi").Should().BeNull();
+        ukupno.Element(Ns1 + "ObracunatiDoprinosi").Should().BeNull();
     }
 
     [Fact]
@@ -176,7 +230,12 @@ public class PpOpoXmlSerializerTests
 
         kamata.Should().NotBeNull();
         kamata.Element(Ns1 + "PorezZaUplatu")!.Value.Should().Be("0.00");
-        kamata.Element(Ns1 + "DoprinosiZaUplatu")!.Value.Should().Be("0.00");
+        kamata.Element(Ns1 + "OsnovicaZaDoprinose")!.Value.Should().Be("0.00");
+        kamata.Element(Ns1 + "PIO")!.Value.Should().Be("0.00");
+        kamata.Element(Ns1 + "ZDRAVSTVO")!.Value.Should().Be("0.00");
+        kamata.Element(Ns1 + "NEZAPOSLENOST")!.Value.Should().Be("0.00");
+        // Old field that no longer exists
+        kamata.Element(Ns1 + "DoprinosiZaUplatu").Should().BeNull();
     }
 
     [Fact]
@@ -221,7 +280,8 @@ public class PpOpoXmlSerializerTests
         var bytes = _sut.Serialize(filing, MakeProfile(), string.Empty).Value;
         var root = ParseRoot(bytes);
 
-        var incomeRow = root.Element(Ns1 + "PodaciOVrstamaPrihoda")!;
+        var incomeRow = root.Element(Ns1 + "DeklarisaniPodaciOVrstamaPrihoda")!
+                           .Element(Ns1 + "PodaciOVrstamaPrihoda")!;
         incomeRow.Element(Ns1 + "OsnovicaZaPorez")!.Value
             .Should().Be(100_000.00m.ToString("F2", CultureInfo.InvariantCulture));
         incomeRow.Element(Ns1 + "ObracunatiPorez")!.Value
@@ -259,14 +319,13 @@ public class PpOpoXmlSerializerTests
             grossTaxPayable: 1234.55m, taxPayable: 1111.10m);
         var bytes = _sut.Serialize(filing, MakeProfile(), string.Empty).Value;
         var root = ParseRoot(bytes);
-        var incomeRow = root.Element(Ns1 + "PodaciOVrstamaPrihoda")!;
+        var incomeRow = root.Element(Ns1 + "DeklarisaniPodaciOVrstamaPrihoda")!
+                           .Element(Ns1 + "PodaciOVrstamaPrihoda")!;
 
         incomeRow.Element(Ns1 + "BrutoPrihod")!.Value.Should().Be("12345.50");
         incomeRow.Element(Ns1 + "PorezPlacenDrugojDrzavi")!.Value.Should().Be("123.45");
-        // OsnovicaZaPorez now = GrossIncomeRsd per bug fix
         incomeRow.Element(Ns1 + "OsnovicaZaPorez")!.Value.Should().Be("12345.50");
         incomeRow.Element(Ns1 + "ObracunatiPorez")!.Value.Should().Be("1234.55");
-        incomeRow.Element(Ns1 + "PorezZaUplatu")!.Value.Should().Be("1111.10");
     }
 
     [Fact]
@@ -279,21 +338,35 @@ public class PpOpoXmlSerializerTests
     }
 
     [Fact]
-    public void Serialize_IncomeDate_FormattedAsYyyyMmDd()
+    public void Serialize_IncomeDate_IsInPodaciOPrijavi_FormattedAsYyyyMmDd()
     {
         var filing = MakeFiling(incomeDate: new DateOnly(2025, 3, 15));
         var bytes = _sut.Serialize(filing, MakeProfile(), string.Empty).Value;
         var root = ParseRoot(bytes);
-        root.Descendants(Ns1 + "DatumOstvarivanjaPrihoda").Single().Value.Should().Be("2025-03-15");
+
+        // DatumOstvarivanjaPrihoda must be in PodaciOPrijavi, not in the income row
+        var prijavi = root.Element(Ns1 + "PodaciOPrijavi")!;
+        prijavi.Element(Ns1 + "DatumOstvarivanjaPrihoda")!.Value.Should().Be("2025-03-15");
+        // Must NOT appear in the income row
+        var incomeRow = root.Element(Ns1 + "DeklarisaniPodaciOVrstamaPrihoda")!
+                           .Element(Ns1 + "PodaciOVrstamaPrihoda")!;
+        incomeRow.Element(Ns1 + "DatumOstvarivanjaPrihoda").Should().BeNull();
     }
 
     [Fact]
-    public void Serialize_FilingDeadline_FormattedAsYyyyMmDd()
+    public void Serialize_FilingDeadline_IsInPodaciOPrijavi_FormattedAsYyyyMmDd()
     {
         var filing = MakeFiling(deadline: new DateOnly(2025, 4, 30));
         var bytes = _sut.Serialize(filing, MakeProfile(), string.Empty).Value;
         var root = ParseRoot(bytes);
-        root.Descendants(Ns1 + "DatumDospelostiObaveze").Single().Value.Should().Be("2025-04-30");
+
+        // DatumDospelostiObaveze must be in PodaciOPrijavi, not in the income row
+        var prijavi = root.Element(Ns1 + "PodaciOPrijavi")!;
+        prijavi.Element(Ns1 + "DatumDospelostiObaveze")!.Value.Should().Be("2025-04-30");
+        // Must NOT appear in the income row
+        var incomeRow = root.Element(Ns1 + "DeklarisaniPodaciOVrstamaPrihoda")!
+                           .Element(Ns1 + "PodaciOVrstamaPrihoda")!;
+        incomeRow.Element(Ns1 + "DatumDospelostiObaveze").Should().BeNull();
     }
 
     [Fact]
@@ -328,6 +401,15 @@ public class PpOpoXmlSerializerTests
         var bytes = _sut.Serialize(MakeFiling(), MakeProfile(), string.Empty).Value;
         var root = ParseRoot(bytes);
         root.Descendants(Ns1 + "NacinIsplate").Single().Value.Should().Be("3");
+    }
+
+    [Fact]
+    public void Serialize_Root_HasXmlnsXsiAttribute()
+    {
+        var bytes = _sut.Serialize(MakeFiling(), MakeProfile(), string.Empty).Value;
+        var xml = Encoding.UTF8.GetString(bytes);
+
+        xml.Should().Contain("xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"");
     }
 
     [Fact]
