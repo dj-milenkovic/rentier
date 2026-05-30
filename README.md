@@ -1,10 +1,10 @@
 # Rentier
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![.NET 8.0+](https://img.shields.io/badge/.NET-8.0+-512BD4.svg)](https://dotnet.microsoft.com/)
+[![.NET 10.0](https://img.shields.io/badge/.NET-10.0-512BD4.svg)](https://dotnet.microsoft.com/)
 [![Active Development](https://img.shields.io/badge/Status-Active%20Development-brightgreen.svg)](#project-status)
 
-**Rentier** is a Windows desktop application that helps Serbian taxpayers prepare **PP-OPO tax filings** for passive income (dividends and interest) received through foreign brokers such as Interactive Brokers (IBKR).
+**Rentier** is a cross-platform desktop application that helps Serbian taxpayers prepare **PP-OPO tax filings** for passive income (dividends and interest) received through foreign brokers such as Interactive Brokers (IBKR).
 
 It reads your IBKR Activity Statement, fetches NBS exchange rates for each income date, calculates the 15% Serbian income tax, applies any foreign withholding tax credit, and produces a ready-to-submit PP-OPO XML file — one per income event.
 
@@ -66,8 +66,8 @@ IBKR Activity Statement (CSV)
 
 ## Prerequisites
 
-- **Windows 10 or later**
-- **.NET 8.0 Runtime** (or later) — [download](https://dotnet.microsoft.com/download)
+- **Windows 10 / Ubuntu 20.04 / macOS 12 or later**
+- **.NET 10.0 Runtime** — [download](https://dotnet.microsoft.com/download)
 - An **Interactive Brokers** account with activity to report
 - A **Serbian taxpayer identification number** (JMBG)
 
@@ -89,8 +89,8 @@ IBKR Activity Statement (CSV)
 
 | Area | Technology |
 |---|---|
-| Language | C# 12+ |
-| Framework | .NET 8.0+ |
+| Language | C# 14 |
+| Framework | .NET 10.0 |
 | UI | Avalonia (MVVM, cross-platform) |
 | Database | SQLite via Entity Framework Core |
 | Architecture | Clean Architecture + CQRS |
@@ -269,7 +269,7 @@ We welcome contributions! Before opening a pull request:
 - [ ] Multi-account support (multiple IBKR accounts / taxpayer profiles)
 - [ ] Bulk filing export (all filings for a tax year in one action)
 - [ ] Alternative statement providers (Revolut, Wise, etc.)
-- [ ] Cross-platform desktop (Linux/macOS Avalonia improvements)
+- [ ] Linux/macOS Avalonia UX improvements (theming, system integration)
 
 ---
 
