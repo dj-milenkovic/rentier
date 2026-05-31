@@ -801,42 +801,42 @@
     <value>All</value>
   </data>
   <data name="Filter_All" xml:space="preserve">
-    <value>Svi</value>
+    <value>All</value>
   </data>
   <data name="Filter_Placeholder" xml:space="preserve">
     <value>Filter...</value>
   </data>
   <data name="Filter_ClearAll" xml:space="preserve">
-    <value>Obriši filtere</value>
+    <value>Clear all filters</value>
   </data>
   <data name="Filter_NoResults" xml:space="preserve">
-    <value>Nema prijava koje odgovaraju aktivnim filterima</value>
+    <value>No filings match the active filters</value>
   </data>
   <data name="Filter_StatusInit" xml:space="preserve">
-    <value>Inicijalan</value>
+    <value>Initial</value>
   </data>
   <data name="Filter_StatusFiled" xml:space="preserve">
-    <value>Podnet</value>
+    <value>Filed</value>
   </data>
   <data name="Filter_StatusPaid" xml:space="preserve">
-    <value>Plaćen</value>
+    <value>Paid</value>
   </data>
   <data name="Filter_IncomeDividend" xml:space="preserve">
-    <value>Dividenda</value>
+    <value>Dividend</value>
   </data>
   <data name="Filter_IncomeInterest" xml:space="preserve">
-    <value>Kamata</value>
+    <value>Interest</value>
   </data>
   <data name="Filter_Search" xml:space="preserve">
-    <value>Pretraži...</value>
+    <value>Search...</value>
   </data>
   <data name="Filter_Apply" xml:space="preserve">
-    <value>Primeni</value>
+    <value>Apply</value>
   </data>
   <data name="Filter_SelectAll" xml:space="preserve">
-    <value>Sve</value>
+    <value>All</value>
   </data>
   <data name="Filter_Clear" xml:space="preserve">
-    <value>Nijedna</value>
+    <value>None</value>
   </data>
 </root>
