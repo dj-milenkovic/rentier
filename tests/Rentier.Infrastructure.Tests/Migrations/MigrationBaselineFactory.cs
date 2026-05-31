@@ -94,6 +94,26 @@ public sealed class MigrationBaselineFactory : IAsyncDisposable
         var conn = new SqliteConnection($"Data Source={path};Pooling=False");
         await conn.OpenAsync();
 
+        // Guard: EF Core deliberately does NOT close or dispose externally-managed connections
+        // when a DbContext is disposed. Any exception thrown during setup would orphan conn and
+        // leave the temp file behind, accumulating on flaky CI. The catch block ensures cleanup.
+        try
+        {
+            return await SetupBaselineAsync(conn, path, targetMigration);
+        }
+        catch
+        {
+            await conn.DisposeAsync();
+            SqliteConnection.ClearAllPools();
+            foreach (var p in new[] { path, path + "-wal", path + "-shm" })
+                if (File.Exists(p)) File.Delete(p);
+            throw;
+        }
+    }
+
+    private static async Task<MigrationBaselineFactory> SetupBaselineAsync(
+        SqliteConnection conn, string path, string targetMigration)
+    {
         var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(conn).Options;
 
         await using (var ctx = new AppDbContext(options))
