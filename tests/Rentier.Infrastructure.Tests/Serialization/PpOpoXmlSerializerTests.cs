@@ -35,8 +35,8 @@ public class PpOpoXmlSerializerTests
     private static TaxpayerProfile MakeProfile(
         string jmbg = "1234567890123",
         string fullName = "John Doe",
-        string address = "Main St 1, Belgrade",
-        string opstinaCode = "11001",
+        string address = "Main St 1",
+        string opstinaCode = "018",
         string? phone = null,
         string? email = null)
         => new TaxpayerProfile(Guid.NewGuid(), jmbg, fullName, address, opstinaCode, phone, email);
@@ -181,12 +181,23 @@ public class PpOpoXmlSerializerTests
         var incomeRow = root.Element(Ns1 + "DeklarisaniPodaciOVrstamaPrihoda")!
                            .Element(Ns1 + "PodaciOVrstamaPrihoda")!;
 
-        // Dates moved to PodaciOPrijavi; contribution fields removed entirely
+        // Dates moved to PodaciOPrijavi; contribution fields removed entirely; PorezZaUplatu IS present
         incomeRow.Element(Ns1 + "DatumOstvarivanjaPrihoda").Should().BeNull();
         incomeRow.Element(Ns1 + "DatumDospelostiObaveze").Should().BeNull();
         incomeRow.Element(Ns1 + "NormaraniTroskovi").Should().BeNull();
-        incomeRow.Element(Ns1 + "PorezZaUplatu").Should().BeNull();
         incomeRow.Element(Ns1 + "OsnovicaZaDoprinose").Should().BeNull();
+    }
+
+    [Fact]
+    public void Serialize_PodaciOVrstamaPrihoda_ContainsPorezZaUplatu()
+    {
+        var filing = MakeFiling(taxPayable: 1111.10m);
+        var bytes = _sut.Serialize(filing, MakeProfile(), string.Empty).Value;
+        var root = ParseRoot(bytes);
+        var incomeRow = root.Element(Ns1 + "DeklarisaniPodaciOVrstamaPrihoda")!
+                           .Element(Ns1 + "PodaciOVrstamaPrihoda")!;
+
+        incomeRow.Element(Ns1 + "PorezZaUplatu")!.Value.Should().Be("1111.10");
     }
 
     [Fact]
@@ -326,6 +337,7 @@ public class PpOpoXmlSerializerTests
         incomeRow.Element(Ns1 + "PorezPlacenDrugojDrzavi")!.Value.Should().Be("123.45");
         incomeRow.Element(Ns1 + "OsnovicaZaPorez")!.Value.Should().Be("12345.50");
         incomeRow.Element(Ns1 + "ObracunatiPorez")!.Value.Should().Be("1234.55");
+        incomeRow.Element(Ns1 + "PorezZaUplatu")!.Value.Should().Be("1111.10");
     }
 
     [Fact]

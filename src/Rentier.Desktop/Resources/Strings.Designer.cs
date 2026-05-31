@@ -52,6 +52,7 @@ public static class Strings
     public static string Profile_Jmbg_Label => "JMBG (13 digits)";
     public static string Profile_FullName_Label => "Full Name";
     public static string Profile_Address_Label => "Address";
+    public static string Profile_Address_Helper => "Street and house number only, no city (e.g. Knez Mihailova 1)";
     public static string Profile_OpstinaCode_Label => "Opština Code";
     public static string Profile_PhoneNumber_Label => "Phone Number (optional)";
     public static string Profile_Email_Label => "Email (optional)";
@@ -237,7 +238,7 @@ public static class Strings
     public static string Mailbox_Delete_Message => "Are you sure you want to delete the mailbox for {0}? This action cannot be undone.";
     public static string Importer_Delete_Title => "Delete Importer";
     public static string Importer_Delete_Message => "Are you sure you want to delete the importer '{0}'? This action cannot be undone.";
-    public static string Profile_OpstinaCode_Helper => "5-digit municipal code, e.g. 71101 for Stari Grad";
+    public static string Profile_OpstinaCode_Helper => "3-digit municipality code (šifra opštine), e.g. 049 for Kragujevac, 018 for Stari Grad";
     public static string Holidays_YearRange_Error => "End year must be \u2265 Start year";
     public static string Sync_Mode_Label => "Sync Mode";
     public static string Sync_Duplicates_Label => "Duplicates";

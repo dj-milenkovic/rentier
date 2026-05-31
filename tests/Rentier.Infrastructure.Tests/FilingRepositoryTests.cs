@@ -39,7 +39,7 @@ public class FilingRepositoryTests : IAsyncLifetime
     }
 
     private static TaxpayerProfile MakeProfile()
-        => new TaxpayerProfile(Guid.NewGuid(), "1234567890123", "John Doe", "Belgrade", "11001");
+        => new TaxpayerProfile(Guid.NewGuid(), "1234567890123", "John Doe", "Belgrade", "018");
 
     private static Filing MakeFiling(Guid profileId, string entity = "ACME", DateOnly? date = null, decimal gross = 1000m)
     {
@@ -557,7 +557,7 @@ public class FilingRepositoryTests : IAsyncLifetime
     public async Task GetByTaxPeriodAsync_MatchesByProfileIdAndTaxPeriod()
     {
         // Two profiles with filings on the same date — each should only see their own
-        var profile1 = new TaxpayerProfile(Guid.NewGuid(), "1111111111111", "Alice", "Belgrade", "11001");
+        var profile1 = new TaxpayerProfile(Guid.NewGuid(), "1111111111111", "Alice", "Belgrade", "018");
         var profile2 = new TaxpayerProfile(Guid.NewGuid(), "2222222222222", "Bob", "Novi Sad", "21000");
         await _context.TaxpayerProfiles.AddRangeAsync(profile1, profile2);
         await _context.SaveChangesAsync();

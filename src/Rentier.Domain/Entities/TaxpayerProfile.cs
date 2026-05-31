@@ -37,10 +37,8 @@ public sealed class TaxpayerProfile
             throw new DomainException("Address must not be null or whitespace");
         if (address.Length > 500)
             throw new DomainException("Address must not exceed 500 characters");
-        if (string.IsNullOrWhiteSpace(opstinaCode))
-            throw new DomainException("OpstinaCode must not be null or whitespace");
-        if (opstinaCode.Length > 20)
-            throw new DomainException("OpstinaCode must not exceed 20 characters");
+        if (string.IsNullOrWhiteSpace(opstinaCode) || opstinaCode.Length != 3 || !opstinaCode.All(char.IsDigit))
+            throw new DomainException("OpstinaCode must be exactly 3 digit characters (e.g. 049 for Kragujevac, 018 for Stari Grad)");
 
         Id = id;
         Jmbg = jmbg;

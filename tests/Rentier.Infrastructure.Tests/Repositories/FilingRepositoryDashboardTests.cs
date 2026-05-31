@@ -37,7 +37,7 @@ public class FilingRepositoryDashboardTests : IAsyncLifetime
     }
 
     private static TaxpayerProfile MakeProfile()
-        => new TaxpayerProfile(Guid.NewGuid(), "1234567890123", "Test User", "Belgrade", "11001");
+        => new TaxpayerProfile(Guid.NewGuid(), "1234567890123", "Test User", "Belgrade", "018");
 
     private static Filing MakeFiling(
         Guid profileId,

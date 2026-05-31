@@ -35,7 +35,7 @@ public sealed class FilingLifecycleScenario : IDisposable
             jmbg: "1234567890123",
             fullName: "Test User",
             address: "Test Address",
-            opstinaCode: "70101");
+            opstinaCode: "049");
 
         await _profileRepository.SaveAsync(taxpayerProfile);
 
@@ -76,7 +76,7 @@ public sealed class FilingLifecycleScenario : IDisposable
             jmbg: "1234567890123",
             fullName: "Test User",
             address: "Test Address",
-            opstinaCode: "70101");
+            opstinaCode: "049");
 
         await _profileRepository.SaveAsync(taxpayerProfile);
 
@@ -119,7 +119,7 @@ public sealed class FilingLifecycleScenario : IDisposable
             jmbg: "9876543210987",
             fullName: "Another User",
             address: "Another Address",
-            opstinaCode: "70102");
+            opstinaCode: "050");
 
         await _profileRepository.SaveAsync(taxpayerProfile);
 

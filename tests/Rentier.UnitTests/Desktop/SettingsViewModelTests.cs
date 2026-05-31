@@ -34,7 +34,7 @@ public class SettingsViewModelTests
         vm.Jmbg = "";
         vm.FullName = "Test";
         vm.Address = "Addr";
-        vm.OpstinaCode = "7101";
+        vm.OpstinaCode = "049";
 
         bool canExecute = false;
         vm.SaveCommand.CanExecute.Subscribe(v => canExecute = v);
@@ -49,7 +49,7 @@ public class SettingsViewModelTests
         vm.Jmbg = "1234567890123";
         vm.FullName = "Test User";
         vm.Address = "Test Address";
-        vm.OpstinaCode = "7101";
+        vm.OpstinaCode = "049";
 
         bool canExecute = false;
         vm.SaveCommand.CanExecute.Subscribe(v => canExecute = v);
@@ -64,7 +64,7 @@ public class SettingsViewModelTests
         vm.Jmbg = "123456";  // too short
         vm.FullName = "Test User";
         vm.Address = "Test Address";
-        vm.OpstinaCode = "7101";
+        vm.OpstinaCode = "049";
 
         bool canExecute = false;
         vm.SaveCommand.CanExecute.Subscribe(v => canExecute = v);
@@ -84,7 +84,7 @@ public class SettingsViewModelTests
         vm.Jmbg = "1234567890123";
         vm.FullName = "Marko";
         vm.Address = "Knez 1";
-        vm.OpstinaCode = "7101";
+        vm.OpstinaCode = "049";
 
         await vm.SaveCommand.Execute().FirstAsync();
 
@@ -104,7 +104,7 @@ public class SettingsViewModelTests
         vm.Jmbg = "1234567890123";
         vm.FullName = "Marko";
         vm.Address = "Knez 1";
-        vm.OpstinaCode = "7101";
+        vm.OpstinaCode = "049";
 
         await vm.SaveCommand.Execute().FirstAsync();
 

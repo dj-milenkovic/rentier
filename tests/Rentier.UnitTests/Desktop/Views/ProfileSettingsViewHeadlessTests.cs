@@ -49,7 +49,7 @@ public class ProfileSettingsViewHeadlessTests
         vm.Jmbg = string.Empty;
         vm.FullName = "Test User";
         vm.Address = "Test Address";
-        vm.OpstinaCode = "12345";
+        vm.OpstinaCode = "018";
 
         var view = new ProfileSettingsView { DataContext = vm };
         var window = new Window { Content = view, Width = 800, Height = 600 };
@@ -81,7 +81,7 @@ public class ProfileSettingsViewHeadlessTests
         vm.Jmbg = "1234567890123"; // exactly 13 digits
         vm.FullName = "Test User";
         vm.Address = "Test Address";
-        vm.OpstinaCode = "12345";
+        vm.OpstinaCode = "018";
 
         var view = new ProfileSettingsView { DataContext = vm };
         var window = new Window { Content = view, Width = 800, Height = 600 };
@@ -106,10 +106,10 @@ public class ProfileSettingsViewHeadlessTests
     {
         // Arrange
         var vm = CreateMinimalProfileViewModel();
-        vm.Jmbg = "12345"; // only 5 digits — fails the length == 13 check
+        vm.Jmbg = "018"; // only 5 digits — fails the length == 13 check
         vm.FullName = "Test User";
         vm.Address = "Test Address";
-        vm.OpstinaCode = "12345";
+        vm.OpstinaCode = "018";
 
         var view = new ProfileSettingsView { DataContext = vm };
         var window = new Window { Content = view, Width = 800, Height = 600 };
@@ -139,7 +139,7 @@ public class ProfileSettingsViewHeadlessTests
             "1234567890123",
             "Test User",
             "Test Address",
-            "12345",
+            "018",
             null,
             null);
 
@@ -176,7 +176,7 @@ public class ProfileSettingsViewHeadlessTests
         vm.Jmbg = "1234567890123";
         vm.FullName = "Test User";
         vm.Address = "Test Address";
-        vm.OpstinaCode = "12345";
+        vm.OpstinaCode = "018";
 
         var view = new ProfileSettingsView { DataContext = vm };
         var window = new Window { Content = view, Width = 800, Height = 600 };

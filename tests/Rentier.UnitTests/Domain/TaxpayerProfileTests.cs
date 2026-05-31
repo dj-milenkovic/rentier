@@ -10,8 +10,8 @@ public class TaxpayerProfileTests
     private readonly Guid TestId = Guid.NewGuid();
     private const string ValidJmbg = "1234567890123";
     private const string ValidFullName = "Marko Marković";
-    private const string ValidAddress = "Knez Mihailova 1, Beograd";
-    private const string ValidOpstinaCode = "7101";
+    private const string ValidAddress = "Knez Mihailova 1";
+    private const string ValidOpstinaCode = "049";
 
     [Fact]
     public void Constructor_ValidArguments_CreatesProfile()
@@ -74,6 +74,19 @@ public class TaxpayerProfileTests
     public void Constructor_NullOrWhitespaceOpstinaCode_ThrowsDomainException(string? badCode)
     {
         var act = () => new TaxpayerProfile(TestId, ValidJmbg, ValidFullName, ValidAddress, badCode!);
+        act.Should().Throw<DomainException>().WithMessage("*OpstinaCode*");
+    }
+
+    [Theory]
+    [InlineData("34000")]  // postal/PAK code — too many digits
+    [InlineData("7101")]   // 4 digits — old incorrect format
+    [InlineData("18")]     // 2 digits — too short
+    [InlineData("abc")]    // non-numeric
+    [InlineData("01A")]    // mixed
+    [InlineData("11001")]  // 5 digits
+    public void Constructor_InvalidOpstinaCodeFormat_ThrowsDomainException(string badCode)
+    {
+        var act = () => new TaxpayerProfile(TestId, ValidJmbg, ValidFullName, ValidAddress, badCode);
         act.Should().Throw<DomainException>().WithMessage("*OpstinaCode*");
     }
 
