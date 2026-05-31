@@ -286,13 +286,11 @@ public class ReportsViewHeadlessTests
         IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>>? getReports = null)
     {
         getReports ??= CreateEmptyReportsHandler();
-        var syncHandler = Substitute.For<ICommandHandler<SyncMailboxCommand, Result<SyncResult, Error>>>();
         var importReport = Substitute.For<ICommandHandler<ImportReportCommand, Result<Guid, Error>>>();
         var deleteReport = Substitute.For<ICommandHandler<DeleteReportCommand, Result<VoidResult, Error>>>();
         var bulkDelete = Substitute.For<ICommandHandler<BulkDeleteReportsCommand, Result<VoidResult, Error>>>();
 
         return new ReportsViewModel(
-            syncHandler,
             getReports,
             importReport,
             deleteReport,

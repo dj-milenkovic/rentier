@@ -31,11 +31,9 @@ public class SyncViewModelTests
     }
 
     private static SyncViewModel CreateVm(
-        ISyncAllCommandHandler? handler = null,
-        Action? navigateToFilings = null)
+        ISyncAllCommandHandler? handler = null)
         => new(
             handler ?? MakeHandler(),
-            navigateToFilings ?? (() => { }),
             ImmediateScheduler.Instance);
 
     // ── Tests ────────────────────────────────────────────────────────────────
@@ -63,7 +61,7 @@ public class SyncViewModelTests
                 Arg.Any<CancellationToken>())
             .Returns(_ => tcs.Task);
 
-        var vm = new SyncViewModel(handler, () => { });
+        var vm = new SyncViewModel(handler);
 
         using var _ = vm.Activator.Activate();
 
@@ -98,7 +96,7 @@ public class SyncViewModelTests
                 return Result<SyncAllResult, Error>.Success(new SyncAllResult(1, 0, 0, 0, []));
             });
 
-        var vm = new SyncViewModel(handler, () => { }, ImmediateScheduler.Instance);
+        var vm = new SyncViewModel(handler, ImmediateScheduler.Instance);
 
         await vm.SyncCommand.Execute().FirstAsync();
 
@@ -120,32 +118,107 @@ public class SyncViewModelTests
     }
 
     [Fact]
-    public async Task SyncCommand_OnSuccessNoErrors_NavigatesToFilings()
+    public async Task SyncCommand_OnSuccessWithErrors_SetsHasErrors()
     {
-        bool navigated = false;
-        var handler = MakeHandler(
-            Result<SyncAllResult, Error>.Success(new SyncAllResult(1, 0, 0, 1, [])));
-
-        var vm = CreateVm(handler, () => navigated = true);
-
-        await vm.SyncCommand.Execute().FirstAsync();
-
-        navigated.Should().BeTrue();
-    }
-
-    [Fact]
-    public async Task SyncCommand_OnSuccessWithErrors_DoesNotNavigate()
-    {
-        bool navigated = false;
         var handler = MakeHandler(
             Result<SyncAllResult, Error>.Success(new SyncAllResult(1, 0, 0, 0, ["some error"])));
 
-        var vm = CreateVm(handler, () => navigated = true);
+        var vm = CreateVm(handler);
 
         await vm.SyncCommand.Execute().FirstAsync();
 
-        navigated.Should().BeFalse();
         vm.HasErrors.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task SyncCommand_OnSuccessNoErrors_LogEntriesPreservedForInspection()
+    {
+        var handler = Substitute.For<ISyncAllCommandHandler>();
+        handler.HandleAsync(
+                Arg.Any<SyncAllCommand>(),
+                Arg.Any<IProgress<SyncProgressEntry>>(),
+                Arg.Any<CancellationToken>())
+            .Returns(async ci =>
+            {
+                var p = ci.ArgAt<IProgress<SyncProgressEntry>>(1);
+                p.Report(new SyncProgressEntry(DateTimeOffset.Now, "Downloading email 1/2: Dividend notice", SyncProgressSeverity.Info));
+                p.Report(new SyncProgressEntry(DateTimeOffset.Now, "Downloading email 2/2: Interest notice", SyncProgressSeverity.Info));
+                await Task.Yield();
+                return Result<SyncAllResult, Error>.Success(new SyncAllResult(1, 2, 1, 1, []));
+            });
+
+        var vm = CreateVm(handler);
+
+        await vm.SyncCommand.Execute().FirstAsync();
+
+        vm.LogEntries.Should().HaveCount(2);
+        vm.LogEntries.Should().Contain(e => e.Message.Contains("Dividend notice"));
+        vm.LogEntries.Should().Contain(e => e.Message.Contains("Interest notice"));
+    }
+
+    [Fact]
+    public async Task SyncCommand_OnSuccessNoErrors_SummaryMessageRemainsVisible()
+    {
+        var handler = MakeHandler(
+            Result<SyncAllResult, Error>.Success(new SyncAllResult(1, 3, 2, 2, [])));
+
+        var vm = CreateVm(handler);
+
+        await vm.SyncCommand.Execute().FirstAsync();
+
+        vm.SummaryMessage.Should().NotBeNullOrEmpty();
+        vm.SummaryMessage.Should().Contain("2 filing(s) created");
+        vm.IsRunning.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task SyncCommand_AfterSuccess_IsRunningFalseAndCommandCanRerun()
+    {
+        var handler = MakeHandler(
+            Result<SyncAllResult, Error>.Success(new SyncAllResult(1, 0, 0, 0, [])));
+
+        var vm = CreateVm(handler);
+        using var _ = vm.Activator.Activate();
+
+        await vm.SyncCommand.Execute().FirstAsync();
+
+        vm.IsRunning.Should().BeFalse();
+
+        bool? canExecute = null;
+        vm.SyncCommand.CanExecute.Subscribe(v => canExecute = v);
+        canExecute.Should().BeTrue("user should be able to re-run sync from the same page");
+    }
+
+    [Fact]
+    public async Task SyncCommand_OnFailure_ErrorMessageAndSummaryVisibleForInspection()
+    {
+        var handler = MakeHandler(
+            Result<SyncAllResult, Error>.Failure(new Error("SYNC_FAILED", "IMAP connection refused")));
+
+        var vm = CreateVm(handler);
+
+        await vm.SyncCommand.Execute().FirstAsync();
+
+        vm.ErrorMessage.Should().Be("IMAP connection refused");
+        vm.SummaryMessage.Should().NotBeNullOrEmpty();
+        vm.HasErrors.Should().BeTrue();
+        vm.IsRunning.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task SyncCommand_OnSuccessWithErrors_SummaryAndErrorsBothVisible()
+    {
+        var handler = MakeHandler(
+            Result<SyncAllResult, Error>.Success(new SyncAllResult(1, 2, 1, 1, ["Exchange rate not found for AAPL"])));
+
+        var vm = CreateVm(handler);
+
+        await vm.SyncCommand.Execute().FirstAsync();
+
+        vm.HasErrors.Should().BeTrue();
+        vm.SummaryMessage.Should().Contain("1 filing(s) created");
+        vm.ErrorSummaryMessage.Should().NotBeNullOrEmpty();
+        vm.IsRunning.Should().BeFalse();
     }
 
     [Fact]
@@ -175,20 +248,6 @@ public class SyncViewModelTests
     }
 
     [Fact]
-    public async Task SyncCommand_OnFailure_DoesNotNavigate()
-    {
-        bool navigated = false;
-        var handler = MakeHandler(
-            Result<SyncAllResult, Error>.Failure(new Error("SYNC_FAILED", "Oops")));
-
-        var vm = CreateVm(handler, () => navigated = true);
-
-        await vm.SyncCommand.Execute().FirstAsync();
-
-        navigated.Should().BeFalse();
-    }
-
-    [Fact]
     public async Task CancelCommand_WhenRunning_CancelsToken()
     {
         CancellationToken capturedToken = default;
@@ -205,7 +264,7 @@ public class SyncViewModelTests
                 return await tcs.Task;
             });
 
-        var vm = new SyncViewModel(handler, () => { });
+        var vm = new SyncViewModel(handler);
         using var _ = vm.Activator.Activate();
 
         var executeTask = vm.SyncCommand.Execute().FirstAsync().GetAwaiter();
@@ -257,7 +316,7 @@ public class SyncViewModelTests
                 return Result<SyncAllResult, Error>.Success(new SyncAllResult(1, 0, 0, 0, []));
             });
 
-        var vm = new SyncViewModel(handler, () => { }, ImmediateScheduler.Instance);
+        var vm = new SyncViewModel(handler, ImmediateScheduler.Instance);
 
         await vm.SyncCommand.Execute().FirstAsync();
 

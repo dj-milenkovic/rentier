@@ -7,11 +7,11 @@ namespace Rentier.Application.Handlers;
 
 public sealed class SyncAllCommandHandler : ISyncAllCommandHandler
 {
-    private readonly ICommandHandler<SyncMailboxCommand, Result<SyncResult, Error>> _syncMailboxHandler;
+    private readonly ISyncMailboxCommandHandler _syncMailboxHandler;
     private readonly ICommandHandler<ProcessReportsCommand, Result<ProcessReportsResult, Error>> _processReportsHandler;
 
     public SyncAllCommandHandler(
-        ICommandHandler<SyncMailboxCommand, Result<SyncResult, Error>> syncMailboxHandler,
+        ISyncMailboxCommandHandler syncMailboxHandler,
         ICommandHandler<ProcessReportsCommand, Result<ProcessReportsResult, Error>> processReportsHandler)
     {
         _syncMailboxHandler = syncMailboxHandler;
@@ -30,7 +30,7 @@ public sealed class SyncAllCommandHandler : ISyncAllCommandHandler
         progress.Report(new SyncProgressEntry(DateTimeOffset.Now, "Starting mailbox sync...", SyncProgressSeverity.Info));
 
         var syncResult = await _syncMailboxHandler.HandleAsync(
-            new SyncMailboxCommand(command.Parameters), ct);
+            new SyncMailboxCommand(command.Parameters), progress, ct);
 
         if (syncResult.IsSuccess)
         {

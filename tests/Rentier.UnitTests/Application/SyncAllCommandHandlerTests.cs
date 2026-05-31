@@ -14,11 +14,11 @@ public class SyncAllCommandHandlerTests
 {
     // ── Helpers ──────────────────────────────────────────────────────────────
 
-    private static ICommandHandler<SyncMailboxCommand, Result<SyncResult, Error>> MakeSyncMailboxHandler(
+    private static ISyncMailboxCommandHandler MakeSyncMailboxHandler(
         Result<SyncResult, Error>? result = null)
     {
-        var h = Substitute.For<ICommandHandler<SyncMailboxCommand, Result<SyncResult, Error>>>();
-        h.HandleAsync(Arg.Any<SyncMailboxCommand>(), Arg.Any<CancellationToken>())
+        var h = Substitute.For<ISyncMailboxCommandHandler>();
+        h.HandleAsync(Arg.Any<SyncMailboxCommand>(), Arg.Any<IProgress<SyncProgressEntry>?>(), Arg.Any<CancellationToken>())
             .Returns(result ?? Result<SyncResult, Error>.Success(new SyncResult(0, [])));
         return h;
     }
@@ -33,7 +33,7 @@ public class SyncAllCommandHandlerTests
     }
 
     private static SyncAllCommandHandler CreateHandler(
-        ICommandHandler<SyncMailboxCommand, Result<SyncResult, Error>>? syncHandler = null,
+        ISyncMailboxCommandHandler? syncHandler = null,
         ICommandHandler<ProcessReportsCommand, Result<ProcessReportsResult, Error>>? processHandler = null)
         => new(
             syncHandler ?? MakeSyncMailboxHandler(),
@@ -185,8 +185,8 @@ public class SyncAllCommandHandlerTests
     {
         using var cts = new CancellationTokenSource();
 
-        var syncHandler = Substitute.For<ICommandHandler<SyncMailboxCommand, Result<SyncResult, Error>>>();
-        syncHandler.HandleAsync(Arg.Any<SyncMailboxCommand>(), Arg.Any<CancellationToken>())
+        var syncHandler = Substitute.For<ISyncMailboxCommandHandler>();
+        syncHandler.HandleAsync(Arg.Any<SyncMailboxCommand>(), Arg.Any<IProgress<SyncProgressEntry>?>(), Arg.Any<CancellationToken>())
             .Returns(Result<SyncResult, Error>.Success(new SyncResult(0, [])));
 
         var processHandler = MakeProcessReportsHandler();
@@ -195,7 +195,7 @@ public class SyncAllCommandHandlerTests
         await handler.HandleAsync(DefaultCommand(), NoProgress(), cts.Token);
 
         await syncHandler.Received(1)
-            .HandleAsync(Arg.Any<SyncMailboxCommand>(), cts.Token);
+            .HandleAsync(Arg.Any<SyncMailboxCommand>(), Arg.Any<IProgress<SyncProgressEntry>?>(), cts.Token);
         await processHandler.Received(1)
             .HandleAsync(Arg.Any<ProcessReportsCommand>(), cts.Token);
     }
@@ -203,16 +203,35 @@ public class SyncAllCommandHandlerTests
     [Fact]
     public async Task HandleAsync_DelegatesMailboxSyncToSyncMailboxCommandHandler()
     {
-        var syncHandler = Substitute.For<ICommandHandler<SyncMailboxCommand, Result<SyncResult, Error>>>();
-        syncHandler.HandleAsync(Arg.Any<SyncMailboxCommand>(), Arg.Any<CancellationToken>())
+        var syncHandler = Substitute.For<ISyncMailboxCommandHandler>();
+        syncHandler.HandleAsync(Arg.Any<SyncMailboxCommand>(), Arg.Any<IProgress<SyncProgressEntry>?>(), Arg.Any<CancellationToken>())
             .Returns(Result<SyncResult, Error>.Success(new SyncResult(0, [])));
 
         var handler = CreateHandler(syncHandler);
         await handler.HandleAsync(DefaultCommand(), NoProgress());
 
-        // Progress is no longer embedded in SyncMailboxCommand — it's a plain data record now
         await syncHandler.Received(1)
-            .HandleAsync(Arg.Any<SyncMailboxCommand>(), Arg.Any<CancellationToken>());
+            .HandleAsync(Arg.Any<SyncMailboxCommand>(), Arg.Any<IProgress<SyncProgressEntry>?>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_PassesProgressToSyncMailboxCommand()
+    {
+        IProgress<SyncProgressEntry>? capturedProgress = null;
+        var syncHandler = Substitute.For<ISyncMailboxCommandHandler>();
+        syncHandler
+            .HandleAsync(
+                Arg.Any<SyncMailboxCommand>(),
+                Arg.Do<IProgress<SyncProgressEntry>?>(p => capturedProgress = p),
+                Arg.Any<CancellationToken>())
+            .Returns(Result<SyncResult, Error>.Success(new SyncResult(0, [])));
+
+        var progress = Substitute.For<IProgress<SyncProgressEntry>>();
+        var handler = CreateHandler(syncHandler);
+
+        await handler.HandleAsync(DefaultCommand(), progress);
+
+        capturedProgress.Should().BeSameAs(progress);
     }
 
     // ── T009: IProgress passthrough to ProcessReportsCommand (US3) ───────────

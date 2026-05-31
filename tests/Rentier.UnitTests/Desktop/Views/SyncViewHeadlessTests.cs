@@ -208,7 +208,6 @@ public class SyncViewHeadlessTests
 
         return new SyncViewModel(
             handler,
-            navigateToFilings: () => { },
             scheduler: ImmediateScheduler.Instance);
     }
 }

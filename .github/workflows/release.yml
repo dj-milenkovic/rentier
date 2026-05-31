@@ -1,9 +1,19 @@
 name: Release
 
 on:
-  push:
-    tags: ['v*.*.*']
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g., 1.2.3)'
+        required: true
+        type: string
+      enable_trimming:
+        description: 'Enable PublishTrimmed (may break reflection-heavy code)'
+        required: false
+        type: boolean
+        default: false
+  # Called by auto-release.yml after a PR is merged to main.
+  workflow_call:
     inputs:
       version:
         description: 'Version number (e.g., 1.2.3)'
@@ -35,20 +45,52 @@ jobs:
       tag: ${{ steps.v.outputs.tag }}
       trimmed: ${{ steps.v.outputs.trimmed }}
     steps:
+      - uses: actions/checkout@v6.0.2
+        if: github.event_name == 'workflow_dispatch'
+        with:
+          fetch-depth: 0
+
       - name: Determine version
         id: v
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          INPUT_TRIMMED: ${{ inputs.enable_trimming }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            VERSION="${{ inputs.version }}"
-            TRIMMED="${{ inputs.enable_trimming == true }}"
+          EVENT="${{ github.event_name }}"
+          if [ "${EVENT}" = "workflow_dispatch" ] || [ "${EVENT}" = "workflow_call" ]; then
+            VERSION="${INPUT_VERSION}"
+            # Normalise: anything other than explicit "true" becomes "false"
+            [ "${INPUT_TRIMMED}" = "true" ] && TRIMMED="true" || TRIMMED="false"
           else
+            # push: tags trigger — strip the leading 'v'
             VERSION="${GITHUB_REF#refs/tags/v}"
             TRIMMED="false"
+          fi
+          # Guard against shell injection: version must be pure semver
+          if ! echo "${VERSION}" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Invalid version format '${VERSION}'. Expected X.Y.Z (digits only)."
+            exit 1
           fi
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
           echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
           echo "trimmed=${TRIMMED}" >> "$GITHUB_OUTPUT"
           echo "### 🏷️ Version: ${VERSION}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Push annotated tag (workflow_dispatch only)
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          NEW_TAG: ${{ steps.v.outputs.tag }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Skip if tag already exists (idempotent re-runs)
+          if git ls-remote --tags origin "${NEW_TAG}" | grep -q "${NEW_TAG}"; then
+            echo "Tag ${NEW_TAG} already exists — skipping push."
+          else
+            git tag -a "${NEW_TAG}" -m "Release ${NEW_TAG}"
+            git push origin "${NEW_TAG}"
+          fi
 
   # ──────────────────────────────────────────────────────────────────
   # Windows x64 — ZIP + InnoSetup installer

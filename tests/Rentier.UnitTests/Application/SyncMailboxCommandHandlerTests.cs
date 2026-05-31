@@ -40,7 +40,7 @@ public class SyncMailboxCommandHandlerTests
             Substitute.For<IMailboxRepository>(),
             Substitute.For<IMailboxSyncService>());
 
-        var result = await handler.HandleAsync(new SyncMailboxCommand(SyncParameters.Default));
+        var result = await handler.HandleAsync(new SyncMailboxCommand(SyncParameters.Default), progress: null);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.ReportsCreated.Should().Be(0);
@@ -71,16 +71,16 @@ public class SyncMailboxCommandHandlerTests
 
         var syncService = Substitute.For<IMailboxSyncService>();
         syncService.SyncAsync(Arg.Any<Mailbox>(), Arg.Any<IReadOnlyList<Importer>>(),
-                Arg.Any<SyncParameters>(), Arg.Any<IProgress<SyncProgress>?>(), Arg.Any<CancellationToken>())
+                Arg.Any<SyncParameters>(), Arg.Any<IProgress<SyncProgressEntry>?>(), Arg.Any<CancellationToken>())
             .Returns(Result<SyncResult, Error>.Success(new SyncResult(1, [])));
 
         var handler = new SyncMailboxCommandHandler(importerRepo, mailboxRepo, syncService);
 
-        await handler.HandleAsync(new SyncMailboxCommand(SyncParameters.Default));
+        await handler.HandleAsync(new SyncMailboxCommand(SyncParameters.Default), progress: null);
 
         await syncService.Received(2).SyncAsync(
             Arg.Any<Mailbox>(), Arg.Any<IReadOnlyList<Importer>>(),
-            Arg.Any<SyncParameters>(), Arg.Any<IProgress<SyncProgress>?>(), Arg.Any<CancellationToken>());
+            Arg.Any<SyncParameters>(), Arg.Any<IProgress<SyncProgressEntry>?>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -101,7 +101,7 @@ public class SyncMailboxCommandHandlerTests
         var handler = new SyncMailboxCommandHandler(
             importerRepo, mailboxRepo, Substitute.For<IMailboxSyncService>());
 
-        var result = await handler.HandleAsync(new SyncMailboxCommand(SyncParameters.Default));
+        var result = await handler.HandleAsync(new SyncMailboxCommand(SyncParameters.Default), progress: null);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Errors.Should().HaveCount(1);
@@ -124,12 +124,12 @@ public class SyncMailboxCommandHandlerTests
 
         var syncService = Substitute.For<IMailboxSyncService>();
         syncService.SyncAsync(Arg.Any<Mailbox>(), Arg.Any<IReadOnlyList<Importer>>(),
-                Arg.Any<SyncParameters>(), Arg.Any<IProgress<SyncProgress>?>(), Arg.Any<CancellationToken>())
+                Arg.Any<SyncParameters>(), Arg.Any<IProgress<SyncProgressEntry>?>(), Arg.Any<CancellationToken>())
             .Returns(Result<SyncResult, Error>.Failure(Error.Infrastructure("IMAP error")));
 
         var handler = new SyncMailboxCommandHandler(importerRepo, mailboxRepo, syncService);
 
-        var result = await handler.HandleAsync(new SyncMailboxCommand(SyncParameters.Default));
+        var result = await handler.HandleAsync(new SyncMailboxCommand(SyncParameters.Default), progress: null);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Errors.Should().Contain("IMAP error");
@@ -151,13 +151,13 @@ public class SyncMailboxCommandHandlerTests
 
         var syncService = Substitute.For<IMailboxSyncService>();
         syncService.SyncAsync(Arg.Any<Mailbox>(), Arg.Any<IReadOnlyList<Importer>>(),
-                Arg.Any<SyncParameters>(), Arg.Any<IProgress<SyncProgress>?>(), Arg.Any<CancellationToken>())
+                Arg.Any<SyncParameters>(), Arg.Any<IProgress<SyncProgressEntry>?>(), Arg.Any<CancellationToken>())
             .Returns(Result<SyncResult, Error>.Success(
                 new SyncResult(3, ["attachment parse error"])));
 
         var handler = new SyncMailboxCommandHandler(importerRepo, mailboxRepo, syncService);
 
-        var result = await handler.HandleAsync(new SyncMailboxCommand(SyncParameters.Default));
+        var result = await handler.HandleAsync(new SyncMailboxCommand(SyncParameters.Default), progress: null);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.ReportsCreated.Should().Be(3);
@@ -165,7 +165,7 @@ public class SyncMailboxCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_AlwaysPassesNullProgressToSyncService()
+    public async Task HandleAsync_PassesProgressToSyncService()
     {
         var mailboxId = Guid.NewGuid();
         var importer = Importer.Create("Importer");
@@ -180,20 +180,19 @@ public class SyncMailboxCommandHandlerTests
 
         var syncService = Substitute.For<IMailboxSyncService>();
         syncService.SyncAsync(Arg.Any<Mailbox>(), Arg.Any<IReadOnlyList<Importer>>(),
-                Arg.Any<SyncParameters>(), Arg.Any<IProgress<SyncProgress>?>(), Arg.Any<CancellationToken>())
+                Arg.Any<SyncParameters>(), Arg.Any<IProgress<SyncProgressEntry>?>(), Arg.Any<CancellationToken>())
             .Returns(Result<SyncResult, Error>.Success(new SyncResult(0, [])));
 
         var handler = new SyncMailboxCommandHandler(importerRepo, mailboxRepo, syncService);
-        var command = new SyncMailboxCommand(SyncParameters.Default);
+        var progress = Substitute.For<IProgress<SyncProgressEntry>>();
 
-        await handler.HandleAsync(command);
+        await handler.HandleAsync(new SyncMailboxCommand(SyncParameters.Default), progress, CancellationToken.None);
 
-        // Progress is no longer a command concern — the handler always passes null to the sync service
         await syncService.Received(1).SyncAsync(
             Arg.Any<Mailbox>(),
             Arg.Any<IReadOnlyList<Importer>>(),
             Arg.Any<SyncParameters>(),
-            null,
+            progress,
             Arg.Any<CancellationToken>());
     }
 }

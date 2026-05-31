@@ -214,17 +214,7 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
         var reportsVm = ActivatorUtilities.CreateInstance<ReportsViewModel>(
             provider, navigateToFilings);
 
-        // ── Sync navigation ───────────────────────────────────────────────────
-        Action navigateToFilings_sync = () =>
-        {
-            if (filingsVm is not null) filingsVm.ReportIdFilter = null;
-            var filingsEntry = NavigationEntries?.FirstOrDefault(e => e.ViewModel is FilingsViewModel);
-            if (filingsEntry is not null)
-                SelectedEntry = filingsEntry;
-        };
-
-        var syncVm = ActivatorUtilities.CreateInstance<SyncViewModel>(
-            provider, navigateToFilings_sync);
+        var syncVm = ActivatorUtilities.CreateInstance<SyncViewModel>(provider);
 
         // ── Settings sub-ViewModels ───────────────────────────────────────────
         var profileVm = provider.GetRequiredService<ProfileSettingsViewModel>();

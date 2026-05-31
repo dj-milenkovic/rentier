@@ -5,7 +5,6 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using ReactiveUI;
 using Rentier.Application.Commands;
-using Rentier.Domain.ValueObjects;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
@@ -20,7 +19,6 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
 {
     public ViewModelActivator Activator { get; } = new();
 
-    private readonly ICommandHandler<SyncMailboxCommand, Result<SyncResult, Error>> _syncHandler;
     private readonly IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>> _getReports;
     private readonly ICommandHandler<ImportReportCommand, Result<Guid, Error>> _importReport;
     private readonly ICommandHandler<DeleteReportCommand, Result<VoidResult, Error>> _deleteReport;
@@ -31,10 +29,7 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
     private readonly IScheduler _scheduler;
 
     private bool _isLoading;
-    private bool _isSyncing;
     private string? _errorMessage;
-    private string? _syncStatusMessage;
-    private int _syncProgressValue;
     private int _selectedCount;
     private int _currentPage = 1;
     private int _totalPages = 1;
@@ -52,28 +47,10 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
         private set => this.RaiseAndSetIfChanged(ref _isLoading, value);
     }
 
-    public bool IsSyncing
-    {
-        get => _isSyncing;
-        private set => this.RaiseAndSetIfChanged(ref _isSyncing, value);
-    }
-
     public string? ErrorMessage
     {
         get => _errorMessage;
         private set => this.RaiseAndSetIfChanged(ref _errorMessage, value);
-    }
-
-    public string? SyncStatusMessage
-    {
-        get => _syncStatusMessage;
-        private set => this.RaiseAndSetIfChanged(ref _syncStatusMessage, value);
-    }
-
-    public int SyncProgressValue
-    {
-        get => _syncProgressValue;
-        private set => this.RaiseAndSetIfChanged(ref _syncProgressValue, value);
     }
 
     public int SelectedCount
@@ -176,7 +153,6 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
     public ReactiveCommand<Unit, Unit> LoadPageCommand { get; }
     public ReactiveCommand<Unit, Unit> PreviousPageCommand { get; }
     public ReactiveCommand<Unit, Unit> NextPageCommand { get; }
-    public ReactiveCommand<Unit, Unit> SyncCommand { get; }
     public ReactiveCommand<Unit, Unit> ImportCommand { get; }
     public ReactiveCommand<Guid, Unit> DeleteCommand { get; }
     public ReactiveCommand<Guid, Unit> ViewFilingsCommand { get; }
@@ -192,7 +168,6 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
     private readonly CompositeDisposable _rowSubscriptions = new();
 
     public ReportsViewModel(
-        ICommandHandler<SyncMailboxCommand, Result<SyncResult, Error>> syncHandler,
         IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>> getReports,
         ICommandHandler<ImportReportCommand, Result<Guid, Error>> importReport,
         ICommandHandler<DeleteReportCommand, Result<VoidResult, Error>> deleteReport,
@@ -202,7 +177,6 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
         Action<Guid> navigateToFilings,
         IScheduler? scheduler = null)
     {
-        _syncHandler = syncHandler;
         _getReports = getReports;
         _importReport = importReport;
         _deleteReport = deleteReport;
@@ -277,9 +251,6 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
             canGoToNextPage,
             outputScheduler: _scheduler);
 
-        SyncCommand = ReactiveCommand.CreateFromTask(
-            HandleSyncAsync, outputScheduler: _scheduler);
-
         ImportCommand = ReactiveCommand.CreateFromTask(
             ImportAsync, outputScheduler: _scheduler);
 
@@ -306,8 +277,6 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
             },
             this.WhenAnyValue(x => x.HasActiveFilters),
             outputScheduler: _scheduler);
-
-        SyncCommand.IsExecuting.Subscribe(v => IsSyncing = v);
 
         var hasItemsObservable = this.WhenAnyValue(x => x.HasItems);
         var hasSelectionObservable = this.WhenAnyValue(x => x.HasSelection);
@@ -363,9 +332,6 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
                 .DisposeWith(disposables);
 
             LoadPageCommand.ThrownExceptions
-                .Subscribe(ex => ErrorMessage = ex.Message)
-                .DisposeWith(disposables);
-            SyncCommand.ThrownExceptions
                 .Subscribe(ex => ErrorMessage = ex.Message)
                 .DisposeWith(disposables);
             ImportCommand.ThrownExceptions
@@ -547,25 +513,4 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
         await LoadPageAsync(ct);
     }
 
-    private async Task HandleSyncAsync(CancellationToken ct)
-    {
-        SyncStatusMessage = null;
-        SyncProgressValue = 0;
-
-        var result = await _syncHandler.HandleAsync(new SyncMailboxCommand(SyncParameters.Default), ct);
-
-        if (result.IsSuccess)
-        {
-            await LoadPageAsync(ct);
-            SyncProgressValue = 100;
-            var r = result.Value;
-            SyncStatusMessage = r.Errors.Count > 0
-                ? $"Sync complete: {r.ReportsCreated} reports created, {r.Errors.Count} error(s)"
-                : $"Sync complete: {r.ReportsCreated} reports created";
-        }
-        else
-        {
-            SyncStatusMessage = result.Error.Message;
-        }
-    }
 }

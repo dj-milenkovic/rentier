@@ -17,7 +17,6 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
     public ViewModelActivator Activator { get; } = new();
 
     private readonly ISyncAllCommandHandler _handler;
-    private readonly Action _navigateToFilings;
     private CancellationTokenSource? _cts;
 
     // ── Running state ────────────────────────────────────────────────────────
@@ -113,10 +112,9 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
     public ReactiveCommand<Unit, Unit> SyncCommand { get; }
     public ReactiveCommand<Unit, Unit> CancelCommand { get; }
 
-    public SyncViewModel(ISyncAllCommandHandler handler, Action navigateToFilings, IScheduler? scheduler = null)
+    public SyncViewModel(ISyncAllCommandHandler handler, IScheduler? scheduler = null)
     {
         _handler = handler;
-        _navigateToFilings = navigateToFilings;
         var effectiveScheduler = scheduler ?? RxApp.MainThreadScheduler;
 
         var modeStream = this.WhenAnyValue(x => x.SelectedSyncMode);
@@ -231,7 +229,6 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
             {
                 HasErrors = result.Value.Errors.Count > 0;
                 SummaryMessage = $"Sync complete: {result.Value.FilingsCreated} filing(s) created, {result.Value.Errors.Count} error(s).";
-                if (!HasErrors) _navigateToFilings();
             }
             else
             {

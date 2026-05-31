@@ -6,8 +6,7 @@ using Rentier.Application.Repositories;
 
 namespace Rentier.Application.Handlers;
 
-public sealed class SyncMailboxCommandHandler
-    : ICommandHandler<SyncMailboxCommand, Result<SyncResult, Error>>
+public sealed class SyncMailboxCommandHandler : ISyncMailboxCommandHandler
 {
     private readonly IImporterRepository _importerRepository;
     private readonly IMailboxRepository _mailboxRepository;
@@ -24,7 +23,9 @@ public sealed class SyncMailboxCommandHandler
     }
 
     public async Task<Result<SyncResult, Error>> HandleAsync(
-        SyncMailboxCommand command, CancellationToken ct = default)
+        SyncMailboxCommand command,
+        IProgress<SyncProgressEntry>? progress,
+        CancellationToken ct = default)
     {
         var allImporters = await _importerRepository.GetAllAsync(ct);
 
@@ -52,7 +53,7 @@ public sealed class SyncMailboxCommandHandler
                 mailbox,
                 group.ToList().AsReadOnly(),
                 command.Parameters,
-                progress: null,
+                progress: progress,
                 ct);
 
             if (result.IsSuccess)
