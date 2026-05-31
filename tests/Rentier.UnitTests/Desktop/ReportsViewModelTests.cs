@@ -17,15 +17,6 @@ public class ReportsViewModelTests
 {
     // ── Helpers ─────────────────────────────────────────────────────────────
 
-    private static ICommandHandler<SyncMailboxCommand, Result<SyncResult, Error>> MakeSyncHandler(
-        SyncResult? result = null)
-    {
-        var h = Substitute.For<ICommandHandler<SyncMailboxCommand, Result<SyncResult, Error>>>();
-        h.HandleAsync(Arg.Any<SyncMailboxCommand>(), Arg.Any<CancellationToken>())
-            .Returns(Result<SyncResult, Error>.Success(result ?? new SyncResult(0, [])));
-        return h;
-    }
-
     private static IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>> MakeGetReports(
         IReadOnlyList<ReportRowDto>? rows = null)
     {
@@ -68,7 +59,6 @@ public class ReportsViewModelTests
             $"My Importer \u2013 2024-03-01", null);
 
     private static ReportsViewModel CreateVm(
-        ICommandHandler<SyncMailboxCommand, Result<SyncResult, Error>>? syncHandler = null,
         IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>>? getReports = null,
         ICommandHandler<ImportReportCommand, Result<Guid, Error>>? importHandler = null,
         ICommandHandler<DeleteReportCommand, Result<VoidResult, Error>>? deleteHandler = null,
@@ -77,7 +67,6 @@ public class ReportsViewModelTests
         Action<Guid>? navigateToFilings = null)
     {
         return new ReportsViewModel(
-            syncHandler ?? MakeSyncHandler(),
             getReports ?? MakeGetReports(),
             importHandler ?? MakeImportHandler(),
             deleteHandler ?? MakeDeleteHandler(),
@@ -249,30 +238,15 @@ public class ReportsViewModelTests
         navigatedId.Should().Be(reportId);
     }
 
-    // ── Sync (preserved behaviour) ───────────────────────────────────────────
+    // ── Sync removed from Reports page ───────────────────────────────────────
 
     [Fact]
-    public async Task SyncCommand_WhenHandlerSucceeds_SetsSyncStatusMessage()
+    public void ReportsViewModel_Constructor_DoesNotRequireSyncHandler()
     {
-        var vm = CreateVm(syncHandler: MakeSyncHandler(new SyncResult(3, [])));
+        var vm = CreateVm();
 
-        await vm.SyncCommand.Execute().FirstAsync();
-
-        vm.SyncStatusMessage.Should().Contain("3");
-    }
-
-    [Fact]
-    public async Task SyncCommand_WhenHandlerFails_SetsSyncStatusMessage()
-    {
-        var failingSync = Substitute.For<ICommandHandler<SyncMailboxCommand, Result<SyncResult, Error>>>();
-        failingSync.HandleAsync(Arg.Any<SyncMailboxCommand>(), Arg.Any<CancellationToken>())
-            .Returns(Result<SyncResult, Error>.Failure(Error.Infrastructure("IMAP timeout")));
-
-        var vm = CreateVm(syncHandler: failingSync);
-
-        await vm.SyncCommand.Execute().FirstAsync();
-
-        vm.SyncStatusMessage.Should().Be("IMAP timeout");
+        vm.IsLoading.Should().BeFalse();
+        vm.ErrorMessage.Should().BeNull();
     }
 
     // ── T014/T016: Pagination (feature 029) ─────────────────────────────────
@@ -440,7 +414,6 @@ public class ReportsViewModelTests
 
         // Replace the BulkDeleteCommand handler through the factory — use full overload
         var vm2 = new ReportsViewModel(
-            MakeSyncHandler(),
             getReports,
             MakeImportHandler(),
             MakeDeleteHandler(),
@@ -466,101 +439,6 @@ public class ReportsViewModelTests
         await vm2.BulkDeleteCommand.Execute().FirstAsync();
 
         vm2.TotalPages.Should().Be(1);
-    }
-
-    // ── 048: Sync refresh ────────────────────────────────────────────────────
-
-    [Fact]
-    public async Task SyncCommand_WhenSucceeds_RefreshesReportsList()
-    {
-        var getReports = MakeGetReports();
-        var vm = CreateVm(
-            syncHandler: MakeSyncHandler(new SyncResult(1, [])),
-            getReports: getReports);
-
-        using var _activation = vm.Activator.Activate();
-        await vm.SyncCommand.Execute().FirstAsync();
-
-        // 1 call on activation + 1 call after successful sync
-        await getReports.Received(2).HandleAsync(
-            Arg.Any<GetReportsQuery>(), Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task SyncCommand_WhenSucceeds_PreservesSortOrder()
-    {
-        var getReports = MakeGetReports();
-        var vm = CreateVm(
-            syncHandler: MakeSyncHandler(new SyncResult(1, [])),
-            getReports: getReports);
-
-        using var _activation = vm.Activator.Activate();
-        vm.SortDescending = false; // triggers an extra LoadPage via reactive subscription
-
-        await vm.SyncCommand.Execute().FirstAsync();
-
-        var lastQuery = getReports.ReceivedCalls().Last().GetArguments()[0] as GetReportsQuery;
-        lastQuery!.SortDescending.Should().BeFalse();
-    }
-
-    [Fact]
-    public async Task SyncCommand_WhenSucceeds_PreservesCurrentPage()
-    {
-        var getReports = MakePagedGetReports(75, 3, [MakeDto()]);
-        var vm = CreateVm(
-            syncHandler: MakeSyncHandler(new SyncResult(1, [])),
-            getReports: getReports);
-
-        using var _activation = vm.Activator.Activate();
-        await vm.NextPageCommand.Execute().FirstAsync(); // move to page 2
-
-        await vm.SyncCommand.Execute().FirstAsync();
-
-        var lastQuery = getReports.ReceivedCalls().Last().GetArguments()[0] as GetReportsQuery;
-        lastQuery!.Page.Should().Be(2);
-    }
-
-    [Fact]
-    public async Task SyncCommand_WhenFails_DoesNotRefreshReportsList()
-    {
-        var getReports = MakeGetReports();
-        var failingSync = Substitute.For<ICommandHandler<SyncMailboxCommand, Result<SyncResult, Error>>>();
-        failingSync.HandleAsync(Arg.Any<SyncMailboxCommand>(), Arg.Any<CancellationToken>())
-            .Returns(Result<SyncResult, Error>.Failure(Error.Infrastructure("Sync failed")));
-
-        var vm = CreateVm(syncHandler: failingSync, getReports: getReports);
-
-        using var _activation = vm.Activator.Activate();
-        await vm.SyncCommand.Execute().FirstAsync();
-
-        // Only 1 call: from activation. No post-sync refresh when sync fails.
-        await getReports.Received(1).HandleAsync(
-            Arg.Any<GetReportsQuery>(), Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task SyncCommand_WhenSucceeds_NewRowsAppearInCollection()
-    {
-        var firstPageRows = new[] { MakeDto("report1.csv") };
-        var secondPageRows = new[] { MakeDto("report1.csv"), MakeDto("report2.csv") };
-
-        var firstPage = new ReportsPageResult(firstPageRows, 1, 1);
-        var secondPage = new ReportsPageResult(secondPageRows, 2, 1);
-
-        var getReports = Substitute.For<IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>>>();
-        getReports.HandleAsync(Arg.Any<GetReportsQuery>(), Arg.Any<CancellationToken>())
-            .Returns(
-                Task.FromResult(Result<ReportsPageResult, Error>.Success(firstPage)),
-                Task.FromResult(Result<ReportsPageResult, Error>.Success(secondPage)));
-
-        var vm = CreateVm(
-            syncHandler: MakeSyncHandler(new SyncResult(1, [])),
-            getReports: getReports);
-
-        using var _activation = vm.Activator.Activate(); // call 1 → firstPage → Rows.Count = 1
-        await vm.SyncCommand.Execute().FirstAsync();     // call 2 → secondPage → Rows.Count = 2
-
-        vm.Rows.Count.Should().Be(2);
     }
 
     // ── T016: Page reset on sort change ──────────────────────────────────────

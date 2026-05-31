@@ -1,0 +1,184 @@
+name: Auto Release
+
+# Runs on every push to main (i.e. every merged PR).
+# Reads the PR title (or commit subject), computes the next semver from it,
+# creates an annotated git tag, then calls the reusable release.yml pipeline.
+#
+# Version bump rules (Conventional Commits):
+#   feat!: / fix!: / *!: or body contains "BREAKING CHANGE:" → MAJOR
+#   feat: / feat(scope):                                      → MINOR
+#   everything else                                           → PATCH
+#
+# Skip release: include [skip release] anywhere in the commit message.
+
+on:
+  push:
+    branches: [main]
+
+# Serialize releases so concurrent merges never compute the same tag.
+# cancel-in-progress: false ensures both releases still happen, just sequentially.
+concurrency:
+  group: auto-release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  # ──────────────────────────────────────────────────────────────────
+  # 1. Resolve PR title → bump type → next semver tag
+  # ──────────────────────────────────────────────────────────────────
+  compute-version:
+    name: Compute next version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag:     ${{ steps.version.outputs.tag }}
+      skip:    ${{ steps.skip.outputs.skip }}
+
+    steps:
+      - uses: actions/checkout@v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Check skip flag
+        id: skip
+        run: |
+          SUBJECT=$(git log -1 --pretty=%s)
+          BODY=$(git log -1 --pretty=%b)
+          if echo "${SUBJECT}${BODY}" | grep -q '\[skip release\]'; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "⏭️ Skipping release (\\[skip release\\] found in commit)" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Get PR title
+        id: pr
+        if: steps.skip.outputs.skip == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          GH_SHA:  ${{ github.sha }}
+        run: |
+          # Prefer the PR title from the API (works for squash, merge, and rebase strategies)
+          PR_DATA=$(gh api /repos/${GH_REPO}/commits/${GH_SHA}/pulls \
+            -H "Accept: application/vnd.github+json" 2>/dev/null || echo "[]")
+
+          PR_TITLE=$(echo "${PR_DATA}" | jq -r '.[0].title // empty')
+          PR_BODY=$(echo "${PR_DATA}"  | jq -r '.[0].body  // empty')
+
+          # Fallback: use the commit subject / body
+          if [ -z "${PR_TITLE}" ]; then
+            PR_TITLE=$(git log -1 --pretty=%s)
+            PR_BODY=$(git log -1 --pretty=%b)
+          fi
+
+          echo "title=${PR_TITLE}" >> "$GITHUB_OUTPUT"
+          # Use a random delimiter so PR body content can never break the heredoc parser.
+          DELIM=$(openssl rand -hex 8)
+          {
+            echo "body<<${DELIM}"
+            echo "${PR_BODY}"
+            echo "${DELIM}"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "PR title: ${PR_TITLE}"
+
+      - name: Determine bump type
+        id: bump
+        if: steps.skip.outputs.skip == 'false'
+        env:
+          PR_TITLE: ${{ steps.pr.outputs.title }}
+          PR_BODY:  ${{ steps.pr.outputs.body }}
+        run: |
+          if echo "${PR_TITLE}" | grep -qP '^[a-z]+(\([^)]+\))?!:' || \
+             echo "${PR_BODY}"  | grep -q 'BREAKING CHANGE:'; then
+            BUMP="major"
+          elif echo "${PR_TITLE}" | grep -qP '^feat(\([^)]+\))?:'; then
+            BUMP="minor"
+          else
+            BUMP="patch"
+          fi
+          echo "bump=${BUMP}" >> "$GITHUB_OUTPUT"
+          echo "Bump: ${BUMP}"
+
+      - name: Compute next semver
+        id: version
+        if: steps.skip.outputs.skip == 'false'
+        env:
+          BUMP: ${{ steps.bump.outputs.bump }}
+        run: |
+          LATEST=$(git tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+          [ -z "${LATEST}" ] && LATEST="v0.0.0"
+
+          VERSION="${LATEST#v}"
+          MAJOR=$(echo "${VERSION}" | cut -d. -f1)
+          MINOR=$(echo "${VERSION}" | cut -d. -f2)
+          PATCH=$(echo "${VERSION}" | cut -d. -f3)
+
+          case "${BUMP}" in
+            major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
+            minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
+            patch) PATCH=$((PATCH + 1)) ;;
+          esac
+
+          NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+          NEW_TAG="v${NEW_VERSION}"
+
+          echo "version=${NEW_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${NEW_TAG}"         >> "$GITHUB_OUTPUT"
+          echo "Previous: ${LATEST}  →  Next: ${NEW_TAG} (${BUMP} bump)"
+
+  # ──────────────────────────────────────────────────────────────────
+  # 2. Create annotated git tag
+  # ──────────────────────────────────────────────────────────────────
+  tag:
+    name: Create git tag
+    needs: compute-version
+    if: needs.compute-version.outputs.skip == 'false'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Push annotated tag
+        env:
+          NEW_TAG: ${{ needs.compute-version.outputs.tag }}
+          NEW_VERSION: ${{ needs.compute-version.outputs.version }}
+          # GITHUB_TOKEN tag pushes don't re-trigger push.tags workflows,
+          # but release.yml is invoked directly via workflow_call below.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git tag -a "${NEW_TAG}" -m "Release ${NEW_TAG}"
+          git push origin "${NEW_TAG}"
+
+          {
+            echo "## 🏷️ Tagged ${NEW_TAG}"
+            echo ""
+            echo "| Field | Value |"
+            echo "|-------|-------|"
+            echo "| Version | \`${NEW_VERSION}\` |"
+            echo "| Tag | \`${NEW_TAG}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # ──────────────────────────────────────────────────────────────────
+  # 3. Run the full release pipeline
+  #    (build Windows/macOS/Linux + create GitHub Release)
+  # ──────────────────────────────────────────────────────────────────
+  release:
+    name: Run release pipeline
+    needs: [compute-version, tag]
+    if: needs.compute-version.outputs.skip == 'false'
+    uses: ./.github/workflows/release.yml
+    with:
+      version: ${{ needs.compute-version.outputs.version }}
+      enable_trimming: false
+    secrets: inherit
+    permissions:
+      contents: write

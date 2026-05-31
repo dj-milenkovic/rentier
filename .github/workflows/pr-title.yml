@@ -1,0 +1,54 @@
+name: PR Title Lint
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+    branches: [main]
+
+concurrency:
+  group: pr-title-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  pull-requests: read
+
+jobs:
+  lint-title:
+    name: Conventional Commit Title
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate PR title
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          # Conventional Commits: type(scope)!: description
+          # Types: feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert
+          PATTERN='^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\([a-z0-9/_-]+\))?!?: .{1,100}$'
+
+          if ! echo "${PR_TITLE}" | grep -qP "${PATTERN}"; then
+            echo "::error title=Invalid PR title::PR title does not follow Conventional Commits format."
+            echo "::error::Format:  type(scope)!: description"
+            echo "::error::Types:   feat | fix | docs | style | refactor | test | chore | perf | ci | build | revert"
+            echo "::error::Example: feat(auth): add OAuth2 login"
+            echo "::error::Example: fix!: remove deprecated API endpoint  ← breaking change"
+            echo "::error::Got:     ${PR_TITLE}"
+            exit 1
+          fi
+
+          # Determine the version bump this PR will trigger
+          if echo "${PR_TITLE}" | grep -qP '^[a-z]+(\([^)]+\))?!:'; then
+            BUMP="**major** 💥 (breaking change)"
+          elif echo "${PR_TITLE}" | grep -qP '^feat(\([^)]+\))?:'; then
+            BUMP="**minor** ✨ (new feature)"
+          else
+            BUMP="**patch** 🔧 (bugfix / maintenance)"
+          fi
+
+          {
+            echo "## ✅ PR Title Valid"
+            echo ""
+            echo "| Field | Value |"
+            echo "|-------|-------|"
+            echo "| Title | \`${PR_TITLE}\` |"
+            echo "| Version bump on merge | ${BUMP} |"
+          } >> "$GITHUB_STEP_SUMMARY"

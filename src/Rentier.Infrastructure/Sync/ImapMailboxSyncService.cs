@@ -40,7 +40,7 @@ public class ImapMailboxSyncService : IMailboxSyncService
         Mailbox mailbox,
         IReadOnlyList<Importer> importers,
         SyncParameters parameters,
-        IProgress<SyncProgress>? progress,
+        IProgress<SyncProgressEntry>? progress,
         CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(mailbox);
@@ -96,7 +96,10 @@ public class ImapMailboxSyncService : IMailboxSyncService
                             var message = await inbox.GetMessageAsync(uid, ct);
                             var subject = message.Subject ?? string.Empty;
                             processed++;
-                            progress?.Report(new SyncProgress(total, processed, subject, false));
+                            progress?.Report(new SyncProgressEntry(
+                                DateTimeOffset.Now,
+                                $"Downloading email {processed}/{total}: {subject}",
+                                SyncProgressSeverity.Info));
 
                             foreach (var attachment in message.Attachments.OfType<MimePart>())
                             {
@@ -155,7 +158,6 @@ public class ImapMailboxSyncService : IMailboxSyncService
             mailbox.UpdateCursor(newCursor);
             await _mailboxRepository.UpdateAsync(mailbox, ct);
 
-            progress?.Report(new SyncProgress(0, 0, null, true));
             return Result<SyncResult, Error>.Success(new SyncResult(reportsCreated, errors));
         }
         catch (Exception ex)

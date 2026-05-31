@@ -46,7 +46,6 @@ public class ReportsViewModelBulkDeleteTests
         Func<string, string, Task<bool>>? confirmDelete = null)
     {
         return new ReportsViewModel(
-            Substitute.For<ICommandHandler<SyncMailboxCommand, Result<SyncResult, Error>>>(),
             getReports ?? MockGetReports(),
             Substitute.For<ICommandHandler<ImportReportCommand, Result<Guid, Error>>>(),
             Substitute.For<ICommandHandler<DeleteReportCommand, Result<VoidResult, Error>>>(),

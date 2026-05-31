@@ -49,9 +49,7 @@ public static class CompositionRoot
         services.AddTransient<ISyncAllCommandHandler, SyncAllCommandHandler>();
 
         // Handlers that depend on Infrastructure services (sync and report processing)
-        services.AddTransient<
-            ICommandHandler<SyncMailboxCommand, Result<SyncResult, Error>>,
-            SyncMailboxCommandHandler>();
+        services.AddTransient<ISyncMailboxCommandHandler, SyncMailboxCommandHandler>();
         services.AddTransient<
             ICommandHandler<ProcessReportsCommand, Result<ProcessReportsResult, Error>>,
             ProcessReportsCommandHandler>();

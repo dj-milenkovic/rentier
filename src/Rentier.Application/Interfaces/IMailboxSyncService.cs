@@ -11,6 +11,6 @@ public interface IMailboxSyncService
         Mailbox mailbox,
         IReadOnlyList<Importer> importers,
         SyncParameters parameters,
-        IProgress<SyncProgress>? progress,
+        IProgress<SyncProgressEntry>? progress,
         CancellationToken ct);
 }
