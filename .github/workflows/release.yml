@@ -56,13 +56,15 @@ jobs:
           INPUT_VERSION: ${{ inputs.version }}
           INPUT_TRIMMED: ${{ inputs.enable_trimming }}
         run: |
-          EVENT="${{ github.event_name }}"
-          if [ "${EVENT}" = "workflow_dispatch" ] || [ "${EVENT}" = "workflow_call" ]; then
+          # Use the provided input version when available (workflow_dispatch or workflow_call).
+          # NOTE: github.event_name inside a reusable workflow reflects the *outer* triggering
+          # event (e.g. "push"), not "workflow_call", so we key off INPUT_VERSION instead.
+          if [ -n "${INPUT_VERSION}" ]; then
             VERSION="${INPUT_VERSION}"
             # Normalise: anything other than explicit "true" becomes "false"
             [ "${INPUT_TRIMMED}" = "true" ] && TRIMMED="true" || TRIMMED="false"
           else
-            # push: tags trigger — strip the leading 'v'
+            # push.tags trigger — strip the leading 'v'
             VERSION="${GITHUB_REF#refs/tags/v}"
             TRIMMED="false"
           fi
