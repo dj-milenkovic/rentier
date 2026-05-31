@@ -58,10 +58,8 @@ public static class Program
 
         // Reuse the same reflection-based registrar pattern as App.axaml.cs
         // so the smoke test exercises real infrastructure registration.
-        var infraAssembly = System.Reflection.Assembly.Load("Rentier.Infrastructure")
-            ?? throw new InvalidOperationException(
-                "Could not load Rentier.Infrastructure assembly. " +
-                "Ensure the assembly is present in the application output directory.");
+        // Assembly.Load throws FileNotFoundException if missing — no null check needed.
+        var infraAssembly = System.Reflection.Assembly.Load("Rentier.Infrastructure");
 
         var registrarType = infraAssembly.GetTypes()
             .FirstOrDefault(t => typeof(IInfrastructureRegistrar).IsAssignableFrom(t)
