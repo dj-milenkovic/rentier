@@ -16,7 +16,7 @@
 
     <!-- Reactive / MVVM -->
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
-    <PackageVersion Include="ReactiveUI" Version="20.4.1" />
+    <PackageVersion Include="ReactiveUI" Version="23.2.27" />
 
     <!-- Microsoft Extensions -->
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.8" />
