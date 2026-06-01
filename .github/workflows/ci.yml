@@ -27,7 +27,7 @@ jobs:
         uses: actions/checkout@v6.0.2
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5.2.0
+        uses: actions/setup-dotnet@v5.3.0
         with:
           dotnet-version: '10.x'
 
@@ -73,7 +73,7 @@ jobs:
           fetch-depth: 0  # full history for SonarCloud
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5.2.0
+        uses: actions/setup-dotnet@v5.3.0
         with:
           dotnet-version: '10.x'
 
@@ -163,7 +163,7 @@ jobs:
         uses: actions/checkout@v6.0.2
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5.2.0
+        uses: actions/setup-dotnet@v5.3.0
         with:
           dotnet-version: '10.x'
 
@@ -244,7 +244,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5.2.0
+        uses: actions/setup-dotnet@v5.3.0
         with:
           dotnet-version: '10.x'
 
@@ -286,7 +286,13 @@ jobs:
         shell: bash
         run: |
           COV_PATHS=$(find ./coverage-raw -name 'coverage.opencover.xml' | paste -sd ',' -)
-
+      
+          # Skip analysis if no coverage files found
+          if [ -z "$COV_PATHS" ]; then
+            echo "⚠️ No coverage files found. Skipping SonarCloud analysis (workflow-only PR)."
+            exit 0
+          fi
+      
           dotnet sonarscanner begin \
             /k:"${SONAR_PROJECT_KEY}" \
             /o:"${SONAR_ORGANIZATION}" \
@@ -299,7 +305,7 @@ jobs:
             /d:sonar.test.inclusions="**/*.Tests/**,**/*Tests.cs" \
             /d:sonar.scanner.skipJreProvisioning=true \
             /d:sonar.scanner.javaExePath="${JAVA_HOME}/bin/java"
-
+      
           for proj in \
             src/Rentier.Domain/Rentier.Domain.csproj \
             src/Rentier.Application/Rentier.Application.csproj \
@@ -307,7 +313,7 @@ jobs:
             src/Rentier.Desktop/Rentier.Desktop.csproj; do
             dotnet build "$proj" -c Release --no-incremental
           done
-
+      
           dotnet sonarscanner end /d:sonar.token="${SONAR_TOKEN}"
 
       - name: Check Quality Gate
