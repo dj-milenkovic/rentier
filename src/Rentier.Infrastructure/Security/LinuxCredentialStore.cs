@@ -50,7 +50,7 @@ public sealed class LinuxCredentialStore : ICredentialStore
                 : Result<VoidResult, Error>.Failure(
                     Error.CredentialWriteFailed($"Failed to create credential for key '{key}' (prompt dismissed)."));
         }
-        catch (DBusException ex)
+        catch (DBusErrorReplyException ex)
         {
             return Result<VoidResult, Error>.Failure(
                 Error.CredentialWriteFailed($"D-Bus error saving credential: {ex.Message}"));
@@ -80,7 +80,7 @@ public sealed class LinuxCredentialStore : ICredentialStore
             var secretBytes = await items[0].GetSecretAsync();
             return Result<string, Error>.Success(Encoding.UTF8.GetString(secretBytes));
         }
-        catch (DBusException ex)
+        catch (DBusErrorReplyException ex)
         {
             return Result<string, Error>.Failure(
                 Error.ProviderUnavailable($"D-Bus error retrieving credential: {ex.Message}"));
@@ -109,7 +109,7 @@ public sealed class LinuxCredentialStore : ICredentialStore
             await items[0].DeleteAsync();
             return Result<VoidResult, Error>.Success(VoidResult.Value);
         }
-        catch (DBusException ex)
+        catch (DBusErrorReplyException ex)
         {
             return Result<VoidResult, Error>.Failure(
                 Error.CredentialDeleteFailed($"D-Bus error deleting credential: {ex.Message}"));

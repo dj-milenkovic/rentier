@@ -44,13 +44,7 @@ public static class CredentialStoreFactory
                 var info = new ProviderInfo("Linux Secret Service", "Linux");
                 return Result<(ICredentialStore, ProviderInfo), Error>.Success((store, info));
             }
-            catch (DBusException ex)
-            {
-                return Result<(ICredentialStore, ProviderInfo), Error>.Failure(
-                    Error.ProviderUnavailable(
-                        $"Secret Service daemon is not running or is not reachable: {ex.Message}"));
-            }
-            catch (ConnectException ex)
+            catch (DBusErrorReplyException ex)
             {
                 return Result<(ICredentialStore, ProviderInfo), Error>.Failure(
                     Error.ProviderUnavailable(
