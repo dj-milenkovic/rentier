@@ -31,13 +31,13 @@ public sealed class MigrationUpgradeTests
 
         await using (var ctx = baseline.OpenContext())
         {
-            profileCount  = await ctx.TaxpayerProfiles.CountAsync();
-            holidayCount  = await ctx.PublicHolidays.CountAsync();
-            mailboxCount  = await ctx.Mailboxes.CountAsync();
+            profileCount = await ctx.TaxpayerProfiles.CountAsync();
+            holidayCount = await ctx.PublicHolidays.CountAsync();
+            mailboxCount = await ctx.Mailboxes.CountAsync();
             importerCount = await ctx.Importers.CountAsync();
-            rateCount     = await ctx.ExchangeRateCache.CountAsync();
-            reportCount   = await ctx.Reports.CountAsync();
-            filingCount   = await ctx.Filings.CountAsync();
+            rateCount = await ctx.ExchangeRateCache.CountAsync();
+            reportCount = await ctx.Reports.CountAsync();
+            filingCount = await ctx.Filings.CountAsync();
         }
 
         await baseline.MigrateToLatestAsync();
