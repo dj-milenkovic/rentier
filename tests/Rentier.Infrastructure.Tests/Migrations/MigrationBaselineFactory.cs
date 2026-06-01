@@ -99,7 +99,7 @@ public sealed class MigrationBaselineFactory : IAsyncDisposable
         Guid importerId;
         await using (var ctx = new AppDbContext(options))
         {
-            var primary   = SeedDataBuilder.PrimaryProfile();
+            var primary = SeedDataBuilder.PrimaryProfile();
             var secondary = SeedDataBuilder.SecondaryProfile();
             await ctx.TaxpayerProfiles.AddRangeAsync(primary, secondary);
 
@@ -109,7 +109,7 @@ public sealed class MigrationBaselineFactory : IAsyncDisposable
             var mailbox = SeedDataBuilder.Mailbox();
             await ctx.Mailboxes.AddAsync(mailbox);
 
-            var linked     = SeedDataBuilder.LinkedImporter(primary.Id, mailbox.Id);
+            var linked = SeedDataBuilder.LinkedImporter(primary.Id, mailbox.Id);
             var standalone = SeedDataBuilder.StandaloneImporter();
             await ctx.Importers.AddRangeAsync(linked, standalone);
             importerId = linked.Id;
@@ -161,12 +161,12 @@ public sealed class MigrationBaselineFactory : IAsyncDisposable
                                   ? "(@id,@date,@impId,0,@name,@content,@msgId,NULL,@emailDate)"
                                   : "(@id,@date,@impId,0,@name,@content,@msgId,NULL)");
 
-            cmd.Parameters.AddWithValue("@id",      id.ToString());
-            cmd.Parameters.AddWithValue("@date",    DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd"));
-            cmd.Parameters.AddWithValue("@impId",   impId.ToString());
-            cmd.Parameters.AddWithValue("@name",    name);
+            cmd.Parameters.AddWithValue("@id", id.ToString());
+            cmd.Parameters.AddWithValue("@date", DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd"));
+            cmd.Parameters.AddWithValue("@impId", impId.ToString());
+            cmd.Parameters.AddWithValue("@name", name);
             cmd.Parameters.AddWithValue("@content", content);
-            cmd.Parameters.AddWithValue("@msgId",   (object?)msgId ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@msgId", (object?)msgId ?? DBNull.Value);
 
             if (includeEmailDate)
                 cmd.Parameters.AddWithValue("@emailDate",
@@ -179,18 +179,18 @@ public sealed class MigrationBaselineFactory : IAsyncDisposable
     /// <param name="includeTicker">True at 0014 baseline (0013 adds Ticker); false at 0010.</param>
     private static async Task InsertFilingsRawAsync(SqliteConnection conn, bool includeTicker)
     {
-        var primaryId   = SeedDataBuilder.PrimaryProfileId.ToString();
+        var primaryId = SeedDataBuilder.PrimaryProfileId.ToString();
         var secondaryId = SeedDataBuilder.SecondaryProfileId.ToString();
 
         // (profileId, incomeType, entity, incomeDate, gross, wht, grossTax, tax)
         var rows = new[]
         {
-            (primaryId,   0, "Apple Inc",               "2024-03-15", 123456.78m, 18518.52m, 18518.52m, 0.00m),
-            (primaryId,   0, "Microsoft Corp",           "2024-04-10",  87654.32m, 13148.15m, 13148.15m, 0.00m),
-            (primaryId,   0, "Alphabet Inc",             "2024-05-20",  56789.01m,  8518.35m,  8518.35m, 0.00m),
-            (secondaryId, 1, "Interactive Brokers LLC",  "2024-06-01",   9876.54m,     0.00m,  1481.48m, 1481.48m),
-            (primaryId,   0, "Amazon.com Inc",           "2024-07-05",  44321.67m,  6648.25m,  6648.25m, 0.00m),
-            (secondaryId, 0, "NIS AD Novi Sad",          "2024-08-15",  33000.00m,     0.00m,  4950.00m, 4950.00m),
+            (primaryId, 0, "Apple Inc", "2024-03-15", 123456.78m, 18518.52m, 18518.52m, 0.00m),
+            (primaryId, 0, "Microsoft Corp", "2024-04-10", 87654.32m, 13148.15m, 13148.15m, 0.00m),
+            (primaryId, 0, "Alphabet Inc", "2024-05-20", 56789.01m, 8518.35m, 8518.35m, 0.00m),
+            (secondaryId, 1, "Interactive Brokers LLC", "2024-06-01", 9876.54m, 0.00m, 1481.48m, 1481.48m),
+            (primaryId, 0, "Amazon.com Inc", "2024-07-05", 44321.67m, 6648.25m, 6648.25m, 0.00m),
+            (secondaryId, 0, "NIS AD Novi Sad", "2024-08-15", 33000.00m, 0.00m, 4950.00m, 4950.00m),
         };
 
         // Status values: 0=Init (rows 0,3,4,5), 1=Filed (row 1), 2=Paid (row 2)
@@ -211,17 +211,17 @@ public sealed class MigrationBaselineFactory : IAsyncDisposable
 
             await using var cmd = conn.CreateCommand();
             cmd.CommandText = $"INSERT INTO Filings ({cols}) VALUES {valTemplate}";
-            cmd.Parameters.AddWithValue("@id",       Guid.NewGuid().ToString());
-            cmd.Parameters.AddWithValue("@pid",      pid);
-            cmd.Parameters.AddWithValue("@period",   incomeDate);
-            cmd.Parameters.AddWithValue("@status",   statuses[i]);
-            cmd.Parameters.AddWithValue("@type",     incomeType);
-            cmd.Parameters.AddWithValue("@entity",   entity);
-            cmd.Parameters.AddWithValue("@date",     incomeDate);
-            cmd.Parameters.AddWithValue("@gross",    D(gross));
-            cmd.Parameters.AddWithValue("@wht",      D(wht));
+            cmd.Parameters.AddWithValue("@id", Guid.NewGuid().ToString());
+            cmd.Parameters.AddWithValue("@pid", pid);
+            cmd.Parameters.AddWithValue("@period", incomeDate);
+            cmd.Parameters.AddWithValue("@status", statuses[i]);
+            cmd.Parameters.AddWithValue("@type", incomeType);
+            cmd.Parameters.AddWithValue("@entity", entity);
+            cmd.Parameters.AddWithValue("@date", incomeDate);
+            cmd.Parameters.AddWithValue("@gross", D(gross));
+            cmd.Parameters.AddWithValue("@wht", D(wht));
             cmd.Parameters.AddWithValue("@grossTax", D(grossTax));
-            cmd.Parameters.AddWithValue("@tax",      D(tax));
+            cmd.Parameters.AddWithValue("@tax", D(tax));
             cmd.Parameters.AddWithValue("@deadline", deadline);
             await cmd.ExecuteNonQueryAsync();
         }
