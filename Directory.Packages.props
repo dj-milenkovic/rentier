@@ -11,7 +11,7 @@
     <PackageVersion Include="Avalonia.Fonts.Inter" Version="11.3.17" />
     <PackageVersion Include="Avalonia.Headless" Version="11.3.17" />
     <PackageVersion Include="Avalonia.Headless.XUnit" Version="11.3.17" />
-    <PackageVersion Include="Avalonia.ReactiveUI" Version="11.3.9" />
+    <PackageVersion Include="Avalonia.ReactiveUI" Version="11.3.17" />
     <PackageVersion Include="Avalonia.Themes.Fluent" Version="11.3.17" />
 
     <!-- Reactive / MVVM -->
