@@ -143,6 +143,7 @@ public static class Strings
     public static string Reports_Col_Importer => "Importer";
     public static string Reports_Col_Status => "Status";
     public static string Reports_Col_FilingCount => "Filings";
+    public static string Reports_Col_Actions => "Actions";
     public static string Reports_Button_Import => "Import\u2026";
     public static string Reports_Button_ViewFilings => "View Filings";
     public static string Reports_Button_Delete => "Delete";
@@ -260,25 +261,17 @@ public static class Strings
     public static string Reports_Filter_Importer_Watermark => "Filter by importer...";
     public static string Reports_Filter_Clear => "Clear filters";
     public static string Reports_Filter_Status_All => "All";
-    public static string Filter_All => "Svi";
+    public static string Filter_All => "All";
     public static string Filter_Placeholder => "Filter...";
-    public static string Filter_ClearAll => "Obriši filtere";
-    public static string Filter_NoResults => "Nema prijava koje odgovaraju aktivnim filterima";
-    public static string Filter_StatusInit => "Inicijalan";
-    public static string Filter_StatusFiled => "Podnet";
-    public static string Filter_StatusPaid => "Plaćen";
-    public static string Filter_IncomeDividend => "Dividenda";
-    public static string Filter_IncomeInterest => "Kamata";
-
-    /// <summary>Flyout text-filter search placeholder: "Pretraži..."</summary>
-    public static string Filter_Search => "Pretraži...";
-
-    /// <summary>Flyout apply button label: "Primeni"</summary>
-    public static string Filter_Apply => "Primeni";
-
-    /// <summary>Flyout select-all button label: "Sve"</summary>
-    public static string Filter_SelectAll => "Sve";
-
-    /// <summary>Flyout clear-all button label: "Nijedna"</summary>
-    public static string Filter_Clear => "Nijedna";
+    public static string Filter_ClearAll => "Clear all filters";
+    public static string Filter_NoResults => "No filings match the active filters";
+    public static string Filter_StatusInit => "Initial";
+    public static string Filter_StatusFiled => "Filed";
+    public static string Filter_StatusPaid => "Paid";
+    public static string Filter_IncomeDividend => "Dividend";
+    public static string Filter_IncomeInterest => "Interest";
+    public static string Filter_Search => "Search...";
+    public static string Filter_Apply => "Apply";
+    public static string Filter_SelectAll => "All";
+    public static string Filter_Clear => "None";
 }

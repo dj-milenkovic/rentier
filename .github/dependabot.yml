@@ -1,0 +1,46 @@
+version: 2
+
+updates:
+  # ── NuGet (Central Package Management via Directory.Packages.props) ──────────
+  - package-ecosystem: "nuget"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "Europe/Belgrade"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+    # "chore(deps):" satisfies the PR-title linter's Conventional Commits pattern.
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      # Minor and patch updates ship together in a single PR — less noise.
+      # Major updates always get their own individual PRs for conscious review.
+      nuget-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
+
+  # ── GitHub Actions ───────────────────────────────────────────────────────────
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "Europe/Belgrade"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+    # "ci(deps):" satisfies the PR-title linter.
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    groups:
+      actions-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
