@@ -21,9 +21,6 @@ concurrency:
   group: auto-release
   cancel-in-progress: false
 
-permissions:
-  contents: write
-
 jobs:
   # ──────────────────────────────────────────────────────────────────
   # 1. Resolve PR title → bump type → next semver tag
