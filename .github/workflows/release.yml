@@ -25,9 +25,6 @@ on:
         type: boolean
         default: false
 
-permissions:
-  contents: write
-
 env:
   DOTNET_VERSION: '10.x'
   PROJECT_PATH: src/Rentier.Desktop/Rentier.Desktop.csproj
