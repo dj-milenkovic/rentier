@@ -1,6 +1,6 @@
 using Avalonia;
 using Avalonia.Headless;
-using Avalonia.ReactiveUI;
+using ReactiveUI.Avalonia;
 
 [assembly: AvaloniaTestApplication(typeof(Rentier.UnitTests.TestAppBuilder))]
 

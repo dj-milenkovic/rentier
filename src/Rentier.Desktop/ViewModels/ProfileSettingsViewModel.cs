@@ -1,10 +1,9 @@
-using System.Reactive.Disposables;
+using System.Reactive.Disposables.Fluent;
 using System.Reactive.Linq;
 using ReactiveUI;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
-using Rentier.Application.Handlers;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
 using Rentier.Desktop.Resources;
@@ -125,7 +124,7 @@ public sealed class ProfileSettingsViewModel : ReactiveObject, IActivatableViewM
         this.WhenActivated(disposables =>
         {
             Observable.FromAsync(ct => LoadAsync(ct))
-                .ObserveOn(RxApp.MainThreadScheduler)
+                .ObserveOn(RxSchedulers.MainThreadScheduler)
                 .Subscribe()
                 .DisposeWith(disposables);
             SaveCommand.ThrownExceptions

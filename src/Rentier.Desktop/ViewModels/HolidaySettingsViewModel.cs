@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
+using System.Reactive.Disposables.Fluent;
 using System.Reactive.Linq;
 using ReactiveUI;
 using Rentier.Application.Commands;
@@ -67,7 +68,7 @@ public sealed class HolidaySettingsViewModel : ReactiveObject, IActivatableViewM
         _queryHandler = queryHandler;
         _saveHandler = saveHandler;
         _fetchHandler = fetchHandler;
-        _scheduler = scheduler ?? RxApp.MainThreadScheduler;
+        _scheduler = scheduler ?? RxSchedulers.MainThreadScheduler;
 
         // Raise HasItems when collection size changes; also rebuild the filtered view
         Entries.CollectionChanged += (_, _) =>
