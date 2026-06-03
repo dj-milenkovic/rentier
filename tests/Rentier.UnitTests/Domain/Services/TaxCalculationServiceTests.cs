@@ -23,10 +23,7 @@ public class TaxCalculationServiceTests
         // whtPaid = 1758.15
         // grossTax = Round(11721.00 * 0.15) = 1758.15
         // taxPayable = max(1758.15 - 1758.15, 0) = 0.00
-        var result = await TaxCalculationService.CalculateAsync(
-            IncomeType.Dividend, "AAPL", TestDate,
-            100m, "USD", 15m, "USD",
-            FixedRate(117.21m));
+        var result = await TaxCalculationService.CalculateAsync(IncomeType.Dividend, "AAPL", TestDate, 100m, "USD", 15m, "USD", FixedRate(117.21m), TestContext.Current.CancellationToken);
 
         result.GrossIncomeRsd.Should().Be(11721.00m);
         result.WhtPaidRsd.Should().Be(1758.15m);
@@ -42,10 +39,7 @@ public class TaxCalculationServiceTests
     {
         // income = 100 @ 100 RSD → grossIncome = 10000, grossTax = 1500
         // wht = 20 @ 100 RSD → whtPaid = 2000 > 1500 → taxPayable = 0
-        var result = await TaxCalculationService.CalculateAsync(
-            IncomeType.Dividend, "MSFT", TestDate,
-            100m, "USD", 20m, "USD",
-            FixedRate(100m));
+        var result = await TaxCalculationService.CalculateAsync(IncomeType.Dividend, "MSFT", TestDate, 100m, "USD", 20m, "USD", FixedRate(100m), TestContext.Current.CancellationToken);
 
         result.WhtPaidRsd.Should().Be(2000.00m);
         result.GrossTaxPayableRsd.Should().Be(1500.00m);
@@ -55,10 +49,7 @@ public class TaxCalculationServiceTests
     [Fact]
     public async Task CalculateAsync_ZeroIncome_ReturnsAllZeros()
     {
-        var result = await TaxCalculationService.CalculateAsync(
-            IncomeType.Interest, "IBKR", TestDate,
-            0m, "USD", 0m, "USD",
-            FixedRate(117m));
+        var result = await TaxCalculationService.CalculateAsync(IncomeType.Interest, "IBKR", TestDate, 0m, "USD", 0m, "USD", FixedRate(117m), TestContext.Current.CancellationToken);
 
         result.GrossIncomeRsd.Should().Be(0m);
         result.WhtPaidRsd.Should().Be(0m);
@@ -76,10 +67,7 @@ public class TaxCalculationServiceTests
             return Task.FromResult(new ExchangeRate(date, currency, 117m));
         };
 
-        await TaxCalculationService.CalculateAsync(
-            IncomeType.Dividend, "AAPL", TestDate,
-            50m, "USD", 0m, "USD",
-            countingProvider);
+        await TaxCalculationService.CalculateAsync(IncomeType.Dividend, "AAPL", TestDate, 50m, "USD", 0m, "USD", countingProvider, TestContext.Current.CancellationToken);
 
         callCount.Should().Be(1, because: "zero WHT should skip WHT rate call");
     }
@@ -144,9 +132,7 @@ public class TaxCalculationServiceTests
     [Fact]
     public async Task CalculateAsync_InterestType_PassesThroughToFilingInfo()
     {
-        var result = await TaxCalculationService.CalculateAsync(
-            IncomeType.Interest, "Interactive Brokers", TestDate,
-            10m, "EUR", 0m, "EUR", FixedRate(117m));
+        var result = await TaxCalculationService.CalculateAsync(IncomeType.Interest, "Interactive Brokers", TestDate, 10m, "EUR", 0m, "EUR", FixedRate(117m), TestContext.Current.CancellationToken);
 
         result.IncomeType.Should().Be(IncomeType.Interest);
         result.PayingEntity.Should().Be("Interactive Brokers");
@@ -159,10 +145,7 @@ public class TaxCalculationServiceTests
         // Use rate that produces a .005 boundary: income=1, rate=100/3 → 33.3333...
         // Round(33.333... * 0.15) = Round(5.0000) = 5.00 — not a good boundary test
         // Better: income=1, rate=0.335 → grossIncome=Round(0.335,2)=0.34 (rounds .005 up)
-        var result = await TaxCalculationService.CalculateAsync(
-            IncomeType.Dividend, "TEST", TestDate,
-            1m, "USD", 0m, "USD",
-            (_, _) => Task.FromResult(new ExchangeRate(TestDate, "USD", 0.335m)));
+        var result = await TaxCalculationService.CalculateAsync(IncomeType.Dividend, "TEST", TestDate, 1m, "USD", 0m, "USD", (_, _) => Task.FromResult(new ExchangeRate(TestDate, "USD", 0.335m)), TestContext.Current.CancellationToken);
 
         // Round(1 * 0.335, 2, AwayFromZero) = Round(0.335, 2) = 0.34
         result.GrossIncomeRsd.Should().Be(0.34m);
@@ -179,9 +162,7 @@ public class TaxCalculationServiceTests
             return Task.FromResult(new ExchangeRate(date, currency, 117m));
         };
 
-        await TaxCalculationService.CalculateAsync(
-            IncomeType.Dividend, "AAPL", TestDate,
-            100m, "usd", 0m, "usd", capturingProvider);
+        await TaxCalculationService.CalculateAsync(IncomeType.Dividend, "AAPL", TestDate, 100m, "usd", 0m, "usd", capturingProvider, TestContext.Current.CancellationToken);
 
         receivedCurrency.Should().Be("USD");
     }

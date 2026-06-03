@@ -11,7 +11,7 @@ using Rentier.Desktop.ViewModels;
 using Rentier.Domain.Enums;
 using Xunit;
 
-namespace Rentier.UnitTests;
+namespace Rentier.UnitTests.Desktop;
 
 public class SyncViewModelTests
 {
@@ -71,10 +71,10 @@ public class SyncViewModelTests
         var executeTask = vm.SyncCommand.Execute().FirstAsync().GetAwaiter();
 
         // Allow command to start
-        await Task.Delay(50);
+        await Task.Delay(50, TestContext.Current.CancellationToken);
         tcs.SetResult(Result<SyncAllResult, Error>.Success(new SyncAllResult(1, 0, 0, 0, [])));
 
-        await Task.Delay(50);
+        await Task.Delay(50, TestContext.Current.CancellationToken);
 
         runningValues.Should().Contain(true);
     }
@@ -270,13 +270,13 @@ public class SyncViewModelTests
         var executeTask = vm.SyncCommand.Execute().FirstAsync().GetAwaiter();
 
         // Wait until the handler is invoked and running
-        await Task.Delay(100);
+        await Task.Delay(100, TestContext.Current.CancellationToken);
 
         // Cancel
         await vm.CancelCommand.Execute().FirstAsync();
         tcs.SetCanceled(capturedToken);
 
-        await Task.Delay(100);
+        await Task.Delay(100, TestContext.Current.CancellationToken);
 
         capturedToken.IsCancellationRequested.Should().BeTrue();
     }

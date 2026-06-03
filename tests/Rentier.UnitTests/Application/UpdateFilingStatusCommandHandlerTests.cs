@@ -1,14 +1,13 @@
 using FluentAssertions;
 using NSubstitute;
 using Rentier.Application.Commands;
-using Rentier.Application.Common;
 using Rentier.Application.Handlers;
 using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 using Xunit;
 
-namespace Rentier.UnitTests;
+namespace Rentier.UnitTests.Application;
 
 public class UpdateFilingStatusCommandHandlerTests
 {
@@ -34,7 +33,7 @@ public class UpdateFilingStatusCommandHandlerTests
         var filing = MakeInitFiling();
         _repo.GetByIdAsync(filing.Id, Arg.Any<CancellationToken>()).Returns(filing);
 
-        var result = await _sut.HandleAsync(new UpdateFilingStatusCommand(filing.Id, FilingStatus.Filed));
+        var result = await _sut.HandleAsync(new UpdateFilingStatusCommand(filing.Id, FilingStatus.Filed), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         filing.Status.Should().Be(FilingStatus.Filed);
@@ -48,7 +47,7 @@ public class UpdateFilingStatusCommandHandlerTests
         filing.AdvanceStatus(FilingStatus.Filed);
         _repo.GetByIdAsync(filing.Id, Arg.Any<CancellationToken>()).Returns(filing);
 
-        var result = await _sut.HandleAsync(new UpdateFilingStatusCommand(filing.Id, FilingStatus.Paid));
+        var result = await _sut.HandleAsync(new UpdateFilingStatusCommand(filing.Id, FilingStatus.Paid), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         filing.Status.Should().Be(FilingStatus.Paid);
@@ -64,7 +63,7 @@ public class UpdateFilingStatusCommandHandlerTests
         _repo.GetByIdAsync(filing.Id, Arg.Any<CancellationToken>()).Returns(filing);
 
         // Paid -> Init is invalid
-        var result = await _sut.HandleAsync(new UpdateFilingStatusCommand(filing.Id, FilingStatus.Init));
+        var result = await _sut.HandleAsync(new UpdateFilingStatusCommand(filing.Id, FilingStatus.Init), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("DOMAIN_ERROR");
@@ -78,7 +77,7 @@ public class UpdateFilingStatusCommandHandlerTests
         var filing = MakeInitFiling();
         _repo.GetByIdAsync(filing.Id, Arg.Any<CancellationToken>()).Returns(filing);
 
-        var result = await _sut.HandleAsync(new UpdateFilingStatusCommand(filing.Id, FilingStatus.Paid));
+        var result = await _sut.HandleAsync(new UpdateFilingStatusCommand(filing.Id, FilingStatus.Paid), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("DOMAIN_ERROR");
@@ -93,7 +92,7 @@ public class UpdateFilingStatusCommandHandlerTests
         filing.AdvanceStatus(FilingStatus.Filed);
         _repo.GetByIdAsync(filing.Id, Arg.Any<CancellationToken>()).Returns(filing);
 
-        var result = await _sut.HandleAsync(new UpdateFilingStatusCommand(filing.Id, FilingStatus.Init));
+        var result = await _sut.HandleAsync(new UpdateFilingStatusCommand(filing.Id, FilingStatus.Init), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("DOMAIN_ERROR");
@@ -106,7 +105,7 @@ public class UpdateFilingStatusCommandHandlerTests
         var id = Guid.NewGuid();
         _repo.GetByIdAsync(id, Arg.Any<CancellationToken>()).Returns((Filing?)null);
 
-        var result = await _sut.HandleAsync(new UpdateFilingStatusCommand(id, FilingStatus.Filed));
+        var result = await _sut.HandleAsync(new UpdateFilingStatusCommand(id, FilingStatus.Filed), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("NOT_FOUND");

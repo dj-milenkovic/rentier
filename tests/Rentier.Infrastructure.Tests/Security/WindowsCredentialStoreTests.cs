@@ -1,8 +1,6 @@
 using System.Runtime.Versioning;
 using FluentAssertions;
-using Rentier.Application.Common;
 using Rentier.Infrastructure.Security;
-using Xunit;
 
 namespace Rentier.Infrastructure.Tests.Security;
 
@@ -21,16 +19,16 @@ public class WindowsCredentialStoreTests
 
         try
         {
-            var saveResult = await store.SaveCredentialAsync(key, secret);
+            var saveResult = await store.SaveCredentialAsync(key, secret, TestContext.Current.CancellationToken);
             saveResult.IsSuccess.Should().BeTrue();
 
-            var getResult = await store.GetCredentialAsync(key);
+            var getResult = await store.GetCredentialAsync(key, TestContext.Current.CancellationToken);
             getResult.IsSuccess.Should().BeTrue();
             getResult.Value.Should().Be(secret);
         }
         finally
         {
-            await store.DeleteCredentialAsync(key);
+            await store.DeleteCredentialAsync(key, TestContext.Current.CancellationToken);
         }
     }
 
@@ -42,16 +40,16 @@ public class WindowsCredentialStoreTests
 
         try
         {
-            await store.SaveCredentialAsync(key, "original");
-            await store.SaveCredentialAsync(key, "updated");
+            await store.SaveCredentialAsync(key, "original", TestContext.Current.CancellationToken);
+            await store.SaveCredentialAsync(key, "updated", TestContext.Current.CancellationToken);
 
-            var getResult = await store.GetCredentialAsync(key);
+            var getResult = await store.GetCredentialAsync(key, TestContext.Current.CancellationToken);
             getResult.IsSuccess.Should().BeTrue();
             getResult.Value.Should().Be("updated");
         }
         finally
         {
-            await store.DeleteCredentialAsync(key);
+            await store.DeleteCredentialAsync(key, TestContext.Current.CancellationToken);
         }
     }
 
@@ -61,7 +59,7 @@ public class WindowsCredentialStoreTests
         var store = new WindowsCredentialStore();
         var key = MakeTestKey();
 
-        var result = await store.GetCredentialAsync(key);
+        var result = await store.GetCredentialAsync(key, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("CREDENTIAL_NOT_FOUND");
@@ -73,11 +71,11 @@ public class WindowsCredentialStoreTests
         var store = new WindowsCredentialStore();
         var key = MakeTestKey();
 
-        await store.SaveCredentialAsync(key, "to-be-deleted");
-        var deleteResult = await store.DeleteCredentialAsync(key);
+        await store.SaveCredentialAsync(key, "to-be-deleted", TestContext.Current.CancellationToken);
+        var deleteResult = await store.DeleteCredentialAsync(key, TestContext.Current.CancellationToken);
         deleteResult.IsSuccess.Should().BeTrue();
 
-        var getResult = await store.GetCredentialAsync(key);
+        var getResult = await store.GetCredentialAsync(key, TestContext.Current.CancellationToken);
         getResult.IsSuccess.Should().BeFalse();
         getResult.Error.Code.Should().Be("CREDENTIAL_NOT_FOUND");
     }
@@ -88,7 +86,7 @@ public class WindowsCredentialStoreTests
         var store = new WindowsCredentialStore();
         var key = MakeTestKey();
 
-        var result = await store.DeleteCredentialAsync(key);
+        var result = await store.DeleteCredentialAsync(key, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
     }
@@ -98,7 +96,7 @@ public class WindowsCredentialStoreTests
     {
         var store = new WindowsCredentialStore();
 
-        var result = await store.SaveCredentialAsync("", "someValue");
+        var result = await store.SaveCredentialAsync("", "someValue", TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("CREDENTIAL_WRITE_FAILED");
@@ -110,7 +108,7 @@ public class WindowsCredentialStoreTests
     {
         var store = new WindowsCredentialStore();
 
-        var result = await store.SaveCredentialAsync("Rentier/Test/key", "");
+        var result = await store.SaveCredentialAsync("Rentier/Test/key", "", TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("CREDENTIAL_WRITE_FAILED");
@@ -126,15 +124,15 @@ public class WindowsCredentialStoreTests
 
         try
         {
-            await store.SaveCredentialAsync(key, secret);
-            var getResult = await store.GetCredentialAsync(key);
+            await store.SaveCredentialAsync(key, secret, TestContext.Current.CancellationToken);
+            var getResult = await store.GetCredentialAsync(key, TestContext.Current.CancellationToken);
 
             getResult.IsSuccess.Should().BeTrue();
             getResult.Value.Should().Be(secret);
         }
         finally
         {
-            await store.DeleteCredentialAsync(key);
+            await store.DeleteCredentialAsync(key, TestContext.Current.CancellationToken);
         }
     }
 }

@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 using Rentier.Domain.ValueObjects;
 using Rentier.Infrastructure.Persistence;
 using Rentier.Infrastructure.Repositories;
-using Xunit;
 
 namespace Rentier.Infrastructure.Tests;
 
@@ -29,7 +28,7 @@ public class ExchangeRateCacheRepositoryTests
         await using (db) await using (conn)
         {
             var repo = new ExchangeRateCacheRepository(db);
-            var result = await repo.GetAsync(new DateOnly(2024, 1, 15), "EUR");
+            var result = await repo.GetAsync(new DateOnly(2024, 1, 15), "EUR", TestContext.Current.CancellationToken);
             result.Should().BeNull();
         }
     }
@@ -42,9 +41,9 @@ public class ExchangeRateCacheRepositoryTests
         {
             var repo = new ExchangeRateCacheRepository(db);
             var rate = new ExchangeRate(new DateOnly(2024, 1, 15), "EUR", 117.5952m);
-            await repo.SaveAsync(rate);
+            await repo.SaveAsync(rate, TestContext.Current.CancellationToken);
 
-            var result = await repo.GetAsync(new DateOnly(2024, 1, 15), "EUR");
+            var result = await repo.GetAsync(new DateOnly(2024, 1, 15), "EUR", TestContext.Current.CancellationToken);
             result.Should().NotBeNull();
             result!.RateToRsd.Should().Be(117.5952m);
         }
@@ -59,10 +58,10 @@ public class ExchangeRateCacheRepositoryTests
             var repo = new ExchangeRateCacheRepository(db);
             var date = new DateOnly(2024, 1, 15);
 
-            await repo.SaveAsync(new ExchangeRate(date, "EUR", 100m));
-            await repo.SaveAsync(new ExchangeRate(date, "EUR", 117m));
+            await repo.SaveAsync(new ExchangeRate(date, "EUR", 100m), TestContext.Current.CancellationToken);
+            await repo.SaveAsync(new ExchangeRate(date, "EUR", 117m), TestContext.Current.CancellationToken);
 
-            var result = await repo.GetAsync(date, "EUR");
+            var result = await repo.GetAsync(date, "EUR", TestContext.Current.CancellationToken);
             result.Should().NotBeNull();
             result!.RateToRsd.Should().Be(117m);
         }
@@ -83,7 +82,7 @@ public class ExchangeRateCacheRepositoryTests
                 new ExchangeRate(date, "GBP", 136.8765m),
             };
 
-            await repo.SaveBatchAsync(batch);
+            await repo.SaveBatchAsync(batch, TestContext.Current.CancellationToken);
 
             db.ExchangeRateCache.Count().Should().Be(3);
         }
@@ -98,7 +97,7 @@ public class ExchangeRateCacheRepositoryTests
             var repo = new ExchangeRateCacheRepository(db);
             var date = new DateOnly(2024, 1, 15);
 
-            await repo.SaveAsync(new ExchangeRate(date, "EUR", 100m));
+            await repo.SaveAsync(new ExchangeRate(date, "EUR", 100m), TestContext.Current.CancellationToken);
 
             var batch = new List<ExchangeRate>
             {
@@ -108,7 +107,7 @@ public class ExchangeRateCacheRepositoryTests
             var act = async () => await repo.SaveBatchAsync(batch);
             await act.Should().NotThrowAsync();
 
-            var result = await repo.GetAsync(date, "EUR");
+            var result = await repo.GetAsync(date, "EUR", TestContext.Current.CancellationToken);
             result.Should().NotBeNull();
             result!.RateToRsd.Should().Be(117m);
         }
@@ -131,10 +130,9 @@ public class ExchangeRateCacheRepositoryTests
             };
 
             foreach (var d in dates)
-                await repo.SaveAsync(new ExchangeRate(d, "EUR", 117m));
+                await repo.SaveAsync(new ExchangeRate(d, "EUR", 117m), TestContext.Current.CancellationToken);
 
-            var result = await repo.GetByDateRangeAsync(
-                new DateOnly(2024, 1, 14), new DateOnly(2024, 1, 16), "EUR");
+            var result = await repo.GetByDateRangeAsync(new DateOnly(2024, 1, 14), new DateOnly(2024, 1, 16), "EUR", TestContext.Current.CancellationToken);
 
             result.Should().HaveCount(3);
             result.Should().OnlyContain(r => r.Currency == "EUR");
@@ -151,10 +149,10 @@ public class ExchangeRateCacheRepositoryTests
             var repo = new ExchangeRateCacheRepository(db);
             var date = new DateOnly(2024, 1, 15);
 
-            await repo.SaveAsync(new ExchangeRate(date, "EUR", 117.5952m));
+            await repo.SaveAsync(new ExchangeRate(date, "EUR", 117.5952m), TestContext.Current.CancellationToken);
 
             // lowercase lookup should still find the record
-            var result = await repo.GetAsync(date, "eur");
+            var result = await repo.GetAsync(date, "eur", TestContext.Current.CancellationToken);
             result.Should().NotBeNull();
             result!.Currency.Should().Be("EUR");
         }
