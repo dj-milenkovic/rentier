@@ -148,7 +148,7 @@ public class FilingRepositoryTests : IAsyncLifetime
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var filing = MakeFiling(profile.Id);
-        await _repository.AddAsync(filing, TestContext.Current.CancellationToken);;
+        await _repository.AddAsync(filing, TestContext.Current.CancellationToken);
 
         filing.AdvanceStatus(FilingStatus.Filed);
         await _repository.UpdateAsync(filing, TestContext.Current.CancellationToken);
@@ -165,7 +165,7 @@ public class FilingRepositoryTests : IAsyncLifetime
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var filing = MakeFiling(profile.Id);
-        await _repository.AddAsync(filing, TestContext.Current.CancellationToken);;
+        await _repository.AddAsync(filing, TestContext.Current.CancellationToken);
 
         await _repository.DeleteAsync(filing.Id, TestContext.Current.CancellationToken);
 
@@ -528,7 +528,7 @@ public class FilingRepositoryTests : IAsyncLifetime
         // TaxPeriod is derived from incomeDate in CreateFromIncome
         var incomeDate = new DateOnly(2024, 6, 15);
         var filing = MakeFiling(profile.Id, date: incomeDate);
-        await _repository.AddAsync(filing, TestContext.Current.CancellationToken);;
+        await _repository.AddAsync(filing, TestContext.Current.CancellationToken);
 
         var result = await _repository.GetByTaxPeriodAsync(profile.Id, incomeDate, TestContext.Current.CancellationToken);
 
