@@ -1,7 +1,6 @@
 using Avalonia.Media;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reactive.Concurrency;
-using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using ReactiveUI;
 using Rentier.Application.DTOs;
