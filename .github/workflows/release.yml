@@ -42,7 +42,7 @@ jobs:
       tag: ${{ steps.v.outputs.tag }}
       trimmed: ${{ steps.v.outputs.trimmed }}
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6.0.3
         if: github.event_name == 'workflow_dispatch'
         with:
           fetch-depth: 0
@@ -98,7 +98,7 @@ jobs:
     needs: version
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6.0.3
 
       - uses: actions/setup-dotnet@v5.3.0
         with:
@@ -153,7 +153,7 @@ jobs:
       matrix:
         rid: [osx-x64, osx-arm64]
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6.0.3
 
       - uses: actions/setup-dotnet@v5.3.0
         with:
@@ -252,7 +252,7 @@ jobs:
     needs: version
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6.0.3
 
       - uses: actions/setup-dotnet@v5.3.0
         with:
@@ -392,7 +392,7 @@ jobs:
     needs: [version, build-windows, build-macos, build-linux, smoke-test-windows]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6.0.3
         with:
           fetch-depth: 0
 
