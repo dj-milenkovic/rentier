@@ -151,7 +151,7 @@ public sealed class MigrationChainTests : IAsyncDisposable
     {
         const int attempts = 3;
 
-        for(var attempt=1; attempt <= attempts; attempt++)
+        for (var attempt = 1; attempt <= attempts; attempt++)
         {
             if (!File.Exists(path))
                 return;
@@ -161,16 +161,16 @@ public sealed class MigrationChainTests : IAsyncDisposable
                 File.Delete(path);
                 return;
             }
-            catch(IOException) when (attempt < attempts)
+            catch (IOException) when (attempt < attempts)
             {
                 await Task.Delay(TimeSpan.FromMilliseconds(50));
             }
-            catch(UnauthorizedAccessException) when (attempt < attempts)
+            catch (UnauthorizedAccessException) when (attempt < attempts)
             {
                 await Task.Delay(TimeSpan.FromMilliseconds(50));
             }
 
-            if(File.Exists(path))
+            if (File.Exists(path))
                 File.Delete(path);
         }
     }

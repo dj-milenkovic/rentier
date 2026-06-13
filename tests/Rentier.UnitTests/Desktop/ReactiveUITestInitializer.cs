@@ -1,4 +1,4 @@
-﻿using System.Reactive;
+using System.Reactive;
 using System.Runtime.CompilerServices;
 using ReactiveUI.Avalonia;
 using ReactiveUI.Builder;
