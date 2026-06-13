@@ -16,21 +16,23 @@ public class HolidayRepositoryTests : IAsyncLifetime
     private AppDbContext _context = null!;
     private HolidayRepository _repository = null!;
 
-    public async Task InitializeAsync()
+    [Fact]
+    public async ValueTask InitializeAsync()
     {
         _connection = new SqliteConnection("Data Source=:memory:");
-        await _connection.OpenAsync();
+        await _connection.OpenAsync(TestContext.Current.CancellationToken);
 
         var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseSqlite(_connection)
             .Options;
 
         _context = new AppDbContext(options);
-        await _context.Database.EnsureCreatedAsync();
+        await _context.Database.EnsureCreatedAsync(TestContext.Current.CancellationToken);
         _repository = new HolidayRepository(_context);
     }
 
-    public async Task DisposeAsync()
+    [Fact]
+    public async ValueTask DisposeAsync()
     {
         await _context.DisposeAsync();
         await _connection.DisposeAsync();
@@ -39,7 +41,7 @@ public class HolidayRepositoryTests : IAsyncLifetime
     [Fact]
     public async Task GetHolidayConfAsync_EmptyDatabase_ReturnsEmptyDto()
     {
-        var dto = await _repository.GetHolidayConfAsync();
+        var dto = await _repository.GetHolidayConfAsync(TestContext.Current.CancellationToken);
 
         dto.Holidays.Should().BeEmpty();
         dto.StartYear.Should().Be(0);
@@ -54,9 +56,9 @@ public class HolidayRepositoryTests : IAsyncLifetime
         var h2 = PublicHoliday.Create(new DateOnly(2025, 1, 1), "Nova godina");
         var h3 = PublicHoliday.Create(new DateOnly(2025, 5, 1), "Praznik rada");
 
-        await _repository.SaveHolidaysAsync(new[] { h1, h2, h3 }, yearRange);
+        await _repository.SaveHolidaysAsync(new[] { h1, h2, h3 }, yearRange, TestContext.Current.CancellationToken);
 
-        var dto = await _repository.GetHolidayConfAsync();
+        var dto = await _repository.GetHolidayConfAsync(TestContext.Current.CancellationToken);
 
         dto.Holidays.Should().HaveCount(3);
         dto.Holidays[0].Date.Should().Be(new DateOnly(2025, 1, 1));
@@ -72,13 +74,13 @@ public class HolidayRepositoryTests : IAsyncLifetime
         var yearRange1 = new HolidayYearRange(2025, 2028);
         var h1 = PublicHoliday.Create(new DateOnly(2025, 1, 1), "Nova godina");
         var h2 = PublicHoliday.Create(new DateOnly(2025, 1, 7), "Božić");
-        await _repository.SaveHolidaysAsync(new[] { h1, h2 }, yearRange1);
+        await _repository.SaveHolidaysAsync(new[] { h1, h2 }, yearRange1, TestContext.Current.CancellationToken);
 
         var yearRange2 = new HolidayYearRange(2026, 2029);
         var newHoliday = PublicHoliday.Create(new DateOnly(2026, 1, 1), "Nova godina 2026");
-        await _repository.SaveHolidaysAsync(new[] { newHoliday }, yearRange2);
+        await _repository.SaveHolidaysAsync(new[] { newHoliday }, yearRange2, TestContext.Current.CancellationToken);
 
-        var dto = await _repository.GetHolidayConfAsync();
+        var dto = await _repository.GetHolidayConfAsync(TestContext.Current.CancellationToken);
         dto.Holidays.Should().HaveCount(1);
         dto.Holidays[0].Name.Should().Be("Nova godina 2026");
         dto.StartYear.Should().Be(2026);
@@ -88,9 +90,9 @@ public class HolidayRepositoryTests : IAsyncLifetime
     public async Task GetYearRangeAsync_WhenExists_ReturnsSingleton()
     {
         var yearRange = new HolidayYearRange(2024, 2027);
-        await _repository.SaveHolidaysAsync(Array.Empty<PublicHoliday>(), yearRange);
+        await _repository.SaveHolidaysAsync(Array.Empty<PublicHoliday>(), yearRange, TestContext.Current.CancellationToken);
 
-        var result = await _repository.GetYearRangeAsync();
+        var result = await _repository.GetYearRangeAsync(TestContext.Current.CancellationToken);
 
         result.Should().NotBeNull();
         result!.Id.Should().Be(1);

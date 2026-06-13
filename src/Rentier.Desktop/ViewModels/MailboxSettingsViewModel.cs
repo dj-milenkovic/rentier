@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
+using System.Reactive.Disposables.Fluent;
 using System.Reactive.Linq;
 using ReactiveUI;
 using Rentier.Application.Commands;
@@ -107,7 +108,7 @@ public sealed class MailboxSettingsViewModel : ReactiveObject, IActivatableViewM
         _addHandler = addHandler;
         _updateHandler = updateHandler;
         _deleteHandler = deleteHandler;
-        _scheduler = scheduler ?? RxApp.MainThreadScheduler;
+        _scheduler = scheduler ?? RxSchedulers.MainThreadScheduler;
         _confirmAction = confirmAction ?? ConfirmDialogHelper.ShowAsync;
 
         AddNewCommand = ReactiveCommand.Create(OnAddNew);

@@ -14,7 +14,7 @@ using Rentier.Domain.Enums;
 using Rentier.Domain.ValueObjects;
 using Xunit;
 
-namespace Rentier.UnitTests;
+namespace Rentier.UnitTests.Application.Handlers;
 
 public class ProcessReportsCommandHandlerPartialSuccessTests
 {
@@ -83,7 +83,7 @@ public class ProcessReportsCommandHandlerPartialSuccessTests
                 Arg.Any<decimal>(), Arg.Any<CancellationToken>()).Returns(false);
 
         var handler = MakeHandler(reportRepo, importerRepo, filingRepo, MakeResolver(fetcher), parser);
-        var result = await handler.HandleAsync(new ProcessReportsCommand());
+        var result = await handler.HandleAsync(new ProcessReportsCommand(), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.FilingsCreated.Should().Be(2);
@@ -128,7 +128,7 @@ public class ProcessReportsCommandHandlerPartialSuccessTests
                 Arg.Any<decimal>(), Arg.Any<CancellationToken>()).Returns(false);
 
         var handler = MakeHandler(reportRepo, importerRepo, filingRepo, MakeResolver(fetcher), parser);
-        var result = await handler.HandleAsync(new ProcessReportsCommand());
+        var result = await handler.HandleAsync(new ProcessReportsCommand(), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.FilingsCreated.Should().Be(2);
@@ -169,7 +169,7 @@ public class ProcessReportsCommandHandlerPartialSuccessTests
 
         var filingRepo = Substitute.For<IFilingRepository>();
         var handler = MakeHandler(reportRepo, importerRepo, filingRepo, MakeResolver(fetcher), parser);
-        var result = await handler.HandleAsync(new ProcessReportsCommand());
+        var result = await handler.HandleAsync(new ProcessReportsCommand(), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.FilingsCreated.Should().Be(0);
@@ -199,7 +199,7 @@ public class ProcessReportsCommandHandlerPartialSuccessTests
         var fetcher = Substitute.For<IExchangeRateFetcher>();
         var filingRepo = Substitute.For<IFilingRepository>();
         var handler = MakeHandler(reportRepo, importerRepo, filingRepo, MakeResolver(fetcher), parser);
-        var result = await handler.HandleAsync(new ProcessReportsCommand());
+        var result = await handler.HandleAsync(new ProcessReportsCommand(), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.ReportsProcessed.Should().Be(1);
@@ -241,7 +241,7 @@ public class ProcessReportsCommandHandlerPartialSuccessTests
                 Arg.Any<decimal>(), Arg.Any<CancellationToken>()).Returns(false);
 
         var handler = MakeHandler(reportRepo, importerRepo, filingRepo, MakeResolver(fetcher), parser);
-        var result = await handler.HandleAsync(new ProcessReportsCommand());
+        var result = await handler.HandleAsync(new ProcessReportsCommand(), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.FilingsCreated.Should().Be(2);

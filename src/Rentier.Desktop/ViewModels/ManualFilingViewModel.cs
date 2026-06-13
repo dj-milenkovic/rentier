@@ -1,6 +1,7 @@
 using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
+using System.Reactive.Disposables.Fluent;
 using System.Reactive.Linq;
 using ReactiveUI;
 using Rentier.Application.Commands;
@@ -173,7 +174,7 @@ public sealed class ManualFilingViewModel : ReactiveObject, IActivatableViewMode
         _createHandler = createHandler;
         _profileQueryHandler = profileQueryHandler;
         _navigateBackToFilings = navigateBackToFilings;
-        _scheduler = scheduler ?? RxApp.MainThreadScheduler;
+        _scheduler = scheduler ?? RxSchedulers.MainThreadScheduler;
 
         // CalculateCommand canExecute: ticker not blank, gross > 0, date set, not loading
         var canCalculate = this.WhenAnyValue(
@@ -226,7 +227,7 @@ public sealed class ManualFilingViewModel : ReactiveObject, IActivatableViewMode
         {
             // C3: profile load moved out of constructor to avoid fire-and-forget task
             Observable.FromAsync(ct => LoadProfileAsync(ct))
-                .ObserveOn(RxApp.MainThreadScheduler)
+                .ObserveOn(RxSchedulers.MainThreadScheduler)
                 .Subscribe()
                 .DisposeWith(disposables);
             CalculateCommand.ThrownExceptions

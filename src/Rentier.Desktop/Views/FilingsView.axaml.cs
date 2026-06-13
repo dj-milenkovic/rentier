@@ -2,10 +2,11 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.LogicalTree;
-using Avalonia.ReactiveUI;
+using ReactiveUI.Avalonia;
 using ReactiveUI;
 using System.Reactive.Disposables;
 using Rentier.Desktop.ViewModels;
+using System.Reactive.Disposables.Fluent;
 
 namespace Rentier.Desktop.Views;
 
