@@ -33,7 +33,7 @@ public sealed class TaxpayerProfileScenario : IDisposable
             Jmbg: "1234567890123",
             FullName: "Petar Petrovic",
             Address: "Bulevar Kralja Aleksandra 1",
-            OpstinaCode: "70101",
+            OpstinaCode: "049",
             PhoneNumber: "+381641234567",
             Email: "petar@example.com");
 
@@ -51,7 +51,7 @@ public sealed class TaxpayerProfileScenario : IDisposable
         dto!.Jmbg.Should().Be("1234567890123");
         dto.FullName.Should().Be("Petar Petrovic");
         dto.Address.Should().Be("Bulevar Kralja Aleksandra 1");
-        dto.OpstinaCode.Should().Be("70101");
+        dto.OpstinaCode.Should().Be("049");
         dto.PhoneNumber.Should().Be("+381641234567");
         dto.Email.Should().Be("petar@example.com");
 
@@ -72,7 +72,7 @@ public sealed class TaxpayerProfileScenario : IDisposable
             Jmbg: "1234567890123",
             FullName: "Petar Petrovic",
             Address: "Bulevar Kralja Aleksandra 1",
-            OpstinaCode: "70101",
+            OpstinaCode: "049",
             PhoneNumber: "+381641234567",
             Email: "petar@example.com");
 
@@ -80,7 +80,7 @@ public sealed class TaxpayerProfileScenario : IDisposable
             Jmbg: "1234567890123",
             FullName: "Petar Petrovic Novi",
             Address: "Knez Mihailova 15",
-            OpstinaCode: "70102",
+            OpstinaCode: "050",
             PhoneNumber: "+381649999999",
             Email: "petar.novi@example.com");
 
@@ -104,7 +104,7 @@ public sealed class TaxpayerProfileScenario : IDisposable
         dto.Jmbg.Should().Be("1234567890123");
         dto.FullName.Should().Be("Petar Petrovic Novi");
         dto.Address.Should().Be("Knez Mihailova 15");
-        dto.OpstinaCode.Should().Be("70102");
+        dto.OpstinaCode.Should().Be("050");
         dto.PhoneNumber.Should().Be("+381649999999");
         dto.Email.Should().Be("petar.novi@example.com");
 
@@ -125,7 +125,7 @@ public sealed class TaxpayerProfileScenario : IDisposable
             Jmbg: "invalid", // Too short, should fail domain validation
             FullName: "Test User",
             Address: "Test Address",
-            OpstinaCode: "70101");
+            OpstinaCode: "049");
 
         // Act
         var result = await saveHandler.HandleAsync(command, TestContext.Current.CancellationToken);

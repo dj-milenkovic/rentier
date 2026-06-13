@@ -31,8 +31,8 @@ public class PpOpoXmlSerializerSnapshotTests
             id: new Guid("00000000-0000-0000-0000-000000000002"),
             jmbg: "1234567890123",
             fullName: "Jovan Jovanovic",
-            address: "Knez Mihailova 1, Beograd",
-            opstinaCode: "11001",
+            address: "Knez Mihailova 1",
+            opstinaCode: "018",
             phoneNumber: "0612345678",
             email: "jovan@example.com");
 

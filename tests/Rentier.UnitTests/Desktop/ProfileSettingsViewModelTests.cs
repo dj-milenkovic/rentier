@@ -66,7 +66,7 @@ public class ProfileSettingsViewModelTests
             Jmbg: "1234567890123",
             FullName: "John Doe",
             Address: "123 Main St",
-            OpstinaCode: "12345",
+            OpstinaCode: "018",
             PhoneNumber: "555-1234",
             Email: "john@example.com");
 
@@ -81,7 +81,7 @@ public class ProfileSettingsViewModelTests
         vm.Jmbg.Should().Be("1234567890123");
         vm.FullName.Should().Be("John Doe");
         vm.Address.Should().Be("123 Main St");
-        vm.OpstinaCode.Should().Be("12345");
+        vm.OpstinaCode.Should().Be("018");
         vm.PhoneNumber.Should().Be("555-1234");
         vm.Email.Should().Be("john@example.com");
     }
@@ -113,7 +113,7 @@ public class ProfileSettingsViewModelTests
         vm.Jmbg = "1234567890123";
         vm.FullName = "John Doe";
         vm.Address = "123 Main St";
-        vm.OpstinaCode = "12345";
+        vm.OpstinaCode = "018";
 
         vm.SaveCommand.Execute().Subscribe();
 
@@ -122,7 +122,7 @@ public class ProfileSettingsViewModelTests
                 c.Jmbg == "1234567890123" &&
                 c.FullName == "John Doe" &&
                 c.Address == "123 Main St" &&
-                c.OpstinaCode == "12345"),
+                c.OpstinaCode == "018"),
             Arg.Any<CancellationToken>());
 
         vm.SuccessMessage.Should().NotBeEmpty();
@@ -139,7 +139,7 @@ public class ProfileSettingsViewModelTests
         vm.Jmbg = "1234567890123";
         vm.FullName = "John Doe";
         vm.Address = "123 Main St";
-        vm.OpstinaCode = "12345";
+        vm.OpstinaCode = "018";
 
         vm.SaveCommand.Execute().Subscribe();
 
@@ -155,7 +155,7 @@ public class ProfileSettingsViewModelTests
         vm.Jmbg = "123";
         vm.FullName = "John Doe";
         vm.Address = "123 Main St";
-        vm.OpstinaCode = "12345";
+        vm.OpstinaCode = "018";
 
         bool canExecute = false;
         vm.SaveCommand.CanExecute.Subscribe(x => canExecute = x);
@@ -171,7 +171,7 @@ public class ProfileSettingsViewModelTests
         vm.Jmbg = "1234567890123";
         vm.FullName = "";
         vm.Address = "123 Main St";
-        vm.OpstinaCode = "12345";
+        vm.OpstinaCode = "018";
 
         bool canExecute = false;
         vm.SaveCommand.CanExecute.Subscribe(x => canExecute = x);
@@ -187,7 +187,7 @@ public class ProfileSettingsViewModelTests
         vm.Jmbg = "12345678901AB";
         vm.FullName = "John Doe";
         vm.Address = "123 Main St";
-        vm.OpstinaCode = "12345";
+        vm.OpstinaCode = "018";
 
         bool canExecute = false;
         vm.SaveCommand.CanExecute.Subscribe(x => canExecute = x);
@@ -203,7 +203,7 @@ public class ProfileSettingsViewModelTests
         vm.Jmbg = "1234567890123";
         vm.FullName = "John Doe";
         vm.Address = "123 Main St";
-        vm.OpstinaCode = "12345";
+        vm.OpstinaCode = "018";
 
         bool canExecute = false;
         vm.SaveCommand.CanExecute.Subscribe(x => canExecute = x);

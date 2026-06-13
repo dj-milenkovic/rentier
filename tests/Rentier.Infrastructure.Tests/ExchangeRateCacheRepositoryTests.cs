@@ -104,7 +104,7 @@ public class ExchangeRateCacheRepositoryTests
                 new ExchangeRate(date, "EUR", 117m),
             };
 
-            var act = async () => await repo.SaveBatchAsync(batch);
+            var act = async () => await repo.SaveBatchAsync(batch, TestContext.Current.CancellationToken);
             await act.Should().NotThrowAsync();
 
             var result = await repo.GetAsync(date, "EUR", TestContext.Current.CancellationToken);

@@ -44,7 +44,7 @@ public class ExportFilingCommandHandlerTests
     }
 
     private static TaxpayerProfile MakeProfile()
-        => new TaxpayerProfile(Guid.NewGuid(), "1234567890123", "John Doe", "Beograd 1", "11001");
+        => new TaxpayerProfile(Guid.NewGuid(), "1234567890123", "John Doe", "Beograd 1", "018");
 
     [Fact]
     public async Task HandleAsync_FilingNotFound_ReturnsFailure()

@@ -21,6 +21,8 @@
 
       <TextBlock Text="{Binding [Profile_Address_Label], Source={StaticResource Localizer}}" />
       <TextBox Text="{Binding Address}" />
+      <TextBlock Text="{Binding [Profile_Address_Helper], Source={StaticResource Localizer}}"
+                 Opacity="0.6" FontSize="11" />
 
       <TextBlock Text="{Binding [Profile_OpstinaCode_Label], Source={StaticResource Localizer}}" />
       <TextBox Text="{Binding OpstinaCode}" />

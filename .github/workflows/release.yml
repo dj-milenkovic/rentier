@@ -37,12 +37,14 @@ jobs:
   # ──────────────────────────────────────────────────────────────────
   version:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # git tag + push on workflow_dispatch path; read is enough for workflow_call
     outputs:
       version: ${{ steps.v.outputs.version }}
       tag: ${{ steps.v.outputs.tag }}
       trimmed: ${{ steps.v.outputs.trimmed }}
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6.0.3
         if: github.event_name == 'workflow_dispatch'
         with:
           fetch-depth: 0
@@ -97,8 +99,10 @@ jobs:
   build-windows:
     needs: version
     runs-on: windows-latest
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6.0.3
 
       - uses: actions/setup-dotnet@v5.3.0
         with:
@@ -156,11 +160,13 @@ jobs:
   build-macos:
     needs: version
     runs-on: macos-latest
+    permissions:
+      contents: read
     strategy:
       matrix:
         rid: [osx-x64, osx-arm64]
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6.0.3
 
       - uses: actions/setup-dotnet@v5.3.0
         with:
@@ -264,8 +270,10 @@ jobs:
   build-linux:
     needs: version
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6.0.3
 
       - uses: actions/setup-dotnet@v5.3.0
         with:
@@ -364,6 +372,8 @@ jobs:
     name: Windows Artifact Smoke Test
     needs: [version, build-windows]
     runs-on: windows-latest
+    permissions:
+      contents: read
     steps:
       - name: Download Windows artifact
         uses: actions/download-artifact@v8.0.1
@@ -386,22 +396,17 @@ jobs:
             Select-Object -First 1
           if (-not $exe) { throw "Rentier.Desktop.exe missing from ZIP" }
 
-          $sqlite = Get-ChildItem ./extracted -Filter "e_sqlite3*" -Recurse |
-            Select-Object -First 1
-          if (-not $sqlite) { throw "SQLite native library (e_sqlite3*) missing from ZIP" }
-
-          Write-Host "Artifact structure OK: EXE and SQLite native lib present"
+          Write-Host "Artifact structure OK: single-file EXE present (native libs bundled inside)"
           "EXE_PATH=$($exe.FullName)" | Out-File -Append $env:GITHUB_ENV
-
-      - name: Headless launch smoke test
-        shell: pwsh
-        run: |
-          $proc = Start-Process $env:EXE_PATH `
-            -ArgumentList "--smoke-test" -PassThru -Wait -NoNewWindow
-          if ($proc.ExitCode -ne 0) {
-            throw "Smoke test exited with code $($proc.ExitCode) — artifact is not functional"
-          }
-          Write-Host "SMOKE TEST PASSED (exit code 0)"
+            - name: Headless launch smoke test
+              shell: pwsh
+              run: |
+                $proc = Start-Process $env:EXE_PATH `
+                  -ArgumentList "--smoke-test" -PassThru -Wait -NoNewWindow
+                if ($proc.ExitCode -ne 0) {
+                  throw "Smoke test exited with code $($proc.ExitCode) — artifact is not functional"
+                }
+                Write-Host "SMOKE TEST PASSED (exit code 0)"
 
   # ──────────────────────────────────────────────────────────────────
   # Create GitHub Release with all artifacts + checksums
@@ -409,8 +414,10 @@ jobs:
   release:
     needs: [version, build-windows, build-macos, build-linux, smoke-test-windows]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # create GitHub Release + upload release assets
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6.0.3
         with:
           fetch-depth: 0
 
