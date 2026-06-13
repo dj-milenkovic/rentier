@@ -38,7 +38,7 @@ public class FilingTickerPersistenceTests : IAsyncLifetime
     }
 
     private static TaxpayerProfile MakeProfile()
-        => new TaxpayerProfile(Guid.NewGuid(), "1234567890123", "John Doe", "Belgrade", "11001");
+        => new TaxpayerProfile(Guid.NewGuid(), "1234567890123", "John Doe", "Belgrade", "018");
 
     [Fact]
     public async Task Filing_WithTicker_SurvivesPersistenceRoundTrip()

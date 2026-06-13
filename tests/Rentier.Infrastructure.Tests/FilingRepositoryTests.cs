@@ -40,7 +40,7 @@ public class FilingRepositoryTests : IAsyncLifetime
     }
 
     private static TaxpayerProfile MakeProfile()
-        => new TaxpayerProfile(Guid.NewGuid(), "1234567890123", "John Doe", "Belgrade", "11001");
+        => new TaxpayerProfile(Guid.NewGuid(), "1234567890123", "John Doe", "Belgrade", "018");
 
     private static Filing MakeFiling(Guid profileId, string entity = "ACME", DateOnly? date = null, decimal gross = 1000m)
     {
@@ -176,7 +176,7 @@ public class FilingRepositoryTests : IAsyncLifetime
     [Fact]
     public async Task DeleteAsync_UnknownId_IsNoOp()
     {
-        var act = async () => await _repository.DeleteAsync(Guid.NewGuid());
+        var act = async () => await _repository.DeleteAsync(Guid.NewGuid(), TestContext.Current.CancellationToken);
         await act.Should().NotThrowAsync();
     }
 
@@ -468,7 +468,7 @@ public class FilingRepositoryTests : IAsyncLifetime
     {
         var (_, report, _) = await SeedReportAsync();
 
-        var act = async () => await _repository.DeleteByReportIdAsync(report.Id);
+        var act = async () => await _repository.DeleteByReportIdAsync(report.Id, TestContext.Current.CancellationToken);
 
         await act.Should().NotThrowAsync();
     }
@@ -483,7 +483,7 @@ public class FilingRepositoryTests : IAsyncLifetime
         await _repository.AddAsync(f, TestContext.Current.CancellationToken);
 
         await _repository.DeleteByReportIdAsync(report.Id, TestContext.Current.CancellationToken);
-        var act = async () => await _repository.DeleteByReportIdAsync(report.Id);
+        var act = async () => await _repository.DeleteByReportIdAsync(report.Id, TestContext.Current.CancellationToken);
 
         await act.Should().NotThrowAsync();
     }
@@ -548,8 +548,8 @@ public class FilingRepositoryTests : IAsyncLifetime
     public async Task GetByTaxPeriodAsync_MatchesByProfileIdAndTaxPeriod()
     {
         // Two profiles with filings on the same date — each should only see their own
-        var profile1 = new TaxpayerProfile(Guid.NewGuid(), "1111111111111", "Alice", "Belgrade", "11001");
-        var profile2 = new TaxpayerProfile(Guid.NewGuid(), "2222222222222", "Bob", "Novi Sad", "21000");
+        var profile1 = new TaxpayerProfile(Guid.NewGuid(), "1111111111111", "Alice", "Belgrade", "018");
+        var profile2 = new TaxpayerProfile(Guid.NewGuid(), "2222222222222", "Bob", "Novi Sad", "021");
         await _context.TaxpayerProfiles.AddRangeAsync(profile1, profile2);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
@@ -619,7 +619,7 @@ public class FilingRepositoryTests : IAsyncLifetime
     [Fact]
     public async Task DeleteManyAsync_WithEmptyList_NoException()
     {
-        var act = async () => await _repository.DeleteManyAsync([]);
+        var act = async () => await _repository.DeleteManyAsync([], TestContext.Current.CancellationToken);
 
         await act.Should().NotThrowAsync();
     }

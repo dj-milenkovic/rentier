@@ -128,8 +128,7 @@
             </DataGridTemplateColumn.CellTemplate>
           </DataGridTemplateColumn>
 
-          <!-- Status badge column with filter flyout (feature 050) -->
-          <DataGridTemplateColumn Width="90" CanUserSort="False">
+          <DataGridTemplateColumn Width="80" MinWidth="80" CanUserSort="False">
             <DataGridTemplateColumn.Header>
               <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
                 <TextBlock Text="{Binding [Filings_Col_Status], Source={StaticResource Localizer}}"
@@ -197,8 +196,7 @@
             </DataGridTemplateColumn.CellTemplate>
           </DataGridTemplateColumn>
 
-          <!-- Income Type column — sortable (feature 046) + filter flyout (feature 050) -->
-          <DataGridTemplateColumn Width="110" Tag="IncomeType" CanUserSort="True">
+          <DataGridTemplateColumn Width="120" MinWidth="120" Tag="IncomeType" CanUserSort="True">
             <DataGridTemplateColumn.Header>
               <StackPanel Orientation="Horizontal" Spacing="4" Cursor="Hand">
                 <TextBlock Text="{Binding [Filings_Col_IncomeType], Source={StaticResource Localizer}}"
@@ -267,8 +265,7 @@
             </DataGridTemplateColumn.CellTemplate>
           </DataGridTemplateColumn>
 
-          <!-- Paying Entity column — sortable (feature 046) + text filter flyout (feature 050) -->
-          <DataGridTemplateColumn Width="*" Tag="PayingEntity" CanUserSort="True">
+          <DataGridTemplateColumn Width="*" MinWidth="120" Tag="PayingEntity" CanUserSort="True">
             <DataGridTemplateColumn.Header>
               <StackPanel Orientation="Horizontal" Spacing="4" Cursor="Hand">
                 <TextBlock Text="{Binding [Filings_Col_PayingEntity], Source={StaticResource Localizer}}"
@@ -323,8 +320,7 @@
             </DataGridTemplateColumn.CellTemplate>
           </DataGridTemplateColumn>
 
-          <!-- Filing Deadline column — sortable (feature 046) + text filter flyout (feature 050) -->
-          <DataGridTemplateColumn Width="120" Tag="FilingDeadline" CanUserSort="True">
+          <DataGridTemplateColumn Width="*" MinWidth="130" Tag="FilingDeadline" CanUserSort="True">
             <DataGridTemplateColumn.Header>
               <StackPanel Orientation="Horizontal" Spacing="4" Cursor="Hand">
                 <TextBlock Text="{Binding [Filings_Col_Deadline], Source={StaticResource Localizer}}"
@@ -380,7 +376,7 @@
           </DataGridTemplateColumn>
 
           <!-- Tax Payable column — sortable (feature 046), no filter -->
-          <DataGridTemplateColumn Width="130" Tag="TaxPayable" CanUserSort="True">
+          <DataGridTemplateColumn Width="130" MinWidth="100" Tag="TaxPayable" CanUserSort="True">
             <DataGridTemplateColumn.Header>
               <StackPanel Orientation="Horizontal" Spacing="4" Cursor="Hand">
                 <TextBlock Text="{Binding [Filings_Col_TaxPayable], Source={StaticResource Localizer}}"
@@ -403,7 +399,7 @@
           </DataGridTemplateColumn>
 
           <!-- Payment Reference column — template header with filter flyout (feature 050) -->
-          <DataGridTemplateColumn Width="180" Tag="PaymentReference" CanUserSort="False">
+          <DataGridTemplateColumn Width="180" MinWidth="140" Tag="PaymentReference" CanUserSort="False">
             <DataGridTemplateColumn.Header>
               <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
                 <TextBlock Text="{Binding [Filings_Col_PaymentRef], Source={StaticResource Localizer}}"

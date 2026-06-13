@@ -23,7 +23,7 @@ public class SaveTaxpayerProfileCommandHandlerTests
     {
         _repo.GetAsync(TestContext.Current.CancellationToken).Returns((TaxpayerProfile?)null);
 
-        var command = new SaveTaxpayerProfileCommand("1234567890123", "Test User", "Test Address", "7101");
+        var command = new SaveTaxpayerProfileCommand("1234567890123", "Test User", "Test Address", "049");
         var result = await _handler.HandleAsync(command, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
@@ -38,10 +38,10 @@ public class SaveTaxpayerProfileCommandHandlerTests
     public async Task HandleAsync_ExistingProfile_UpdatesWithSameId()
     {
         var existingId = Guid.NewGuid();
-        var existing = new TaxpayerProfile(existingId, "1234567890123", "Old Name", "Old Address", "7101");
+        var existing = new TaxpayerProfile(existingId, "1234567890123", "Old Name", "Old Address", "049");
         _repo.GetAsync(TestContext.Current.CancellationToken).Returns(existing);
 
-        var command = new SaveTaxpayerProfileCommand("1234567890123", "New Name", "New Address", "7102");
+        var command = new SaveTaxpayerProfileCommand("1234567890123", "New Name", "New Address", "050");
         var result = await _handler.HandleAsync(command, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
@@ -55,7 +55,7 @@ public class SaveTaxpayerProfileCommandHandlerTests
     {
         _repo.GetAsync(TestContext.Current.CancellationToken).Returns((TaxpayerProfile?)null);
 
-        var command = new SaveTaxpayerProfileCommand("INVALID_JMBG", "Test User", "Test Address", "7101");
+        var command = new SaveTaxpayerProfileCommand("INVALID_JMBG", "Test User", "Test Address", "049");
         var result = await _handler.HandleAsync(command, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();

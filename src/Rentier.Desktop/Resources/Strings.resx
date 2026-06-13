@@ -136,6 +136,9 @@
   <data name="Profile_Address_Label" xml:space="preserve">
     <value>Address</value>
   </data>
+  <data name="Profile_Address_Helper" xml:space="preserve">
+    <value>Street and house number only, no city (e.g. Knez Mihailova 1)</value>
+  </data>
   <data name="Profile_OpstinaCode_Label" xml:space="preserve">
     <value>Opština Code</value>
   </data>
@@ -732,7 +735,7 @@
     <value>Are you sure you want to delete the importer '{0}'? This action cannot be undone.</value>
   </data>
   <data name="Profile_OpstinaCode_Helper" xml:space="preserve">
-    <value>5-digit municipal code, e.g. 71101 for Stari Grad</value>
+    <value>3-digit municipality code (šifra opštine), e.g. 049 for Kragujevac, 018 for Stari Grad</value>
   </data>
   <data name="Holidays_YearRange_Error" xml:space="preserve">
     <value>End year must be ≥ Start year</value>
