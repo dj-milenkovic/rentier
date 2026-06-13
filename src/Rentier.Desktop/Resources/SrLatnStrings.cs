@@ -162,7 +162,7 @@ public static class SrLatnStrings
         ["Dashboard_ViewAllFilings"] = "Pogledaj sve prijave",
         ["Dashboard_LoadError"] = "Nije moguće učitati podatke sa kontrolne table.",
         ["Dashboard_NoData"] = "Nema podataka. Pokrenite sinhronizaciju za početak.",
-        ["Dashboard_NoUpcomingDeadlines"] = "Nema predstojecih rokova u narednih 30 dana.",
+        ["Dashboard_NoUpcomingDeadlines"] = "Nema predstojećih rokova u narednih 30 dana.",
         ["Sync_Mode_Incremental"] = "Inkrementalno",
         ["Sync_Mode_ReplayFromDate"] = "Ponovi od datuma",
         ["Sync_Mode_FullReplay"] = "Potpuno ponavljanje",
