@@ -396,22 +396,17 @@ jobs:
             Select-Object -First 1
           if (-not $exe) { throw "Rentier.Desktop.exe missing from ZIP" }
 
-          $sqlite = Get-ChildItem ./extracted -Filter "e_sqlite3*" -Recurse |
-            Select-Object -First 1
-          if (-not $sqlite) { throw "SQLite native library (e_sqlite3*) missing from ZIP" }
-
-          Write-Host "Artifact structure OK: EXE and SQLite native lib present"
+          Write-Host "Artifact structure OK: single-file EXE present (native libs bundled inside)"
           "EXE_PATH=$($exe.FullName)" | Out-File -Append $env:GITHUB_ENV
-
-      - name: Headless launch smoke test
-        shell: pwsh
-        run: |
-          $proc = Start-Process $env:EXE_PATH `
-            -ArgumentList "--smoke-test" -PassThru -Wait -NoNewWindow
-          if ($proc.ExitCode -ne 0) {
-            throw "Smoke test exited with code $($proc.ExitCode) — artifact is not functional"
-          }
-          Write-Host "SMOKE TEST PASSED (exit code 0)"
+            - name: Headless launch smoke test
+              shell: pwsh
+              run: |
+                $proc = Start-Process $env:EXE_PATH `
+                  -ArgumentList "--smoke-test" -PassThru -Wait -NoNewWindow
+                if ($proc.ExitCode -ne 0) {
+                  throw "Smoke test exited with code $($proc.ExitCode) — artifact is not functional"
+                }
+                Write-Host "SMOKE TEST PASSED (exit code 0)"
 
   # ──────────────────────────────────────────────────────────────────
   # Create GitHub Release with all artifacts + checksums
