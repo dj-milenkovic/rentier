@@ -27,7 +27,7 @@ public class ExchangeRateResolverTests
             .Returns(Result<ExchangeRate, Error>.Success(new ExchangeRate(incomeDate, "USD", 108m)));
 
         var resolver = MakeResolver(fetcher);
-        var result = await resolver.ResolveAsync(incomeDate, "USD", NoHolidays());
+        var result = await resolver.ResolveAsync(incomeDate, "USD", NoHolidays(), ct: TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.SourceType.Should().Be(ExchangeRateSourceType.Exact);
@@ -47,7 +47,7 @@ public class ExchangeRateResolverTests
             .Returns(Result<ExchangeRate, Error>.Success(new ExchangeRate(friday, "USD", 108m)));
 
         var resolver = MakeResolver(fetcher);
-        var result = await resolver.ResolveAsync(saturday, "USD", NoHolidays());
+        var result = await resolver.ResolveAsync(saturday, "USD", NoHolidays(), ct: TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.SourceType.Should().Be(ExchangeRateSourceType.Fallback);
@@ -65,7 +65,7 @@ public class ExchangeRateResolverTests
             .Returns(Result<ExchangeRate, Error>.Failure(new Error("RATE_NOT_FOUND", "no rate")));
 
         var resolver = MakeResolver(fetcher);
-        var result = await resolver.ResolveAsync(date, "USD", NoHolidays(), maxLookbackDays: 3);
+        var result = await resolver.ResolveAsync(date, "USD", NoHolidays(), maxLookbackDays: 3, ct: TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("RATE_NOT_FOUND");
@@ -80,7 +80,7 @@ public class ExchangeRateResolverTests
             .Returns(Result<ExchangeRate, Error>.Failure(new Error("UNSUPPORTED_CURRENCY", "not supported")));
 
         var resolver = MakeResolver(fetcher);
-        var result = await resolver.ResolveAsync(date, "XYZ", NoHolidays());
+        var result = await resolver.ResolveAsync(date, "XYZ", NoHolidays(), ct: TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("UNSUPPORTED_CURRENCY");
@@ -96,7 +96,7 @@ public class ExchangeRateResolverTests
             .Returns(Result<ExchangeRate, Error>.Failure(new Error("NBS_PARSE_ERROR", "bad xml")));
 
         var resolver = MakeResolver(fetcher);
-        var result = await resolver.ResolveAsync(date, "USD", NoHolidays());
+        var result = await resolver.ResolveAsync(date, "USD", NoHolidays(), ct: TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("NBS_PARSE_ERROR");
@@ -119,7 +119,7 @@ public class ExchangeRateResolverTests
             .Returns(Result<ExchangeRate, Error>.Success(new ExchangeRate(new DateOnly(2024, 2, 14), "USD", 108m)));
 
         var resolver = MakeResolver(fetcher);
-        var result = await resolver.ResolveAsync(new DateOnly(2024, 2, 15), "USD", holidays);
+        var result = await resolver.ResolveAsync(new DateOnly(2024, 2, 15), "USD", holidays, ct: TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.SourceDate.Should().Be(new DateOnly(2024, 2, 14));

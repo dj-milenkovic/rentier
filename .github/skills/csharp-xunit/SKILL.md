@@ -10,7 +10,7 @@ Your goal is to help me write effective unit tests with XUnit, covering both sta
 ## Project Setup
 
 - Use a separate test project with naming convention `[ProjectName].Tests`
-- Reference Microsoft.NET.Test.Sdk, xunit, and xunit.runner.visualstudio packages
+- Reference Microsoft.NET.Test.Sdk, xunit.v3, and xunit.runner.visualstudio packages
 - Create test classes that match the classes being tested (e.g., `CalculatorTests` for `Calculator`)
 - Use .NET SDK test commands: `dotnet test` for running tests
 

@@ -1,7 +1,6 @@
 using System.Runtime.Versioning;
 using FluentAssertions;
 using Rentier.Infrastructure.Security;
-using Xunit;
 
 namespace Rentier.Infrastructure.Tests.Security;
 
@@ -24,16 +23,16 @@ public class LinuxCredentialStoreTests
 
         try
         {
-            var saveResult = await store.SaveCredentialAsync(key, secret);
+            var saveResult = await store.SaveCredentialAsync(key, secret, TestContext.Current.CancellationToken);
             saveResult.IsSuccess.Should().BeTrue();
 
-            var getResult = await store.GetCredentialAsync(key);
+            var getResult = await store.GetCredentialAsync(key, TestContext.Current.CancellationToken);
             getResult.IsSuccess.Should().BeTrue();
             getResult.Value.Should().Be(secret);
         }
         finally
         {
-            await store.DeleteCredentialAsync(key);
+            await store.DeleteCredentialAsync(key, TestContext.Current.CancellationToken);
         }
     }
 
@@ -48,16 +47,16 @@ public class LinuxCredentialStoreTests
 
         try
         {
-            await store.SaveCredentialAsync(key, "original");
-            await store.SaveCredentialAsync(key, "updated");
+            await store.SaveCredentialAsync(key, "original", TestContext.Current.CancellationToken);
+            await store.SaveCredentialAsync(key, "updated", TestContext.Current.CancellationToken);
 
-            var getResult = await store.GetCredentialAsync(key);
+            var getResult = await store.GetCredentialAsync(key, TestContext.Current.CancellationToken);
             getResult.IsSuccess.Should().BeTrue();
             getResult.Value.Should().Be("updated");
         }
         finally
         {
-            await store.DeleteCredentialAsync(key);
+            await store.DeleteCredentialAsync(key, TestContext.Current.CancellationToken);
         }
     }
 
@@ -70,7 +69,7 @@ public class LinuxCredentialStoreTests
         var store = factoryResult.Store;
         var key = $"Rentier/Test/{Guid.NewGuid()}/password";
 
-        var result = await store.GetCredentialAsync(key);
+        var result = await store.GetCredentialAsync(key, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("CREDENTIAL_NOT_FOUND");
@@ -85,11 +84,11 @@ public class LinuxCredentialStoreTests
         var store = factoryResult.Store;
         const string key = "Rentier/Test/linux-delete/password";
 
-        await store.SaveCredentialAsync(key, "to-be-deleted");
-        var deleteResult = await store.DeleteCredentialAsync(key);
+        await store.SaveCredentialAsync(key, "to-be-deleted", TestContext.Current.CancellationToken);
+        var deleteResult = await store.DeleteCredentialAsync(key, TestContext.Current.CancellationToken);
         deleteResult.IsSuccess.Should().BeTrue();
 
-        var getResult = await store.GetCredentialAsync(key);
+        var getResult = await store.GetCredentialAsync(key, TestContext.Current.CancellationToken);
         getResult.IsSuccess.Should().BeFalse();
         getResult.Error.Code.Should().Be("CREDENTIAL_NOT_FOUND");
     }
@@ -103,7 +102,7 @@ public class LinuxCredentialStoreTests
         var store = factoryResult.Store;
         var key = $"Rentier/Test/{Guid.NewGuid()}/password";
 
-        var result = await store.DeleteCredentialAsync(key);
+        var result = await store.DeleteCredentialAsync(key, TestContext.Current.CancellationToken);
         result.IsSuccess.Should().BeTrue();
     }
 

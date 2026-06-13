@@ -1,12 +1,11 @@
 using FluentAssertions;
 using NSubstitute;
 using Rentier.Application.Commands;
-using Rentier.Application.Common;
 using Rentier.Application.Handlers;
 using Rentier.Application.Repositories;
 using Xunit;
 
-namespace Rentier.UnitTests;
+namespace Rentier.UnitTests.Application;
 
 public sealed class DeleteImporterCommandHandlerTests
 {
@@ -24,7 +23,7 @@ public sealed class DeleteImporterCommandHandlerTests
         var id = Guid.NewGuid();
         var cmd = new DeleteImporterCommand(id);
 
-        var result = await _sut.HandleAsync(cmd);
+        var result = await _sut.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         await _repo.Received(1).DeleteAsync(id, Arg.Any<CancellationToken>());
@@ -36,7 +35,7 @@ public sealed class DeleteImporterCommandHandlerTests
         var id = Guid.NewGuid();
         _repo.DeleteAsync(id, Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
 
-        var result = await _sut.HandleAsync(new DeleteImporterCommand(id));
+        var result = await _sut.HandleAsync(new DeleteImporterCommand(id), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
     }

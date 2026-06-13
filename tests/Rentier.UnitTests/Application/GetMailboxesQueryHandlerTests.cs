@@ -1,14 +1,12 @@
 using FluentAssertions;
 using NSubstitute;
-using Rentier.Application.Common;
-using Rentier.Application.DTOs;
 using Rentier.Application.Handlers;
 using Rentier.Application.Queries;
 using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
 using Xunit;
 
-namespace Rentier.UnitTests;
+namespace Rentier.UnitTests.Application;
 
 public class GetMailboxesQueryHandlerTests
 {
@@ -26,7 +24,7 @@ public class GetMailboxesQueryHandlerTests
         _repo.GetAllAsync(Arg.Any<CancellationToken>())
             .Returns(new List<Mailbox>());
 
-        var result = await _handler.HandleAsync(new GetMailboxesQuery());
+        var result = await _handler.HandleAsync(new GetMailboxesQuery(), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().BeEmpty();
@@ -41,7 +39,7 @@ public class GetMailboxesQueryHandlerTests
         _repo.GetAllAsync(Arg.Any<CancellationToken>())
             .Returns(new List<Mailbox> { m1, m2 });
 
-        var result = await _handler.HandleAsync(new GetMailboxesQuery());
+        var result = await _handler.HandleAsync(new GetMailboxesQuery(), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().HaveCount(2);

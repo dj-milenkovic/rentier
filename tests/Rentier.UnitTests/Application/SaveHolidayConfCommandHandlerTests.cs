@@ -1,14 +1,13 @@
 using FluentAssertions;
 using NSubstitute;
 using Rentier.Application.Commands;
-using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Handlers;
 using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
 using Xunit;
 
-namespace Rentier.UnitTests;
+namespace Rentier.UnitTests.Application;
 
 public class SaveHolidayConfCommandHandlerTests
 {
@@ -27,7 +26,7 @@ public class SaveHolidayConfCommandHandlerTests
             new List<HolidayEntryDto> { new(new DateOnly(2025, 1, 1), "Nova godina") },
             2025, 2028);
 
-        var result = await _handler.HandleAsync(cmd);
+        var result = await _handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         await _repo.Received(1).SaveHolidaysAsync(
@@ -41,7 +40,7 @@ public class SaveHolidayConfCommandHandlerTests
     {
         var cmd = new SaveHolidayConfCommand(new List<HolidayEntryDto>(), 2025, 2028);
 
-        var result = await _handler.HandleAsync(cmd);
+        var result = await _handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         await _repo.Received(1).SaveHolidaysAsync(
@@ -55,7 +54,7 @@ public class SaveHolidayConfCommandHandlerTests
     {
         var cmd = new SaveHolidayConfCommand(new List<HolidayEntryDto>(), 2019, 2025);
 
-        var result = await _handler.HandleAsync(cmd);
+        var result = await _handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("HOLIDAY_SAVE_INVALID_YEAR_RANGE");
@@ -77,7 +76,7 @@ public class SaveHolidayConfCommandHandlerTests
             },
             2025, 2028);
 
-        var result = await _handler.HandleAsync(cmd);
+        var result = await _handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("HOLIDAY_SAVE_DUPLICATE_DATES");

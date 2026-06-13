@@ -37,7 +37,7 @@ public sealed class FilingLifecycleScenario : IDisposable
             address: "Test Address",
             opstinaCode: "70101");
 
-        await _profileRepository.SaveAsync(taxpayerProfile);
+        await _profileRepository.SaveAsync(taxpayerProfile, TestContext.Current.CancellationToken);
 
         var filing = Filing.CreateFromIncome(
             taxpayerProfileId: taxpayerProfile.Id,
@@ -50,19 +50,19 @@ public sealed class FilingLifecycleScenario : IDisposable
             taxPayableRsd: 0m,
             filingDeadline: new DateOnly(2024, 7, 30));
 
-        await _filingRepository.AddAsync(filing);
+        await _filingRepository.AddAsync(filing, TestContext.Current.CancellationToken);
 
         var handler = new UpdateFilingStatusCommandHandler(_filingRepository);
         var command = new UpdateFilingStatusCommand(filing.Id, FilingStatus.Filed);
 
         // Act
-        var result = await handler.HandleAsync(command);
+        var result = await handler.HandleAsync(command, TestContext.Current.CancellationToken);
 
         // Assert - handler succeeded
         result.IsSuccess.Should().BeTrue("transition from Init to Filed should succeed");
 
         // Assert - verify DB state via repository query
-        var updatedFiling = await _filingRepository.GetByIdAsync(filing.Id);
+        var updatedFiling = await _filingRepository.GetByIdAsync(filing.Id, TestContext.Current.CancellationToken);
         updatedFiling.Should().NotBeNull();
         updatedFiling!.Status.Should().Be(FilingStatus.Filed, "status should be Filed after transition");
     }
@@ -78,7 +78,7 @@ public sealed class FilingLifecycleScenario : IDisposable
             address: "Test Address",
             opstinaCode: "70101");
 
-        await _profileRepository.SaveAsync(taxpayerProfile);
+        await _profileRepository.SaveAsync(taxpayerProfile, TestContext.Current.CancellationToken);
 
         var filing = Filing.CreateFromIncome(
             taxpayerProfileId: taxpayerProfile.Id,
@@ -91,21 +91,21 @@ public sealed class FilingLifecycleScenario : IDisposable
             taxPayableRsd: 0m,
             filingDeadline: new DateOnly(2024, 4, 30));
 
-        await _filingRepository.AddAsync(filing);
+        await _filingRepository.AddAsync(filing, TestContext.Current.CancellationToken);
 
         // First transition: Init → Filed
         var handler = new UpdateFilingStatusCommandHandler(_filingRepository);
-        var toFiledResult = await handler.HandleAsync(new UpdateFilingStatusCommand(filing.Id, FilingStatus.Filed));
+        var toFiledResult = await handler.HandleAsync(new UpdateFilingStatusCommand(filing.Id, FilingStatus.Filed), TestContext.Current.CancellationToken);
         toFiledResult.IsSuccess.Should().BeTrue();
 
         // Act - Second transition: Filed → Paid
-        var toPaidResult = await handler.HandleAsync(new UpdateFilingStatusCommand(filing.Id, FilingStatus.Paid));
+        var toPaidResult = await handler.HandleAsync(new UpdateFilingStatusCommand(filing.Id, FilingStatus.Paid), TestContext.Current.CancellationToken);
 
         // Assert
         toPaidResult.IsSuccess.Should().BeTrue("transition from Filed to Paid should succeed");
 
         // Assert - verify DB state
-        var updatedFiling = await _filingRepository.GetByIdAsync(filing.Id);
+        var updatedFiling = await _filingRepository.GetByIdAsync(filing.Id, TestContext.Current.CancellationToken);
         updatedFiling.Should().NotBeNull();
         updatedFiling!.Status.Should().Be(FilingStatus.Paid, "status should be Paid after transition");
     }
@@ -121,7 +121,7 @@ public sealed class FilingLifecycleScenario : IDisposable
             address: "Another Address",
             opstinaCode: "70102");
 
-        await _profileRepository.SaveAsync(taxpayerProfile);
+        await _profileRepository.SaveAsync(taxpayerProfile, TestContext.Current.CancellationToken);
 
         var filing = Filing.CreateFromIncome(
             taxpayerProfileId: taxpayerProfile.Id,
@@ -134,12 +134,12 @@ public sealed class FilingLifecycleScenario : IDisposable
             taxPayableRsd: 0m,
             filingDeadline: new DateOnly(2024, 6, 30));
 
-        await _filingRepository.AddAsync(filing);
+        await _filingRepository.AddAsync(filing, TestContext.Current.CancellationToken);
 
         var handler = new UpdateFilingStatusCommandHandler(_filingRepository);
 
         // Act - try invalid transition Init → Paid (should fail)
-        var result = await handler.HandleAsync(new UpdateFilingStatusCommand(filing.Id, FilingStatus.Paid));
+        var result = await handler.HandleAsync(new UpdateFilingStatusCommand(filing.Id, FilingStatus.Paid), TestContext.Current.CancellationToken);
 
         // Assert
         result.IsSuccess.Should().BeFalse("Init → Paid is not a valid transition");
@@ -147,7 +147,7 @@ public sealed class FilingLifecycleScenario : IDisposable
         result.Error.Message.Should().Contain("Invalid Filing status transition");
 
         // Assert - verify DB state unchanged
-        var unchangedFiling = await _filingRepository.GetByIdAsync(filing.Id);
+        var unchangedFiling = await _filingRepository.GetByIdAsync(filing.Id, TestContext.Current.CancellationToken);
         unchangedFiling.Should().NotBeNull();
         unchangedFiling!.Status.Should().Be(FilingStatus.Init, "status should remain Init after failed transition");
     }
@@ -160,7 +160,7 @@ public sealed class FilingLifecycleScenario : IDisposable
         var nonExistentId = Guid.NewGuid();
 
         // Act
-        var result = await handler.HandleAsync(new UpdateFilingStatusCommand(nonExistentId, FilingStatus.Filed));
+        var result = await handler.HandleAsync(new UpdateFilingStatusCommand(nonExistentId, FilingStatus.Filed), TestContext.Current.CancellationToken);
 
         // Assert
         result.IsSuccess.Should().BeFalse("updating non-existent filing should fail");

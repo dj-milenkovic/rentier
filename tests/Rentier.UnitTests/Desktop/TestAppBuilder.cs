@@ -1,18 +1,20 @@
 using Avalonia;
 using Avalonia.Headless;
-using Avalonia.ReactiveUI;
+using ReactiveUI.Avalonia;
+using Rentier.UnitTests.Desktop;
+using Xunit;
 
-[assembly: AvaloniaTestApplication(typeof(Rentier.UnitTests.TestAppBuilder))]
-
-namespace Rentier.UnitTests;
+[assembly: AvaloniaTestApplication(typeof(TestAppBuilder))]
+[assembly: CollectionBehavior(DisableTestParallelization = true)]
+namespace Rentier.UnitTests.Desktop;
 
 /// <summary>
 /// Configures Avalonia for headless testing. Used by [AvaloniaFact] tests.
 /// </summary>
 public static class TestAppBuilder
 {
-    public static AppBuilder BuildAvaloniaApp() =>
-        AppBuilder.Configure<Rentier.Desktop.App>()
+    private static AppBuilder BuildAvaloniaApp()
+        => AppBuilder.Configure<Rentier.Desktop.App>()
             .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = true })
-            .UseReactiveUI();
+            .UseReactiveUI(_ => { });
 }

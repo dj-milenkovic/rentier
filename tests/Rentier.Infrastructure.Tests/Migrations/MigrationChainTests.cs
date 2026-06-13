@@ -21,7 +21,7 @@ public sealed class MigrationChainTests : IAsyncDisposable
     public MigrationChainTests()
     {
         _dbPath = Path.Combine(Path.GetTempPath(), $"rentier_chain_{Guid.NewGuid():N}.db");
-        _connection = new SqliteConnection($"Data Source={_dbPath}");
+        _connection = new SqliteConnection($"Data Source={_dbPath};Pooling=False");
         _connection.Open();
 
         _context = new AppDbContext(
@@ -41,7 +41,7 @@ public sealed class MigrationChainTests : IAsyncDisposable
     [Fact]
     public async Task AllMigrations_Applied_ProducesExpectedTables()
     {
-        await _context.Database.MigrateAsync();
+        await _context.Database.MigrateAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         var tables = await GetTableNamesAsync();
 
@@ -62,9 +62,9 @@ public sealed class MigrationChainTests : IAsyncDisposable
     [Fact]
     public async Task AllMigrations_Applied_NoPendingMigrationsRemain()
     {
-        await _context.Database.MigrateAsync();
+        await _context.Database.MigrateAsync(cancellationToken: TestContext.Current.CancellationToken);
 
-        var pending = await _context.Database.GetPendingMigrationsAsync();
+        var pending = await _context.Database.GetPendingMigrationsAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         pending.Should().BeEmpty(
             because: "no EF model changes should exist outside of a committed migration; " +
@@ -74,9 +74,9 @@ public sealed class MigrationChainTests : IAsyncDisposable
     [Fact]
     public async Task AllMigrations_Applied_MigrationHistoryMatchesExpectedCount()
     {
-        await _context.Database.MigrateAsync();
+        await _context.Database.MigrateAsync(cancellationToken: TestContext.Current.CancellationToken);
 
-        var applied = await _context.Database.GetAppliedMigrationsAsync();
+        var applied = await _context.Database.GetAppliedMigrationsAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         // 14 migrations: 0001 through 0014 (0011 has a July timestamp but is still one migration)
         applied.Should().HaveCount(14,
@@ -86,7 +86,7 @@ public sealed class MigrationChainTests : IAsyncDisposable
     [Fact]
     public async Task FilingsTable_HasDecimalPrecisionColumns_AfterMigration()
     {
-        await _context.Database.MigrateAsync();
+        await _context.Database.MigrateAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         // Verify column info via pragma — precision on SQLite TEXT columns
         // is enforced at the EF model level, not in the DB file itself.
@@ -94,7 +94,7 @@ public sealed class MigrationChainTests : IAsyncDisposable
         var profileId = Guid.NewGuid();
         var profile = new Domain.Entities.TaxpayerProfile(
             profileId, "1112223334445", "Test User", "Test Address", "11000");
-        await _context.TaxpayerProfiles.AddAsync(profile);
+        await _context.TaxpayerProfiles.AddAsync(profile, TestContext.Current.CancellationToken);
 
         var filing = Domain.Entities.Filing.CreateFromIncome(
             profileId, Domain.Enums.IncomeType.Dividend,
@@ -104,11 +104,11 @@ public sealed class MigrationChainTests : IAsyncDisposable
             grossTaxPayableRsd: 18518.61m,
             taxPayableRsd: 0m,
             filingDeadline: new DateOnly(2024, 7, 15));
-        await _context.Filings.AddAsync(filing);
-        await _context.SaveChangesAsync();
+        await _context.Filings.AddAsync(filing, TestContext.Current.CancellationToken);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         _context.ChangeTracker.Clear();
-        var reloaded = await _context.Filings.SingleAsync(f => f.Id == filing.Id);
+        var reloaded = await _context.Filings.SingleAsync(f => f.Id == filing.Id, cancellationToken: TestContext.Current.CancellationToken);
 
         reloaded.GrossIncomeRsd.Should().Be(123456.78m,
             because: "decimal precision (18,2) must be preserved across the SQLite boundary");
@@ -120,9 +120,10 @@ public sealed class MigrationChainTests : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         await _context.DisposeAsync();
+        await _connection.CloseAsync();
         await _connection.DisposeAsync();
-        if (File.Exists(_dbPath))
-            File.Delete(_dbPath);
+        SqliteConnection.ClearPool(_connection);
+        await DeleteDatabaseFilesAsync(_dbPath);
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
@@ -136,5 +137,39 @@ public sealed class MigrationChainTests : IAsyncDisposable
         while (await reader.ReadAsync())
             tables.Add(reader.GetString(0));
         return tables;
+    }
+
+    private static async Task DeleteDatabaseFilesAsync(string dbPath)
+    {
+        foreach (var path in new[] { dbPath, $"{dbPath}-wal", $"{dbPath}-shm" })
+            await DeleteFileWithRetryAsync(path);
+    }
+
+    private static async Task DeleteFileWithRetryAsync(string path)
+    {
+        const int attempts = 3;
+
+        for (var attempt = 1; attempt <= attempts; attempt++)
+        {
+            if (!File.Exists(path))
+                return;
+
+            try
+            {
+                File.Delete(path);
+                return;
+            }
+            catch (IOException) when (attempt < attempts)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(50));
+            }
+            catch (UnauthorizedAccessException) when (attempt < attempts)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(50));
+            }
+
+            if (File.Exists(path))
+                File.Delete(path);
+        }
     }
 }

@@ -57,7 +57,7 @@ public class AppearanceSettingsViewModelTests
 
         vm.SelectedLanguage = "en";
 
-        await Task.Delay(50); // allow async fire-and-forget
+        await Task.Delay(50, TestContext.Current.CancellationToken); // allow async fire-and-forget
         await handler.Received(1).HandleAsync(
             Arg.Is<SetUserPreferenceCommand>(c => c.Key == "Language" && c.Value == "en"),
             Arg.Any<CancellationToken>());
@@ -70,11 +70,11 @@ public class AppearanceSettingsViewModelTests
 
         // Change to English
         vm.SelectedLanguage = "en";
-        await Task.Delay(50);
+        await Task.Delay(50, TestContext.Current.CancellationToken);
 
         // Change to English again (same value) - should be deduplicated by DistinctUntilChanged
         vm.SelectedLanguage = "en";
-        await Task.Delay(50);
+        await Task.Delay(50, TestContext.Current.CancellationToken);
 
         await handler.Received(1).HandleAsync(
             Arg.Is<SetUserPreferenceCommand>(c => c.Value == "en"),

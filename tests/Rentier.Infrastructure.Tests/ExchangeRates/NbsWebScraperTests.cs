@@ -56,7 +56,7 @@ public class NbsWebScraperTests
             new HttpClient(new FakeHandler(new HttpResponseMessage(HttpStatusCode.OK)
             { Content = new StringContent(ValidHtmlTable) })), cache);
 
-        var result = await scraper.FetchRateAsync(TestDate, "USD");
+        var result = await scraper.FetchRateAsync(TestDate, "USD", TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Currency.Should().Be("USD");
@@ -72,7 +72,7 @@ public class NbsWebScraperTests
             "<tr><td>EUR</td><td>E</td><td>EU</td><td>1</td><td>117,0539</td><td>117,0539</td></tr>" +
             "</tbody></table></body></html>";
         var result = await Make(new HttpResponseMessage(HttpStatusCode.OK)
-        { Content = new StringContent(html) }).FetchRateAsync(TestDate, "EUR");
+        { Content = new StringContent(html) }).FetchRateAsync(TestDate, "EUR", TestContext.Current.CancellationToken);
         result.IsSuccess.Should().BeTrue();
         result.Value.RateToRsd.Should().Be(117.0539m);
     }
@@ -82,7 +82,7 @@ public class NbsWebScraperTests
     {
         const string html = "<html><body><table><thead><tr><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th></tr></thead><tbody></tbody></table></body></html>";
         var result = await Make(new HttpResponseMessage(HttpStatusCode.OK)
-        { Content = new StringContent(html) }).FetchRateAsync(TestDate, "USD");
+        { Content = new StringContent(html) }).FetchRateAsync(TestDate, "USD", TestContext.Current.CancellationToken);
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("RATE_NOT_FOUND");
     }
@@ -92,7 +92,7 @@ public class NbsWebScraperTests
     {
         var result = await Make(new HttpResponseMessage(HttpStatusCode.OK)
         { Content = new StringContent("<html><body><p>no table</p></body></html>") })
-            .FetchRateAsync(TestDate, "USD");
+            .FetchRateAsync(TestDate, "USD", TestContext.Current.CancellationToken);
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().BeOneOf("RATE_NOT_FOUND", "NBS_SCRAPE_ERROR");
     }
@@ -102,7 +102,7 @@ public class NbsWebScraperTests
     {
         const string html = "<html><body><table><tbody><tr><td>EUR</td><td>E</td><td>EU</td></tr></tbody></table></body></html>";
         var result = await Make(new HttpResponseMessage(HttpStatusCode.OK)
-        { Content = new StringContent(html) }).FetchRateAsync(TestDate, "USD");
+        { Content = new StringContent(html) }).FetchRateAsync(TestDate, "USD", TestContext.Current.CancellationToken);
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("RATE_NOT_FOUND");
     }
@@ -111,7 +111,7 @@ public class NbsWebScraperTests
     public async Task FetchRateAsync_Http500Response_ReturnsNbsHttpError()
     {
         var result = await Make(new HttpResponseMessage(HttpStatusCode.InternalServerError))
-            .FetchRateAsync(TestDate, "USD");
+            .FetchRateAsync(TestDate, "USD", TestContext.Current.CancellationToken);
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("NBS_HTTP_ERROR");
     }
@@ -123,7 +123,7 @@ public class NbsWebScraperTests
         cache.GetAsync(Arg.Any<DateOnly>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns((ExchangeRate?)null);
         var scraper = new NbsWebScraper(new HttpClient(new ThrowingHandler()), cache);
-        var result = await scraper.FetchRateAsync(TestDate, "USD");
+        var result = await scraper.FetchRateAsync(TestDate, "USD", TestContext.Current.CancellationToken);
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("NBS_HTTP_ERROR");
     }

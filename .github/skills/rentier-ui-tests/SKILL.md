@@ -39,7 +39,7 @@ var vm = new FilingsViewModel(
     ImmediateScheduler.Instance);   // ← makes ReactiveCommand synchronous
 ```
 
-**Never** pass `RxApp.MainThreadScheduler`, `TaskPoolScheduler.Default`, or `null` in tests —
+**Never** pass `RxSchedulers.MainThreadScheduler`, `TaskPoolScheduler.Default`, or `null` in tests —
 they cause timing-dependent test flakiness that's hard to diagnose.
 
 ### Activating ViewModels
@@ -266,7 +266,7 @@ Examples:
 
 | Anti-pattern | Fix |
 |---|---|
-| `RxApp.MainThreadScheduler` in tests | `ImmediateScheduler.Instance` |
+| `RxSchedulers.MainThreadScheduler` in tests | `ImmediateScheduler.Instance` |
 | Forgetting `vm.Activator.Activate()` | Wrap in `using var _ = vm.Activator.Activate()` |
 | Testing only the success path | Always test initial + success + failure states |
 | Inline `Substitute.For<>()` in every test | Extract `MakeHandler()` / `CreateVm()` factories |

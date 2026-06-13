@@ -7,7 +7,7 @@ using Rentier.Application.Handlers;
 using Rentier.Application.Interfaces;
 using Xunit;
 
-namespace Rentier.UnitTests;
+namespace Rentier.UnitTests.Application;
 
 public class FetchHolidaysFromWebCommandHandlerTests
 {
@@ -38,7 +38,7 @@ public class FetchHolidaysFromWebCommandHandlerTests
         _importer.ImportAsync(2025, Arg.Any<CancellationToken>())
             .Returns(Result<IReadOnlyList<HolidayEntryDto>, Error>.Success(holidays2025));
 
-        var result = await _handler.HandleAsync(new FetchHolidaysFromWebCommand(2024, 2025));
+        var result = await _handler.HandleAsync(new FetchHolidaysFromWebCommand(2024, 2025), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().HaveCount(4);
@@ -59,7 +59,7 @@ public class FetchHolidaysFromWebCommandHandlerTests
             .Returns(Result<IReadOnlyList<HolidayEntryDto>, Error>.Failure(
                 new Error("HOLIDAY_FETCH_FAILED", "HTTP 503")));
 
-        var result = await _handler.HandleAsync(new FetchHolidaysFromWebCommand(2024, 2025));
+        var result = await _handler.HandleAsync(new FetchHolidaysFromWebCommand(2024, 2025), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().HaveCount(1);
@@ -73,7 +73,7 @@ public class FetchHolidaysFromWebCommandHandlerTests
             .Returns(Result<IReadOnlyList<HolidayEntryDto>, Error>.Failure(
                 new Error("HOLIDAY_FETCH_FAILED", "Network error")));
 
-        var result = await _handler.HandleAsync(new FetchHolidaysFromWebCommand(2024, 2025));
+        var result = await _handler.HandleAsync(new FetchHolidaysFromWebCommand(2024, 2025), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("HOLIDAY_FETCH_ALL_FAILED");
@@ -94,7 +94,7 @@ public class FetchHolidaysFromWebCommandHandlerTests
         _importer.ImportAsync(2025, Arg.Any<CancellationToken>())
             .Returns(Result<IReadOnlyList<HolidayEntryDto>, Error>.Success(holidays2));
 
-        var result = await _handler.HandleAsync(new FetchHolidaysFromWebCommand(2024, 2025));
+        var result = await _handler.HandleAsync(new FetchHolidaysFromWebCommand(2024, 2025), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         // De-duplicated by date: only the first occurrence (from 2024) kept

@@ -14,7 +14,7 @@ using Rentier.Domain.Enums;
 using Rentier.Domain.ValueObjects;
 using Xunit;
 
-namespace Rentier.UnitTests;
+namespace Rentier.UnitTests.Application;
 
 public class ProcessReportsCommandHandlerTests
 {
@@ -82,7 +82,7 @@ public class ProcessReportsCommandHandlerTests
             .Returns(Array.Empty<Report>());
 
         var handler = MakeHandler(reportRepo: reportRepo);
-        var result = await handler.HandleAsync(new ProcessReportsCommand());
+        var result = await handler.HandleAsync(new ProcessReportsCommand(), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.FilingsCreated.Should().Be(0);
@@ -103,7 +103,7 @@ public class ProcessReportsCommandHandlerTests
         importerRepo.GetByIdAsync(importer.Id, Arg.Any<CancellationToken>()).Returns(importer);
 
         var handler = MakeHandler(reportRepo: reportRepo, importerRepo: importerRepo);
-        var result = await handler.HandleAsync(new ProcessReportsCommand());
+        var result = await handler.HandleAsync(new ProcessReportsCommand(), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.ReportsErrored.Should().Be(1);
@@ -128,7 +128,7 @@ public class ProcessReportsCommandHandlerTests
             .Returns((Importer?)null);
 
         var handler = MakeHandler(reportRepo: reportRepo, importerRepo: importerRepo);
-        var result = await handler.HandleAsync(new ProcessReportsCommand());
+        var result = await handler.HandleAsync(new ProcessReportsCommand(), TestContext.Current.CancellationToken);
 
         result.Value.ReportsErrored.Should().Be(1);
     }
@@ -151,7 +151,7 @@ public class ProcessReportsCommandHandlerTests
             .Returns(Result<StatementParseResult, Error>.Failure(Error.Domain("bad CSV")));
 
         var handler = MakeHandler(reportRepo: reportRepo, importerRepo: importerRepo, parser: parser);
-        var result = await handler.HandleAsync(new ProcessReportsCommand());
+        var result = await handler.HandleAsync(new ProcessReportsCommand(), TestContext.Current.CancellationToken);
 
         result.Value.ReportsErrored.Should().Be(1);
     }
@@ -170,7 +170,7 @@ public class ProcessReportsCommandHandlerTests
         importerRepo.GetByIdAsync(importer.Id, Arg.Any<CancellationToken>()).Returns(importer);
 
         var handler = MakeHandler(reportRepo: reportRepo, importerRepo: importerRepo);
-        var result = await handler.HandleAsync(new ProcessReportsCommand());
+        var result = await handler.HandleAsync(new ProcessReportsCommand(), TestContext.Current.CancellationToken);
 
         result.Value.ReportsProcessed.Should().Be(1);
         result.Value.FilingsCreated.Should().Be(0);
@@ -211,7 +211,7 @@ public class ProcessReportsCommandHandlerTests
             reportRepo: reportRepo, importerRepo: importerRepo,
             filingRepo: filingRepo, rateFetcher: rateFetcher, parser: parser);
 
-        var result = await handler.HandleAsync(new ProcessReportsCommand());
+        var result = await handler.HandleAsync(new ProcessReportsCommand(), TestContext.Current.CancellationToken);
 
         result.Value.FilingsCreated.Should().Be(1);
         await filingRepo.Received(1).AddAsync(
@@ -251,7 +251,7 @@ public class ProcessReportsCommandHandlerTests
             reportRepo: reportRepo, importerRepo: importerRepo,
             filingRepo: filingRepo, rateFetcher: rateFetcher, parser: parser);
 
-        var result = await handler.HandleAsync(new ProcessReportsCommand());
+        var result = await handler.HandleAsync(new ProcessReportsCommand(), TestContext.Current.CancellationToken);
 
         result.Value.FilingsCreated.Should().Be(0);
         await filingRepo.DidNotReceive().AddAsync(Arg.Any<Filing>(), Arg.Any<CancellationToken>());
@@ -281,7 +281,7 @@ public class ProcessReportsCommandHandlerTests
             reportRepo: reportRepo, importerRepo: importerRepo,
             filingRepo: filingRepo, parser: parser);
 
-        var result = await handler.HandleAsync(new ProcessReportsCommand());
+        var result = await handler.HandleAsync(new ProcessReportsCommand(), TestContext.Current.CancellationToken);
 
         result.Value.FilingsCreated.Should().Be(0);
         await filingRepo.DidNotReceive().AddAsync(Arg.Any<Filing>(), Arg.Any<CancellationToken>());
@@ -319,7 +319,7 @@ public class ProcessReportsCommandHandlerTests
             reportRepo: reportRepo, importerRepo: importerRepo,
             filingRepo: filingRepo, rateFetcher: rateFetcher, parser: parser);
 
-        var result = await handler.HandleAsync(new ProcessReportsCommand());
+        var result = await handler.HandleAsync(new ProcessReportsCommand(), TestContext.Current.CancellationToken);
 
         result.Value.FilingsCreated.Should().Be(1);
         await filingRepo.Received(1).AddAsync(
@@ -355,7 +355,7 @@ public class ProcessReportsCommandHandlerTests
             reportRepo: reportRepo, importerRepo: importerRepo,
             filingRepo: filingRepo, rateFetcher: rateFetcher, parser: parser);
 
-        var result = await handler.HandleAsync(new ProcessReportsCommand());
+        var result = await handler.HandleAsync(new ProcessReportsCommand(), TestContext.Current.CancellationToken);
 
         result.Value.ReportsErrored.Should().Be(1);
         result.Value.EventErrors.Should().HaveCount(1);
@@ -398,7 +398,7 @@ public class ProcessReportsCommandHandlerTests
             reportRepo: reportRepo, importerRepo: importerRepo,
             filingRepo: filingRepo, rateFetcher: rateFetcher, parser: parser);
 
-        var result = await handler.HandleAsync(new ProcessReportsCommand());
+        var result = await handler.HandleAsync(new ProcessReportsCommand(), TestContext.Current.CancellationToken);
 
         // CHF cross-rate: 100 * (1.1 * 100) = 11000 RSD gross
         result.Value.FilingsCreated.Should().Be(1);
@@ -440,7 +440,7 @@ public class ProcessReportsCommandHandlerTests
             reportRepo: reportRepo, importerRepo: importerRepo,
             filingRepo: filingRepo, rateFetcher: rateFetcher, parser: parser);
 
-        var result = await handler.HandleAsync(new ProcessReportsCommand());
+        var result = await handler.HandleAsync(new ProcessReportsCommand(), TestContext.Current.CancellationToken);
 
         result.Value.FilingsCreated.Should().Be(2);
         result.Value.ReportsProcessed.Should().Be(2);
@@ -486,7 +486,7 @@ public class ProcessReportsCommandHandlerTests
             reportRepo: reportRepo, importerRepo: importerRepo,
             filingRepo: filingRepo, rateFetcher: rateFetcher, parser: parser);
 
-        await handler.HandleAsync(new ProcessReportsCommand());
+        await handler.HandleAsync(new ProcessReportsCommand(), TestContext.Current.CancellationToken);
 
         // WHT of 15 USD * 117 RSD/USD = 1755 RSD — verify WHT was applied (not zero)
         await filingRepo.Received(1).AddAsync(
@@ -511,7 +511,7 @@ public class ProcessReportsCommandHandlerTests
         importerRepo.GetByIdAsync(importer.Id, Arg.Any<CancellationToken>()).Returns(importer);
 
         var handler = MakeHandler(reportRepo: reportRepo, importerRepo: importerRepo);
-        var result = await handler.HandleAsync(new ProcessReportsCommand());
+        var result = await handler.HandleAsync(new ProcessReportsCommand(), TestContext.Current.CancellationToken);
 
         result.Value.ReportsErrored.Should().Be(1);
         result.Value.EventErrors.Should().BeEmpty();

@@ -8,7 +8,7 @@ using Rentier.Domain.Enums;
 using Rentier.Domain.ValueObjects;
 using Xunit;
 
-namespace Rentier.UnitTests;
+namespace Rentier.UnitTests.Application.Services;
 
 public class ExchangeRateResolverLoggingTests
 {
@@ -25,7 +25,7 @@ public class ExchangeRateResolverLoggingTests
         fetcher.FetchRateAsync(date, "USD", Arg.Any<CancellationToken>())
             .Returns(Result<ExchangeRate, Error>.Success(new ExchangeRate(date, "USD", 108m)));
 
-        var result = await MakeResolver(fetcher).ResolveAsync(date, "USD", NoHolidays());
+        var result = await MakeResolver(fetcher).ResolveAsync(date, "USD", NoHolidays(), ct: TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.SourceType.Should().Be(ExchangeRateSourceType.Exact);
@@ -42,7 +42,7 @@ public class ExchangeRateResolverLoggingTests
         fetcher.FetchRateAsync(friday, "EUR", Arg.Any<CancellationToken>())
             .Returns(Result<ExchangeRate, Error>.Success(new ExchangeRate(friday, "EUR", 117m)));
 
-        var result = await MakeResolver(fetcher).ResolveAsync(saturday, "EUR", NoHolidays());
+        var result = await MakeResolver(fetcher).ResolveAsync(saturday, "EUR", NoHolidays(), ct: TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.SourceType.Should().Be(ExchangeRateSourceType.Fallback);
@@ -57,7 +57,7 @@ public class ExchangeRateResolverLoggingTests
         fetcher.FetchRateAsync(Arg.Any<DateOnly>(), "USD", Arg.Any<CancellationToken>())
             .Returns(Result<ExchangeRate, Error>.Failure(new Error("RATE_NOT_FOUND", "no rate")));
 
-        var result = await MakeResolver(fetcher).ResolveAsync(date, "USD", NoHolidays(), maxLookbackDays: 2);
+        var result = await MakeResolver(fetcher).ResolveAsync(date, "USD", NoHolidays(), maxLookbackDays: 2, ct: TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("RATE_NOT_FOUND");
