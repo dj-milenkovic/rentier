@@ -1,6 +1,5 @@
 using FluentAssertions;
 using NSubstitute;
-using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Handlers;
 using Rentier.Application.Queries;
@@ -8,7 +7,7 @@ using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
 using Xunit;
 
-namespace Rentier.UnitTests;
+namespace Rentier.UnitTests.Application;
 
 public class GetHolidayConfQueryHandlerTests
 {
@@ -31,7 +30,7 @@ public class GetHolidayConfQueryHandlerTests
         _repo.GetYearRangeAsync(Arg.Any<CancellationToken>()).Returns((HolidayYearRange?)null);
         _repo.GetHolidayConfAsync(Arg.Any<CancellationToken>()).Returns(seedDto);
 
-        var result = await _handler.HandleAsync(new GetHolidayConfQuery());
+        var result = await _handler.HandleAsync(new GetHolidayConfQuery(), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Holidays.Count.Should().Be(1);
@@ -56,7 +55,7 @@ public class GetHolidayConfQueryHandlerTests
 
         _repo.GetHolidayConfAsync(Arg.Any<CancellationToken>()).Returns(populatedDto);
 
-        var result = await _handler.HandleAsync(new GetHolidayConfQuery());
+        var result = await _handler.HandleAsync(new GetHolidayConfQuery(), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Holidays.Count.Should().Be(2);
@@ -77,7 +76,7 @@ public class GetHolidayConfQueryHandlerTests
         _repo.GetYearRangeAsync(Arg.Any<CancellationToken>()).Returns(existingRange);
         _repo.GetHolidayConfAsync(Arg.Any<CancellationToken>()).Returns(existingDto);
 
-        var result = await _handler.HandleAsync(new GetHolidayConfQuery());
+        var result = await _handler.HandleAsync(new GetHolidayConfQuery(), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.StartYear.Should().Be(2025);

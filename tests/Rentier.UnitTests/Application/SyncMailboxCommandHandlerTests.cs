@@ -7,11 +7,11 @@ using Rentier.Application.Handlers;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
-using Rentier.Domain.ValueObjects;
 using Rentier.Domain.Enums;
+using Rentier.Domain.ValueObjects;
 using Xunit;
 
-namespace Rentier.UnitTests;
+namespace Rentier.UnitTests.Application;
 
 public class SyncMailboxCommandHandlerTests
 {
@@ -40,7 +40,7 @@ public class SyncMailboxCommandHandlerTests
             Substitute.For<IMailboxRepository>(),
             Substitute.For<IMailboxSyncService>());
 
-        var result = await handler.HandleAsync(new SyncMailboxCommand(SyncParameters.Default), progress: null);
+        var result = await handler.HandleAsync(new SyncMailboxCommand(SyncParameters.Default), progress: null, ct: TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.ReportsCreated.Should().Be(0);
@@ -76,7 +76,7 @@ public class SyncMailboxCommandHandlerTests
 
         var handler = new SyncMailboxCommandHandler(importerRepo, mailboxRepo, syncService);
 
-        await handler.HandleAsync(new SyncMailboxCommand(SyncParameters.Default), progress: null);
+        await handler.HandleAsync(new SyncMailboxCommand(SyncParameters.Default), progress: null, ct: TestContext.Current.CancellationToken);
 
         await syncService.Received(2).SyncAsync(
             Arg.Any<Mailbox>(), Arg.Any<IReadOnlyList<Importer>>(),
@@ -101,7 +101,7 @@ public class SyncMailboxCommandHandlerTests
         var handler = new SyncMailboxCommandHandler(
             importerRepo, mailboxRepo, Substitute.For<IMailboxSyncService>());
 
-        var result = await handler.HandleAsync(new SyncMailboxCommand(SyncParameters.Default), progress: null);
+        var result = await handler.HandleAsync(new SyncMailboxCommand(SyncParameters.Default), progress: null, ct: TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Errors.Should().HaveCount(1);
@@ -129,7 +129,7 @@ public class SyncMailboxCommandHandlerTests
 
         var handler = new SyncMailboxCommandHandler(importerRepo, mailboxRepo, syncService);
 
-        var result = await handler.HandleAsync(new SyncMailboxCommand(SyncParameters.Default), progress: null);
+        var result = await handler.HandleAsync(new SyncMailboxCommand(SyncParameters.Default), progress: null, ct: TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Errors.Should().Contain("IMAP error");
@@ -157,7 +157,7 @@ public class SyncMailboxCommandHandlerTests
 
         var handler = new SyncMailboxCommandHandler(importerRepo, mailboxRepo, syncService);
 
-        var result = await handler.HandleAsync(new SyncMailboxCommand(SyncParameters.Default), progress: null);
+        var result = await handler.HandleAsync(new SyncMailboxCommand(SyncParameters.Default), progress: null, ct: TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.ReportsCreated.Should().Be(3);

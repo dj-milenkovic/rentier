@@ -2,13 +2,13 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Reactive;
 using System.Reactive.Concurrency;
-using System.Reactive.Disposables;
+using ReactiveUI;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
 using Rentier.Desktop.Resources;
-using ReactiveUI;
+using System.Reactive.Disposables.Fluent;
 
 namespace Rentier.Desktop.ViewModels;
 
@@ -110,7 +110,7 @@ public sealed class DashboardViewModel : ReactiveObject, IActivatableViewModel
     {
         _handler = handler;
         _navigateToFilings = navigateToFilings;
-        _scheduler = scheduler ?? RxApp.MainThreadScheduler;
+        _scheduler = scheduler ?? RxSchedulers.MainThreadScheduler;
 
         LoadCommand = ReactiveCommand.CreateFromTask(LoadAsync, outputScheduler: _scheduler);
         NavigateToFilingsCommand = ReactiveCommand.Create(

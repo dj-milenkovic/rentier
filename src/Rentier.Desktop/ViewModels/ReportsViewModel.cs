@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
+using System.Reactive.Disposables.Fluent;
 using System.Reactive.Linq;
 using ReactiveUI;
 using Rentier.Application.Commands;
@@ -184,7 +185,7 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
         _confirmDelete = confirmDelete;
         _showImportDialog = showImportDialog;
         _navigateToFilings = navigateToFilings;
-        _scheduler = scheduler ?? RxApp.MainThreadScheduler;
+        _scheduler = scheduler ?? RxSchedulers.MainThreadScheduler;
 
         _hasSelection = this.WhenAnyValue(x => x.SelectedCount)
             .Select(c => c > 0)

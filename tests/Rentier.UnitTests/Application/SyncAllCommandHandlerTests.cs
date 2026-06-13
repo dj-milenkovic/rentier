@@ -55,7 +55,7 @@ public class SyncAllCommandHandlerTests
             Result<ProcessReportsResult, Error>.Success(new ProcessReportsResult(2, 5, 0, [])));
 
         var handler = CreateHandler(syncHandler, processHandler);
-        var result = await handler.HandleAsync(DefaultCommand(), NoProgress());
+        var result = await handler.HandleAsync(DefaultCommand(), NoProgress(), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.MailboxesSynced.Should().Be(1);
@@ -74,7 +74,7 @@ public class SyncAllCommandHandlerTests
             Result<ProcessReportsResult, Error>.Success(new ProcessReportsResult(1, 2, 0, [])));
 
         var handler = CreateHandler(syncHandler, processHandler);
-        var result = await handler.HandleAsync(DefaultCommand(), NoProgress());
+        var result = await handler.HandleAsync(DefaultCommand(), NoProgress(), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.FilingsCreated.Should().Be(1);
@@ -91,7 +91,7 @@ public class SyncAllCommandHandlerTests
             Result<SyncResult, Error>.Failure(new Error("SYNC_FAILED", "Connection refused")));
 
         var handler = CreateHandler(syncHandler);
-        var result = await handler.HandleAsync(DefaultCommand(), NoProgress());
+        var result = await handler.HandleAsync(DefaultCommand(), NoProgress(), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Errors.Should().ContainSingle(e => e == "Connection refused");
@@ -105,7 +105,7 @@ public class SyncAllCommandHandlerTests
             Result<ProcessReportsResult, Error>.Failure(new Error("PROCESS_FAILED", "DB error")));
 
         var handler = CreateHandler(processHandler: processHandler);
-        var result = await handler.HandleAsync(DefaultCommand(), NoProgress());
+        var result = await handler.HandleAsync(DefaultCommand(), NoProgress(), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Errors.Should().ContainSingle(e => e == "DB error");
@@ -118,7 +118,7 @@ public class SyncAllCommandHandlerTests
             Result<SyncResult, Error>.Success(new SyncResult(7, [])));
 
         var handler = CreateHandler(syncHandler);
-        var result = await handler.HandleAsync(DefaultCommand(), NoProgress());
+        var result = await handler.HandleAsync(DefaultCommand(), NoProgress(), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.AttachmentsDownloaded.Should().Be(7);
@@ -136,10 +136,10 @@ public class SyncAllCommandHandlerTests
             Result<ProcessReportsResult, Error>.Success(new ProcessReportsResult(1, 3, 0, [])));
 
         var handler = CreateHandler(syncHandler, processHandler);
-        await handler.HandleAsync(DefaultCommand(), progress);
+        await handler.HandleAsync(DefaultCommand(), progress, TestContext.Current.CancellationToken);
 
         // Give Progress<T> callbacks a chance to fire (they may dispatch on the thread pool)
-        await Task.Delay(50);
+        await Task.Delay(50, TestContext.Current.CancellationToken);
 
         reported.Should().NotBeEmpty();
         reported[0].Message.Should().Be("Starting mailbox sync...");
@@ -156,9 +156,9 @@ public class SyncAllCommandHandlerTests
         var progress = new Progress<SyncProgressEntry>(e => reported.Add(e));
 
         var handler = CreateHandler(syncHandler);
-        await handler.HandleAsync(DefaultCommand(), progress);
+        await handler.HandleAsync(DefaultCommand(), progress, TestContext.Current.CancellationToken);
 
-        await Task.Delay(50);
+        await Task.Delay(50, TestContext.Current.CancellationToken);
 
         reported.Should().Contain(e => e.Message == "mailbox error" && e.Severity == SyncProgressSeverity.Warning);
     }
@@ -173,9 +173,9 @@ public class SyncAllCommandHandlerTests
         var progress = new Progress<SyncProgressEntry>(e => reported.Add(e));
 
         var handler = CreateHandler(processHandler: processHandler);
-        await handler.HandleAsync(DefaultCommand(), progress);
+        await handler.HandleAsync(DefaultCommand(), progress, TestContext.Current.CancellationToken);
 
-        await Task.Delay(50);
+        await Task.Delay(50, TestContext.Current.CancellationToken);
 
         reported.Should().Contain(e => e.Message == "No new reports to process.");
     }
@@ -208,7 +208,7 @@ public class SyncAllCommandHandlerTests
             .Returns(Result<SyncResult, Error>.Success(new SyncResult(0, [])));
 
         var handler = CreateHandler(syncHandler);
-        await handler.HandleAsync(DefaultCommand(), NoProgress());
+        await handler.HandleAsync(DefaultCommand(), NoProgress(), TestContext.Current.CancellationToken);
 
         await syncHandler.Received(1)
             .HandleAsync(Arg.Any<SyncMailboxCommand>(), Arg.Any<IProgress<SyncProgressEntry>?>(), Arg.Any<CancellationToken>());
@@ -229,7 +229,7 @@ public class SyncAllCommandHandlerTests
         var progress = Substitute.For<IProgress<SyncProgressEntry>>();
         var handler = CreateHandler(syncHandler);
 
-        await handler.HandleAsync(DefaultCommand(), progress);
+        await handler.HandleAsync(DefaultCommand(), progress, TestContext.Current.CancellationToken);
 
         capturedProgress.Should().BeSameAs(progress);
     }
@@ -251,7 +251,7 @@ public class SyncAllCommandHandlerTests
         var progress = Substitute.For<IProgress<SyncProgressEntry>>();
 
         var handler = CreateHandler(processHandler: processHandler);
-        await handler.HandleAsync(DefaultCommand(), progress);
+        await handler.HandleAsync(DefaultCommand(), progress, TestContext.Current.CancellationToken);
 
         capturedCommand.Should().NotBeNull();
         capturedCommand!.Progress.Should().BeSameAs(progress);
@@ -271,8 +271,8 @@ public class SyncAllCommandHandlerTests
             Result<ProcessReportsResult, Error>.Success(new ProcessReportsResult(3, 2, 0, [])));
 
         var handler = CreateHandler(processHandler: processHandler);
-        await handler.HandleAsync(DefaultCommand(), progress);
-        await Task.Delay(50);
+        await handler.HandleAsync(DefaultCommand(), progress, TestContext.Current.CancellationToken);
+        await Task.Delay(50, TestContext.Current.CancellationToken);
 
         var aggregateLine = reported.LastOrDefault(e =>
             e.Message.StartsWith("Processed") && e.Message.Contains("report(s)"));

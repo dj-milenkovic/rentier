@@ -9,7 +9,7 @@ using Rentier.Application.Repositories;
 using Rentier.Tests.Common.Fakes;
 using Xunit;
 
-namespace Rentier.UnitTests;
+namespace Rentier.UnitTests.Application;
 
 public class DeleteMailboxCommandHandlerTests
 {
@@ -26,12 +26,11 @@ public class DeleteMailboxCommandHandlerTests
     public async Task HandleAsync_ExistingMailbox_DeletesCredentialAndRepo()
     {
         var id = Guid.NewGuid();
-        var expectedKey = CredentialKeys.MailboxPassword(id);
         _fakeCredentials.StoredKeys.Should().BeEmpty(); // ensure clean state
 
         var cmd = new DeleteMailboxCommand(id);
 
-        var result = await _handler.HandleAsync(cmd);
+        var result = await _handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         await _repo.Received(1).DeleteAsync(id, Arg.Any<CancellationToken>());
@@ -42,10 +41,10 @@ public class DeleteMailboxCommandHandlerTests
     {
         var id = Guid.NewGuid();
         // Pre-seed a credential so we can verify it was deleted
-        await _fakeCredentials.SaveCredentialAsync(CredentialKeys.MailboxPassword(id), "secret");
+        await _fakeCredentials.SaveCredentialAsync(CredentialKeys.MailboxPassword(id), "secret", TestContext.Current.CancellationToken);
 
         var cmd = new DeleteMailboxCommand(id);
-        await _handler.HandleAsync(cmd);
+        await _handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         _fakeCredentials.StoredKeys.Should().BeEmpty();
     }
@@ -57,7 +56,7 @@ public class DeleteMailboxCommandHandlerTests
         var id = Guid.NewGuid();
         var cmd = new DeleteMailboxCommand(id);
 
-        var result = await _handler.HandleAsync(cmd);
+        var result = await _handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         await _repo.Received(1).DeleteAsync(id, Arg.Any<CancellationToken>());
@@ -70,12 +69,12 @@ public class DeleteMailboxCommandHandlerTests
         var key = CredentialKeys.MailboxPassword(id);
 
         // Simulate Add
-        await _fakeCredentials.SaveCredentialAsync(key, "my-password");
+        await _fakeCredentials.SaveCredentialAsync(key, "my-password", TestContext.Current.CancellationToken);
         _fakeCredentials.StoredKeys.Should().Contain(key);
 
         // Simulate Delete
         var handler = new DeleteMailboxCommandHandler(_repo, _fakeCredentials, NullLogger<DeleteMailboxCommandHandler>.Instance);
-        await handler.HandleAsync(new DeleteMailboxCommand(id));
+        await handler.HandleAsync(new DeleteMailboxCommand(id), TestContext.Current.CancellationToken);
 
         _fakeCredentials.StoredKeys.Should().NotContain(key);
     }
@@ -91,7 +90,7 @@ public class DeleteMailboxCommandHandlerTests
         var handler = new DeleteMailboxCommandHandler(_repo, failingCredentials, NullLogger<DeleteMailboxCommandHandler>.Instance);
         var cmd = new DeleteMailboxCommand(id);
 
-        var result = await handler.HandleAsync(cmd);
+        var result = await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         await _repo.Received(1).DeleteAsync(id, Arg.Any<CancellationToken>());

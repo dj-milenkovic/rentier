@@ -1,13 +1,12 @@
 using FluentAssertions;
 using NSubstitute;
 using Rentier.Application.Commands;
-using Rentier.Application.Common;
 using Rentier.Application.Handlers;
 using Rentier.Application.Repositories;
 using Rentier.Domain.Enums;
 using Xunit;
 
-namespace Rentier.UnitTests;
+namespace Rentier.UnitTests.Application;
 
 public sealed class AddImporterCommandHandlerTests
 {
@@ -24,7 +23,7 @@ public sealed class AddImporterCommandHandlerTests
     {
         var cmd = new AddImporterCommand("My Importer", ReportType.IbkrCsv, null, null, "", "", "", "");
 
-        var result = await _sut.HandleAsync(cmd);
+        var result = await _sut.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBeEmpty();
@@ -36,7 +35,7 @@ public sealed class AddImporterCommandHandlerTests
     {
         var cmd = new AddImporterCommand("My Importer", ReportType.IbkrCsv, null, null, "", "", "[invalid", "");
 
-        var result = await _sut.HandleAsync(cmd);
+        var result = await _sut.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("IMPORTER_VALIDATION_INVALID_REGEX");
@@ -48,7 +47,7 @@ public sealed class AddImporterCommandHandlerTests
     {
         var cmd = new AddImporterCommand("My Importer", ReportType.IbkrCsv, null, null, "", "", "", "");
 
-        var result = await _sut.HandleAsync(cmd);
+        var result = await _sut.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         await _repo.Received(1).AddAsync(Arg.Any<Rentier.Domain.Entities.Importer>(), Arg.Any<CancellationToken>());
@@ -59,7 +58,7 @@ public sealed class AddImporterCommandHandlerTests
     {
         var cmd = new AddImporterCommand("", ReportType.IbkrCsv, null, null, "", "", "", "");
 
-        var result = await _sut.HandleAsync(cmd);
+        var result = await _sut.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("DOMAIN_ERROR");
@@ -71,7 +70,7 @@ public sealed class AddImporterCommandHandlerTests
     {
         var cmd = new AddImporterCommand("My Importer", ReportType.IbkrCsv, null, null, "", "", "", "");
 
-        var result = await _sut.HandleAsync(cmd);
+        var result = await _sut.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
     }

@@ -43,7 +43,7 @@
         <TextBlock Text="{Binding [Mailboxes_Password_Label], Source={StaticResource Localizer}}" />
         <TextBox Text="{Binding Password}"
                  PasswordChar="•"
-                 Watermark="{Binding [Mailboxes_Password_Hint], Source={StaticResource Localizer}}" />
+                 PlaceholderText="{Binding [Mailboxes_Password_Hint], Source={StaticResource Localizer}}" />
 
         <StackPanel Orientation="Horizontal" Spacing="8">
           <Button Command="{Binding SaveCommand}"

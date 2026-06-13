@@ -9,7 +9,7 @@ using Rentier.Domain.Entities;
 using Rentier.Tests.Common.Fakes;
 using Xunit;
 
-namespace Rentier.UnitTests;
+namespace Rentier.UnitTests.Application;
 
 public class UpdateMailboxCommandHandlerTests
 {
@@ -32,7 +32,7 @@ public class UpdateMailboxCommandHandlerTests
 
         var cmd = new UpdateMailboxCommand(existing.Id, "imap.new.com", 143, "new@example.com", null);
 
-        var result = await _handler.HandleAsync(cmd);
+        var result = await _handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         await _repo.Received(1).UpdateAsync(existing, Arg.Any<CancellationToken>());
@@ -46,7 +46,7 @@ public class UpdateMailboxCommandHandlerTests
 
         var cmd = new UpdateMailboxCommand(id, "imap.example.com", 993, "user@example.com", null);
 
-        var result = await _handler.HandleAsync(cmd);
+        var result = await _handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("NOT_FOUND");
@@ -61,7 +61,7 @@ public class UpdateMailboxCommandHandlerTests
 
         var cmd = new UpdateMailboxCommand(existing.Id, "imap.example.com", 993, "user@example.com", "newpass");
 
-        await _handler.HandleAsync(cmd);
+        await _handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         var savedKey = _fakeCredentials.StoredKeys.Single();
         savedKey.Should().Be(CredentialKeys.MailboxPassword(existing.Id));
@@ -75,7 +75,7 @@ public class UpdateMailboxCommandHandlerTests
 
         var cmd = new UpdateMailboxCommand(existing.Id, "imap.example.com", 993, "user@example.com", "");
 
-        await _handler.HandleAsync(cmd);
+        await _handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         _fakeCredentials.StoredKeys.Should().BeEmpty();
         await _repo.Received(1).UpdateAsync(existing, Arg.Any<CancellationToken>());
@@ -94,7 +94,7 @@ public class UpdateMailboxCommandHandlerTests
         var handler = new UpdateMailboxCommandHandler(_repo, failingCredentials);
         var cmd = new UpdateMailboxCommand(existing.Id, "imap.example.com", 993, "user@example.com", "pass");
 
-        var result = await handler.HandleAsync(cmd);
+        var result = await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("CREDENTIAL_WRITE_FAILED");
@@ -108,7 +108,7 @@ public class UpdateMailboxCommandHandlerTests
 
         var cmd = new UpdateMailboxCommand(existing.Id, "", 993, "user@example.com", null);
 
-        var result = await _handler.HandleAsync(cmd);
+        var result = await _handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("MAILBOX_VALIDATION_FAILED");

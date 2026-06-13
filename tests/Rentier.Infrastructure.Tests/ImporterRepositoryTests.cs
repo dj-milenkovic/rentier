@@ -5,7 +5,6 @@ using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 using Rentier.Infrastructure.Persistence;
 using Rentier.Infrastructure.Repositories;
-using Xunit;
 
 namespace Rentier.Infrastructure.Tests;
 
@@ -16,7 +15,7 @@ public sealed class ImporterRepositoryTests : IAsyncLifetime
     private AppDbContext _context = null!;
     private ImporterRepository _repository = null!;
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         _connection = new SqliteConnection("Data Source=:memory:");
         await _connection.OpenAsync();
@@ -30,7 +29,7 @@ public sealed class ImporterRepositoryTests : IAsyncLifetime
         _repository = new ImporterRepository(_context);
     }
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         await _context.DisposeAsync();
         await _connection.DisposeAsync();
@@ -42,7 +41,7 @@ public sealed class ImporterRepositoryTests : IAsyncLifetime
     [Fact]
     public async Task GetAllAsync_Empty_ReturnsEmptyList()
     {
-        var result = await _repository.GetAllAsync();
+        var result = await _repository.GetAllAsync(TestContext.Current.CancellationToken);
         result.Should().BeEmpty();
     }
 
@@ -50,9 +49,9 @@ public sealed class ImporterRepositoryTests : IAsyncLifetime
     public async Task AddAsync_NewImporter_PersistsCorrectly()
     {
         var importer = MakeImporter("My Importer");
-        await _repository.AddAsync(importer);
+        await _repository.AddAsync(importer, TestContext.Current.CancellationToken);
 
-        var all = await _repository.GetAllAsync();
+        var all = await _repository.GetAllAsync(TestContext.Current.CancellationToken);
         all.Should().HaveCount(1);
 
         var saved = all[0];
@@ -71,9 +70,9 @@ public sealed class ImporterRepositoryTests : IAsyncLifetime
     public async Task GetByIdAsync_ExistingId_ReturnsImporter()
     {
         var importer = MakeImporter();
-        await _repository.AddAsync(importer);
+        await _repository.AddAsync(importer, TestContext.Current.CancellationToken);
 
-        var found = await _repository.GetByIdAsync(importer.Id);
+        var found = await _repository.GetByIdAsync(importer.Id, TestContext.Current.CancellationToken);
         found.Should().NotBeNull();
         found!.Id.Should().Be(importer.Id);
     }
@@ -81,7 +80,7 @@ public sealed class ImporterRepositoryTests : IAsyncLifetime
     [Fact]
     public async Task GetByIdAsync_NotFound_ReturnsNull()
     {
-        var found = await _repository.GetByIdAsync(Guid.NewGuid());
+        var found = await _repository.GetByIdAsync(Guid.NewGuid(), TestContext.Current.CancellationToken);
         found.Should().BeNull();
     }
 
@@ -89,12 +88,12 @@ public sealed class ImporterRepositoryTests : IAsyncLifetime
     public async Task UpdateAsync_ExistingImporter_UpdatesAllFields()
     {
         var importer = MakeImporter("Original");
-        await _repository.AddAsync(importer);
+        await _repository.AddAsync(importer, TestContext.Current.CancellationToken);
 
         importer.UpdateDetails("Updated", ReportType.IbkrCsv, null, null, "from@x.com", "Subject:", @"\d+", "Notes");
-        await _repository.UpdateAsync(importer);
+        await _repository.UpdateAsync(importer, TestContext.Current.CancellationToken);
 
-        var found = await _repository.GetByIdAsync(importer.Id);
+        var found = await _repository.GetByIdAsync(importer.Id, TestContext.Current.CancellationToken);
         found!.DisplayName.Should().Be("Updated");
         found.FromFilter.Should().Be("from@x.com");
         found.SubjectFilter.Should().Be("Subject:");
@@ -106,11 +105,11 @@ public sealed class ImporterRepositoryTests : IAsyncLifetime
     public async Task DeleteAsync_ExistingImporter_RemovesEntity()
     {
         var importer = MakeImporter();
-        await _repository.AddAsync(importer);
+        await _repository.AddAsync(importer, TestContext.Current.CancellationToken);
 
-        await _repository.DeleteAsync(importer.Id);
+        await _repository.DeleteAsync(importer.Id, TestContext.Current.CancellationToken);
 
-        var all = await _repository.GetAllAsync();
+        var all = await _repository.GetAllAsync(TestContext.Current.CancellationToken);
         all.Should().BeEmpty();
     }
 

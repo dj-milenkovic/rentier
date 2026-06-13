@@ -2,7 +2,6 @@ using System.Text;
 using FluentAssertions;
 using Rentier.Application.Parsing;
 using Rentier.Infrastructure.Parsing;
-using Xunit;
 
 namespace Rentier.Infrastructure.Tests.Parsers;
 
@@ -40,7 +39,7 @@ public sealed class IbkrCsvParserTests
         var parser = new IbkrCsvParser();
         await using var stream = LoadFixture("happy_path.csv");
 
-        var result = await parser.ParseAsync(stream);
+        var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         var value = result.Value;
@@ -68,7 +67,7 @@ public sealed class IbkrCsvParserTests
         var parser = new IbkrCsvParser();
         await using var stream = LoadFixture("multiple_dividends_same_entity.csv");
 
-        var result = await parser.ParseAsync(stream);
+        var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Dividends.Count.Should().Be(1);
@@ -81,7 +80,7 @@ public sealed class IbkrCsvParserTests
         var parser = new IbkrCsvParser();
         await using var stream = LoadFixture("multiple_dividends_different_dates.csv");
 
-        var result = await parser.ParseAsync(stream);
+        var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Dividends.Count.Should().Be(2);
@@ -93,7 +92,7 @@ public sealed class IbkrCsvParserTests
         var parser = new IbkrCsvParser();
         await using var stream = LoadFixture("interest_debit_credit.csv");
 
-        var result = await parser.ParseAsync(stream);
+        var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Interest.Count.Should().Be(2);
@@ -109,7 +108,7 @@ public sealed class IbkrCsvParserTests
         var parser = new IbkrCsvParser();
         await using var stream = LoadFixture("wht_currency_mismatch.csv");
 
-        var result = await parser.ParseAsync(stream);
+        var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Withholdings.Count.Should().Be(0);
@@ -123,7 +122,7 @@ public sealed class IbkrCsvParserTests
         var parser = new IbkrCsvParser();
         await using var stream = LoadFixture("wht_unmatched.csv");
 
-        var result = await parser.ParseAsync(stream);
+        var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Withholdings.Count.Should().Be(0);
@@ -137,7 +136,7 @@ public sealed class IbkrCsvParserTests
         var parser = new IbkrCsvParser();
         await using var stream = LoadFixture("malformed_row.csv");
 
-        var result = await parser.ParseAsync(stream);
+        var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Dividends.Count.Should().Be(1);
@@ -152,7 +151,7 @@ public sealed class IbkrCsvParserTests
         var parser = new IbkrCsvParser();
         await using var stream = LoadFixture("empty_sections.csv");
 
-        var result = await parser.ParseAsync(stream);
+        var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Dividends.Should().BeEmpty();
@@ -169,7 +168,7 @@ public sealed class IbkrCsvParserTests
     {
         var parser = new IbkrCsvParser();
 
-        var result = await parser.ParseAsync(null!);
+        var result = await parser.ParseAsync(null!, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("STREAM_ERROR");
@@ -189,7 +188,7 @@ public sealed class IbkrCsvParserTests
         await using var stream = new MemoryStream(Encoding.UTF8.GetBytes(csv));
         var parser = new IbkrCsvParser();
 
-        var result = await parser.ParseAsync(stream);
+        var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Withholdings.Should().BeEmpty();
@@ -207,7 +206,7 @@ public sealed class IbkrCsvParserTests
         await using var stream = new MemoryStream(Encoding.UTF8.GetBytes(csv));
         var parser = new IbkrCsvParser();
 
-        var result = await parser.ParseAsync(stream);
+        var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.EmbeddedRates.Should().BeEmpty();
