@@ -47,7 +47,7 @@ public class TaxpayerProfileRepositoryTests : IAsyncLifetime
     [Fact]
     public async Task SaveAsync_NewProfile_CanBeRetrieved()
     {
-        var profile = new TaxpayerProfile(Guid.NewGuid(), "1234567890123", "Marko", "Knez 1", "7101");
+        var profile = new TaxpayerProfile(Guid.NewGuid(), "1234567890123", "Marko", "Knez 1", "049");
         await _repository.SaveAsync(profile, TestContext.Current.CancellationToken);
 
         var retrieved = await _repository.GetAsync(TestContext.Current.CancellationToken);
@@ -60,10 +60,10 @@ public class TaxpayerProfileRepositoryTests : IAsyncLifetime
     public async Task SaveAsync_ExistingProfile_UpdatesPreservesId()
     {
         var id = Guid.NewGuid();
-        var original = new TaxpayerProfile(id, "1234567890123", "Original Name", "Addr", "7101");
+        var original = new TaxpayerProfile(id, "1234567890123", "Original Name", "Addr", "049");
         await _repository.SaveAsync(original, TestContext.Current.CancellationToken);
 
-        var updated = new TaxpayerProfile(id, "1234567890123", "Updated Name", "Addr", "7101");
+        var updated = new TaxpayerProfile(id, "1234567890123", "Updated Name", "Addr", "049");
         await _repository.SaveAsync(updated, TestContext.Current.CancellationToken);
 
         var retrieved = await _repository.GetAsync(TestContext.Current.CancellationToken);
@@ -74,7 +74,7 @@ public class TaxpayerProfileRepositoryTests : IAsyncLifetime
     [Fact]
     public async Task DeleteAsync_AfterSave_ReturnsNullOnGet()
     {
-        var profile = new TaxpayerProfile(Guid.NewGuid(), "1234567890123", "Test", "Addr", "7101");
+        var profile = new TaxpayerProfile(Guid.NewGuid(), "1234567890123", "Test", "Addr", "049");
         await _repository.SaveAsync(profile, TestContext.Current.CancellationToken);
         await _repository.DeleteAsync(TestContext.Current.CancellationToken);
 

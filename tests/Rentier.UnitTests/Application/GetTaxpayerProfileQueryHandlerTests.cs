@@ -22,7 +22,7 @@ public class GetTaxpayerProfileQueryHandlerTests
     public async Task HandleAsync_ExistingProfile_ReturnsMappedDto()
     {
         var id = Guid.NewGuid();
-        var profile = new TaxpayerProfile(id, "1234567890123", "Marko", "Knez 1", "7101",
+        var profile = new TaxpayerProfile(id, "1234567890123", "Marko", "Knez 1", "049",
             phoneNumber: "+381641234567", email: "m@test.com");
         _repo.GetAsync(TestContext.Current.CancellationToken).Returns(profile);
 

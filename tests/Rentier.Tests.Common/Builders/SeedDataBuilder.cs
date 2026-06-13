@@ -21,12 +21,12 @@ public static class SeedDataBuilder
 
     public static TaxpayerProfile PrimaryProfile() =>
         new(PrimaryProfileId, "1234567890123", "Petar Petrović",
-            "Bulevar Kralja Aleksandra 123, Beograd", "11001",
+            "Bulevar Kralja Aleksandra 123", "018",
             phoneNumber: "+381111234567", email: "petar@example.com");
 
     public static TaxpayerProfile SecondaryProfile() =>
         new(SecondaryProfileId, "9876543210987", "Marija Marković",
-            "Knez Mihailova 45, Beograd", "11000");
+            "Knez Mihailova 45", "013");
 
     // ── Holidays ────────────────────────────────────────────────────────────
 

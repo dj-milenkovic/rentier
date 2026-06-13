@@ -108,7 +108,7 @@
         </DataGridTemplateColumn>
 
         <!-- Name column with text flyout -->
-        <DataGridTemplateColumn Width="*" CanUserSort="False">
+        <DataGridTemplateColumn Width="*" MinWidth="120" CanUserSort="False">
           <DataGridTemplateColumn.Header>
             <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
               <TextBlock Text="{Binding [Reports_Col_Name], Source={StaticResource Localizer}}" VerticalAlignment="Center" />
@@ -156,7 +156,7 @@
         </DataGridTemplateColumn>
 
         <!-- Import Date column with text flyout -->
-        <DataGridTemplateColumn Width="110" CanUserSort="False">
+        <DataGridTemplateColumn Width="110" MinWidth="90" CanUserSort="False">
           <DataGridTemplateColumn.Header>
             <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
               <TextBlock Text="{Binding [Reports_Col_ImportDate], Source={StaticResource Localizer}}" VerticalAlignment="Center" />
@@ -202,7 +202,7 @@
         </DataGridTemplateColumn>
 
         <!-- Email Date column with text flyout -->
-        <DataGridTemplateColumn Width="110" CanUserSort="False">
+        <DataGridTemplateColumn Width="110" MinWidth="90" CanUserSort="False">
           <DataGridTemplateColumn.Header>
             <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
               <TextBlock Text="{Binding [Reports_Col_EmailDate], Source={StaticResource Localizer}}" VerticalAlignment="Center" />
@@ -248,7 +248,7 @@
         </DataGridTemplateColumn>
 
         <!-- Importer column with text flyout -->
-        <DataGridTemplateColumn Width="160" CanUserSort="False">
+        <DataGridTemplateColumn Width="160" MinWidth="110" CanUserSort="False">
           <DataGridTemplateColumn.Header>
             <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
               <TextBlock Text="{Binding [Reports_Col_Importer], Source={StaticResource Localizer}}" VerticalAlignment="Center" />
@@ -294,7 +294,7 @@
         </DataGridTemplateColumn>
 
         <!-- Status column with enum flyout -->
-        <DataGridTemplateColumn Width="100" CanUserSort="False">
+        <DataGridTemplateColumn Width="100" MinWidth="80" CanUserSort="False">
           <DataGridTemplateColumn.Header>
             <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
               <TextBlock Text="{Binding [Reports_Col_Status], Source={StaticResource Localizer}}" VerticalAlignment="Center" />
@@ -355,7 +355,7 @@
         </DataGridTemplateColumn>
 
         <!-- Filing Count column with text flyout -->
-        <DataGridTemplateColumn Width="70" CanUserSort="False">
+        <DataGridTemplateColumn Width="70" MinWidth="60" CanUserSort="False">
           <DataGridTemplateColumn.Header>
             <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
               <TextBlock Text="{Binding [Reports_Col_FilingCount], Source={StaticResource Localizer}}" VerticalAlignment="Center" />
