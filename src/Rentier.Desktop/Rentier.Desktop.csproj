@@ -63,18 +63,4 @@
     </None>
   </ItemGroup>
 
-  <!-- Release publish settings: self-contained single-file with embedded symbols -->
-  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
-    <SelfContained>true</SelfContained>
-    <PublishSingleFile>true</PublishSingleFile>
-    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
-    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
-    <DebugType>embedded</DebugType>
-  </PropertyGroup>
-
-  <!-- ReadyToRun: Windows-only (R2R not beneficial on macOS/Linux for Avalonia) -->
-  <PropertyGroup Condition="'$(Configuration)' == 'Release' And '$([MSBuild]::IsOSPlatform(Windows))'">
-    <PublishReadyToRun>true</PublishReadyToRun>
-  </PropertyGroup>
-
 </Project>
