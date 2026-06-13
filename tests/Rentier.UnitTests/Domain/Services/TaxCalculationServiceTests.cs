@@ -5,7 +5,7 @@ using Rentier.Domain.Services;
 using Rentier.Domain.ValueObjects;
 using Xunit;
 
-namespace Rentier.UnitTests;
+namespace Rentier.UnitTests.Domain.Services;
 
 public class TaxCalculationServiceTests
 {
@@ -75,9 +75,7 @@ public class TaxCalculationServiceTests
     [Fact]
     public async Task CalculateAsync_NegativeIncome_ThrowsDomainException()
     {
-        var act = () => TaxCalculationService.CalculateAsync(
-            IncomeType.Dividend, "AAPL", TestDate,
-            -1m, "USD", 0m, "USD", FixedRate(100m));
+        var act = () => TaxCalculationService.CalculateAsync(IncomeType.Dividend, "AAPL", TestDate, -1m, "USD", 0m, "USD", FixedRate(100m), TestContext.Current.CancellationToken);
 
         await act.Should().ThrowAsync<DomainException>()
             .WithMessage("*negative*");
@@ -86,9 +84,7 @@ public class TaxCalculationServiceTests
     [Fact]
     public async Task CalculateAsync_NegativeWht_ThrowsDomainException()
     {
-        var act = () => TaxCalculationService.CalculateAsync(
-            IncomeType.Dividend, "AAPL", TestDate,
-            100m, "USD", -5m, "USD", FixedRate(100m));
+        var act = () => TaxCalculationService.CalculateAsync(IncomeType.Dividend, "AAPL", TestDate, 100m, "USD", -5m, "USD", FixedRate(100m), TestContext.Current.CancellationToken);
 
         await act.Should().ThrowAsync<DomainException>()
             .WithMessage("*negative*");
@@ -97,9 +93,7 @@ public class TaxCalculationServiceTests
     [Fact]
     public async Task CalculateAsync_WhtCurrencyMismatch_ThrowsDomainException()
     {
-        var act = () => TaxCalculationService.CalculateAsync(
-            IncomeType.Dividend, "AAPL", TestDate,
-            100m, "USD", 5m, "EUR", FixedRate(100m));
+        var act = () => TaxCalculationService.CalculateAsync(IncomeType.Dividend, "AAPL", TestDate, 100m, "USD", 5m, "EUR", FixedRate(100m), TestContext.Current.CancellationToken);
 
         await act.Should().ThrowAsync<DomainException>()
             .WithMessage("*WHT currency*");
@@ -111,9 +105,7 @@ public class TaxCalculationServiceTests
     [InlineData("   ")]
     public async Task CalculateAsync_NullOrWhitespacePayingEntity_ThrowsDomainException(string? entity)
     {
-        var act = () => TaxCalculationService.CalculateAsync(
-            IncomeType.Dividend, entity!, TestDate,
-            100m, "USD", 0m, "USD", FixedRate(100m));
+        var act = () => TaxCalculationService.CalculateAsync(IncomeType.Dividend, entity!, TestDate, 100m, "USD", 0m, "USD", FixedRate(100m), TestContext.Current.CancellationToken);
 
         await act.Should().ThrowAsync<DomainException>();
     }
@@ -121,9 +113,7 @@ public class TaxCalculationServiceTests
     [Fact]
     public async Task CalculateAsync_NullRateProvider_ThrowsDomainException()
     {
-        var act = () => TaxCalculationService.CalculateAsync(
-            IncomeType.Dividend, "AAPL", TestDate,
-            100m, "USD", 0m, "USD", null!);
+        var act = () => TaxCalculationService.CalculateAsync(IncomeType.Dividend, "AAPL", TestDate, 100m, "USD", 0m, "USD", null!, TestContext.Current.CancellationToken);
 
         await act.Should().ThrowAsync<DomainException>()
             .WithMessage("*provider*");
