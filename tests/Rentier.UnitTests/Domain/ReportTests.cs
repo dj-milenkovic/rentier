@@ -109,7 +109,7 @@ public class ReportTests
 
         var revision = Report.CreateRevision(original, null);
 
-        revision.ReportName.Length.Should().BeLessOrEqualTo(500);
+        revision.ReportName.Length.Should().BeLessThanOrEqualTo(500);
         revision.ReportName.Should().Contain("_rev");
     }
 
