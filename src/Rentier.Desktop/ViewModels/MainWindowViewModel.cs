@@ -1,12 +1,12 @@
 using Avalonia.Media;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reactive.Concurrency;
-using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using ReactiveUI;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Desktop.Services;
+using System.Reactive.Disposables.Fluent;
 
 namespace Rentier.Desktop.ViewModels;
 
@@ -126,7 +126,7 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
     {
         _updateService = updateService;
         _localizationService = localizationService;
-        _outputScheduler = outputScheduler ?? RxApp.MainThreadScheduler;
+        _outputScheduler = outputScheduler ?? RxSchedulers.MainThreadScheduler;
 
         // ── Update commands setup ─────────────────────────────────────────────
         var canCheck = this.WhenAnyValue(x => x.CurrentUpdateState)
@@ -292,7 +292,7 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
                 .DisposeWith(disposables);
 
             // Auto-check for updates in background on activation
-            Observable.StartAsync(() => RunCheckForUpdateAsync(), RxApp.TaskpoolScheduler)
+            Observable.StartAsync(() => RunCheckForUpdateAsync(), RxSchedulers.TaskpoolScheduler)
                 .Subscribe()
                 .DisposeWith(disposables);
         });
@@ -319,7 +319,7 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
         try
         {
             await _updateService.DownloadUpdateAsync(
-                progress => RxApp.MainThreadScheduler.Schedule(
+                progress => RxSchedulers.MainThreadScheduler.Schedule(
                     () => DownloadProgress = progress))
                 .ConfigureAwait(false);
 

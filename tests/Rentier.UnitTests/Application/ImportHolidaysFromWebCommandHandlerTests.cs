@@ -7,7 +7,7 @@ using Rentier.Application.Handlers;
 using Rentier.Application.Interfaces;
 using Xunit;
 
-namespace Rentier.UnitTests;
+namespace Rentier.UnitTests.Application;
 
 public class ImportHolidaysFromWebCommandHandlerTests
 {
@@ -26,7 +26,7 @@ public class ImportHolidaysFromWebCommandHandlerTests
         _importer.ImportAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
             .Returns(Result<IReadOnlyList<HolidayEntryDto>, Error>.Success(holidays));
 
-        var result = await _handler.HandleAsync(new ImportHolidaysFromWebCommand(2025));
+        var result = await _handler.HandleAsync(new ImportHolidaysFromWebCommand(2025), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().HaveCount(1);
@@ -39,7 +39,7 @@ public class ImportHolidaysFromWebCommandHandlerTests
         _importer.ImportAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
             .Returns(Result<IReadOnlyList<HolidayEntryDto>, Error>.Failure(new Error("HOLIDAY_IMPORT_FAILED", "HTTP 503")));
 
-        var result = await _handler.HandleAsync(new ImportHolidaysFromWebCommand(2025));
+        var result = await _handler.HandleAsync(new ImportHolidaysFromWebCommand(2025), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("HOLIDAY_IMPORT_FAILED");

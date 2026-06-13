@@ -2,7 +2,6 @@ using FluentAssertions;
 using NSubstitute;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
-using Rentier.Application.DTOs;
 using Rentier.Application.Handlers;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Repositories;
@@ -10,7 +9,7 @@ using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 using Xunit;
 
-namespace Rentier.UnitTests;
+namespace Rentier.UnitTests.Application;
 
 public class ExportFilingCommandHandlerTests
 {
@@ -24,7 +23,7 @@ public class ExportFilingCommandHandlerTests
     public ExportFilingCommandHandlerTests()
     {
         _serializer.Serialize(Arg.Any<Filing>(), Arg.Any<TaxpayerProfile>(), Arg.Any<string>())
-            .Returns(Result<byte[], Error>.Success(new byte[] { 0x3C, 0x3F })); // minimal non-empty byte array
+            .Returns(Result<byte[], Error>.Success("<?"u8.ToArray())); // minimal non-empty byte array
 
         _sut = new ExportFilingCommandHandler(_filings, _profiles, _reports, _importers, _serializer);
     }
@@ -53,7 +52,7 @@ public class ExportFilingCommandHandlerTests
         var id = Guid.NewGuid();
         _filings.GetByIdAsync(id, Arg.Any<CancellationToken>()).Returns((Filing?)null);
 
-        var result = await _sut.HandleAsync(new ExportFilingCommand(id));
+        var result = await _sut.HandleAsync(new ExportFilingCommand(id), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("NOT_FOUND");
@@ -66,7 +65,7 @@ public class ExportFilingCommandHandlerTests
         _filings.GetByIdAsync(filing.Id, Arg.Any<CancellationToken>()).Returns(filing);
         _profiles.GetAsync(Arg.Any<CancellationToken>()).Returns((TaxpayerProfile?)null);
 
-        var result = await _sut.HandleAsync(new ExportFilingCommand(filing.Id));
+        var result = await _sut.HandleAsync(new ExportFilingCommand(filing.Id), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("DOMAIN_ERROR");
@@ -81,7 +80,7 @@ public class ExportFilingCommandHandlerTests
         _filings.GetByIdAsync(filing.Id, Arg.Any<CancellationToken>()).Returns(filing);
         _profiles.GetAsync(Arg.Any<CancellationToken>()).Returns(profile);
 
-        var result = await _sut.HandleAsync(new ExportFilingCommand(filing.Id));
+        var result = await _sut.HandleAsync(new ExportFilingCommand(filing.Id), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         _serializer.Received(1).Serialize(filing, profile, string.Empty);
@@ -98,7 +97,7 @@ public class ExportFilingCommandHandlerTests
         _filings.GetByIdAsync(filing.Id, Arg.Any<CancellationToken>()).Returns(filing);
         _profiles.GetAsync(Arg.Any<CancellationToken>()).Returns(profile);
 
-        var result = await _sut.HandleAsync(new ExportFilingCommand(filing.Id));
+        var result = await _sut.HandleAsync(new ExportFilingCommand(filing.Id), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.SuggestedFileName.Should().Be("2025-03-BABA.xml");
@@ -112,7 +111,7 @@ public class ExportFilingCommandHandlerTests
         _filings.GetByIdAsync(filing.Id, Arg.Any<CancellationToken>()).Returns(filing);
         _profiles.GetAsync(Arg.Any<CancellationToken>()).Returns(profile);
 
-        var result = await _sut.HandleAsync(new ExportFilingCommand(filing.Id));
+        var result = await _sut.HandleAsync(new ExportFilingCommand(filing.Id), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.SuggestedFileName.Should().Be("2025-03-ACME_Corp.xml");
@@ -126,7 +125,7 @@ public class ExportFilingCommandHandlerTests
         _filings.GetByIdAsync(filing.Id, Arg.Any<CancellationToken>()).Returns(filing);
         _profiles.GetAsync(Arg.Any<CancellationToken>()).Returns(profile);
 
-        var result = await _sut.HandleAsync(new ExportFilingCommand(filing.Id));
+        var result = await _sut.HandleAsync(new ExportFilingCommand(filing.Id), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.SuggestedFileName.Should().Be("2025-03-BAD_NAME_.xml");
@@ -140,7 +139,7 @@ public class ExportFilingCommandHandlerTests
         _filings.GetByIdAsync(filing.Id, Arg.Any<CancellationToken>()).Returns(filing);
         _profiles.GetAsync(Arg.Any<CancellationToken>()).Returns(profile);
 
-        var result = await _sut.HandleAsync(new ExportFilingCommand(filing.Id));
+        var result = await _sut.HandleAsync(new ExportFilingCommand(filing.Id), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.SuggestedFileName.Should().Be("2025-03-ACME.xml");
@@ -155,7 +154,7 @@ public class ExportFilingCommandHandlerTests
         _filings.GetByIdAsync(filing.Id, Arg.Any<CancellationToken>()).Returns(filing);
         _profiles.GetAsync(Arg.Any<CancellationToken>()).Returns(profile);
 
-        var result = await _sut.HandleAsync(new ExportFilingCommand(filing.Id));
+        var result = await _sut.HandleAsync(new ExportFilingCommand(filing.Id), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.SuggestedFileName.Should().Be("2025-03-AAPL.xml");

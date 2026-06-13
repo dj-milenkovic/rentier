@@ -14,7 +14,7 @@ using Rentier.Domain.Enums;
 using Rentier.Domain.ValueObjects;
 using Xunit;
 
-namespace Rentier.UnitTests;
+namespace Rentier.UnitTests.Application.Handlers;
 
 /// <summary>
 /// T006 + T007 — Per-report progress emission tests for ProcessReportsCommandHandler.
@@ -116,10 +116,10 @@ public class ProcessReportsProgressTests
         var handler = MakeHandler(reportRepo, importerRepo, filingRepo, MakeUsdFetcher(), parser: parser);
 
         // Act
-        await handler.HandleAsync(new ProcessReportsCommand(progress));
+        await handler.HandleAsync(new ProcessReportsCommand(progress), TestContext.Current.CancellationToken);
 
         // Assert — give Progress<T> callback time to fire
-        await Task.Delay(50);
+        await Task.Delay(50, TestContext.Current.CancellationToken);
 
         var perReport = reported.Where(e => e.Message.StartsWith("Report '")).ToList();
         perReport.Should().HaveCount(1);
@@ -168,8 +168,8 @@ public class ProcessReportsProgressTests
         var handler = MakeHandler(reportRepo, importerRepo, filingRepo, fetcher, parser: parser);
 
         // Act
-        await handler.HandleAsync(new ProcessReportsCommand(progress));
-        await Task.Delay(50);
+        await handler.HandleAsync(new ProcessReportsCommand(progress), TestContext.Current.CancellationToken);
+        await Task.Delay(50, TestContext.Current.CancellationToken);
 
         // Assert
         var perReport = reported.Where(e => e.Message.StartsWith("Report '")).ToList();
@@ -213,8 +213,8 @@ public class ProcessReportsProgressTests
         var handler = MakeHandler(reportRepo, importerRepo, Substitute.For<IFilingRepository>(), fetcher, parser: parser);
 
         // Act
-        await handler.HandleAsync(new ProcessReportsCommand(progress));
-        await Task.Delay(50);
+        await handler.HandleAsync(new ProcessReportsCommand(progress), TestContext.Current.CancellationToken);
+        await Task.Delay(50, TestContext.Current.CancellationToken);
 
         // Assert
         var perReport = reported.Where(e => e.Message.StartsWith("Report '")).ToList();
@@ -265,8 +265,8 @@ public class ProcessReportsProgressTests
         var handler = MakeHandler(reportRepo);
 
         // Act
-        await handler.HandleAsync(new ProcessReportsCommand(progress));
-        await Task.Delay(50);
+        await handler.HandleAsync(new ProcessReportsCommand(progress), TestContext.Current.CancellationToken);
+        await Task.Delay(50, TestContext.Current.CancellationToken);
 
         // Assert
         var perReport = reported.Where(e => e.Message.StartsWith("Report '")).ToList();
@@ -296,8 +296,8 @@ public class ProcessReportsProgressTests
         var handler = MakeHandler(reportRepo, importerRepo);
 
         // Act
-        await handler.HandleAsync(new ProcessReportsCommand(progress));
-        await Task.Delay(50);
+        await handler.HandleAsync(new ProcessReportsCommand(progress), TestContext.Current.CancellationToken);
+        await Task.Delay(50, TestContext.Current.CancellationToken);
 
         // Assert
         var perReport = reported.Where(e => e.Message.StartsWith("Report '")).ToList();
@@ -331,8 +331,8 @@ public class ProcessReportsProgressTests
         var handler = MakeHandler(reportRepo, importerRepo, parser: parser);
 
         // Act
-        await handler.HandleAsync(new ProcessReportsCommand(progress));
-        await Task.Delay(50);
+        await handler.HandleAsync(new ProcessReportsCommand(progress), TestContext.Current.CancellationToken);
+        await Task.Delay(50, TestContext.Current.CancellationToken);
 
         // Assert
         var perReport = reported.Where(e => e.Message.StartsWith("Report '")).ToList();
@@ -375,8 +375,8 @@ public class ProcessReportsProgressTests
         var handler = MakeHandler(reportRepo, importerRepo, filingRepo, parser: parser);
 
         // Act
-        await handler.HandleAsync(new ProcessReportsCommand(progress));
-        await Task.Delay(50);
+        await handler.HandleAsync(new ProcessReportsCommand(progress), TestContext.Current.CancellationToken);
+        await Task.Delay(50, TestContext.Current.CancellationToken);
 
         // Assert — an error-severity entry is emitted for the report-level exception
         var perReport = reported.Where(e => e.Message.StartsWith("Report '")).ToList();

@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
+using System.Reactive.Disposables.Fluent;
 using System.Reactive.Linq;
 using ReactiveUI;
 using Rentier.Application.Commands;
@@ -155,7 +156,7 @@ public sealed class ImporterSettingsViewModel : ReactiveObject, IActivatableView
         _addImporter = addImporter;
         _updateImporter = updateImporter;
         _deleteImporter = deleteImporter;
-        _scheduler = scheduler ?? RxApp.MainThreadScheduler;
+        _scheduler = scheduler ?? RxSchedulers.MainThreadScheduler;
         _confirmAction = confirmAction ?? ConfirmDialogHelper.ShowAsync;
 
         AddNewCommand = ReactiveCommand.Create(OnAddNew);

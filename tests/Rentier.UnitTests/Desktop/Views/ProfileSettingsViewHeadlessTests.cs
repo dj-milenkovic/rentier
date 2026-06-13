@@ -65,7 +65,7 @@ public class ProfileSettingsViewHeadlessTests
         // Assert — verify the binding is in place and the command reports CanExecute=false.
         // Checking button.Command.CanExecute() is more reliable than button.IsEnabled in
         // headless tests, because Avalonia schedules the IsEnabled update asynchronously
-        // via RxApp.MainThreadScheduler when there is no ImmediateScheduler override.
+        // via RxSchedulers.MainThreadScheduler when there is no ImmediateScheduler override.
         saveButton.Should().NotBeNull("the Save button should be bound to SaveCommand");
         saveButton!.Command?.CanExecute(saveButton.CommandParameter).Should().BeFalse(
             "JMBG is empty so canSave should be false");

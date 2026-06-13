@@ -12,7 +12,7 @@ using Rentier.Domain.Enums;
 using Rentier.Domain.ValueObjects;
 using Xunit;
 
-namespace Rentier.UnitTests;
+namespace Rentier.UnitTests.Application;
 
 public class CalculateManualFilingCommandHandlerTests
 {
@@ -62,7 +62,7 @@ public class CalculateManualFilingCommandHandlerTests
         var handler = MakeHandler();
         var cmd = ValidCommand(netReceived: 85.00m);
 
-        var result = await handler.HandleAsync(cmd);
+        var result = await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         var dto = result.Value;
@@ -81,7 +81,7 @@ public class CalculateManualFilingCommandHandlerTests
         var handler = MakeHandler();
         var cmd = ValidCommand(netReceived: 85.00m);
 
-        var result = await handler.HandleAsync(cmd);
+        var result = await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         // 100 USD * 108.50 RSD/USD = 10,850.00 RSD
@@ -94,7 +94,7 @@ public class CalculateManualFilingCommandHandlerTests
         var handler = MakeHandler();
         var cmd = ValidCommand(netReceived: 85.00m);
 
-        var result = await handler.HandleAsync(cmd);
+        var result = await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         // WHT = 100 - 85 = 15 USD; 15 * 108.50 = 1627.50 RSD
@@ -109,7 +109,7 @@ public class CalculateManualFilingCommandHandlerTests
         var handler = MakeHandler();
         var cmd = ValidCommand(netReceived: null);
 
-        var result = await handler.HandleAsync(cmd);
+        var result = await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.WhtPaidRsd.Should().Be(0m);
@@ -121,7 +121,7 @@ public class CalculateManualFilingCommandHandlerTests
         var handler = MakeHandler();
         var cmd = ValidCommand(netReceived: null);
 
-        var result = await handler.HandleAsync(cmd);
+        var result = await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.TaxPayableRsd.Should().Be(result.Value.GrossTaxPayableRsd);
@@ -137,7 +137,7 @@ public class CalculateManualFilingCommandHandlerTests
         var handler = MakeHandler();
         var cmd = new CalculateManualFilingCommand(ProfileId, IncomeType.Dividend, ticker, TestDate, "USD", 100m, null);
 
-        var result = await handler.HandleAsync(cmd);
+        var result = await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("TICKER_REQUIRED");
@@ -149,7 +149,7 @@ public class CalculateManualFilingCommandHandlerTests
         var handler = MakeHandler();
         var cmd = new CalculateManualFilingCommand(ProfileId, IncomeType.Dividend, "AAPL", TestDate, "USD", 0m, null);
 
-        var result = await handler.HandleAsync(cmd);
+        var result = await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("GROSS_REQUIRED");
@@ -161,7 +161,7 @@ public class CalculateManualFilingCommandHandlerTests
         var handler = MakeHandler();
         var cmd = new CalculateManualFilingCommand(ProfileId, IncomeType.Dividend, "AAPL", default, "USD", 100m, null);
 
-        var result = await handler.HandleAsync(cmd);
+        var result = await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("DATE_REQUIRED");
@@ -173,7 +173,7 @@ public class CalculateManualFilingCommandHandlerTests
         var handler = MakeHandler();
         var cmd = new CalculateManualFilingCommand(ProfileId, IncomeType.Dividend, "AAPL", TestDate, "USD", 100m, 150m);
 
-        var result = await handler.HandleAsync(cmd);
+        var result = await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("NET_EXCEEDS_GROSS");
@@ -185,7 +185,7 @@ public class CalculateManualFilingCommandHandlerTests
         var handler = MakeHandler();
         var cmd = new CalculateManualFilingCommand(ProfileId, IncomeType.Dividend, "AAPL", TestDate, "USD", 100m, -1m);
 
-        var result = await handler.HandleAsync(cmd);
+        var result = await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("NET_NEGATIVE");
@@ -203,7 +203,7 @@ public class CalculateManualFilingCommandHandlerTests
         var handler = MakeHandler(fetcher: fetcher);
         var cmd = ValidCommand();
 
-        var result = await handler.HandleAsync(cmd);
+        var result = await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("RATE_NOT_FOUND");
@@ -219,7 +219,7 @@ public class CalculateManualFilingCommandHandlerTests
         var handler = MakeHandler(fetcher: fetcher);
         var cmd = ValidCommand();
 
-        var result = await handler.HandleAsync(cmd);
+        var result = await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("NETWORK_FAILURE");

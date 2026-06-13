@@ -5,7 +5,6 @@ using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 using Rentier.Infrastructure.Persistence;
 using Rentier.Infrastructure.Repositories;
-using Xunit;
 
 namespace Rentier.Infrastructure.Tests.Persistence;
 
@@ -16,21 +15,23 @@ public class FilingTickerPersistenceTests : IAsyncLifetime
     private AppDbContext _context = null!;
     private FilingRepository _repository = null!;
 
-    public async Task InitializeAsync()
+    [Fact]
+    public async ValueTask InitializeAsync()
     {
         _connection = new SqliteConnection("Data Source=:memory:");
-        await _connection.OpenAsync();
+        await _connection.OpenAsync(TestContext.Current.CancellationToken);
 
         var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseSqlite(_connection)
             .Options;
 
         _context = new AppDbContext(options);
-        await _context.Database.EnsureCreatedAsync();
+        await _context.Database.EnsureCreatedAsync(TestContext.Current.CancellationToken);
         _repository = new FilingRepository(_context);
     }
 
-    public async Task DisposeAsync()
+    [Fact]
+    public async ValueTask DisposeAsync()
     {
         await _context.DisposeAsync();
         await _connection.DisposeAsync();
@@ -44,7 +45,7 @@ public class FilingTickerPersistenceTests : IAsyncLifetime
     {
         var profile = MakeProfile();
         _context.Set<TaxpayerProfile>().Add(profile);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var filing = Filing.CreateFromIncome(
             profile.Id, IncomeType.Dividend, "ACME Corp",
@@ -71,7 +72,7 @@ public class FilingTickerPersistenceTests : IAsyncLifetime
     {
         var profile = MakeProfile();
         _context.Set<TaxpayerProfile>().Add(profile);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var filing = Filing.CreateFromIncome(
             profile.Id, IncomeType.Dividend, "ACME Corp",

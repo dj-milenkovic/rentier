@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
+using System.Reactive.Disposables.Fluent;
 using System.Reactive.Linq;
 using ReactiveUI;
 using Rentier.Application.Commands;
@@ -243,7 +244,7 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
         _confirmDelete = confirmDelete;
         _saveFile = saveFile;
         _navigateToManualFiling = navigateToManualFiling;
-        _scheduler = scheduler ?? RxApp.MainThreadScheduler;
+        _scheduler = scheduler ?? RxSchedulers.MainThreadScheduler;
 
         // Feature 050: initialise flyout filter ViewModels
         StatusFilter = new EnumFilterFlyoutViewModel<FilingStatus>(new[]

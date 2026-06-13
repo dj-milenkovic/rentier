@@ -301,7 +301,7 @@
                           BorderThickness="1" CornerRadius="6" Padding="10,8" MinWidth="200">
                     <StackPanel Spacing="6">
                       <TextBox Text="{Binding WorkingText, Mode=TwoWay}"
-                               Watermark="{Binding [Filter_Search], Source={StaticResource Localizer}}"
+                               PlaceholderText="{Binding [Filter_Search], Source={StaticResource Localizer}}"
                                MinWidth="180" />
                       <Button Content="{Binding [Filter_Apply], Source={StaticResource Localizer}}"
                               Command="{Binding ApplyCommand}"
@@ -356,7 +356,7 @@
                           BorderThickness="1" CornerRadius="6" Padding="10,8" MinWidth="180">
                     <StackPanel Spacing="6">
                       <TextBox Text="{Binding WorkingText, Mode=TwoWay}"
-                               Watermark="{Binding [Filter_Search], Source={StaticResource Localizer}}"
+                               PlaceholderText="{Binding [Filter_Search], Source={StaticResource Localizer}}"
                                MinWidth="160" />
                       <Button Content="{Binding [Filter_Apply], Source={StaticResource Localizer}}"
                               Command="{Binding ApplyCommand}"
@@ -427,7 +427,7 @@
                           BorderThickness="1" CornerRadius="6" Padding="10,8" MinWidth="200">
                     <StackPanel Spacing="6">
                       <TextBox Text="{Binding WorkingText, Mode=TwoWay}"
-                               Watermark="{Binding [Filter_Search], Source={StaticResource Localizer}}"
+                               PlaceholderText="{Binding [Filter_Search], Source={StaticResource Localizer}}"
                                MinWidth="180" />
                       <Button Content="{Binding [Filter_Apply], Source={StaticResource Localizer}}"
                               Command="{Binding ApplyCommand}"

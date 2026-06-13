@@ -38,8 +38,8 @@ public sealed class TaxpayerProfileScenario : IDisposable
             Email: "petar@example.com");
 
         // Act
-        var saveResult = await saveHandler.HandleAsync(command);
-        var getResult = await getHandler.HandleAsync(new GetTaxpayerProfileQuery());
+        var saveResult = await saveHandler.HandleAsync(command, TestContext.Current.CancellationToken);
+        var getResult = await getHandler.HandleAsync(new GetTaxpayerProfileQuery(), TestContext.Current.CancellationToken);
 
         // Assert - handler results
         saveResult.IsSuccess.Should().BeTrue("save should succeed");
@@ -56,7 +56,7 @@ public sealed class TaxpayerProfileScenario : IDisposable
         dto.Email.Should().Be("petar@example.com");
 
         // Assert - verify via repository query (end state assertion per testing-strategy.md)
-        var profileFromRepo = await _repository.GetAsync();
+        var profileFromRepo = await _repository.GetAsync(TestContext.Current.CancellationToken);
         profileFromRepo.Should().NotBeNull();
         profileFromRepo!.Id.Should().Be(dto.Id);
     }
@@ -85,12 +85,12 @@ public sealed class TaxpayerProfileScenario : IDisposable
             Email: "petar.novi@example.com");
 
         // Act
-        var initialSaveResult = await saveHandler.HandleAsync(initialCommand);
-        var initialGetResult = await getHandler.HandleAsync(new GetTaxpayerProfileQuery());
+        var initialSaveResult = await saveHandler.HandleAsync(initialCommand, TestContext.Current.CancellationToken);
+        var initialGetResult = await getHandler.HandleAsync(new GetTaxpayerProfileQuery(), TestContext.Current.CancellationToken);
         var initialId = initialGetResult.Value!.Id;
 
-        var updateSaveResult = await saveHandler.HandleAsync(updatedCommand);
-        var finalGetResult = await getHandler.HandleAsync(new GetTaxpayerProfileQuery());
+        var updateSaveResult = await saveHandler.HandleAsync(updatedCommand, TestContext.Current.CancellationToken);
+        var finalGetResult = await getHandler.HandleAsync(new GetTaxpayerProfileQuery(), TestContext.Current.CancellationToken);
 
         // Assert - all operations succeeded
         initialSaveResult.IsSuccess.Should().BeTrue();
@@ -109,7 +109,7 @@ public sealed class TaxpayerProfileScenario : IDisposable
         dto.Email.Should().Be("petar.novi@example.com");
 
         // Assert - verify via repository query
-        var profileFromRepo = await _repository.GetAsync();
+        var profileFromRepo = await _repository.GetAsync(TestContext.Current.CancellationToken);
         profileFromRepo.Should().NotBeNull();
         profileFromRepo!.FullName.Should().Be("Petar Petrovic Novi");
         profileFromRepo.Address.Should().Be("Knez Mihailova 15");
@@ -128,7 +128,7 @@ public sealed class TaxpayerProfileScenario : IDisposable
             OpstinaCode: "049");
 
         // Act
-        var result = await saveHandler.HandleAsync(command);
+        var result = await saveHandler.HandleAsync(command, TestContext.Current.CancellationToken);
 
         // Assert
         result.IsSuccess.Should().BeFalse("save should fail with invalid JMBG");
@@ -136,7 +136,7 @@ public sealed class TaxpayerProfileScenario : IDisposable
         result.Error.Message.Should().Contain("JMBG");
 
         // Assert - no profile was persisted
-        var profile = await _repository.GetAsync();
+        var profile = await _repository.GetAsync(TestContext.Current.CancellationToken);
         profile.Should().BeNull("invalid profile should not be persisted");
     }
 

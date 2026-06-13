@@ -5,7 +5,6 @@ using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 using Rentier.Infrastructure.Persistence;
 using Rentier.Infrastructure.Repositories;
-using Xunit;
 
 namespace Rentier.Infrastructure.Tests.Repositories;
 
@@ -16,21 +15,21 @@ public class FilingRepositoryDashboardTests : IAsyncLifetime
     private AppDbContext _context = null!;
     private FilingRepository _repository = null!;
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         _connection = new SqliteConnection("Data Source=:memory:");
-        await _connection.OpenAsync();
+        await _connection.OpenAsync(TestContext.Current.CancellationToken);
 
         var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseSqlite(_connection)
             .Options;
 
         _context = new AppDbContext(options);
-        await _context.Database.EnsureCreatedAsync();
+        await _context.Database.EnsureCreatedAsync(TestContext.Current.CancellationToken);
         _repository = new FilingRepository(_context);
     }
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         await _context.DisposeAsync();
         await _connection.DisposeAsync();
@@ -70,10 +69,10 @@ public class FilingRepositoryDashboardTests : IAsyncLifetime
         var today = new DateOnly(2024, 6, 1);
         var initFiling = MakeFiling(profile.Id, today.AddDays(5), FilingStatus.Init);
         var filedFiling = MakeFiling(profile.Id, today.AddDays(10), FilingStatus.Filed);
-        await _repository.AddAsync(initFiling);
-        await _repository.AddAsync(filedFiling);
+        await _repository.AddAsync(initFiling, TestContext.Current.CancellationToken);
+        await _repository.AddAsync(filedFiling, TestContext.Current.CancellationToken);
 
-        var result = await _repository.GetUpcomingAsync(today, 30);
+        var result = await _repository.GetUpcomingAsync(today, 30, TestContext.Current.CancellationToken);
 
         result.Should().HaveCount(2);
         result.Should().Contain(f => f.Status == FilingStatus.Init);
@@ -86,9 +85,9 @@ public class FilingRepositoryDashboardTests : IAsyncLifetime
         var profile = await AddProfileAsync();
         var today = new DateOnly(2024, 6, 1);
         var paidFiling = MakeFiling(profile.Id, today.AddDays(5), FilingStatus.Paid);
-        await _repository.AddAsync(paidFiling);
+        await _repository.AddAsync(paidFiling, TestContext.Current.CancellationToken);
 
-        var result = await _repository.GetUpcomingAsync(today, 30);
+        var result = await _repository.GetUpcomingAsync(today, 30, TestContext.Current.CancellationToken);
 
         result.Should().BeEmpty();
     }
@@ -101,11 +100,11 @@ public class FilingRepositoryDashboardTests : IAsyncLifetime
         var tooEarly = MakeFiling(profile.Id, today.AddDays(-1), FilingStatus.Init);
         var tooLate = MakeFiling(profile.Id, today.AddDays(31), FilingStatus.Init);
         var inRange = MakeFiling(profile.Id, today.AddDays(15), FilingStatus.Init);
-        await _repository.AddAsync(tooEarly);
-        await _repository.AddAsync(tooLate);
-        await _repository.AddAsync(inRange);
+        await _repository.AddAsync(tooEarly, TestContext.Current.CancellationToken);
+        await _repository.AddAsync(tooLate, TestContext.Current.CancellationToken);
+        await _repository.AddAsync(inRange, TestContext.Current.CancellationToken);
 
-        var result = await _repository.GetUpcomingAsync(today, 30);
+        var result = await _repository.GetUpcomingAsync(today, 30, TestContext.Current.CancellationToken);
 
         result.Should().HaveCount(1);
         result[0].Id.Should().Be(inRange.Id);
@@ -118,10 +117,10 @@ public class FilingRepositoryDashboardTests : IAsyncLifetime
         var today = new DateOnly(2024, 6, 1);
         var later = MakeFiling(profile.Id, today.AddDays(20), FilingStatus.Init);
         var sooner = MakeFiling(profile.Id, today.AddDays(5), FilingStatus.Init);
-        await _repository.AddAsync(later);
-        await _repository.AddAsync(sooner);
+        await _repository.AddAsync(later, TestContext.Current.CancellationToken);
+        await _repository.AddAsync(sooner, TestContext.Current.CancellationToken);
 
-        var result = await _repository.GetUpcomingAsync(today, 30);
+        var result = await _repository.GetUpcomingAsync(today, 30, TestContext.Current.CancellationToken);
 
         result.Should().HaveCount(2);
         result[0].FilingDeadline.Should().BeBefore(result[1].FilingDeadline);
@@ -135,11 +134,11 @@ public class FilingRepositoryDashboardTests : IAsyncLifetime
         var overdueInit = MakeFiling(profile.Id, today.AddDays(-5), FilingStatus.Init);
         var overdueFiled = MakeFiling(profile.Id, today.AddDays(-10), FilingStatus.Filed);
         var overduePaid = MakeFiling(profile.Id, today.AddDays(-3), FilingStatus.Paid);
-        await _repository.AddAsync(overdueInit);
-        await _repository.AddAsync(overdueFiled);
-        await _repository.AddAsync(overduePaid);
+        await _repository.AddAsync(overdueInit, TestContext.Current.CancellationToken);
+        await _repository.AddAsync(overdueFiled, TestContext.Current.CancellationToken);
+        await _repository.AddAsync(overduePaid, TestContext.Current.CancellationToken);
 
-        var result = await _repository.GetOverdueAsync(today);
+        var result = await _repository.GetOverdueAsync(today, TestContext.Current.CancellationToken);
 
         result.Should().HaveCount(2);
         result.Should().NotContain(f => f.Status == FilingStatus.Paid);
@@ -151,9 +150,9 @@ public class FilingRepositoryDashboardTests : IAsyncLifetime
         var profile = await AddProfileAsync();
         var today = new DateOnly(2024, 6, 1);
         var todayFiling = MakeFiling(profile.Id, today, FilingStatus.Init);
-        await _repository.AddAsync(todayFiling);
+        await _repository.AddAsync(todayFiling, TestContext.Current.CancellationToken);
 
-        var result = await _repository.GetOverdueAsync(today);
+        var result = await _repository.GetOverdueAsync(today, TestContext.Current.CancellationToken);
 
         result.Should().BeEmpty();
     }
@@ -165,10 +164,10 @@ public class FilingRepositoryDashboardTests : IAsyncLifetime
         var today = new DateOnly(2024, 6, 1);
         var newer = MakeFiling(profile.Id, today.AddDays(-1), FilingStatus.Init);
         var older = MakeFiling(profile.Id, today.AddDays(-10), FilingStatus.Init);
-        await _repository.AddAsync(newer);
-        await _repository.AddAsync(older);
+        await _repository.AddAsync(newer, TestContext.Current.CancellationToken);
+        await _repository.AddAsync(older, TestContext.Current.CancellationToken);
 
-        var result = await _repository.GetOverdueAsync(today);
+        var result = await _repository.GetOverdueAsync(today, TestContext.Current.CancellationToken);
 
         result.Should().HaveCount(2);
         result[0].FilingDeadline.Should().BeBefore(result[1].FilingDeadline);
@@ -179,12 +178,12 @@ public class FilingRepositoryDashboardTests : IAsyncLifetime
     {
         var profile = await AddProfileAsync();
         var deadline = new DateOnly(2024, 6, 30);
-        await _repository.AddAsync(MakeFiling(profile.Id, deadline, FilingStatus.Init));
-        await _repository.AddAsync(MakeFiling(profile.Id, deadline.AddDays(1), FilingStatus.Init));
-        await _repository.AddAsync(MakeFiling(profile.Id, deadline.AddDays(2), FilingStatus.Filed));
-        await _repository.AddAsync(MakeFiling(profile.Id, deadline.AddDays(3), FilingStatus.Paid));
+        await _repository.AddAsync(MakeFiling(profile.Id, deadline, FilingStatus.Init), TestContext.Current.CancellationToken);
+        await _repository.AddAsync(MakeFiling(profile.Id, deadline.AddDays(1), FilingStatus.Init), TestContext.Current.CancellationToken);
+        await _repository.AddAsync(MakeFiling(profile.Id, deadline.AddDays(2), FilingStatus.Filed), TestContext.Current.CancellationToken);
+        await _repository.AddAsync(MakeFiling(profile.Id, deadline.AddDays(3), FilingStatus.Paid), TestContext.Current.CancellationToken);
 
-        var (initCount, filedCount, paidCount, _) = await _repository.GetFilingStatsAsync();
+        var (initCount, filedCount, paidCount, _) = await _repository.GetFilingStatsAsync(TestContext.Current.CancellationToken);
 
         initCount.Should().Be(2);
         filedCount.Should().Be(1);
@@ -196,11 +195,11 @@ public class FilingRepositoryDashboardTests : IAsyncLifetime
     {
         var profile = await AddProfileAsync();
         var deadline = new DateOnly(2024, 6, 30);
-        await _repository.AddAsync(MakeFiling(profile.Id, deadline, FilingStatus.Init, taxPayable: 100m));
-        await _repository.AddAsync(MakeFiling(profile.Id, deadline.AddDays(1), FilingStatus.Filed, taxPayable: 200m));
-        await _repository.AddAsync(MakeFiling(profile.Id, deadline.AddDays(2), FilingStatus.Paid, taxPayable: 500m));
+        await _repository.AddAsync(MakeFiling(profile.Id, deadline, FilingStatus.Init, taxPayable: 100m), TestContext.Current.CancellationToken);
+        await _repository.AddAsync(MakeFiling(profile.Id, deadline.AddDays(1), FilingStatus.Filed, taxPayable: 200m), TestContext.Current.CancellationToken);
+        await _repository.AddAsync(MakeFiling(profile.Id, deadline.AddDays(2), FilingStatus.Paid, taxPayable: 500m), TestContext.Current.CancellationToken);
 
-        var (_, _, _, totalUnpaid) = await _repository.GetFilingStatsAsync();
+        var (_, _, _, totalUnpaid) = await _repository.GetFilingStatsAsync(TestContext.Current.CancellationToken);
 
         totalUnpaid.Should().Be(300m);
     }
@@ -208,7 +207,7 @@ public class FilingRepositoryDashboardTests : IAsyncLifetime
     [Fact]
     public async Task GetFilingStatsAsync_EmptyDatabase_ReturnsZeros()
     {
-        var (initCount, filedCount, paidCount, totalUnpaid) = await _repository.GetFilingStatsAsync();
+        var (initCount, filedCount, paidCount, totalUnpaid) = await _repository.GetFilingStatsAsync(TestContext.Current.CancellationToken);
 
         initCount.Should().Be(0);
         filedCount.Should().Be(0);

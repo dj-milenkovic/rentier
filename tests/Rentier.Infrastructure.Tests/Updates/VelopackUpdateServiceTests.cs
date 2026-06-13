@@ -1,7 +1,5 @@
 using FluentAssertions;
-using Rentier.Application.DTOs;
 using Rentier.Infrastructure.Updates;
-using Xunit;
 
 namespace Rentier.Infrastructure.Tests.Updates;
 
@@ -25,7 +23,7 @@ public class VelopackUpdateServiceTests
         var manager = new FakeVelopackManager(isInstalled: false);
         var service = new VelopackUpdateService(manager);
 
-        var result = await service.CheckForUpdatesAsync();
+        var result = await service.CheckForUpdatesAsync(TestContext.Current.CancellationToken);
 
         result.IsUpdateAvailable.Should().BeFalse();
         result.TargetVersion.Should().BeNull();
@@ -40,7 +38,7 @@ public class VelopackUpdateServiceTests
         var manager = new FakeVelopackManager(isInstalled: true, availableVersion: "2.0.0");
         var service = new VelopackUpdateService(manager);
 
-        var result = await service.CheckForUpdatesAsync();
+        var result = await service.CheckForUpdatesAsync(TestContext.Current.CancellationToken);
 
         result.IsUpdateAvailable.Should().BeTrue();
         result.TargetVersion.Should().Be("2.0.0");
@@ -54,7 +52,7 @@ public class VelopackUpdateServiceTests
         var manager = new FakeVelopackManager(isInstalled: true, availableVersion: null);
         var service = new VelopackUpdateService(manager);
 
-        var result = await service.CheckForUpdatesAsync();
+        var result = await service.CheckForUpdatesAsync(TestContext.Current.CancellationToken);
 
         result.IsUpdateAvailable.Should().BeFalse();
         result.TargetVersion.Should().BeNull();
@@ -68,7 +66,7 @@ public class VelopackUpdateServiceTests
         var manager = new FakeVelopackManager(isInstalled: true, throwOnCheck: true);
         var service = new VelopackUpdateService(manager);
 
-        var result = await service.CheckForUpdatesAsync();
+        var result = await service.CheckForUpdatesAsync(TestContext.Current.CancellationToken);
 
         result.IsUpdateAvailable.Should().BeFalse();
         result.TargetVersion.Should().BeNull();
@@ -83,7 +81,7 @@ public class VelopackUpdateServiceTests
         var service = new VelopackUpdateService(manager);
 
         // Should complete without throwing even when not installed
-        await service.DownloadUpdateAsync(_ => { });
+        await service.DownloadUpdateAsync(_ => { }, TestContext.Current.CancellationToken);
 
         manager.DownloadCallCount.Should().Be(0);
     }
@@ -95,10 +93,10 @@ public class VelopackUpdateServiceTests
         var service = new VelopackUpdateService(manager);
 
         // First check so the service knows what to download
-        await service.CheckForUpdatesAsync();
+        await service.CheckForUpdatesAsync(TestContext.Current.CancellationToken);
 
         var progressValues = new List<int>();
-        await service.DownloadUpdateAsync(p => progressValues.Add(p));
+        await service.DownloadUpdateAsync(p => progressValues.Add(p), TestContext.Current.CancellationToken);
 
         manager.DownloadCallCount.Should().Be(1);
     }
@@ -109,10 +107,10 @@ public class VelopackUpdateServiceTests
         var manager = new FakeVelopackManager(isInstalled: true, availableVersion: "2.0.0",
             progressValues: [0, 50, 100]);
         var service = new VelopackUpdateService(manager);
-        await service.CheckForUpdatesAsync();
+        await service.CheckForUpdatesAsync(TestContext.Current.CancellationToken);
 
         var progressValues = new List<int>();
-        await service.DownloadUpdateAsync(p => progressValues.Add(p));
+        await service.DownloadUpdateAsync(p => progressValues.Add(p), TestContext.Current.CancellationToken);
 
         progressValues.Should().Contain([0, 50, 100]);
     }
@@ -123,7 +121,7 @@ public class VelopackUpdateServiceTests
         var manager = new FakeVelopackManager(isInstalled: true, availableVersion: "2.0.0",
             throwOnDownload: true);
         var service = new VelopackUpdateService(manager);
-        await service.CheckForUpdatesAsync();
+        await service.CheckForUpdatesAsync(TestContext.Current.CancellationToken);
 
         var act = async () => await service.DownloadUpdateAsync(_ => { });
 
@@ -149,8 +147,8 @@ public class VelopackUpdateServiceTests
     {
         var manager = new FakeVelopackManager(isInstalled: true, availableVersion: "2.0.0");
         var service = new VelopackUpdateService(manager);
-        await service.CheckForUpdatesAsync();
-        await service.DownloadUpdateAsync(_ => { });
+        await service.CheckForUpdatesAsync(TestContext.Current.CancellationToken);
+        await service.DownloadUpdateAsync(_ => { }, TestContext.Current.CancellationToken);
 
         service.ApplyUpdateAndRestart();
 
@@ -176,8 +174,8 @@ public class VelopackUpdateServiceTests
     {
         var manager = new FakeVelopackManager(isInstalled: true, availableVersion: "2.0.0");
         var service = new VelopackUpdateService(manager);
-        await service.CheckForUpdatesAsync();
-        await service.DownloadUpdateAsync(_ => { });
+        await service.CheckForUpdatesAsync(TestContext.Current.CancellationToken);
+        await service.DownloadUpdateAsync(_ => { }, TestContext.Current.CancellationToken);
 
         service.ScheduleUpdateOnExit();
 

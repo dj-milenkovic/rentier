@@ -1,13 +1,12 @@
 using FluentAssertions;
 using NSubstitute;
 using Rentier.Application.Commands;
-using Rentier.Application.Common;
 using Rentier.Application.Handlers;
 using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
 using Xunit;
 
-namespace Rentier.UnitTests;
+namespace Rentier.UnitTests.Application;
 
 public class SaveTaxpayerProfileCommandHandlerTests
 {
@@ -22,10 +21,10 @@ public class SaveTaxpayerProfileCommandHandlerTests
     [Fact]
     public async Task HandleAsync_NoExistingProfile_InsertsNewProfile()
     {
-        _repo.GetAsync().Returns((TaxpayerProfile?)null);
+        _repo.GetAsync(TestContext.Current.CancellationToken).Returns((TaxpayerProfile?)null);
 
         var command = new SaveTaxpayerProfileCommand("1234567890123", "Test User", "Test Address", "049");
-        var result = await _handler.HandleAsync(command);
+        var result = await _handler.HandleAsync(command, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         await _repo.Received(1).SaveAsync(
@@ -40,10 +39,10 @@ public class SaveTaxpayerProfileCommandHandlerTests
     {
         var existingId = Guid.NewGuid();
         var existing = new TaxpayerProfile(existingId, "1234567890123", "Old Name", "Old Address", "049");
-        _repo.GetAsync().Returns(existing);
+        _repo.GetAsync(TestContext.Current.CancellationToken).Returns(existing);
 
         var command = new SaveTaxpayerProfileCommand("1234567890123", "New Name", "New Address", "050");
-        var result = await _handler.HandleAsync(command);
+        var result = await _handler.HandleAsync(command, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         await _repo.Received(1).SaveAsync(
@@ -54,10 +53,10 @@ public class SaveTaxpayerProfileCommandHandlerTests
     [Fact]
     public async Task HandleAsync_InvalidJmbg_ReturnsFailure()
     {
-        _repo.GetAsync().Returns((TaxpayerProfile?)null);
+        _repo.GetAsync(TestContext.Current.CancellationToken).Returns((TaxpayerProfile?)null);
 
         var command = new SaveTaxpayerProfileCommand("INVALID_JMBG", "Test User", "Test Address", "049");
-        var result = await _handler.HandleAsync(command);
+        var result = await _handler.HandleAsync(command, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("DOMAIN_ERROR");

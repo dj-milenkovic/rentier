@@ -1,14 +1,13 @@
 using FluentAssertions;
 using NSubstitute;
 using Rentier.Application.Commands;
-using Rentier.Application.Common;
 using Rentier.Application.Handlers;
 using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 using Xunit;
 
-namespace Rentier.UnitTests;
+namespace Rentier.UnitTests.Application;
 
 public class UpdatePaymentReferenceCommandHandlerTests
 {
@@ -36,7 +35,7 @@ public class UpdatePaymentReferenceCommandHandlerTests
         var filing = MakeFiling();
         _repo.GetByIdAsync(filing.Id, Arg.Any<CancellationToken>()).Returns(filing);
 
-        var result = await _sut.HandleAsync(new UpdatePaymentReferenceCommand(filing.Id, "REF-2024-001"));
+        var result = await _sut.HandleAsync(new UpdatePaymentReferenceCommand(filing.Id, "REF-2024-001"), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         filing.PaymentReference.Should().Be("REF-2024-001");
@@ -50,7 +49,7 @@ public class UpdatePaymentReferenceCommandHandlerTests
         filing.SetPaymentReference("EXISTING");
         _repo.GetByIdAsync(filing.Id, Arg.Any<CancellationToken>()).Returns(filing);
 
-        var result = await _sut.HandleAsync(new UpdatePaymentReferenceCommand(filing.Id, null));
+        var result = await _sut.HandleAsync(new UpdatePaymentReferenceCommand(filing.Id, null), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         filing.PaymentReference.Should().BeNull();
@@ -64,7 +63,7 @@ public class UpdatePaymentReferenceCommandHandlerTests
         _repo.GetByIdAsync(filing.Id, Arg.Any<CancellationToken>()).Returns(filing);
         var tooLong = new string('x', 201);
 
-        var result = await _sut.HandleAsync(new UpdatePaymentReferenceCommand(filing.Id, tooLong));
+        var result = await _sut.HandleAsync(new UpdatePaymentReferenceCommand(filing.Id, tooLong), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("DOMAIN_ERROR");
@@ -77,7 +76,7 @@ public class UpdatePaymentReferenceCommandHandlerTests
         var id = Guid.NewGuid();
         _repo.GetByIdAsync(id, Arg.Any<CancellationToken>()).Returns((Filing?)null);
 
-        var result = await _sut.HandleAsync(new UpdatePaymentReferenceCommand(id, "REF-001"));
+        var result = await _sut.HandleAsync(new UpdatePaymentReferenceCommand(id, "REF-001"), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("NOT_FOUND");

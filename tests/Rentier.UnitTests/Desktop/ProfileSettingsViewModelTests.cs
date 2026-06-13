@@ -1,4 +1,3 @@
-using System.Reactive.Concurrency;
 using FluentAssertions;
 using NSubstitute;
 using Rentier.Application.Commands;
@@ -9,7 +8,7 @@ using Rentier.Application.Queries;
 using Rentier.Desktop.ViewModels;
 using Xunit;
 
-namespace Rentier.UnitTests;
+namespace Rentier.UnitTests.Desktop;
 
 public class ProfileSettingsViewModelTests
 {
@@ -77,7 +76,7 @@ public class ProfileSettingsViewModelTests
         using var _ = vm.Activator.Activate();
 
         // Wait for async load to complete
-        await Task.Delay(100);
+        await Task.Delay(100, TestContext.Current.CancellationToken);
 
         vm.Jmbg.Should().Be("1234567890123");
         vm.FullName.Should().Be("John Doe");
@@ -96,7 +95,7 @@ public class ProfileSettingsViewModelTests
         using var _ = vm.Activator.Activate();
 
         // Wait for async load to complete
-        await Task.Delay(100);
+        await Task.Delay(100, TestContext.Current.CancellationToken);
 
         vm.Jmbg.Should().BeEmpty();
         vm.FullName.Should().BeEmpty();

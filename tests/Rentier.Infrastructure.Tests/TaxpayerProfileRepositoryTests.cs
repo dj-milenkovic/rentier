@@ -15,21 +15,23 @@ public class TaxpayerProfileRepositoryTests : IAsyncLifetime
     private AppDbContext _context = null!;
     private TaxpayerProfileRepository _repository = null!;
 
-    public async Task InitializeAsync()
+    [Fact]
+    public async ValueTask InitializeAsync()
     {
         _connection = new SqliteConnection("Data Source=:memory:");
-        await _connection.OpenAsync();
+        await _connection.OpenAsync(TestContext.Current.CancellationToken);
 
         var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseSqlite(_connection)
             .Options;
 
         _context = new AppDbContext(options);
-        await _context.Database.EnsureCreatedAsync();
+        await _context.Database.EnsureCreatedAsync(TestContext.Current.CancellationToken);
         _repository = new TaxpayerProfileRepository(_context);
     }
 
-    public async Task DisposeAsync()
+    [Fact]
+    public async ValueTask DisposeAsync()
     {
         await _context.DisposeAsync();
         await _connection.DisposeAsync();
@@ -38,7 +40,7 @@ public class TaxpayerProfileRepositoryTests : IAsyncLifetime
     [Fact]
     public async Task GetAsync_EmptyDb_ReturnsNull()
     {
-        var result = await _repository.GetAsync();
+        var result = await _repository.GetAsync(TestContext.Current.CancellationToken);
         result.Should().BeNull();
     }
 
@@ -46,9 +48,9 @@ public class TaxpayerProfileRepositoryTests : IAsyncLifetime
     public async Task SaveAsync_NewProfile_CanBeRetrieved()
     {
         var profile = new TaxpayerProfile(Guid.NewGuid(), "1234567890123", "Marko", "Knez 1", "049");
-        await _repository.SaveAsync(profile);
+        await _repository.SaveAsync(profile, TestContext.Current.CancellationToken);
 
-        var retrieved = await _repository.GetAsync();
+        var retrieved = await _repository.GetAsync(TestContext.Current.CancellationToken);
         retrieved.Should().NotBeNull();
         retrieved!.Jmbg.Should().Be("1234567890123");
         retrieved.FullName.Should().Be("Marko");
@@ -59,12 +61,12 @@ public class TaxpayerProfileRepositoryTests : IAsyncLifetime
     {
         var id = Guid.NewGuid();
         var original = new TaxpayerProfile(id, "1234567890123", "Original Name", "Addr", "049");
-        await _repository.SaveAsync(original);
+        await _repository.SaveAsync(original, TestContext.Current.CancellationToken);
 
         var updated = new TaxpayerProfile(id, "1234567890123", "Updated Name", "Addr", "049");
-        await _repository.SaveAsync(updated);
+        await _repository.SaveAsync(updated, TestContext.Current.CancellationToken);
 
-        var retrieved = await _repository.GetAsync();
+        var retrieved = await _repository.GetAsync(TestContext.Current.CancellationToken);
         retrieved!.Id.Should().Be(id);
         retrieved.FullName.Should().Be("Updated Name");
     }
@@ -73,10 +75,10 @@ public class TaxpayerProfileRepositoryTests : IAsyncLifetime
     public async Task DeleteAsync_AfterSave_ReturnsNullOnGet()
     {
         var profile = new TaxpayerProfile(Guid.NewGuid(), "1234567890123", "Test", "Addr", "049");
-        await _repository.SaveAsync(profile);
-        await _repository.DeleteAsync();
+        await _repository.SaveAsync(profile, TestContext.Current.CancellationToken);
+        await _repository.DeleteAsync(TestContext.Current.CancellationToken);
 
-        var result = await _repository.GetAsync();
+        var result = await _repository.GetAsync(TestContext.Current.CancellationToken);
         result.Should().BeNull();
     }
 }
