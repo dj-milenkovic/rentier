@@ -1,7 +1,5 @@
 using FluentAssertions;
 using NSubstitute;
-using Rentier.Application.Common;
-using Rentier.Application.DTOs;
 using Rentier.Application.Handlers;
 using Rentier.Application.Queries;
 using Rentier.Application.Repositories;
@@ -9,7 +7,7 @@ using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 using Xunit;
 
-namespace Rentier.UnitTests;
+namespace Rentier.UnitTests.Application;
 
 public sealed class GetImportersQueryHandlerTests
 {
@@ -24,9 +22,9 @@ public sealed class GetImportersQueryHandlerTests
     [Fact]
     public async Task HandleAsync_NoImporters_ReturnsEmptyList()
     {
-        _repo.GetAllAsync(default).ReturnsForAnyArgs(new List<Importer>());
+        _repo.GetAllAsync(TestContext.Current.CancellationToken).ReturnsForAnyArgs(new List<Importer>());
 
-        var result = await _sut.HandleAsync(new GetImportersQuery());
+        var result = await _sut.HandleAsync(new GetImportersQuery(), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().BeEmpty();
@@ -44,9 +42,9 @@ public sealed class GetImportersQueryHandlerTests
         var b = Importer.Create("Beta", ReportType.IbkrCsv);
         b.UpdateDetails("Beta", ReportType.IbkrCsv, null, mailboxId, "", "", "", "");
 
-        _repo.GetAllAsync(default).ReturnsForAnyArgs(new List<Importer> { a, b });
+        _repo.GetAllAsync(TestContext.Current.CancellationToken).ReturnsForAnyArgs(new List<Importer> { a, b });
 
-        var result = await _sut.HandleAsync(new GetImportersQuery());
+        var result = await _sut.HandleAsync(new GetImportersQuery(), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().HaveCount(2);

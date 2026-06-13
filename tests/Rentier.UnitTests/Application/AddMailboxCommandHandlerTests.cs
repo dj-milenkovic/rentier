@@ -9,7 +9,7 @@ using Rentier.Tests.Common.Fakes;
 using Rentier.Domain.Entities;
 using Xunit;
 
-namespace Rentier.UnitTests;
+namespace Rentier.UnitTests.Application;
 
 public class AddMailboxCommandHandlerTests
 {
@@ -29,7 +29,7 @@ public class AddMailboxCommandHandlerTests
     {
         var cmd = new AddMailboxCommand("imap.example.com", 993, "user@example.com", null);
 
-        var result = await _handler.HandleAsync(cmd);
+        var result = await _handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBe(Guid.Empty);
@@ -41,7 +41,7 @@ public class AddMailboxCommandHandlerTests
     {
         var cmd = new AddMailboxCommand("imap.example.com", 993, "user@example.com", "secret123");
 
-        var result = await _handler.HandleAsync(cmd);
+        var result = await _handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         var savedKey = _fakeCredentials.StoredKeys.Single();
@@ -55,7 +55,7 @@ public class AddMailboxCommandHandlerTests
     {
         var cmd = new AddMailboxCommand("imap.example.com", 993, "user@example.com", "secret123");
 
-        var result = await _handler.HandleAsync(cmd);
+        var result = await _handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         var savedKey = _fakeCredentials.StoredKeys.Single();
@@ -68,7 +68,7 @@ public class AddMailboxCommandHandlerTests
     {
         var cmd = new AddMailboxCommand("imap.example.com", 993, "user@example.com", null);
 
-        await _handler.HandleAsync(cmd);
+        await _handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         _fakeCredentials.StoredKeys.Should().BeEmpty();
         await _repo.Received(1).AddAsync(Arg.Any<Mailbox>(), Arg.Any<CancellationToken>());
@@ -79,7 +79,7 @@ public class AddMailboxCommandHandlerTests
     {
         var cmd = new AddMailboxCommand("imap.example.com", 993, "user@example.com", "");
 
-        await _handler.HandleAsync(cmd);
+        await _handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         _fakeCredentials.StoredKeys.Should().BeEmpty();
         await _repo.Received(1).AddAsync(Arg.Any<Mailbox>(), Arg.Any<CancellationToken>());
@@ -90,7 +90,7 @@ public class AddMailboxCommandHandlerTests
     {
         var cmd = new AddMailboxCommand("", 993, "user@example.com", null);
 
-        var result = await _handler.HandleAsync(cmd);
+        var result = await _handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("MAILBOX_VALIDATION_FAILED");
@@ -107,7 +107,7 @@ public class AddMailboxCommandHandlerTests
         var handler = new AddMailboxCommandHandler(_repo, failingCredentials);
         var cmd = new AddMailboxCommand("imap.example.com", 993, "user@example.com", "pass");
 
-        var result = await handler.HandleAsync(cmd);
+        var result = await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("CREDENTIAL_WRITE_FAILED");

@@ -7,7 +7,7 @@ using Rentier.Application.Handlers;
 using Rentier.Application.Repositories;
 using Xunit;
 
-namespace Rentier.UnitTests;
+namespace Rentier.UnitTests.Application;
 
 public class BulkDeleteFilingsCommandHandlerTests
 {
@@ -21,7 +21,7 @@ public class BulkDeleteFilingsCommandHandlerTests
     public async Task HandleAsync_NullFilingIds_ReturnsDomainError()
     {
         var cmd = new BulkDeleteFilingsCommand(null!);
-        var result = await _sut.HandleAsync(cmd);
+        var result = await _sut.HandleAsync(cmd, TestContext.Current.CancellationToken);
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("FILING_BULK_DELETE_INVALID");
     }
@@ -30,7 +30,7 @@ public class BulkDeleteFilingsCommandHandlerTests
     public async Task HandleAsync_EmptyFilingIds_ReturnsDomainError()
     {
         var cmd = new BulkDeleteFilingsCommand(Array.Empty<Guid>());
-        var result = await _sut.HandleAsync(cmd);
+        var result = await _sut.HandleAsync(cmd, TestContext.Current.CancellationToken);
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("FILING_BULK_DELETE_INVALID");
     }
@@ -41,7 +41,7 @@ public class BulkDeleteFilingsCommandHandlerTests
         var ids = new[] { Guid.NewGuid(), Guid.NewGuid() };
         var cmd = new BulkDeleteFilingsCommand(ids);
 
-        var result = await _sut.HandleAsync(cmd);
+        var result = await _sut.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().Be(VoidResult.Value);
@@ -55,7 +55,7 @@ public class BulkDeleteFilingsCommandHandlerTests
         _repo.DeleteManyAsync(Arg.Any<IReadOnlyList<Guid>>(), Arg.Any<CancellationToken>())
             .Throws(new InvalidOperationException("DB error"));
 
-        var result = await _sut.HandleAsync(new BulkDeleteFilingsCommand(ids));
+        var result = await _sut.HandleAsync(new BulkDeleteFilingsCommand(ids), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("FILING_BULK_DELETE_FAILED");

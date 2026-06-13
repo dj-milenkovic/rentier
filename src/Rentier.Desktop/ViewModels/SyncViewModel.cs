@@ -9,6 +9,7 @@ using Rentier.Domain.Enums;
 using Rentier.Domain.ValueObjects;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
+using System.Reactive.Disposables.Fluent;
 
 namespace Rentier.Desktop.ViewModels;
 
@@ -115,7 +116,7 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
     public SyncViewModel(ISyncAllCommandHandler handler, IScheduler? scheduler = null)
     {
         _handler = handler;
-        var effectiveScheduler = scheduler ?? RxApp.MainThreadScheduler;
+        var effectiveScheduler = scheduler ?? RxSchedulers.MainThreadScheduler;
 
         var modeStream = this.WhenAnyValue(x => x.SelectedSyncMode);
         var strategyStream = this.WhenAnyValue(x => x.SelectedDuplicateStrategy);

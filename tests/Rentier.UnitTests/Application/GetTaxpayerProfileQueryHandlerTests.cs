@@ -1,14 +1,12 @@
 using FluentAssertions;
 using NSubstitute;
-using Rentier.Application.Common;
-using Rentier.Application.DTOs;
 using Rentier.Application.Handlers;
 using Rentier.Application.Queries;
 using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
 using Xunit;
 
-namespace Rentier.UnitTests;
+namespace Rentier.UnitTests.Application;
 
 public class GetTaxpayerProfileQueryHandlerTests
 {
@@ -26,9 +24,9 @@ public class GetTaxpayerProfileQueryHandlerTests
         var id = Guid.NewGuid();
         var profile = new TaxpayerProfile(id, "1234567890123", "Marko", "Knez 1", "7101",
             phoneNumber: "+381641234567", email: "m@test.com");
-        _repo.GetAsync().Returns(profile);
+        _repo.GetAsync(TestContext.Current.CancellationToken).Returns(profile);
 
-        var result = await _handler.HandleAsync(new GetTaxpayerProfileQuery());
+        var result = await _handler.HandleAsync(new GetTaxpayerProfileQuery(), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBeNull();
@@ -41,9 +39,9 @@ public class GetTaxpayerProfileQueryHandlerTests
     [Fact]
     public async Task HandleAsync_NoProfile_ReturnsSuccessWithNullDto()
     {
-        _repo.GetAsync().Returns((TaxpayerProfile?)null);
+        _repo.GetAsync(TestContext.Current.CancellationToken).Returns((TaxpayerProfile?)null);
 
-        var result = await _handler.HandleAsync(new GetTaxpayerProfileQuery());
+        var result = await _handler.HandleAsync(new GetTaxpayerProfileQuery(), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().BeNull();

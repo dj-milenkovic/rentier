@@ -49,7 +49,7 @@ public class ImportReportCommandHandlerTests
     {
         var cmd = MakeCommand();
 
-        var result = await _sut.HandleAsync(cmd);
+        var result = await _sut.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBeEmpty();
@@ -59,7 +59,7 @@ public class ImportReportCommandHandlerTests
     [Fact]
     public async Task HandleAsync_WithValidCsvAndNoExistingReport_TriggersProcessReportsCommand()
     {
-        await _sut.HandleAsync(MakeCommand());
+        await _sut.HandleAsync(MakeCommand(), TestContext.Current.CancellationToken);
 
         await _processReports.Received(1).HandleAsync(
             Arg.Any<ProcessReportsCommand>(), Arg.Any<CancellationToken>());
@@ -72,7 +72,7 @@ public class ImportReportCommandHandlerTests
             .Returns(Result<StatementParseResult, Error>.Failure(
                 new Error("PARSE_ERROR", "Missing header")));
 
-        var result = await _sut.HandleAsync(MakeCommand());
+        var result = await _sut.HandleAsync(MakeCommand(), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("REPORT_IMPORT_INVALID_CSV");
@@ -86,7 +86,7 @@ public class ImportReportCommandHandlerTests
             .Returns(Result<StatementParseResult, Error>.Failure(
                 new Error("PARSE_ERROR", "Bad format")));
 
-        await _sut.HandleAsync(MakeCommand());
+        await _sut.HandleAsync(MakeCommand(), TestContext.Current.CancellationToken);
 
         await _reportRepo.DidNotReceive().AddAsync(Arg.Any<Report>(), Arg.Any<CancellationToken>());
     }
@@ -98,7 +98,7 @@ public class ImportReportCommandHandlerTests
             Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(true);
 
-        var result = await _sut.HandleAsync(MakeCommand());
+        var result = await _sut.HandleAsync(MakeCommand(), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("REPORT_IMPORT_DUPLICATE");
@@ -111,7 +111,7 @@ public class ImportReportCommandHandlerTests
             Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(true);
 
-        await _sut.HandleAsync(MakeCommand());
+        await _sut.HandleAsync(MakeCommand(), TestContext.Current.CancellationToken);
 
         await _reportRepo.DidNotReceive().AddAsync(Arg.Any<Report>(), Arg.Any<CancellationToken>());
     }
@@ -123,7 +123,7 @@ public class ImportReportCommandHandlerTests
             .Returns(Result<ProcessReportsResult, Error>.Failure(
                 new Error("PROCESS_FAILED", "Exchange rate unavailable")));
 
-        var result = await _sut.HandleAsync(MakeCommand());
+        var result = await _sut.HandleAsync(MakeCommand(), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("PROCESS_FAILED");
@@ -135,7 +135,7 @@ public class ImportReportCommandHandlerTests
         _reportRepo.AddAsync(Arg.Any<Report>(), Arg.Any<CancellationToken>())
             .Throws(new InvalidOperationException("DB write failed"));
 
-        var result = await _sut.HandleAsync(MakeCommand());
+        var result = await _sut.HandleAsync(MakeCommand(), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("REPORT_IMPORT_FAILED");
