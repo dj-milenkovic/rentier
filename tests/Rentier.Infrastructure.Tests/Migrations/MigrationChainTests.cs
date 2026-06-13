@@ -2,7 +2,6 @@ using FluentAssertions;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Rentier.Infrastructure.Persistence;
-using Xunit;
 
 namespace Rentier.Infrastructure.Tests.Migrations;
 
@@ -34,7 +33,7 @@ public sealed class MigrationChainTests : IAsyncDisposable
     [Fact]
     public async Task AllMigrations_AppliedSequentially_CompleteWithoutException()
     {
-        var act = async () => await _context.Database.MigrateAsync();
+        var act = async () => await _context.Database.MigrateAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         await act.Should().NotThrowAsync("all migrations must apply cleanly on a fresh database");
     }
@@ -46,8 +45,7 @@ public sealed class MigrationChainTests : IAsyncDisposable
 
         var tables = await GetTableNamesAsync();
 
-        tables.Should().Contain(new[]
-        {
+        tables.Should().Contain([
             "TaxpayerProfiles",
             "PublicHolidays",
             "HolidayYearRange",
@@ -57,8 +55,8 @@ public sealed class MigrationChainTests : IAsyncDisposable
             "Reports",
             "Filings",
             "UserPreferences",
-            "__EFMigrationsHistory",
-        }, because: "each entity set must have its own table after migration");
+            "__EFMigrationsHistory"
+        ], because: "each entity set must have its own table after migration");
     }
 
     [Fact]
@@ -95,7 +93,7 @@ public sealed class MigrationChainTests : IAsyncDisposable
         // This test checks that EF can round-trip a value with the configured precision.
         var profileId = Guid.NewGuid();
         var profile = new Domain.Entities.TaxpayerProfile(
-            profileId, "1112223334445", "Test User", "Test Address", "11000");
+            profileId, "1112223334445", "Test User", "Test Address", "111");
         await _context.TaxpayerProfiles.AddAsync(profile, TestContext.Current.CancellationToken);
 
         var filing = Domain.Entities.Filing.CreateFromIncome(

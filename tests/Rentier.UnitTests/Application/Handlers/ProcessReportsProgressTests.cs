@@ -242,7 +242,7 @@ public class ProcessReportsProgressTests
         var handler = MakeHandler(reportRepo, importerRepo, filingRepo);
 
         // Act + Assert — should not throw
-        var act = async () => await handler.HandleAsync(new ProcessReportsCommand(Progress: null));
+        var act = async () => await handler.HandleAsync(new ProcessReportsCommand(Progress: null), TestContext.Current.CancellationToken);
         await act.Should().NotThrowAsync();
     }
 
