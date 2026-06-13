@@ -28,10 +28,10 @@ namespace Rentier.Infrastructure.Tests.Migrations;
 public sealed class MigrationBaselineFactory : IAsyncDisposable
 {
     /// <summary>Last migration applied in the "0010" baseline (before 0012/0013/0014/0011).</summary>
-    public const string Migration0010Id = "20260408180904_0010_SyncReplayControls";
+    private const string Migration0010Id = "20260408180904_0010_SyncReplayControls";
 
     /// <summary>Last migration applied in the "0014" baseline (before 0011 — the July outlier).</summary>
-    public const string Migration0014Id = "20260423112907_0014_UserPreferences";
+    private const string Migration0014Id = "20260423112907_0014_UserPreferences";
 
     private readonly string _dbPath;
     private readonly SqliteConnection _connection;
@@ -74,9 +74,10 @@ public sealed class MigrationBaselineFactory : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        await _connection.CloseAsync();
         await _connection.DisposeAsync();
-        if (File.Exists(_dbPath))
-            File.Delete(_dbPath);
+        SqliteConnection.ClearPool(_connection);
+        await DeleteDatabaseFilesAsync(_dbPath);
     }
 
     // ── Factory ───────────────────────────────────────────────────────────
@@ -84,7 +85,7 @@ public sealed class MigrationBaselineFactory : IAsyncDisposable
     private static async Task<MigrationBaselineFactory> CreateAsync(string targetMigration)
     {
         var path = Path.Combine(Path.GetTempPath(), $"rentier_baseline_{Guid.NewGuid():N}.db");
-        var conn = new SqliteConnection($"Data Source={path}");
+        var conn = new SqliteConnection($"Data Source={path};Pooling=False");
         await conn.OpenAsync();
 
         var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(conn).Options;
@@ -134,7 +135,9 @@ public sealed class MigrationBaselineFactory : IAsyncDisposable
 
     // ── Raw SQL seeders (Reports & Filings schema differs per baseline) ────
 
+    /// <param name="importerId"></param>
     /// <param name="includeEmailDate">True at 0014 baseline; false at 0010 baseline.</param>
+    /// <param name="conn"></param>
     private static async Task InsertReportsRawAsync(
         SqliteConnection conn, Guid importerId, bool includeEmailDate)
     {
@@ -239,6 +242,40 @@ public sealed class MigrationBaselineFactory : IAsyncDisposable
             cmd.Parameters.AddWithValue("@k", key);
             cmd.Parameters.AddWithValue("@v", value);
             await cmd.ExecuteNonQueryAsync();
+        }
+    }
+
+    private static async Task DeleteDatabaseFilesAsync(string dbPath)
+    {
+        foreach (var path in new[] { dbPath, $"{dbPath}-wal", $"{dbPath}-shm" })
+            await DeleteFileWithRetryAsync(path);
+    }
+
+    private static async Task DeleteFileWithRetryAsync(string path)
+    {
+        const int attempts = 3;
+
+        for(var attempt=1; attempt <= attempts; attempt++)
+        {
+            if (!File.Exists(path))
+                return;
+
+            try
+            {
+                File.Delete(path);
+                return;
+            }
+            catch(IOException) when (attempt < attempts)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(50));
+            }
+            catch(UnauthorizedAccessException) when (attempt < attempts)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(50));
+            }
+
+            if(File.Exists(path))
+                File.Delete(path);
         }
     }
 }

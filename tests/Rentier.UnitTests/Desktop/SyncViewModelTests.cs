@@ -61,7 +61,7 @@ public class SyncViewModelTests
                 Arg.Any<CancellationToken>())
             .Returns(_ => tcs.Task);
 
-        var vm = new SyncViewModel(handler);
+        var vm = CreateVm(handler);
 
         using var _ = vm.Activator.Activate();
 

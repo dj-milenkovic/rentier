@@ -42,13 +42,13 @@ public sealed class MigrationUpgradeTests
         await baseline.MigrateToLatestAsync();
 
         await using var ctx2 = baseline.OpenContext();
-        ctx2.TaxpayerProfiles.CountAsync(TestContext.Current.CancellationToken).Should().Be(profileCount);
-        ctx2.PublicHolidays.CountAsync(TestContext.Current.CancellationToken).Should().Be(holidayCount);
-        ctx2.Mailboxes.CountAsync(TestContext.Current.CancellationToken).Should().Be(mailboxCount);
-        ctx2.Importers.CountAsync(TestContext.Current.CancellationToken).Should().Be(importerCount);
-        ctx2.ExchangeRateCache.CountAsync(TestContext.Current.CancellationToken).Should().Be(rateCount);
-        ctx2.Reports.CountAsync(TestContext.Current.CancellationToken).Should().Be(reportCount);
-        ctx2.Filings.CountAsync(TestContext.Current.CancellationToken).Should().Be(filingCount);
+        (await ctx2.TaxpayerProfiles.CountAsync(TestContext.Current.CancellationToken)).Should().Be(profileCount);
+        (await ctx2.PublicHolidays.CountAsync(TestContext.Current.CancellationToken)).Should().Be(holidayCount);
+        (await ctx2.Mailboxes.CountAsync(TestContext.Current.CancellationToken)).Should().Be(mailboxCount);
+        (await ctx2.Importers.CountAsync(TestContext.Current.CancellationToken)).Should().Be(importerCount);
+        (await ctx2.ExchangeRateCache.CountAsync(TestContext.Current.CancellationToken)).Should().Be(rateCount);
+        (await ctx2.Reports.CountAsync(TestContext.Current.CancellationToken)).Should().Be(reportCount);
+        (await ctx2.Filings.CountAsync(TestContext.Current.CancellationToken)).Should().Be(filingCount);
     }
 
     [Fact]

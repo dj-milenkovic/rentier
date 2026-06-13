@@ -22,7 +22,7 @@ public sealed class MigrationChainTests : IAsyncDisposable
     public MigrationChainTests()
     {
         _dbPath = Path.Combine(Path.GetTempPath(), $"rentier_chain_{Guid.NewGuid():N}.db");
-        _connection = new SqliteConnection($"Data Source={_dbPath}");
+        _connection = new SqliteConnection($"Data Source={_dbPath};Pooling=False");
         _connection.Open();
 
         _context = new AppDbContext(
@@ -122,9 +122,10 @@ public sealed class MigrationChainTests : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         await _context.DisposeAsync();
+        await _connection.CloseAsync();
         await _connection.DisposeAsync();
-        if (File.Exists(_dbPath))
-            File.Delete(_dbPath);
+        SqliteConnection.ClearPool(_connection);
+        await DeleteDatabaseFilesAsync(_dbPath);
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
@@ -138,5 +139,39 @@ public sealed class MigrationChainTests : IAsyncDisposable
         while (await reader.ReadAsync())
             tables.Add(reader.GetString(0));
         return tables;
+    }
+
+    private static async Task DeleteDatabaseFilesAsync(string dbPath)
+    {
+        foreach (var path in new[] { dbPath, $"{dbPath}-wal", $"{dbPath}-shm" })
+            await DeleteFileWithRetryAsync(path);
+    }
+
+    private static async Task DeleteFileWithRetryAsync(string path)
+    {
+        const int attempts = 3;
+
+        for(var attempt=1; attempt <= attempts; attempt++)
+        {
+            if (!File.Exists(path))
+                return;
+
+            try
+            {
+                File.Delete(path);
+                return;
+            }
+            catch(IOException) when (attempt < attempts)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(50));
+            }
+            catch(UnauthorizedAccessException) when (attempt < attempts)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(50));
+            }
+
+            if(File.Exists(path))
+                File.Delete(path);
+        }
     }
 }
