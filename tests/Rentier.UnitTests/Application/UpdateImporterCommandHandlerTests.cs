@@ -1,14 +1,13 @@
 using FluentAssertions;
 using NSubstitute;
 using Rentier.Application.Commands;
-using Rentier.Application.Common;
 using Rentier.Application.Handlers;
 using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 using Xunit;
 
-namespace Rentier.UnitTests;
+namespace Rentier.UnitTests.Application;
 
 public sealed class UpdateImporterCommandHandlerTests
 {
@@ -28,7 +27,7 @@ public sealed class UpdateImporterCommandHandlerTests
 
         var cmd = new UpdateImporterCommand(existing.Id, "Updated", ReportType.IbkrCsv, null, null, "", "", "", "");
 
-        var result = await _sut.HandleAsync(cmd);
+        var result = await _sut.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         await _repo.Received(1).UpdateAsync(existing, Arg.Any<CancellationToken>());
@@ -42,7 +41,7 @@ public sealed class UpdateImporterCommandHandlerTests
 
         var cmd = new UpdateImporterCommand(id, "Updated", ReportType.IbkrCsv, null, null, "", "", "", "");
 
-        var result = await _sut.HandleAsync(cmd);
+        var result = await _sut.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("IMPORTER_NOT_FOUND");
@@ -57,7 +56,7 @@ public sealed class UpdateImporterCommandHandlerTests
 
         var cmd = new UpdateImporterCommand(existing.Id, "Test", ReportType.IbkrCsv, null, null, "", "", "[invalid", "");
 
-        var result = await _sut.HandleAsync(cmd);
+        var result = await _sut.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("IMPORTER_VALIDATION_INVALID_REGEX");
@@ -72,7 +71,7 @@ public sealed class UpdateImporterCommandHandlerTests
 
         var cmd = new UpdateImporterCommand(existing.Id, "", ReportType.IbkrCsv, null, null, "", "", "", "");
 
-        var result = await _sut.HandleAsync(cmd);
+        var result = await _sut.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("DOMAIN_ERROR");

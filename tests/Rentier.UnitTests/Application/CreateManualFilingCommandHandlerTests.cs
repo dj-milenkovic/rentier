@@ -13,7 +13,7 @@ using Rentier.Domain.Enums;
 using Rentier.Domain.ValueObjects;
 using Xunit;
 
-namespace Rentier.UnitTests;
+namespace Rentier.UnitTests.Application;
 
 public class CreateManualFilingCommandHandlerTests
 {
@@ -73,7 +73,7 @@ public class CreateManualFilingCommandHandlerTests
         var handler = MakeHandler(filingRepo: filingRepo);
         var cmd = ValidCommand(netReceived: 85.00m);
 
-        var result = await handler.HandleAsync(cmd);
+        var result = await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBe(Guid.Empty);
@@ -86,7 +86,7 @@ public class CreateManualFilingCommandHandlerTests
         var handler = MakeHandler(filingRepo: filingRepo);
         var cmd = ValidCommand(netReceived: 85.00m);
 
-        await handler.HandleAsync(cmd);
+        await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         await filingRepo.Received(1).AddAsync(Arg.Any<Filing>(), Arg.Any<CancellationToken>());
     }
@@ -98,7 +98,7 @@ public class CreateManualFilingCommandHandlerTests
         var handler = MakeHandler(filingRepo: filingRepo);
         var cmd = new CreateManualFilingCommand(ProfileId, IncomeType.Dividend, "aapl", TestDate, "USD", 100.00m, 85.00m);
 
-        await handler.HandleAsync(cmd);
+        await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         await filingRepo.Received(1).AddAsync(
             Arg.Is<Filing>(f => f.Ticker == "AAPL"),
@@ -112,7 +112,7 @@ public class CreateManualFilingCommandHandlerTests
         var handler = MakeHandler(filingRepo: filingRepo);
         var cmd = ValidCommand(netReceived: 85.00m);
 
-        await handler.HandleAsync(cmd);
+        await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         await filingRepo.Received(1).AddAsync(
             Arg.Is<Filing>(f => f.ReportId == null),
@@ -126,7 +126,7 @@ public class CreateManualFilingCommandHandlerTests
         var handler = MakeHandler(filingRepo: filingRepo);
         var cmd = ValidCommand(netReceived: 85.00m);
 
-        await handler.HandleAsync(cmd);
+        await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         await filingRepo.Received(1).AddAsync(
             Arg.Is<Filing>(f => f.Status == FilingStatus.Init),
@@ -142,7 +142,7 @@ public class CreateManualFilingCommandHandlerTests
         var handler = MakeHandler(filingRepo: filingRepo);
         var cmd = ValidCommand(netReceived: null);
 
-        await handler.HandleAsync(cmd);
+        await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         await filingRepo.Received(1).AddAsync(
             Arg.Is<Filing>(f => f.WhtPaidRsd == 0m),
@@ -155,7 +155,7 @@ public class CreateManualFilingCommandHandlerTests
         var handler = MakeHandler(filingRepo: MakeFilingRepo(exists: false));
         var cmd = ValidCommand(netReceived: null);
 
-        var result = await handler.HandleAsync(cmd);
+        var result = await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
     }
@@ -169,7 +169,7 @@ public class CreateManualFilingCommandHandlerTests
         var handler = MakeHandler(filingRepo: filingRepo);
         var cmd = ValidCommand();
 
-        var result = await handler.HandleAsync(cmd);
+        var result = await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("FILING_CREATE_DUPLICATE");
@@ -182,7 +182,7 @@ public class CreateManualFilingCommandHandlerTests
         var handler = MakeHandler(filingRepo: filingRepo);
         var cmd = ValidCommand();
 
-        await handler.HandleAsync(cmd);
+        await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         await filingRepo.DidNotReceive().AddAsync(Arg.Any<Filing>(), Arg.Any<CancellationToken>());
     }
@@ -195,7 +195,7 @@ public class CreateManualFilingCommandHandlerTests
         var handler = MakeHandler();
         var cmd = new CreateManualFilingCommand(ProfileId, IncomeType.Dividend, " ", TestDate, "USD", 100m, null);
 
-        var result = await handler.HandleAsync(cmd);
+        var result = await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("TICKER_REQUIRED");
@@ -207,7 +207,7 @@ public class CreateManualFilingCommandHandlerTests
         var handler = MakeHandler();
         var cmd = new CreateManualFilingCommand(ProfileId, IncomeType.Dividend, "AAPL", TestDate, "USD", 0m, null);
 
-        var result = await handler.HandleAsync(cmd);
+        var result = await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("GROSS_REQUIRED");
@@ -219,7 +219,7 @@ public class CreateManualFilingCommandHandlerTests
         var handler = MakeHandler();
         var cmd = new CreateManualFilingCommand(ProfileId, IncomeType.Dividend, "AAPL", TestDate, "USD", 100m, 200m);
 
-        var result = await handler.HandleAsync(cmd);
+        var result = await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("NET_EXCEEDS_GROSS");
@@ -231,7 +231,7 @@ public class CreateManualFilingCommandHandlerTests
         var handler = MakeHandler();
         var cmd = new CreateManualFilingCommand(ProfileId, IncomeType.Dividend, "AAPL", default, "USD", 100m, null);
 
-        var result = await handler.HandleAsync(cmd);
+        var result = await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("DATE_REQUIRED");
@@ -243,7 +243,7 @@ public class CreateManualFilingCommandHandlerTests
         var handler = MakeHandler();
         var cmd = new CreateManualFilingCommand(ProfileId, IncomeType.Dividend, "AAPL", TestDate, "USD", 100m, -1m);
 
-        var result = await handler.HandleAsync(cmd);
+        var result = await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("NET_NEGATIVE");
@@ -261,7 +261,7 @@ public class CreateManualFilingCommandHandlerTests
         var handler = MakeHandler(fetcher: fetcher);
         var cmd = ValidCommand();
 
-        var result = await handler.HandleAsync(cmd);
+        var result = await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("NETWORK_FAILURE");

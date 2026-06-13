@@ -1,12 +1,11 @@
 using FluentAssertions;
 using NSubstitute;
 using Rentier.Application.Commands;
-using Rentier.Application.Common;
 using Rentier.Application.Handlers;
 using Rentier.Application.Repositories;
 using Xunit;
 
-namespace Rentier.UnitTests;
+namespace Rentier.UnitTests.Application;
 
 public class DeleteFilingCommandHandlerTests
 {
@@ -23,7 +22,7 @@ public class DeleteFilingCommandHandlerTests
     {
         var id = Guid.NewGuid();
 
-        var result = await _sut.HandleAsync(new DeleteFilingCommand(id));
+        var result = await _sut.HandleAsync(new DeleteFilingCommand(id), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         await _repo.Received(1).DeleteAsync(id, Arg.Any<CancellationToken>());
@@ -36,7 +35,7 @@ public class DeleteFilingCommandHandlerTests
         var id = Guid.NewGuid();
         _repo.DeleteAsync(id, Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
 
-        var result = await _sut.HandleAsync(new DeleteFilingCommand(id));
+        var result = await _sut.HandleAsync(new DeleteFilingCommand(id), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         await _repo.Received(1).DeleteAsync(id, Arg.Any<CancellationToken>());

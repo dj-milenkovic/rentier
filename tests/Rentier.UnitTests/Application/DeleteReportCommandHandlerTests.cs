@@ -4,11 +4,10 @@ using NSubstitute.ExceptionExtensions;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.Handlers;
-using Rentier.Application.Interfaces;
 using Rentier.Application.Repositories;
 using Xunit;
 
-namespace Rentier.UnitTests;
+namespace Rentier.UnitTests.Application;
 
 public class DeleteReportCommandHandlerTests
 {
@@ -27,7 +26,7 @@ public class DeleteReportCommandHandlerTests
         var reportId = Guid.NewGuid();
         var cmd = new DeleteReportCommand(reportId);
 
-        var result = await _sut.HandleAsync(cmd);
+        var result = await _sut.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().Be(VoidResult.Value);
@@ -41,7 +40,7 @@ public class DeleteReportCommandHandlerTests
         // DeleteByReportIdAsync is idempotent — returns immediately when no filings
         var cmd = new DeleteReportCommand(Guid.NewGuid());
 
-        var result = await _sut.HandleAsync(cmd);
+        var result = await _sut.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
     }
@@ -56,7 +55,7 @@ public class DeleteReportCommandHandlerTests
         _reportRepo.DeleteAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns(_ => { callOrder.Add("report"); return Task.CompletedTask; });
 
-        await _sut.HandleAsync(new DeleteReportCommand(Guid.NewGuid()));
+        await _sut.HandleAsync(new DeleteReportCommand(Guid.NewGuid()), TestContext.Current.CancellationToken);
 
         callOrder.Should().Equal("filings", "report");
     }
@@ -67,7 +66,7 @@ public class DeleteReportCommandHandlerTests
         _filingRepo.DeleteByReportIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Throws(new InvalidOperationException("FK constraint"));
 
-        var result = await _sut.HandleAsync(new DeleteReportCommand(Guid.NewGuid()));
+        var result = await _sut.HandleAsync(new DeleteReportCommand(Guid.NewGuid()), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("REPORT_DELETE_FAILED");
@@ -80,7 +79,7 @@ public class DeleteReportCommandHandlerTests
         _reportRepo.DeleteAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Throws(new InvalidOperationException("Report not deletable"));
 
-        var result = await _sut.HandleAsync(new DeleteReportCommand(Guid.NewGuid()));
+        var result = await _sut.HandleAsync(new DeleteReportCommand(Guid.NewGuid()), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("REPORT_DELETE_FAILED");
