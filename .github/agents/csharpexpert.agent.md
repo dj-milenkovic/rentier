@@ -176,7 +176,7 @@ When invoked:
 
 ### xUnit v3
 
-- Packages: `xunit.v3.v3`, `xunit.runner.visualstudio` 3.x, `Microsoft.NET.Test.Sdk`
+- Packages: `xunit.v3`, `xunit.runner.visualstudio` 3.x, `Microsoft.NET.Test.Sdk`
 - `ITestOutputHelper` and `[Theory]` are in `Xunit`
 
 ### NUnit
