@@ -131,7 +131,7 @@ public class HolidaySettingsViewHeadlessTests
 
         // Verify binding is in place and command reports CanExecute=false.
         // Checking button.Command.CanExecute() is reliable in headless tests even when
-        // the Avalonia IsEnabled update is asynchronous via RxApp.MainThreadScheduler.
+        // the Avalonia IsEnabled update is asynchronous via RxSchedulers.MainThreadScheduler.
         deleteBtn.Should().NotBeNull("the Delete button should be bound to DeleteRowCommand");
         deleteBtn!.Command?.CanExecute(deleteBtn.CommandParameter).Should().BeFalse(
             "no entry is selected so canDelete should be false");

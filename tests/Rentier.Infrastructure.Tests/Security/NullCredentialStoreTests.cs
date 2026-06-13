@@ -1,7 +1,6 @@
 using FluentAssertions;
 using Rentier.Application.Common;
 using Rentier.Infrastructure.Security;
-using Xunit;
 
 namespace Rentier.Infrastructure.Tests.Security;
 
@@ -18,7 +17,7 @@ public class NullCredentialStoreTests
     {
         var sut = MakeSut();
 
-        var result = await sut.SaveCredentialAsync("Rentier/Test/key", "secret");
+        var result = await sut.SaveCredentialAsync("Rentier/Test/key", "secret", TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be(ProviderError);
@@ -29,7 +28,7 @@ public class NullCredentialStoreTests
     {
         var sut = MakeSut();
 
-        var result = await sut.GetCredentialAsync("Rentier/Test/key");
+        var result = await sut.GetCredentialAsync("Rentier/Test/key", TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be(ProviderError);
@@ -40,7 +39,7 @@ public class NullCredentialStoreTests
     {
         var sut = MakeSut();
 
-        var result = await sut.DeleteCredentialAsync("Rentier/Test/key");
+        var result = await sut.DeleteCredentialAsync("Rentier/Test/key", TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be(ProviderError);
@@ -52,7 +51,7 @@ public class NullCredentialStoreTests
         var customError = new Error("CUSTOM_CODE", "custom message");
         var sut = new NullCredentialStore(customError);
 
-        var result = await sut.SaveCredentialAsync("key", "secret");
+        var result = await sut.SaveCredentialAsync("key", "secret", TestContext.Current.CancellationToken);
 
         result.Error.Code.Should().Be("CUSTOM_CODE");
         result.Error.Message.Should().Be("custom message");

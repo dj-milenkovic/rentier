@@ -1,5 +1,5 @@
 using Avalonia;
-using Avalonia.ReactiveUI;
+using ReactiveUI.Avalonia;
 using Microsoft.Extensions.DependencyInjection;
 using Rentier.Application.Interfaces;
 using Velopack;
@@ -21,11 +21,12 @@ public static class Program
             .StartWithClassicDesktopLifetime(args);
     }
 
-    public static AppBuilder BuildAvaloniaApp()
-        => AppBuilder.Configure<App>()
-            .UsePlatformDetect()
-            .WithInterFont()
-            .UseReactiveUI();
+    private static AppBuilder BuildAvaloniaApp()
+    => AppBuilder.Configure<App>()
+        .UsePlatformDetect()
+        .WithInterFont()
+        .UseReactiveUI(_ => { });
+
 
     // ── Headless smoke test ───────────────────────────────────────────────────
 

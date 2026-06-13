@@ -83,7 +83,7 @@ public class NbsExchangeRateFetcherTests
         var repo = Substitute.For<IExchangeRateCacheRepository>();
         var fetcher = CreateFetcher(handler, repo);
 
-        var result = await fetcher.FetchRateAsync(TestDate, "XYZ");
+        var result = await fetcher.FetchRateAsync(TestDate, "XYZ", TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("UNSUPPORTED_CURRENCY");
@@ -100,7 +100,7 @@ public class NbsExchangeRateFetcherTests
             .Returns(cachedRate);
 
         var fetcher = CreateFetcher(handler, repo);
-        var result = await fetcher.FetchRateAsync(TestDate, "EUR");
+        var result = await fetcher.FetchRateAsync(TestDate, "EUR", TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.RateToRsd.Should().Be(117m);
@@ -116,7 +116,7 @@ public class NbsExchangeRateFetcherTests
             .Returns((ExchangeRate?)null);
 
         var fetcher = CreateFetcher(handler, repo);
-        var result = await fetcher.FetchRateAsync(TestDate, "EUR");
+        var result = await fetcher.FetchRateAsync(TestDate, "EUR", TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Currency.Should().Be("EUR");
@@ -137,7 +137,7 @@ public class NbsExchangeRateFetcherTests
             .Returns((ExchangeRate?)null);
 
         var fetcher = CreateFetcher(handler, repo);
-        var result = await fetcher.FetchRateAsync(TestDate, "CHF");
+        var result = await fetcher.FetchRateAsync(TestDate, "CHF", TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("RATE_NOT_FOUND");
@@ -152,7 +152,7 @@ public class NbsExchangeRateFetcherTests
             .Returns((ExchangeRate?)null);
 
         var fetcher = CreateFetcher(handler, repo);
-        var result = await fetcher.FetchRateAsync(TestDate, "EUR");
+        var result = await fetcher.FetchRateAsync(TestDate, "EUR", TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("NBS_HTTP_ERROR");
@@ -167,7 +167,7 @@ public class NbsExchangeRateFetcherTests
             .Returns((ExchangeRate?)null);
 
         var fetcher = CreateFetcher(handler, repo);
-        var result = await fetcher.FetchRateAsync(TestDate, "EUR");
+        var result = await fetcher.FetchRateAsync(TestDate, "EUR", TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("NBS_PARSE_ERROR");
@@ -183,7 +183,7 @@ public class NbsExchangeRateFetcherTests
             .Returns((ExchangeRate?)null);
 
         var fetcher = CreateFetcher(handler, repo);
-        var result = await fetcher.FetchRateAsync(TestDate, "JPY");
+        var result = await fetcher.FetchRateAsync(TestDate, "JPY", TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.RateToRsd.Should().Be(0.7735m);
@@ -199,7 +199,7 @@ public class NbsExchangeRateFetcherTests
             .Returns((ExchangeRate?)null);
 
         var fetcher = CreateFetcher(handler, repo);
-        var result = await fetcher.FetchRateAsync(TestDate, "eur");
+        var result = await fetcher.FetchRateAsync(TestDate, "eur", TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Currency.Should().Be("EUR");
@@ -214,7 +214,7 @@ public class NbsExchangeRateFetcherTests
             .Returns((ExchangeRate?)null);
 
         var fetcher = CreateFetcher(handler, repo);
-        var result = await fetcher.FetchRateAsync(TestDate, "EUR");
+        var result = await fetcher.FetchRateAsync(TestDate, "EUR", TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("RATE_NOT_FOUND");
@@ -235,7 +235,7 @@ public class NbsIntegrationTests
             .Returns(Task.CompletedTask);
 
         var fetcher = new NbsExchangeRateFetcher(new HttpClient(), repo);
-        var result = await fetcher.FetchRateAsync(new DateOnly(2024, 1, 15), "EUR");
+        var result = await fetcher.FetchRateAsync(new DateOnly(2024, 1, 15), "EUR", TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.RateToRsd.Should().BeGreaterThan(100m);
@@ -251,7 +251,7 @@ public class NbsIntegrationTests
             .Returns(Task.CompletedTask);
 
         var fetcher = new NbsExchangeRateFetcher(new HttpClient(), repo);
-        var result = await fetcher.FetchRateAsync(new DateOnly(2024, 1, 15), "USD");
+        var result = await fetcher.FetchRateAsync(new DateOnly(2024, 1, 15), "USD", TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.RateToRsd.Should().BeGreaterThan(0m);

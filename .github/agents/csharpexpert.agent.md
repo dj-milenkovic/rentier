@@ -169,7 +169,7 @@ When invoked:
 
 ### xUnit
 
-- Packages: `Microsoft.NET.Test.Sdk`, `xunit`, `xunit.runner.visualstudio`
+- Packages: `Microsoft.NET.Test.Sdk`, `xunit.v3`, `xunit.runner.visualstudio`
 - No class attribute; use `[Fact]`
 - Parameterized tests: `[Theory]` with `[InlineData]`
 - Setup/teardown: constructor and `IDisposable`

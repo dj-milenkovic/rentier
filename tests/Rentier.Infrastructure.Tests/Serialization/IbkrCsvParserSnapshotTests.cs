@@ -31,7 +31,7 @@ public class IbkrCsvParserSnapshotTests
         var parser = new IbkrCsvParser();
         await using var stream = LoadFixture("ibkr-sample.csv");
 
-        var result = await parser.ParseAsync(stream);
+        var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
 
         // Verify the parsed result matches the snapshot
         await Verify(result.Value);

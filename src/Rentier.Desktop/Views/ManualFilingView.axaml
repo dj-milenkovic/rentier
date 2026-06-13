@@ -59,7 +59,7 @@
         <TextBlock Text="{Binding [ManualFiling_Ticker_Label], Source={StaticResource Localizer}}" FontWeight="SemiBold" />
         <TextBox Text="{Binding Ticker, Mode=TwoWay}"
                  IsEnabled="{Binding IsLoading, Converter={x:Static local:InvertBoolConverter.Instance}}"
-                 Watermark="e.g. AAPL" />
+                 PlaceholderText="e.g. AAPL" />
       </StackPanel>
 
       <!-- Income Date -->
@@ -83,7 +83,7 @@
         <TextBlock Text="{Binding [ManualFiling_GrossAmount_Label], Source={StaticResource Localizer}}" FontWeight="SemiBold" />
         <TextBox Text="{Binding GrossAmountText, Mode=TwoWay}"
                  IsEnabled="{Binding IsLoading, Converter={x:Static local:InvertBoolConverter.Instance}}"
-                 Watermark="e.g. 100.00" />
+                 PlaceholderText="e.g. 100.00" />
       </StackPanel>
 
       <!-- Net Received -->
@@ -91,7 +91,7 @@
         <TextBlock Text="{Binding [ManualFiling_NetReceived_Label], Source={StaticResource Localizer}}" FontWeight="SemiBold" />
         <TextBox Text="{Binding NetReceivedText, Mode=TwoWay}"
                  IsEnabled="{Binding IsLoading, Converter={x:Static local:InvertBoolConverter.Instance}}"
-                 Watermark="e.g. 85.00" />
+                 PlaceholderText="e.g. 85.00" />
       </StackPanel>
 
       <!-- Action Buttons -->

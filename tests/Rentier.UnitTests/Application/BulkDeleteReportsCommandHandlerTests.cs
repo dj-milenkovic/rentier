@@ -2,12 +2,11 @@ using FluentAssertions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using Rentier.Application.Commands;
-using Rentier.Application.Common;
 using Rentier.Application.Handlers;
 using Rentier.Application.Repositories;
 using Xunit;
 
-namespace Rentier.UnitTests;
+namespace Rentier.UnitTests.Application;
 
 public class BulkDeleteReportsCommandHandlerTests
 {
@@ -21,7 +20,7 @@ public class BulkDeleteReportsCommandHandlerTests
     [Fact]
     public async Task HandleAsync_NullReportIds_ReturnsDomainError()
     {
-        var result = await _sut.HandleAsync(new BulkDeleteReportsCommand(null!));
+        var result = await _sut.HandleAsync(new BulkDeleteReportsCommand(null!), TestContext.Current.CancellationToken);
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("REPORT_BULK_DELETE_INVALID");
     }
@@ -29,7 +28,7 @@ public class BulkDeleteReportsCommandHandlerTests
     [Fact]
     public async Task HandleAsync_EmptyReportIds_ReturnsDomainError()
     {
-        var result = await _sut.HandleAsync(new BulkDeleteReportsCommand(Array.Empty<Guid>()));
+        var result = await _sut.HandleAsync(new BulkDeleteReportsCommand(Array.Empty<Guid>()), TestContext.Current.CancellationToken);
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("REPORT_BULK_DELETE_INVALID");
     }
@@ -41,7 +40,7 @@ public class BulkDeleteReportsCommandHandlerTests
         var id2 = Guid.NewGuid();
         var ids = new[] { id1, id2 };
 
-        var result = await _sut.HandleAsync(new BulkDeleteReportsCommand(ids));
+        var result = await _sut.HandleAsync(new BulkDeleteReportsCommand(ids), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         await _filingRepo.Received(1).DeleteByReportIdAsync(id1, Arg.Any<CancellationToken>());
@@ -59,7 +58,7 @@ public class BulkDeleteReportsCommandHandlerTests
         _reportRepo.DeleteManyAsync(Arg.Any<IReadOnlyList<Guid>>(), Arg.Any<CancellationToken>())
             .Returns(_ => { callOrder.Add("reports"); return Task.CompletedTask; });
 
-        await _sut.HandleAsync(new BulkDeleteReportsCommand(new[] { id }));
+        await _sut.HandleAsync(new BulkDeleteReportsCommand(new[] { id }), TestContext.Current.CancellationToken);
 
         callOrder.Should().Equal("filings", "reports");
     }
@@ -70,8 +69,7 @@ public class BulkDeleteReportsCommandHandlerTests
         _filingRepo.DeleteByReportIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Throws(new InvalidOperationException("DB error"));
 
-        var result = await _sut.HandleAsync(
-            new BulkDeleteReportsCommand(new[] { Guid.NewGuid() }));
+        var result = await _sut.HandleAsync(new BulkDeleteReportsCommand(new[] { Guid.NewGuid() }), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("REPORT_BULK_DELETE_FAILED");

@@ -1,17 +1,15 @@
 using FluentAssertions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
-using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Handlers;
-using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
 using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 using Xunit;
 
-namespace Rentier.UnitTests;
+namespace Rentier.UnitTests.Application;
 
 public class GetReportsQueryHandlerTests
 {
@@ -63,7 +61,7 @@ public class GetReportsQueryHandlerTests
         _importerRepo.GetAllAsync(Arg.Any<CancellationToken>())
             .Returns(Array.Empty<Importer>());
 
-        var result = await _sut.HandleAsync(new GetReportsQuery());
+        var result = await _sut.HandleAsync(new GetReportsQuery(), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Rows.Should().BeEmpty();
@@ -80,7 +78,7 @@ public class GetReportsQueryHandlerTests
         _filingRepo.GetFilingCountByReportIdAsync(report.Id, Arg.Any<CancellationToken>()).Returns(7);
         _filingRepo.GetEarliestIncomeDateByReportIdAsync(report.Id, Arg.Any<CancellationToken>()).Returns(earliest);
 
-        var result = await _sut.HandleAsync(new GetReportsQuery());
+        var result = await _sut.HandleAsync(new GetReportsQuery(), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         var dto = result.Value.Rows[0];
@@ -103,7 +101,7 @@ public class GetReportsQueryHandlerTests
         _filingRepo.GetFilingCountByReportIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(0);
         _filingRepo.GetEarliestIncomeDateByReportIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((DateOnly?)null);
 
-        var result = await _sut.HandleAsync(new GetReportsQuery());
+        var result = await _sut.HandleAsync(new GetReportsQuery(), TestContext.Current.CancellationToken);
 
         var dto = result.Value.Rows[0];
         dto.EarliestIncomeDate.Should().BeNull();
@@ -120,7 +118,7 @@ public class GetReportsQueryHandlerTests
         _filingRepo.GetFilingCountByReportIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(0);
         _filingRepo.GetEarliestIncomeDateByReportIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((DateOnly?)null);
 
-        var result = await _sut.HandleAsync(new GetReportsQuery());
+        var result = await _sut.HandleAsync(new GetReportsQuery(), TestContext.Current.CancellationToken);
 
         result.Value.Rows[0].ImporterName.Should().Be("My Broker");
     }
@@ -134,7 +132,7 @@ public class GetReportsQueryHandlerTests
         _filingRepo.GetFilingCountByReportIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(0);
         _filingRepo.GetEarliestIncomeDateByReportIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((DateOnly?)null);
 
-        var result = await _sut.HandleAsync(new GetReportsQuery());
+        var result = await _sut.HandleAsync(new GetReportsQuery(), TestContext.Current.CancellationToken);
 
         result.Value.Rows[0].ImporterName.Should().Be("Unknown");
     }
@@ -151,7 +149,7 @@ public class GetReportsQueryHandlerTests
         _filingRepo.GetFilingCountByReportIdAsync(r2.Id, Arg.Any<CancellationToken>()).Returns(2);
         _filingRepo.GetEarliestIncomeDateByReportIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((DateOnly?)null);
 
-        var result = await _sut.HandleAsync(new GetReportsQuery());
+        var result = await _sut.HandleAsync(new GetReportsQuery(), TestContext.Current.CancellationToken);
 
         result.Value.Rows.Should().HaveCount(2);
         result.Value.Rows.First(d => d.Id == r1.Id).FilingCount.Should().Be(5);
@@ -171,7 +169,7 @@ public class GetReportsQueryHandlerTests
         _importerRepo.GetAllAsync(Arg.Any<CancellationToken>())
             .Returns(Array.Empty<Importer>());
 
-        var result = await _sut.HandleAsync(new GetReportsQuery());
+        var result = await _sut.HandleAsync(new GetReportsQuery(), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("REPORT_QUERY_FAILED");
@@ -183,7 +181,7 @@ public class GetReportsQueryHandlerTests
     {
         SetupPagedReports(0);
 
-        await _sut.HandleAsync(new GetReportsQuery());
+        await _sut.HandleAsync(new GetReportsQuery(), TestContext.Current.CancellationToken);
 
         await _reportRepo.Received(1).GetPagedAsync(
             Arg.Any<ReportColumnFilter?>(),
@@ -198,7 +196,7 @@ public class GetReportsQueryHandlerTests
     {
         SetupPagedReports(0);
 
-        await _sut.HandleAsync(new GetReportsQuery(SortDescending: false));
+        await _sut.HandleAsync(new GetReportsQuery(SortDescending: false), TestContext.Current.CancellationToken);
 
         await _reportRepo.Received(1).GetPagedAsync(
             Arg.Any<ReportColumnFilter?>(),
@@ -213,7 +211,7 @@ public class GetReportsQueryHandlerTests
     {
         SetupPagedReports(0);
 
-        await _sut.HandleAsync(new GetReportsQuery(Page: 1, PageSize: 30));
+        await _sut.HandleAsync(new GetReportsQuery(Page: 1, PageSize: 30), TestContext.Current.CancellationToken);
 
         await _reportRepo.Received(1).GetPagedAsync(
             Arg.Any<ReportColumnFilter?>(),
@@ -228,7 +226,7 @@ public class GetReportsQueryHandlerTests
     {
         SetupPagedReports(0);
 
-        await _sut.HandleAsync(new GetReportsQuery(Page: 2, PageSize: 30));
+        await _sut.HandleAsync(new GetReportsQuery(Page: 2, PageSize: 30), TestContext.Current.CancellationToken);
 
         await _reportRepo.Received(1).GetPagedAsync(
             Arg.Any<ReportColumnFilter?>(),
@@ -250,7 +248,7 @@ public class GetReportsQueryHandlerTests
         _filingRepo.GetFilingCountByReportIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(0);
         _filingRepo.GetEarliestIncomeDateByReportIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((DateOnly?)null);
 
-        var result = await _sut.HandleAsync(new GetReportsQuery(Page: 1, PageSize: 30));
+        var result = await _sut.HandleAsync(new GetReportsQuery(Page: 1, PageSize: 30), TestContext.Current.CancellationToken);
 
         result.Value.TotalCount.Should().Be(75);
         result.Value.TotalPages.Should().Be(3);
@@ -262,7 +260,7 @@ public class GetReportsQueryHandlerTests
     {
         SetupPagedReports(0);
 
-        var result = await _sut.HandleAsync(new GetReportsQuery());
+        var result = await _sut.HandleAsync(new GetReportsQuery(), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Rows.Should().BeEmpty();
@@ -273,7 +271,7 @@ public class GetReportsQueryHandlerTests
     [Fact]
     public async Task HandleAsync_PageZero_ReturnsValidationFailure()
     {
-        var result = await _sut.HandleAsync(new GetReportsQuery(Page: 0));
+        var result = await _sut.HandleAsync(new GetReportsQuery(Page: 0), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("PAGINATION_VALIDATION_FAILED");
@@ -283,7 +281,7 @@ public class GetReportsQueryHandlerTests
     [Fact]
     public async Task HandleAsync_PageSizeZero_ReturnsValidationFailure()
     {
-        var result = await _sut.HandleAsync(new GetReportsQuery(PageSize: 0));
+        var result = await _sut.HandleAsync(new GetReportsQuery(PageSize: 0), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("PAGINATION_VALIDATION_FAILED");
@@ -292,7 +290,7 @@ public class GetReportsQueryHandlerTests
     [Fact]
     public async Task HandleAsync_PageSize101_ReturnsValidationFailure()
     {
-        var result = await _sut.HandleAsync(new GetReportsQuery(PageSize: 101));
+        var result = await _sut.HandleAsync(new GetReportsQuery(PageSize: 101), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("PAGINATION_VALIDATION_FAILED");
@@ -309,7 +307,7 @@ public class GetReportsQueryHandlerTests
         _filingRepo.GetEarliestIncomeDateByReportIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((DateOnly?)null);
 
         var filter = new ReportColumnFilter(ImporterContains: "IBKR");
-        var result = await _sut.HandleAsync(new GetReportsQuery(Filter: filter));
+        var result = await _sut.HandleAsync(new GetReportsQuery(Filter: filter), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         await _reportRepo.Received(1).GetPagedAsync(
@@ -333,7 +331,7 @@ public class GetReportsQueryHandlerTests
         _filingRepo.GetEarliestIncomeDateByReportIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((DateOnly?)null);
 
         var filter = new ReportColumnFilter(FilingCountValue: 7);
-        var result = await _sut.HandleAsync(new GetReportsQuery(Filter: filter));
+        var result = await _sut.HandleAsync(new GetReportsQuery(Filter: filter), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Rows.Should().HaveCount(1);
@@ -345,7 +343,7 @@ public class GetReportsQueryHandlerTests
     {
         SetupPagedReports(0);
 
-        await _sut.HandleAsync(new GetReportsQuery());
+        await _sut.HandleAsync(new GetReportsQuery(), TestContext.Current.CancellationToken);
 
         await _reportRepo.Received(1).GetPagedAsync(
             null,

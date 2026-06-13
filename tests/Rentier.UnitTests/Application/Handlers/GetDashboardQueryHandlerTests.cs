@@ -1,8 +1,6 @@
 using FluentAssertions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
-using Rentier.Application.Common;
-using Rentier.Application.DTOs;
 using Rentier.Application.Handlers;
 using Rentier.Application.Queries;
 using Rentier.Application.Repositories;
@@ -11,7 +9,7 @@ using Rentier.Domain.Enums;
 using Rentier.Domain.ValueObjects;
 using Xunit;
 
-namespace Rentier.UnitTests;
+namespace Rentier.UnitTests.Application.Handlers;
 
 public class GetDashboardQueryHandlerTests
 {
@@ -65,7 +63,7 @@ public class GetDashboardQueryHandlerTests
     [Fact]
     public async Task HandleAsync_NoFilings_ReturnsEmptyLists()
     {
-        var result = await _sut.HandleAsync(new GetDashboardQuery());
+        var result = await _sut.HandleAsync(new GetDashboardQuery(), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.UpcomingDeadlines.Should().BeEmpty();
@@ -81,7 +79,7 @@ public class GetDashboardQueryHandlerTests
         _filingRepo.GetUpcomingAsync(Arg.Any<DateOnly>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
             .Returns(ordered);
 
-        var result = await _sut.HandleAsync(new GetDashboardQuery());
+        var result = await _sut.HandleAsync(new GetDashboardQuery(), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.UpcomingDeadlines.Should().HaveCount(2);
@@ -97,7 +95,7 @@ public class GetDashboardQueryHandlerTests
         _filingRepo.GetOverdueAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns(overdueList);
 
-        var result = await _sut.HandleAsync(new GetDashboardQuery());
+        var result = await _sut.HandleAsync(new GetDashboardQuery(), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.OverdueFilings.Should().HaveCount(1);
@@ -111,7 +109,7 @@ public class GetDashboardQueryHandlerTests
         _filingRepo.GetOverdueAsync(Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns(new List<Filing>().AsReadOnly() as IReadOnlyList<Filing>);
 
-        var result = await _sut.HandleAsync(new GetDashboardQuery());
+        var result = await _sut.HandleAsync(new GetDashboardQuery(), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.OverdueFilings.Should().BeEmpty();
@@ -123,7 +121,7 @@ public class GetDashboardQueryHandlerTests
         _filingRepo.GetFilingStatsAsync(Arg.Any<CancellationToken>())
             .Returns((3, 2, 5, 0m));
 
-        var result = await _sut.HandleAsync(new GetDashboardQuery());
+        var result = await _sut.HandleAsync(new GetDashboardQuery(), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.InitCount.Should().Be(3);
@@ -137,7 +135,7 @@ public class GetDashboardQueryHandlerTests
         _filingRepo.GetFilingStatsAsync(Arg.Any<CancellationToken>())
             .Returns((1, 1, 1, 250m));
 
-        var result = await _sut.HandleAsync(new GetDashboardQuery());
+        var result = await _sut.HandleAsync(new GetDashboardQuery(), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.TotalUnpaidRsd.Should().Be(250m);
@@ -149,7 +147,7 @@ public class GetDashboardQueryHandlerTests
         _mailboxRepo.GetAllAsync(Arg.Any<CancellationToken>())
             .Returns(new List<Mailbox>().AsReadOnly() as IReadOnlyList<Mailbox>);
 
-        var result = await _sut.HandleAsync(new GetDashboardQuery());
+        var result = await _sut.HandleAsync(new GetDashboardQuery(), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.LastSyncDate.Should().BeNull();
@@ -164,7 +162,7 @@ public class GetDashboardQueryHandlerTests
         _mailboxRepo.GetAllAsync(Arg.Any<CancellationToken>())
             .Returns(new List<Mailbox> { older, noSync, newer }.AsReadOnly() as IReadOnlyList<Mailbox>);
 
-        var result = await _sut.HandleAsync(new GetDashboardQuery());
+        var result = await _sut.HandleAsync(new GetDashboardQuery(), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.LastSyncDate.Should().Be(new DateOnly(2024, 6, 20));
@@ -177,7 +175,7 @@ public class GetDashboardQueryHandlerTests
         _filingRepo.GetUpcomingAsync(Arg.Any<DateOnly>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
             .Returns(new List<Filing> { f }.AsReadOnly() as IReadOnlyList<Filing>);
 
-        var result = await _sut.HandleAsync(new GetDashboardQuery());
+        var result = await _sut.HandleAsync(new GetDashboardQuery(), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.UpcomingDeadlines.Should().HaveCount(1);
@@ -190,7 +188,7 @@ public class GetDashboardQueryHandlerTests
         _filingRepo.GetUpcomingAsync(Arg.Any<DateOnly>(), Arg.Is<int>(d => d == 30), Arg.Any<CancellationToken>())
             .Returns(new List<Filing>().AsReadOnly() as IReadOnlyList<Filing>);
 
-        var result = await _sut.HandleAsync(new GetDashboardQuery());
+        var result = await _sut.HandleAsync(new GetDashboardQuery(), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.UpcomingDeadlines.Should().BeEmpty();
@@ -206,7 +204,7 @@ public class GetDashboardQueryHandlerTests
         _filingRepo.GetOverdueAsync(Arg.Do<DateOnly>(d => capturedToday = d), Arg.Any<CancellationToken>())
             .Returns(new List<Filing>().AsReadOnly() as IReadOnlyList<Filing>);
 
-        await _sut.HandleAsync(new GetDashboardQuery());
+        await _sut.HandleAsync(new GetDashboardQuery(), TestContext.Current.CancellationToken);
 
         capturedToday.Should().Be(DateOnly.FromDateTime(DateTime.Today));
     }
@@ -217,7 +215,7 @@ public class GetDashboardQueryHandlerTests
         _filingRepo.GetUpcomingAsync(Arg.Any<DateOnly>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
             .Throws(new InvalidOperationException("DB connection lost"));
 
-        var result = await _sut.HandleAsync(new GetDashboardQuery());
+        var result = await _sut.HandleAsync(new GetDashboardQuery(), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("DASHBOARD_QUERY_FAILED");
@@ -233,7 +231,7 @@ public class GetDashboardQueryHandlerTests
         _filingRepo.GetUpcomingAsync(Arg.Any<DateOnly>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
             .Returns(new List<Filing> { f }.AsReadOnly() as IReadOnlyList<Filing>);
 
-        var result = await _sut.HandleAsync(new GetDashboardQuery());
+        var result = await _sut.HandleAsync(new GetDashboardQuery(), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         var dto = result.Value.UpcomingDeadlines[0];

@@ -26,7 +26,7 @@ public class CompositeExchangeRateFetcherTests
         primary.FetchRateAsync(TestDate, "USD", Arg.Any<CancellationToken>())
             .Returns(Result<ExchangeRate, Error>.Success(new ExchangeRate(TestDate, "USD", 108m)));
 
-        var result = await MakeSut(primary, secondary).FetchRateAsync(TestDate, "USD");
+        var result = await MakeSut(primary, secondary).FetchRateAsync(TestDate, "USD", TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.RateToRsd.Should().Be(108m);
@@ -44,7 +44,7 @@ public class CompositeExchangeRateFetcherTests
         secondary.FetchRateAsync(TestDate, "USD", Arg.Any<CancellationToken>())
             .Returns(Result<ExchangeRate, Error>.Success(new ExchangeRate(TestDate, "USD", 109m)));
 
-        var result = await MakeSut(primary, secondary).FetchRateAsync(TestDate, "USD");
+        var result = await MakeSut(primary, secondary).FetchRateAsync(TestDate, "USD", TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.RateToRsd.Should().Be(109m);
@@ -60,7 +60,7 @@ public class CompositeExchangeRateFetcherTests
         secondary.FetchRateAsync(TestDate, "USD", Arg.Any<CancellationToken>())
             .Returns(Result<ExchangeRate, Error>.Failure(new Error("NBS_SCRAPE_ERROR", "parse failed")));
 
-        var result = await MakeSut(primary, secondary).FetchRateAsync(TestDate, "USD");
+        var result = await MakeSut(primary, secondary).FetchRateAsync(TestDate, "USD", TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("NBS_SCRAPE_ERROR");
@@ -76,7 +76,7 @@ public class CompositeExchangeRateFetcherTests
         secondary.FetchRateAsync(TestDate, "USD", Arg.Any<CancellationToken>())
             .Returns(Result<ExchangeRate, Error>.Success(new ExchangeRate(TestDate, "USD", 110m)));
 
-        var result = await MakeSut(primary, secondary).FetchRateAsync(TestDate, "USD");
+        var result = await MakeSut(primary, secondary).FetchRateAsync(TestDate, "USD", TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.RateToRsd.Should().Be(110m);
@@ -90,7 +90,7 @@ public class CompositeExchangeRateFetcherTests
         primary.FetchRateAsync(TestDate, "USD", Arg.Any<CancellationToken>())
             .Returns(Result<ExchangeRate, Error>.Failure(new Error("RATE_NOT_FOUND", "weekend")));
 
-        var result = await MakeSut(primary, secondary).FetchRateAsync(TestDate, "USD");
+        var result = await MakeSut(primary, secondary).FetchRateAsync(TestDate, "USD", TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("RATE_NOT_FOUND");
@@ -106,7 +106,7 @@ public class CompositeExchangeRateFetcherTests
         primary.FetchRateAsync(TestDate, "XYZ", Arg.Any<CancellationToken>())
             .Returns(Result<ExchangeRate, Error>.Failure(new Error("UNSUPPORTED_CURRENCY", "not supported")));
 
-        var result = await MakeSut(primary, secondary).FetchRateAsync(TestDate, "XYZ");
+        var result = await MakeSut(primary, secondary).FetchRateAsync(TestDate, "XYZ", TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("UNSUPPORTED_CURRENCY");
