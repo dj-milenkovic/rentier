@@ -37,6 +37,8 @@ jobs:
   # ──────────────────────────────────────────────────────────────────
   version:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # git tag + push on workflow_dispatch path
     outputs:
       version: ${{ steps.v.outputs.version }}
       tag: ${{ steps.v.outputs.tag }}
@@ -53,19 +55,13 @@ jobs:
           INPUT_VERSION: ${{ inputs.version }}
           INPUT_TRIMMED: ${{ inputs.enable_trimming }}
         run: |
-          # Use the provided input version when available (workflow_dispatch or workflow_call).
-          # NOTE: github.event_name inside a reusable workflow reflects the *outer* triggering
-          # event (e.g. "push"), not "workflow_call", so we key off INPUT_VERSION instead.
           if [ -n "${INPUT_VERSION}" ]; then
             VERSION="${INPUT_VERSION}"
-            # Normalise: anything other than explicit "true" becomes "false"
             [ "${INPUT_TRIMMED}" = "true" ] && TRIMMED="true" || TRIMMED="false"
           else
-            # push.tags trigger — strip the leading 'v'
             VERSION="${GITHUB_REF#refs/tags/v}"
             TRIMMED="false"
           fi
-          # Guard against shell injection: version must be pure semver
           if ! echo "${VERSION}" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
             echo "::error::Invalid version format '${VERSION}'. Expected X.Y.Z (digits only)."
             exit 1
@@ -83,7 +79,6 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          # Skip if tag already exists (idempotent re-runs)
           if git ls-remote --tags origin "${NEW_TAG}" | grep -q "${NEW_TAG}"; then
             echo "Tag ${NEW_TAG} already exists — skipping push."
           else
@@ -97,6 +92,8 @@ jobs:
   build-windows:
     needs: version
     runs-on: windows-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v6.0.2
 
@@ -151,11 +148,12 @@ jobs:
 
   # ──────────────────────────────────────────────────────────────────
   # macOS — .app bundle + .dmg  (x64 and ARM64)
-  # R2R intentionally excluded: not beneficial for Avalonia on macOS.
   # ──────────────────────────────────────────────────────────────────
   build-macos:
     needs: version
     runs-on: macos-latest
+    permissions:
+      contents: read
     strategy:
       matrix:
         rid: [osx-x64, osx-arm64]
@@ -232,8 +230,6 @@ jobs:
         run: |
           brew install create-dmg
 
-          # create-dmg returns exit code 2 when it skips setting a background
-          # image (which is fine). Treat only real failures as errors.
           create-dmg \
             --volname "Rentier" \
             --volicon "Assets/Icons/rentier.icns" \
@@ -259,11 +255,12 @@ jobs:
 
   # ──────────────────────────────────────────────────────────────────
   # Linux x64 — tar.gz + .deb
-  # R2R intentionally excluded: not beneficial for Avalonia on Linux.
   # ──────────────────────────────────────────────────────────────────
   build-linux:
     needs: version
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v6.0.2
 
@@ -306,18 +303,14 @@ jobs:
           mkdir -p "${PKG}/usr/share/applications"
           mkdir -p "${PKG}/usr/share/icons/hicolor/256x256/apps"
 
-          # Copy published binary (single-file)
           cp publish/linux-x64/Rentier.Desktop "${PKG}/usr/lib/rentier/"
           chmod 755 "${PKG}/usr/lib/rentier/Rentier.Desktop"
 
-          # Launcher symlink
           ln -s /usr/lib/rentier/Rentier.Desktop "${PKG}/usr/bin/rentier"
 
-          # Icon
           cp Assets/Icons/png/rentier_256x256.png \
              "${PKG}/usr/share/icons/hicolor/256x256/apps/rentier.png"
 
-          # Desktop entry
           cat > "${PKG}/usr/share/applications/rentier.desktop" << 'EOF'
           [Desktop Entry]
           Name=Rentier
@@ -329,7 +322,6 @@ jobs:
           Categories=Finance;Office;
           EOF
 
-          # Control file
           INSTALLED_SIZE=$(du -sk "${PKG}/usr" | cut -f1)
           cat > "${PKG}/DEBIAN/control" << EOF
           Package: rentier
@@ -357,13 +349,14 @@ jobs:
           if-no-files-found: error
 
   # ──────────────────────────────────────────────────────────────────
-  # Windows artifact smoke test — validates the built EXE is functional
-  # before publishing the GitHub Release.
+  # Windows artifact smoke test
   # ──────────────────────────────────────────────────────────────────
   smoke-test-windows:
     name: Windows Artifact Smoke Test
     needs: [version, build-windows]
     runs-on: windows-latest
+    permissions:
+      contents: read
     steps:
       - name: Download Windows artifact
         uses: actions/download-artifact@v8.0.1
@@ -386,11 +379,7 @@ jobs:
             Select-Object -First 1
           if (-not $exe) { throw "Rentier.Desktop.exe missing from ZIP" }
 
-          $sqlite = Get-ChildItem ./extracted -Filter "e_sqlite3*" -Recurse |
-            Select-Object -First 1
-          if (-not $sqlite) { throw "SQLite native library (e_sqlite3*) missing from ZIP" }
-
-          Write-Host "Artifact structure OK: EXE and SQLite native lib present"
+          Write-Host "Artifact structure OK: single-file EXE present (native libs bundled inside)"
           "EXE_PATH=$($exe.FullName)" | Out-File -Append $env:GITHUB_ENV
 
       - name: Headless launch smoke test
@@ -409,6 +398,8 @@ jobs:
   release:
     needs: [version, build-windows, build-macos, build-linux, smoke-test-windows]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # create GitHub Release + upload release assets
     steps:
       - uses: actions/checkout@v6.0.2
         with:
