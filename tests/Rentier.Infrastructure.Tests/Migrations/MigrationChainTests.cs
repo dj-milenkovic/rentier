@@ -33,7 +33,7 @@ public sealed class MigrationChainTests : IAsyncDisposable
     [Fact]
     public async Task AllMigrations_AppliedSequentially_CompleteWithoutException()
     {
-        var act = async () => await _context.Database.MigrateAsync();
+        var act = async () => await _context.Database.MigrateAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         await act.Should().NotThrowAsync("all migrations must apply cleanly on a fresh database");
     }
@@ -93,7 +93,7 @@ public sealed class MigrationChainTests : IAsyncDisposable
         // This test checks that EF can round-trip a value with the configured precision.
         var profileId = Guid.NewGuid();
         var profile = new Domain.Entities.TaxpayerProfile(
-            profileId, "1112223334445", "Test User", "Test Address", "11000");
+            profileId, "1112223334445", "Test User", "Test Address", "111");
         await _context.TaxpayerProfiles.AddAsync(profile, TestContext.Current.CancellationToken);
 
         var filing = Domain.Entities.Filing.CreateFromIncome(
