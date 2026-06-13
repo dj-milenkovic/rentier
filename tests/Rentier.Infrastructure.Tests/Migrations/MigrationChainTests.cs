@@ -2,7 +2,6 @@ using FluentAssertions;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Rentier.Infrastructure.Persistence;
-using Xunit;
 
 namespace Rentier.Infrastructure.Tests.Migrations;
 
@@ -46,8 +45,7 @@ public sealed class MigrationChainTests : IAsyncDisposable
 
         var tables = await GetTableNamesAsync();
 
-        tables.Should().Contain(new[]
-        {
+        tables.Should().Contain([
             "TaxpayerProfiles",
             "PublicHolidays",
             "HolidayYearRange",
@@ -57,8 +55,8 @@ public sealed class MigrationChainTests : IAsyncDisposable
             "Reports",
             "Filings",
             "UserPreferences",
-            "__EFMigrationsHistory",
-        }, because: "each entity set must have its own table after migration");
+            "__EFMigrationsHistory"
+        ], because: "each entity set must have its own table after migration");
     }
 
     [Fact]

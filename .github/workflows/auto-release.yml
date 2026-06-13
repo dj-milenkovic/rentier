@@ -32,6 +32,8 @@ jobs:
       version: ${{ steps.version.outputs.version }}
       tag:     ${{ steps.version.outputs.tag }}
       skip:    ${{ steps.skip.outputs.skip }}
+    permissions:
+      contents: read
 
     steps:
       - uses: actions/checkout@v6.0.3
@@ -135,6 +137,8 @@ jobs:
     needs: compute-version
     if: needs.compute-version.outputs.skip == 'false'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write 
 
     steps:
       - uses: actions/checkout@v6.0.3
