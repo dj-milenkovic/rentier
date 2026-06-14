@@ -1,4 +1,4 @@
-﻿namespace Rentier.UnitTests.Application.Common;
+namespace Rentier.UnitTests.Application.Common;
 
 /// <summary>
 /// A synchronous IProgress&lt;T&gt; that invokes the callback inline on the calling
