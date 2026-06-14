@@ -6,9 +6,10 @@ using Rentier.Application.DTOs;
 using Rentier.Application.Handlers;
 using Rentier.Application.Interfaces;
 using Rentier.Domain.ValueObjects;
+using Rentier.UnitTests.Application.Common;
 using Xunit;
 
-namespace Rentier.UnitTests;
+namespace Rentier.UnitTests.Application;
 
 public class SyncAllCommandHandlerTests
 {
@@ -127,8 +128,7 @@ public class SyncAllCommandHandlerTests
     [Fact]
     public async Task HandleAsync_BothSucceed_ProgressReportedInOrder()
     {
-        var reported = new List<SyncProgressEntry>();
-        var progress = new Progress<SyncProgressEntry>(e => reported.Add(e));
+        var progress = new SynchronousProgress<SyncProgressEntry>();
 
         var syncHandler = MakeSyncMailboxHandler(
             Result<SyncResult, Error>.Success(new SyncResult(2, [])));
@@ -138,12 +138,9 @@ public class SyncAllCommandHandlerTests
         var handler = CreateHandler(syncHandler, processHandler);
         await handler.HandleAsync(DefaultCommand(), progress, TestContext.Current.CancellationToken);
 
-        // Give Progress<T> callbacks a chance to fire (they may dispatch on the thread pool)
-        await Task.Delay(50, TestContext.Current.CancellationToken);
-
-        reported.Should().NotBeEmpty();
-        reported[0].Message.Should().Be("Starting mailbox sync...");
-        reported[0].Severity.Should().Be(SyncProgressSeverity.Info);
+        progress.Entries.Should().NotBeEmpty();
+        progress.Entries[0].Message.Should().Be("Starting mailbox sync...");
+        progress.Entries[0].Severity.Should().Be(SyncProgressSeverity.Info);
     }
 
     [Fact]
@@ -152,15 +149,13 @@ public class SyncAllCommandHandlerTests
         var syncHandler = MakeSyncMailboxHandler(
             Result<SyncResult, Error>.Success(new SyncResult(0, ["mailbox error"])));
 
-        var reported = new List<SyncProgressEntry>();
-        var progress = new Progress<SyncProgressEntry>(e => reported.Add(e));
+        var progress = new SynchronousProgress<SyncProgressEntry>();
 
         var handler = CreateHandler(syncHandler);
         await handler.HandleAsync(DefaultCommand(), progress, TestContext.Current.CancellationToken);
 
-        await Task.Delay(50, TestContext.Current.CancellationToken);
-
-        reported.Should().Contain(e => e.Message == "mailbox error" && e.Severity == SyncProgressSeverity.Warning);
+        progress.Entries.Should()
+            .Contain(e => e.Message == "mailbox error" && e.Severity == SyncProgressSeverity.Warning);
     }
 
     [Fact]
@@ -169,15 +164,12 @@ public class SyncAllCommandHandlerTests
         var processHandler = MakeProcessReportsHandler(
             Result<ProcessReportsResult, Error>.Success(new ProcessReportsResult(0, 0, 0, [])));
 
-        var reported = new List<SyncProgressEntry>();
-        var progress = new Progress<SyncProgressEntry>(e => reported.Add(e));
+        var progress = new SynchronousProgress<SyncProgressEntry>();
 
         var handler = CreateHandler(processHandler: processHandler);
         await handler.HandleAsync(DefaultCommand(), progress, TestContext.Current.CancellationToken);
 
-        await Task.Delay(50, TestContext.Current.CancellationToken);
-
-        reported.Should().Contain(e => e.Message == "No new reports to process.");
+        progress.Entries.Should().Contain(e => e.Message == "No new reports to process.");
     }
 
     [Fact]
@@ -260,25 +252,19 @@ public class SyncAllCommandHandlerTests
     [Fact]
     public async Task HandleAsync_AggregateLineAppearsAfterPerReportLines()
     {
-        // T009(b): Aggregate "Processed N report(s)..." line appears last — after any
-        // per-report lines that would be emitted by ProcessReportsCommandHandler.
-        // In this unit test we stub the handler, so we verify the aggregate line is
-        // still reported by SyncAllCommandHandler after process completion.
-        var reported = new List<SyncProgressEntry>();
-        var progress = new Progress<SyncProgressEntry>(e => reported.Add(e));
+        var progress = new SynchronousProgress<SyncProgressEntry>();
 
         var processHandler = MakeProcessReportsHandler(
             Result<ProcessReportsResult, Error>.Success(new ProcessReportsResult(3, 2, 0, [])));
 
         var handler = CreateHandler(processHandler: processHandler);
         await handler.HandleAsync(DefaultCommand(), progress, TestContext.Current.CancellationToken);
-        await Task.Delay(50, TestContext.Current.CancellationToken);
 
-        var aggregateLine = reported.LastOrDefault(e =>
+        var aggregateLine = progress.Entries.LastOrDefault(e =>
             e.Message.StartsWith("Processed") && e.Message.Contains("report(s)"));
 
         aggregateLine.Should().NotBeNull("aggregate summary line must still appear");
-        aggregateLine!.Severity.Should().Be(SyncProgressSeverity.Info);
+        aggregateLine.Severity.Should().Be(SyncProgressSeverity.Info);
         aggregateLine.Message.Should().Be("Processed 2 report(s), created 3 filing(s).");
     }
 }
