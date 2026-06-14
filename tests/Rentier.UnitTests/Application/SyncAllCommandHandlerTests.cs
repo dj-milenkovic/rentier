@@ -9,7 +9,7 @@ using Rentier.Domain.ValueObjects;
 using Rentier.UnitTests.Application.Common;
 using Xunit;
 
-namespace Rentier.UnitTests;
+namespace Rentier.UnitTests.Application;
 
 public class SyncAllCommandHandlerTests
 {
@@ -264,7 +264,7 @@ public class SyncAllCommandHandlerTests
             e.Message.StartsWith("Processed") && e.Message.Contains("report(s)"));
 
         aggregateLine.Should().NotBeNull("aggregate summary line must still appear");
-        aggregateLine!.Severity.Should().Be(SyncProgressSeverity.Info);
+        aggregateLine.Severity.Should().Be(SyncProgressSeverity.Info);
         aggregateLine.Message.Should().Be("Processed 2 report(s), created 3 filing(s).");
     }
 }
