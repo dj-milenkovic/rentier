@@ -295,8 +295,13 @@ public sealed class ProcessReportsCommandHandler
                 var usdResult = await _exchangeRateResolver.ResolveAsync(date, "USD", holidays, ct: ct);
                 if (usdResult.IsSuccess)
                 {
-                    var syntheticRate = new ExchangeRate(usdResult.Value.SourceDate, currency,
-                        ibkrRate.Rate * usdResult.Value.Rate.RateToRsd);
+                    var syntheticRateValue = ibkrRate.Rate * usdResult.Value.Rate.RateToRsd;
+                    if (syntheticRateValue <= 0)
+                        return Result<RateResolution, Error>.Failure(
+                            new Error(ErrorCodes.INVALID_EXCHANGE_RATE,
+                                $"Synthetic cross-rate for '{currency}' on {date:yyyy-MM-dd} is not positive ({syntheticRateValue})."));
+
+                    var syntheticRate = new ExchangeRate(usdResult.Value.SourceDate, currency, syntheticRateValue);
                     return Result<RateResolution, Error>.Success(
                         new RateResolution(syntheticRate, usdResult.Value.SourceDate, usdResult.Value.SourceType));
                 }

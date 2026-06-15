@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
 using Rentier.Application.Common;
 using Rentier.Application.Interfaces;
@@ -9,6 +10,7 @@ namespace Rentier.Infrastructure.Security;
 /// macOS Keychain implementation via the <c>security</c> CLI.
 /// </summary>
 [SupportedOSPlatform("osx")]
+[ExcludeFromCodeCoverage]
 public sealed class MacOsCredentialStore : ICredentialStore
 {
     private const string SecurityBinary = "security";

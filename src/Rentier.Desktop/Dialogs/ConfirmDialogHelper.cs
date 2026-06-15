@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -10,6 +11,7 @@ namespace Rentier.Desktop.Dialogs;
 /// Lightweight confirmation dialog built entirely in code (no AXAML dependency).
 /// Used by the delete confirmation flow in FilingsViewModel.
 /// </summary>
+[ExcludeFromCodeCoverage]
 internal static class ConfirmDialogHelper
 {
     /// <summary>

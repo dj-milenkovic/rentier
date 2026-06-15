@@ -10,14 +10,19 @@ public partial class SyncView : ReactiveUserControl<SyncViewModel>
     {
         InitializeComponent();
 
-        // Auto-scroll the log to the bottom as new entries are appended
+        // Accepted code-behind: Avalonia does not provide a built-in attached behavior for
+        // conditional auto-scroll without significantly more infrastructure. The lambda
+        // captures only the scroll viewer by closure and contains no business logic.
         var scrollViewer = this.FindControl<ScrollViewer>("LogScrollViewer");
         if (scrollViewer is not null)
         {
             scrollViewer.ScrollChanged += (_, _) =>
             {
-                // Only auto-scroll if the user is already near the bottom
-                scrollViewer.ScrollToEnd();
+                const double threshold = 50.0;
+                // Only auto-scroll when the user is at or near the bottom, so a manual
+                // scroll upward to review earlier log entries is not disrupted by new ones.
+                if (scrollViewer.Offset.Y >= scrollViewer.Extent.Height - scrollViewer.Viewport.Height - threshold)
+                    scrollViewer.ScrollToEnd();
             };
         }
     }

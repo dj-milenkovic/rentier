@@ -118,6 +118,27 @@ public class FilingCreateFromIncomeTests
     }
 
     [Fact]
+    public void CreateFromIncome_TaxPayableDoesNotMatchFormula_ThrowsDomainException()
+    {
+        // grossTax=100, wht=0 → expected taxPayable = max(100-0,0) = 100; passing 50 is wrong
+        var act = () => Filing.CreateFromIncome(ProfileId, IncomeType.Dividend, "ACME", TestDate,
+            1000m, 0m, 100m, 50m, Deadline);
+
+        act.Should().Throw<DomainException>().WithMessage("*TaxPayableRsd*");
+    }
+
+    [Fact]
+    public void CreateFromIncome_WhtExceedsGrossTax_ZeroTaxPayableIsValid()
+    {
+        // Over-withholding is valid in Serbian law; credit clamps to zero
+        // grossTax=100, wht=150 → expected taxPayable = max(100-150,0) = 0
+        var filing = Filing.CreateFromIncome(ProfileId, IncomeType.Dividend, "ACME", TestDate,
+            1000m, 150m, 100m, 0m, Deadline);
+
+        filing.TaxPayableRsd.Should().Be(0m);
+    }
+
+    [Fact]
     public void CreateFromIncome_SetsFilingDeadline()
     {
         var filing = Filing.CreateFromIncome(ProfileId, IncomeType.Dividend, "ACME", TestDate,

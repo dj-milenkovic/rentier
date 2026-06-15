@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using ReactiveUI;
@@ -8,6 +9,7 @@ namespace Rentier.Desktop;
 /// Resolves View type from ViewModel type by convention:
 /// FooViewModel → FooView
 /// </summary>
+[ExcludeFromCodeCoverage]
 public sealed class ViewLocator : IDataTemplate
 {
     public Control Build(object? param)

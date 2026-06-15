@@ -287,7 +287,9 @@ public class PpOpoXmlSerializerTests
     [Fact]
     public void OsnovicaZaPorezMapsToGrossIncomeNotGrossTax()
     {
-        var filing = MakeFiling(grossIncome: 100_000.00m, grossTaxPayable: 15_000.00m);
+        // whtPaid=0 so taxPayable == grossTaxPayable satisfies the domain invariant.
+        // The test distinguishes OsnovicaZaPorez (grossIncome) from ObracunatiPorez (grossTaxPayable).
+        var filing = MakeFiling(grossIncome: 100_000.00m, whtPaid: 0m, grossTaxPayable: 15_000.00m, taxPayable: 15_000.00m);
         var bytes = _sut.Serialize(filing, MakeProfile(), string.Empty).Value;
         var root = ParseRoot(bytes);
 

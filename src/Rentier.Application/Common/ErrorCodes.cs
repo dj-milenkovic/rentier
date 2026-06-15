@@ -44,6 +44,9 @@ public static class ErrorCodes
     public const string IMPORTER_NOT_FOUND = "IMPORTER_NOT_FOUND";
     public const string IMPORTER_VALIDATION_INVALID_REGEX = "IMPORTER_VALIDATION_INVALID_REGEX";
 
+    // ── Exchange Rate ───────────────────────────────────────────────────────
+    public const string INVALID_EXCHANGE_RATE = "INVALID_EXCHANGE_RATE";
+
     // ── Mailbox ────────────────────────────────────────────────────────────
     public const string MAILBOX_VALIDATION_FAILED = "MAILBOX_VALIDATION_FAILED";
 

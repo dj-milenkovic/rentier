@@ -343,7 +343,7 @@ jobs:
             /d:sonar.token="${SONAR_TOKEN}" \
             /d:sonar.host.url="https://sonarcloud.io" \
             /d:sonar.cs.opencover.reportsPaths="${COV_PATHS}" \
-            /d:sonar.exclusions="**/Migrations/**,**/obj/**,**/bin/**,**/Properties/**,**/*.Designer.cs,**/*.g.cs,**/*.axaml.cs,**/AssemblyInfo.cs" \
+            /d:sonar.exclusions="**/Migrations/**,**/obj/**,**/bin/**,**/Properties/**,**/*.Designer.cs,**/*.g.cs,**/*.axaml.cs,**/AssemblyInfo.cs,**/coverage-raw/**,**/coverage-report/**" \
             /d:sonar.coverage.exclusions="**/*.Tests/**,**/Migrations/**,**/Program.cs,**/*.axaml.cs,**/Properties/**" \
             /d:sonar.cpd.exclusions="**/*.Tests/**,**/*.g.cs" \
             /d:sonar.test.inclusions="**/*.Tests/**,**/*Tests.cs" \
