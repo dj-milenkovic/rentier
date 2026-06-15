@@ -157,7 +157,15 @@ public class HolidaySettingsViewModelTests
     [Fact]
     public void HasItems_RaisesPropertyChanged_WhenEntriesCountChanges()
     {
-        var vm = CreateVm();
+        // The CollectionChanged→HasItems notification is wired inside WhenActivated,
+        // so the ViewModel must be activated before adding entries.
+        var queryHandler = MockQueryHandler();
+        queryHandler.HandleAsync(Arg.Any<GetHolidayConfQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<HolidayConfDto, Error>.Success(
+                new HolidayConfDto(new List<HolidayEntryDto>(), 2025, 2025)));
+        var vm = CreateVm(query: queryHandler);
+        using var _ = vm.Activator.Activate();
+
         var raised = new List<string?>();
         vm.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
         vm.Entries.Add(new HolidayEntryViewModel());

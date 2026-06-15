@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Xml.Linq;
+using Microsoft.Extensions.Logging;
 using Rentier.Application.Common;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Repositories;
@@ -11,16 +12,21 @@ public sealed class NbsExchangeRateFetcher : IExchangeRateFetcher
 {
     private readonly HttpClient _http;
     private readonly IExchangeRateCacheRepository _cache;
+    private readonly ILogger<NbsExchangeRateFetcher> _logger;
 
     public static readonly IReadOnlySet<string> SupportedCurrencies =
         new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         { "EUR", "USD", "GBP", "CHF", "AUD", "CAD", "CZK", "DKK",
           "HUF", "JPY", "NOK", "PLN", "SEK", "TRY", "AED" };
 
-    public NbsExchangeRateFetcher(HttpClient http, IExchangeRateCacheRepository cache)
+    public NbsExchangeRateFetcher(
+        HttpClient http,
+        IExchangeRateCacheRepository cache,
+        ILogger<NbsExchangeRateFetcher>? logger = null)
     {
         _http = http;
         _cache = cache;
+        _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<NbsExchangeRateFetcher>.Instance;
     }
 
     public async Task<Result<ExchangeRate, Error>> FetchRateAsync(
@@ -119,7 +125,8 @@ public sealed class NbsExchangeRateFetcher : IExchangeRateFetcher
         try { await _cache.SaveBatchAsync(allRates, ct); }
         catch (Exception ex) when (ex is Microsoft.EntityFrameworkCore.DbUpdateException or InvalidOperationException)
         {
-            // Cache write failure is non-fatal; the fetched rates are still returned below
+            // Cache write failure is non-fatal; the fetched rates are still returned below.
+            _logger.LogWarning(ex, "Failed to write NBS rates to cache for {Date}. Rates will be re-fetched next time.", date);
         }
 
         // Step 10: Return requested rate from parsed batch (not re-queried from DB)

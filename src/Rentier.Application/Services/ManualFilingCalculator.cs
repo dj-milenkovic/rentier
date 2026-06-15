@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
@@ -24,13 +25,16 @@ public sealed class ManualFilingCalculator
 {
     private readonly IExchangeRateResolver _exchangeRateResolver;
     private readonly IHolidayRepository _holidayRepository;
+    private readonly ILogger<ManualFilingCalculator> _logger;
 
     public ManualFilingCalculator(
         IExchangeRateResolver exchangeRateResolver,
-        IHolidayRepository holidayRepository)
+        IHolidayRepository holidayRepository,
+        ILogger<ManualFilingCalculator>? logger = null)
     {
         _exchangeRateResolver = exchangeRateResolver;
         _holidayRepository = holidayRepository;
+        _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<ManualFilingCalculator>.Instance;
     }
 
     /// <summary>
@@ -105,8 +109,9 @@ public sealed class ManualFilingCalculator
             return Result<ManualFilingCalculationResult, Error>.Success(
                 new ManualFilingCalculationResult(info, resolution, deadline, tickerUpper));
         }
-        catch (HttpRequestException)
+        catch (HttpRequestException ex)
         {
+            _logger.LogWarning(ex, "Network failure resolving NBS exchange rate for {Currency} on {Date}.", currency, incomeDate);
             return Result<ManualFilingCalculationResult, Error>.Failure(
                 new Error("NETWORK_FAILURE",
                     "Could not reach NBS exchange rate service. Please check your connection."));

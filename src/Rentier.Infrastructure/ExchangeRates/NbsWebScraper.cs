@@ -41,7 +41,7 @@ public sealed class NbsWebScraper : IExchangeRateFetcher
         string html;
         try
         {
-            var response = await _http.GetAsync(url, ct);
+            using var response = await _http.GetAsync(url, ct);
             if (!response.IsSuccessStatusCode)
                 return Result<ExchangeRate, Error>.Failure(
                     new Error("NBS_HTTP_ERROR",

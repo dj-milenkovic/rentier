@@ -57,6 +57,6 @@ public sealed class UpdateImporterCommandHandler
                 await _repository.UpdateAsync(importer, ct);
                 return Result<VoidResult, Error>.Success(VoidResult.Value);
             },
-            ErrorCodes.IMPORTER_VALIDATION_INVALID_REGEX);
+            ErrorCodes.INFRASTRUCTURE_ERROR);
     }
 }

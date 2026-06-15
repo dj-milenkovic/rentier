@@ -45,9 +45,11 @@ public class FilingRepositoryDashboardTests : IAsyncLifetime
         string entity = "ACME",
         decimal taxPayable = 100m)
     {
+        // grossTaxPayable == taxPayable with whtPaid == 0 satisfies the domain invariant:
+        // TaxPayableRsd == Math.Max(GrossTaxPayable - WhtPaid, 0)
         var f = Filing.CreateFromIncome(
             profileId, IncomeType.Dividend, entity,
-            new DateOnly(2024, 3, 1), 1000m, 150m, 150m, taxPayable,
+            new DateOnly(2024, 3, 1), 1000m, 0m, taxPayable, taxPayable,
             deadline);
         if (status == FilingStatus.Filed) f.AdvanceStatus(FilingStatus.Filed);
         if (status == FilingStatus.Paid) { f.AdvanceStatus(FilingStatus.Filed); f.AdvanceStatus(FilingStatus.Paid); }

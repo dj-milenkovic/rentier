@@ -32,7 +32,13 @@ public sealed class GetDashboardQueryHandler
                 var mailboxes = await _mailboxRepo.GetAllAsync(ct);
 
                 DateOnly? lastSync = mailboxes
-                    .Select(m => m.Cursor is Domain.ValueObjects.MailboxCursor.SyncedTo s ? s.Date : (DateOnly?)null)
+                    .Select(m => m.Cursor switch
+                    {
+                        Domain.ValueObjects.MailboxCursor.SyncedTo s => (DateOnly?)s.Date,
+                        Domain.ValueObjects.MailboxCursor.NeverSynced => (DateOnly?)null,
+                        _ => throw new InvalidOperationException(
+                            $"Unknown MailboxCursor subtype: {m.Cursor?.GetType().Name ?? "null"}")
+                    })
                     .Where(d => d.HasValue)
                     .Select(d => d!.Value)
                     .OrderByDescending(d => d)

@@ -49,7 +49,7 @@ public sealed record SyncParameters
             SyncMode.Incremental => cursor is MailboxCursor.SyncedTo s ? s.Date : null,
             SyncMode.ReplayFromDate => ReplayFromDate,
             SyncMode.FullReplay => null,
-            _ => cursor is MailboxCursor.SyncedTo s ? s.Date : null
+            _ => throw new InvalidOperationException($"Unknown SyncMode: {Mode}")
         };
 
     /// <summary>Default incremental sync parameters (SkipExisting duplicate strategy).</summary>
