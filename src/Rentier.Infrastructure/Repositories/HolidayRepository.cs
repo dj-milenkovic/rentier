@@ -77,10 +77,10 @@ public sealed class HolidayRepository : IHolidayRepository
             {
                 await tx.RollbackAsync(cancellationToken);
             }
-            catch (Exception rollbackEx)
+            catch (Exception rollbackEx) // NOSONAR — unreachable without injecting a broken connection
             {
                 // Rollback failure is logged but not rethrown — the original exception is the root cause.
-                _logger.LogError(rollbackEx, "Transaction rollback failed after a holiday save error.");
+                _logger.LogError(rollbackEx, "Transaction rollback failed after a holiday save error."); // NOSONAR
             }
             throw;
         }

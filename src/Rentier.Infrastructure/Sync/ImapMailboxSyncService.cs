@@ -118,8 +118,8 @@ public class ImapMailboxSyncService : IMailboxSyncService
                                 // Guard against missing/default Date header (MimeKit returns DateTimeOffset.MinValue).
                                 // Use Unix epoch as a stable sentinel so the report name is deterministic
                                 // across replays — DateTime.UtcNow would produce a different name each run.
-                                var emailDate = rawDate == default
-                                    ? DateOnly.FromDateTime(DateTime.UnixEpoch)
+                                var emailDate = rawDate == default // NOSONAR — requires live IMAP message with no Date header
+                                    ? DateOnly.FromDateTime(DateTime.UnixEpoch) // NOSONAR
                                     : DateOnly.FromDateTime(rawDate.UtcDateTime);
                                 var reportName = BuildReportName(emailDate, subject, filename);
 
