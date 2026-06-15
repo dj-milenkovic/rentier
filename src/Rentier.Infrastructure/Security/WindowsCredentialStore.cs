@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Text;
@@ -11,6 +12,7 @@ namespace Rentier.Infrastructure.Security;
 /// Windows Credential Manager implementation for secure credential storage.
 /// </summary>
 [SupportedOSPlatform("windows")]
+[ExcludeFromCodeCoverage]
 public sealed class WindowsCredentialStore : ICredentialStore
 {
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]

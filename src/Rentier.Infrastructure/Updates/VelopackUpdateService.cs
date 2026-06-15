@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 
@@ -11,22 +12,27 @@ namespace Rentier.Infrastructure.Updates;
 public sealed class VelopackUpdateService : IUpdateService, IDisposable
 {
     private readonly IVelopackManager _manager;
+    private readonly ILogger<VelopackUpdateService> _logger;
     private readonly SemaphoreSlim _semaphore = new(1, 1);
     private bool _disposed;
 
     /// <summary>
     /// Production constructor — creates a real <see cref="VelopackManagerAdapter"/>
-    /// pointing at the Rentier GitHub repository.
+    /// pointing at the Rentier GitHub repository. Logger is optional; falls back to
+    /// <see cref="NullLogger{T}"/> so call sites that omit the logger (e.g. manual
+    /// instantiation in tests) remain backward-compatible.
     /// </summary>
-    public VelopackUpdateService() : this(new VelopackManagerAdapter()) { }
+    public VelopackUpdateService(ILogger<VelopackUpdateService>? logger = null)
+        : this(new VelopackManagerAdapter(), logger) { }
 
     /// <summary>
     /// Test constructor — accepts an injected <see cref="IVelopackManager"/> for full
     /// control over Velopack behavior in unit tests.
     /// </summary>
-    internal VelopackUpdateService(IVelopackManager manager)
+    internal VelopackUpdateService(IVelopackManager manager, ILogger<VelopackUpdateService>? logger = null)
     {
         _manager = manager;
+        _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<VelopackUpdateService>.Instance;
     }
 
     /// <inheritdoc />
@@ -47,9 +53,10 @@ public sealed class VelopackUpdateService : IUpdateService, IDisposable
                 ? new UpdateCheckResult(true, version)
                 : new UpdateCheckResult(false, null);
         }
-        catch
+        catch (Exception ex)
         {
             // Silent failure — network errors must never surface to the user during startup.
+            _logger.LogDebug(ex, "Update check failed silently; the app will continue without update information.");
             return new UpdateCheckResult(false, null);
         }
     }

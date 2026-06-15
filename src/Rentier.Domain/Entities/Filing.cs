@@ -69,6 +69,13 @@ public sealed class Filing
         if (taxPayableRsd < 0)
             throw new DomainException("TaxPayableRsd must not be negative");
 
+        // WHT paid by a foreign broker can legitimately exceed the computed Serbian gross tax
+        // (over-withholding). The credit is capped at gross, so the net payable clamps to zero.
+        var expectedTaxPayable = Math.Max(grossTaxPayableRsd - whtPaidRsd, 0m);
+        if (taxPayableRsd != expectedTaxPayable)
+            throw new DomainException(
+                $"TaxPayableRsd ({taxPayableRsd}) must equal Math.Max(GrossTaxPayable - WhtPaid, 0) = {expectedTaxPayable}.");
+
         var trimmedEntity = payingEntity.Trim();
         if (trimmedEntity.Length > 200)
             throw new DomainException("PayingEntity must not exceed 200 characters.");

@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
@@ -69,13 +70,6 @@ public sealed class HolidaySettingsViewModel : ReactiveObject, IActivatableViewM
         _saveHandler = saveHandler;
         _fetchHandler = fetchHandler;
         _scheduler = scheduler ?? RxSchedulers.MainThreadScheduler;
-
-        // Raise HasItems when collection size changes; also rebuild the filtered view
-        Entries.CollectionChanged += (_, _) =>
-        {
-            this.RaisePropertyChanged(nameof(HasItems));
-            RebuildFilteredEntries();
-        };
 
         // Keep IsFilteredEmpty in sync with FilteredEntries
         FilteredEntries.CollectionChanged += (_, _) =>
@@ -156,6 +150,17 @@ public sealed class HolidaySettingsViewModel : ReactiveObject, IActivatableViewM
 
         this.WhenActivated(disposables =>
         {
+            // Raise HasItems when collection size changes and rebuild the filtered view.
+            // Managed here so the subscription is tied to the activation lifecycle.
+            NotifyCollectionChangedEventHandler onEntriesChanged = (_, _) =>
+            {
+                this.RaisePropertyChanged(nameof(HasItems));
+                RebuildFilteredEntries();
+            };
+            Entries.CollectionChanged += onEntriesChanged;
+            Disposable.Create(() => Entries.CollectionChanged -= onEntriesChanged)
+                .DisposeWith(disposables);
+
             Observable.FromAsync(ct => LoadAsync(ct))
                 .ObserveOn(_scheduler)
                 .Subscribe()

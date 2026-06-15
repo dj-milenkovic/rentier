@@ -57,7 +57,7 @@ public sealed class Importer
         ReportType = reportType;
         TaxpayerProfileId = taxpayerProfileId;
         MailboxId = mailboxId;
-        FromFilter = fromFilter ?? string.Empty;
+        FromFilter = string.IsNullOrWhiteSpace(fromFilter) ? string.Empty : fromFilter.Trim();
         SubjectFilter = subjectFilter ?? string.Empty;
         AttachmentRegex = attachmentRegex ?? string.Empty;
         PaymentNotes = paymentNotes ?? string.Empty;

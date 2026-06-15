@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -12,6 +13,7 @@ namespace Rentier.Desktop.Dialogs;
 /// Shows a file picker for CSV selection followed by an importer selection dialog.
 /// Returns the chosen tuple, or null if the user cancels at any step.
 /// </summary>
+[ExcludeFromCodeCoverage]
 internal static class ImportDialogHelper
 {
     public static async Task<(Guid ImporterId, string FileName, byte[] Content)?> ShowAsync(

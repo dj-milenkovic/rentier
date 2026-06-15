@@ -18,6 +18,7 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
     public ViewModelActivator Activator { get; } = new();
 
     private readonly ISyncAllCommandHandler _handler;
+    private readonly IScheduler _scheduler;
     private CancellationTokenSource? _cts;
 
     // ── Running state ────────────────────────────────────────────────────────
@@ -117,6 +118,7 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
     {
         _handler = handler;
         var effectiveScheduler = scheduler ?? RxSchedulers.MainThreadScheduler;
+        _scheduler = effectiveScheduler;
 
         var modeStream = this.WhenAnyValue(x => x.SelectedSyncMode);
         var strategyStream = this.WhenAnyValue(x => x.SelectedDuplicateStrategy);
@@ -216,8 +218,14 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
 
         try
         {
-            var progress = new Progress<SyncProgressEntry>(entry =>
-                LogEntries.Add(new SyncProgressEntryViewModel(entry)));
+            // Use scheduler-dispatched progress so ImmediateScheduler in tests runs callbacks
+            // synchronously, and MainThreadScheduler in production stays on the UI thread.
+            // System.Threading.Progress<T> posts via SynchronizationContext.Post() which is
+            // async and causes a race condition on macOS where the callback may arrive after
+            // the await returns.
+            var progress = new SchedulerProgress<SyncProgressEntry>(
+                entry => LogEntries.Add(new SyncProgressEntryViewModel(entry)),
+                _scheduler);
 
             var parameters = new SyncParameters(
                 SelectedSyncMode,
@@ -250,4 +258,16 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
             _cts = null;
         }
     }
+}
+
+/// <summary>
+/// An <see cref="IProgress{T}"/> implementation that dispatches each report through
+/// an <see cref="IScheduler"/> rather than via <see cref="System.Threading.SynchronizationContext"/>.
+/// This keeps progress callbacks on the UI thread in production (MainThreadScheduler)
+/// while making them synchronous in tests (ImmediateScheduler), eliminating the
+/// async-post race that <see cref="Progress{T}"/> exhibits on macOS.
+/// </summary>
+file sealed class SchedulerProgress<T>(Action<T> handler, IScheduler scheduler) : IProgress<T>
+{
+    public void Report(T value) => scheduler.Schedule(() => handler(value));
 }

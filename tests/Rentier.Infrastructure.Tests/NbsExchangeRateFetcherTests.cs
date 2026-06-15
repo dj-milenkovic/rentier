@@ -219,6 +219,29 @@ public class NbsExchangeRateFetcherTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("RATE_NOT_FOUND");
     }
+
+    [Fact]
+    public async Task FetchRateAsync_SaveBatchThrows_StillReturnsRateFromParsedBatch()
+    {
+        // Arrange — cache miss; SaveBatchAsync throws a DbUpdateException (e.g. concurrency).
+        // The fetch result must still succeed — cache write failure is non-fatal.
+        var handler = new FakeHttpMessageHandler(ValidXml);
+        var repo = Substitute.For<IExchangeRateCacheRepository>();
+        repo.GetAsync(Arg.Any<DateOnly>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns((ExchangeRate?)null);
+        repo.SaveBatchAsync(Arg.Any<IReadOnlyList<ExchangeRate>>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromException(new Microsoft.EntityFrameworkCore.DbUpdateException("concurrency", new Exception())));
+
+        var fetcher = new NbsExchangeRateFetcher(new HttpClient(handler), repo);
+
+        // Act
+        var result = await fetcher.FetchRateAsync(TestDate, "EUR", TestContext.Current.CancellationToken);
+
+        // Assert — rate from in-memory batch is returned even though cache write failed
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Currency.Should().Be("EUR");
+        result.Value.RateToRsd.Should().Be(117.5952m);
+    }
 }
 
 // Requires live NBS HTTP endpoint — run manually: dotnet test --filter "Category=Live"

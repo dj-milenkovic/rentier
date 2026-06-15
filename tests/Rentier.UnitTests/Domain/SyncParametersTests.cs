@@ -99,4 +99,15 @@ public class SyncParametersTests
         var p = new SyncParameters(SyncMode.Incremental, scopeImporterId: importerId);
         p.ScopeImporterId.Should().Be(importerId);
     }
+
+    [Fact]
+    public void GetEffectiveStartDate_UnknownSyncMode_ThrowsInvalidOperationException()
+    {
+        // Cast to an undefined enum value; constructor only guards specific branches so this succeeds.
+        var p = new SyncParameters((SyncMode)999);
+
+        var act = () => p.GetEffectiveStartDate(null);
+
+        act.Should().Throw<InvalidOperationException>().WithMessage("*Unknown SyncMode*");
+    }
 }

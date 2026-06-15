@@ -318,7 +318,22 @@ public class SyncViewModelTests
 
         var vm = new SyncViewModel(handler, ImmediateScheduler.Instance);
 
+        // Progress<T> captures the SynchronizationContext at creation time and may
+        // post callbacks to a thread-pool thread rather than the current thread.
+        // Wait for the collection to reach the expected count via CollectionChanged
+        // so the test is correct regardless of whether callbacks run synchronously
+        // or asynchronously.
+        var tcs = new TaskCompletionSource();
+        vm.LogEntries.CollectionChanged += (_, _) =>
+        {
+            if (vm.LogEntries.Count >= 2)
+                tcs.TrySetResult();
+        };
+
         await vm.SyncCommand.Execute().FirstAsync();
+
+        // If callbacks already ran synchronously, TCS is already set; otherwise wait.
+        await tcs.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
 
         vm.LogEntries.Should().Contain(e => e.Message == "Step 1");
         vm.LogEntries.Should().Contain(e => e.Message == "Step 2");
