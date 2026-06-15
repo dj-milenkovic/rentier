@@ -17,22 +17,12 @@ namespace Rentier.Infrastructure.Sync;
 /// Connects to an IMAP mailbox, finds matching email attachments for each importer,
 /// and persists them as Report entities ready for processing.
 /// </summary>
-public class ImapMailboxSyncService : IMailboxSyncService
+public class ImapMailboxSyncService(
+    IReportRepository reportRepository,
+    IMailboxRepository mailboxRepository,
+    ICredentialStore credentialStore)
+    : IMailboxSyncService
 {
-    private readonly IReportRepository _reportRepository;
-    private readonly IMailboxRepository _mailboxRepository;
-    private readonly ICredentialStore _credentialStore;
-
-    public ImapMailboxSyncService(
-        IReportRepository reportRepository,
-        IMailboxRepository mailboxRepository,
-        ICredentialStore credentialStore)
-    {
-        _reportRepository = reportRepository;
-        _mailboxRepository = mailboxRepository;
-        _credentialStore = credentialStore;
-    }
-
     /// <summary>Seam for unit tests — override to return a pre-configured or mocked client.</summary>
     protected virtual ImapClient CreateClient() => new ImapClient();
 
@@ -46,7 +36,7 @@ public class ImapMailboxSyncService : IMailboxSyncService
         ArgumentNullException.ThrowIfNull(mailbox);
         ArgumentNullException.ThrowIfNull(importers);
 
-        var credResult = await _credentialStore.GetCredentialAsync(
+        var credResult = await credentialStore.GetCredentialAsync(
             CredentialKeys.MailboxPassword(mailbox.Id), ct);
 
         if (!credResult.IsSuccess)
@@ -64,7 +54,7 @@ public class ImapMailboxSyncService : IMailboxSyncService
             await client.AuthenticateAsync(mailbox.Username, password, ct);
 
             var inbox = client.Inbox;
-            await inbox!.OpenAsync(FolderAccess.ReadOnly, ct);
+            await inbox.OpenAsync(FolderAccess.ReadOnly, ct);
 
             var cursor = mailbox.Cursor;
             long? maxUid = null;
@@ -104,7 +94,7 @@ public class ImapMailboxSyncService : IMailboxSyncService
                             foreach (var attachment in message.Attachments.OfType<MimePart>())
                             {
                                 var filename = attachment.FileName
-                                    ?? attachment.ContentType?.Name
+                                    ?? attachment.ContentType.Name
                                     ?? string.Empty;
 
                                 if (string.IsNullOrEmpty(filename))
@@ -118,29 +108,29 @@ public class ImapMailboxSyncService : IMailboxSyncService
                                 // Guard against missing/default Date header (MimeKit returns DateTimeOffset.MinValue).
                                 // Use Unix epoch as a stable sentinel so the report name is deterministic
                                 // across replays — DateTime.UtcNow would produce a different name each run.
-                                var emailDate = rawDate == default // NOSONAR — requires live IMAP message with no Date header
-                                    ? DateOnly.FromDateTime(DateTime.UnixEpoch) // NOSONAR
+                                var emailDate = rawDate == default
+                                    ? DateOnly.FromDateTime(DateTime.UnixEpoch)
                                     : DateOnly.FromDateTime(rawDate.UtcDateTime);
                                 var reportName = BuildReportName(emailDate, subject, filename);
 
-                                var exists = await _reportRepository.ExistsByImporterAndNameAsync(
+                                var exists = await reportRepository.ExistsByImporterAndNameAsync(
                                     importer.Id, reportName, ct);
                                 if (exists)
                                     continue;
 
                                 using var ms = new MemoryStream();
                                 if (attachment.Content != null)
-                                    attachment.Content.DecodeTo(ms);
+                                    await attachment.Content.DecodeToAsync(ms, ct);
                                 var content = ms.ToArray();
 
-                                var report = Report.Create(importer.Id, reportName, content, (long)uid.Id, emailDate);
-                                await _reportRepository.AddAsync(report, ct);
+                                var report = Report.Create(importer.Id, reportName, content, uid.Id, emailDate);
+                                await reportRepository.AddAsync(report, ct);
                                 reportsCreated++;
                             }
 
                             // Track the highest UID seen across all importers
-                            if (maxUid == null || (long)uid.Id > maxUid.Value)
-                                maxUid = (long)uid.Id;
+                            if (maxUid == null || uid.Id > maxUid.Value)
+                                maxUid = uid.Id;
                         }
                         catch (Exception ex)
                         {
@@ -162,7 +152,7 @@ public class ImapMailboxSyncService : IMailboxSyncService
                 DateOnly.FromDateTime(DateTime.UtcNow),
                 maxUid ?? (cursor is MailboxCursor.SyncedTo s ? s.Uid : null));
             mailbox.UpdateCursor(newCursor);
-            await _mailboxRepository.UpdateAsync(mailbox, ct);
+            await mailboxRepository.UpdateAsync(mailbox, ct);
 
             return Result<SyncResult, Error>.Success(new SyncResult(reportsCreated, errors));
         }
