@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
 using System.Text;
 using DBus.Services.Secrets;
@@ -12,6 +13,7 @@ namespace Rentier.Infrastructure.Security;
 /// Compatible with GNOME Keyring and KDE Wallet.
 /// </summary>
 [SupportedOSPlatform("linux")]
+[ExcludeFromCodeCoverage]
 public sealed class LinuxCredentialStore : ICredentialStore
 {
     private readonly SecretService _service;

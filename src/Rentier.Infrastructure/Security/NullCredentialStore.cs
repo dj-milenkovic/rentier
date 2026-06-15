@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Rentier.Application.Common;
 using Rentier.Application.Interfaces;
 
@@ -8,6 +9,7 @@ namespace Rentier.Infrastructure.Security;
 /// <see cref="CredentialStoreFactory"/> cannot initialise a real provider at startup.
 /// This ensures the application starts cleanly and surfaces a clear error on first credential access.
 /// </summary>
+[ExcludeFromCodeCoverage]
 public sealed class NullCredentialStore : ICredentialStore
 {
     private readonly Error _providerError;

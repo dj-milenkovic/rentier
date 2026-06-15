@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Velopack;
 using Velopack.Sources;
 
@@ -8,6 +9,7 @@ namespace Rentier.Infrastructure.Updates;
 /// real <see cref="UpdateManager"/> with a <see cref="GithubSource"/> targeting the
 /// Rentier GitHub repository.
 /// </summary>
+[ExcludeFromCodeCoverage]
 internal sealed class VelopackManagerAdapter : IVelopackManager
 {
     private const string RepoUrl = "https://github.com/zribktad/Rentier";

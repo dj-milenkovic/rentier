@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Avalonia;
 using ReactiveUI.Avalonia;
 using Microsoft.Extensions.DependencyInjection;
@@ -6,6 +7,7 @@ using Velopack;
 
 namespace Rentier.Desktop;
 
+[ExcludeFromCodeCoverage]
 public static class Program
 {
     [STAThread]
