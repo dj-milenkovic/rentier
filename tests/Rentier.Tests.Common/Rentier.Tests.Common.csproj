@@ -7,11 +7,13 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Rentier.Application\Rentier.Application.csproj" />
+    <ProjectReference Include="..\..\src\Rentier.Infrastructure\Rentier.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="FluentAssertions" />
     <PackageReference Include="NSubstitute" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
   </ItemGroup>
 
 </Project>

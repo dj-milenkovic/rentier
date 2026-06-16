@@ -5,6 +5,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Update="xunit.runner.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\Rentier.Domain\Rentier.Domain.csproj" />
     <ProjectReference Include="..\..\src\Rentier.Application\Rentier.Application.csproj" />
     <ProjectReference Include="..\..\src\Rentier.Desktop\Rentier.Desktop.csproj" />

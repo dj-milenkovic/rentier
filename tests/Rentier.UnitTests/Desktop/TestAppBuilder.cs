@@ -5,7 +5,6 @@ using Rentier.UnitTests.Desktop;
 using Xunit;
 
 [assembly: AvaloniaTestApplication(typeof(TestAppBuilder))]
-[assembly: CollectionBehavior(DisableTestParallelization = true)]
 namespace Rentier.UnitTests.Desktop;
 
 /// <summary>
