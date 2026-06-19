@@ -12,6 +12,7 @@ namespace Rentier.Infrastructure.Tests.Migrations;
 /// These tests use file-based SQLite (not in-memory) to match the production runtime.
 /// </summary>
 [Trait("Category", "Integration")]
+[Collection("Migrations")]
 public sealed class MigrationChainTests : IAsyncDisposable
 {
     private readonly string _dbPath;

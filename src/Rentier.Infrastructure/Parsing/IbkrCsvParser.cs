@@ -127,6 +127,10 @@ public sealed class IbkrCsvParser : IStatementParser
             }
 
             var currency = record[2].Trim();
+            // Skip summary/total rows (e.g. "Dividends,Data,Total,,,0.35")
+            if (currency.StartsWith("Total", StringComparison.OrdinalIgnoreCase))
+                continue;
+
             var dateStr = record[3].Trim();
             var description = record[4].Trim();
             var amountStr = record[5].Trim();
@@ -159,7 +163,7 @@ public sealed class IbkrCsvParser : IStatementParser
             List<string[]> rows,
             Dictionary<(string Entity, DateOnly Date, string Currency), DividendRecord> dividends)
     {
-        var result = new List<WithholdingTaxRecord>();
+        var accumulator = new Dictionary<(string Entity, DateOnly Date, string Currency), decimal>();
         var errors = new List<ParseError>();
         int rowIndex = 0;
 
@@ -177,6 +181,9 @@ public sealed class IbkrCsvParser : IStatementParser
             }
 
             var currency = record[2].Trim();
+            if (currency.StartsWith("Total", StringComparison.OrdinalIgnoreCase))
+                continue;
+
             var dateStr = record[3].Trim();
             var description = record[4].Trim();
             var amountStr = record[5].Trim();
@@ -203,7 +210,10 @@ public sealed class IbkrCsvParser : IStatementParser
 
             if (dividends.TryGetValue(exactKey, out _))
             {
-                result.Add(new WithholdingTaxRecord(date, currency, entity, Math.Abs(rawAmount)));
+                if (accumulator.TryGetValue(exactKey, out var existing))
+                    accumulator[exactKey] = existing + Math.Abs(rawAmount);
+                else
+                    accumulator[exactKey] = Math.Abs(rawAmount);
             }
             else
             {
@@ -219,6 +229,10 @@ public sealed class IbkrCsvParser : IStatementParser
                         $"No dividend found for WHT entry: entity='{entity}', date={date:yyyy-MM-dd}, currency='{currency}'.", rowIndex));
             }
         }
+
+        var result = accumulator
+            .Select(kvp => new WithholdingTaxRecord(kvp.Key.Date, kvp.Key.Currency, kvp.Key.Entity, kvp.Value))
+            .ToList();
 
         return (result.AsReadOnly(), errors);
     }
@@ -292,10 +306,7 @@ public sealed class IbkrCsvParser : IStatementParser
             if (record.Length < 2 || !string.Equals(record[1], "Data", StringComparison.OrdinalIgnoreCase))
                 continue;
             if (record.Length < 7)
-            {
-                errors.Add(new ParseError("ROW_TOO_SHORT", $"FX rate row has {record.Length} fields, expected >=7.", rowIndex));
-                continue;
-            }
+                continue; // silently skip short rows — custom statements use a 4-column FX format
 
             var fromCurrency = record[2].Trim();
             var dateStr = record[3].Trim();

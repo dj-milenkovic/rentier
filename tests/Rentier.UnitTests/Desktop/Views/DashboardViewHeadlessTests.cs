@@ -22,6 +22,7 @@ namespace Rentier.UnitTests;
 /// Verifies rendering and control state — only what cannot be covered at the ViewModel level.
 /// </summary>
 [Trait("Category", "UI")]
+[Collection("HeadlessUI")]
 public class DashboardViewHeadlessTests
 {
     [AvaloniaFact]

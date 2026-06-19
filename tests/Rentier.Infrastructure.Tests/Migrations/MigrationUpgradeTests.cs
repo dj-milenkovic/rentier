@@ -10,6 +10,7 @@ namespace Rentier.Infrastructure.Tests.Migrations;
 /// preserves all data: row counts, decimal precision, nullable columns, FK integrity.
 /// </summary>
 [Trait("Category", "Integration")]
+[Collection("Migrations")]
 public sealed class MigrationUpgradeTests
 {
     // ── Baseline A: migration 0010 → latest ──────────────────────────────────

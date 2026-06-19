@@ -9,7 +9,14 @@ namespace Rentier.Infrastructure.Repositories;
 
 public sealed class HolidayRepository(AppDbContext db, ILogger<HolidayRepository>? logger = null) : IHolidayRepository
 {
-    private readonly ILogger<HolidayRepository> _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<HolidayRepository>.Instance;
+    private readonly AppDbContext _db;
+    private readonly ILogger<HolidayRepository> _logger;
+
+    public HolidayRepository(AppDbContext db, ILogger<HolidayRepository>? logger = null)
+    {
+        _db = db;
+        _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<HolidayRepository>.Instance;
+    }
 
     public async Task<HolidayConfDto> GetHolidayConfAsync(CancellationToken cancellationToken = default)
     {
