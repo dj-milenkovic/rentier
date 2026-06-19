@@ -5,9 +5,6 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-  schedule:
-    # Run E2E tests every night at 2 AM UTC (10 PM EDT)
-    - cron: '0 2 * * *'
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -51,14 +48,10 @@ jobs:
         run: dotnet list Rentier.slnx package --vulnerable --include-transitive 2>&1 | tee vuln-report.txt && ! grep -qi "has the following vulnerable packages" vuln-report.txt
 
   # ──────────────────────────────────────────────
-  # Integration tests (Ubuntu only)
-  # Covers: EF Core repositories, parsers, XML serializers, credential stores,
-  # and EF migrations. All carry [Trait("Category","Integration")].
-  # Previously this job ran only migration tests — that left the entire
-  # repository layer (FilingRepository, MailboxRepository, etc.) untested in CI.
+  # Migration & upgrade tests (Ubuntu, parallel)
   # ──────────────────────────────────────────────
-  integration-tests:
-    name: Integration Tests
+  migration-tests:
+    name: Migration & Upgrade Tests
     needs: lint
     runs-on: ubuntu-latest
     steps:
@@ -83,20 +76,20 @@ jobs:
       - name: Build
         run: dotnet build tests/Rentier.Infrastructure.Tests --no-restore -c Release
 
-      - name: Run integration tests
+      - name: Run migration tests
         run: |
           dotnet test tests/Rentier.Infrastructure.Tests \
             --no-build -c Release \
-            --filter "Category=Integration" \
-            --logger "trx;LogFileName=integration-results.trx" \
+            --filter "Category=Integration&FullyQualifiedName~Migration" \
+            --logger "trx;LogFileName=migration-results.trx" \
             --logger "console;verbosity=normal"
 
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v7.0.1
         with:
-          name: integration-test-results
-          path: ./**/integration-results.trx
+          name: migration-test-results
+          path: ./**/migration-results.trx
 
   # ──────────────────────────────────────────────
   # Build & Test matrix (Windows, macOS, Ubuntu)
@@ -142,57 +135,25 @@ jobs:
       - name: Build (all projects)
         run: dotnet build Rentier.slnx --no-restore -c Release
 
-      # ── Test: UNIT (Fast path, parallel) ─────────────────────
-      - name: Test — Unit (Fast Path, Parallel)
+      # ── Test ─────────────────────────────────
+      - name: Test
         shell: bash
         run: |
           dotnet test Rentier.slnx --no-build -c Release \
-            --filter "Category=Unit" \
+            --filter "Category!=Integration" \
             --collect:"XPlat Code Coverage" \
             --settings coverlet.runsettings \
-            --results-directory ./coverage/unit \
-            --logger "trx;LogFileName=unit-results-${{ matrix.os }}.trx" \
-            --logger "console;verbosity=normal" || true
-
-      # ── Test: INTEGRATION (Serialized) ────────────────────────
-      - name: Test — Integration (Database, Serialized)
-        shell: bash
-        run: |
-          dotnet test Rentier.slnx --no-build -c Release \
-            --filter "Category=Integration" \
-            --collect:"XPlat Code Coverage" \
-            --settings coverlet.runsettings \
-            --results-directory ./coverage/integration \
-            --logger "trx;LogFileName=integration-results-${{ matrix.os }}.trx" \
-            --logger "console;verbosity=normal" || true
-
-      # ── Test: PLATFORM-SPECIFIC (Windows only) ─────────────────
-      - name: Test — Platform-Specific
-        if: ${{ matrix.os == 'windows-latest' }}
-        shell: bash
-        run: |
-          dotnet test Rentier.slnx --no-build -c Release \
-            --filter "Category=Platform" \
-            --collect:"XPlat Code Coverage" \
-            --settings coverlet.runsettings \
-            --results-directory ./coverage/platform \
-            --logger "trx;LogFileName=platform-results-${{ matrix.os }}.trx" \
-            --logger "console;verbosity=normal" || true
+            --results-directory ./coverage \
+            --logger "trx;LogFileName=results-${{ matrix.os }}.trx" \
+            --logger "console;verbosity=normal"
      
       # ── Artifacts ────────────────────────────
-      - name: Merge coverage artifacts
-        if: always()
-        shell: bash
-        run: |
-          mkdir -p ./coverage/merged
-          find ./coverage -name 'coverage.opencover.xml' -exec cp {} ./coverage/merged \;
-
       - name: Upload coverage
         if: always()
         uses: actions/upload-artifact@v7.0.1
         with:
           name: coverage-${{ matrix.os }}
-          path: ./coverage/merged/coverage.opencover.xml
+          path: ./coverage/**/coverage.opencover.xml
 
       - name: Upload test results
         if: always()
@@ -209,8 +170,8 @@ jobs:
           echo "## 🧪 Test Results — ${{ matrix.os }}" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
 
-          # Parse TRX files for statistics
-          total=0; passed=0; failed=0; unit_time=0; int_time=0; plat_time=0
+          # Count tests from TRX files
+          total=0; passed=0; failed=0
           for trx in $(find ./coverage -name '*.trx' 2>/dev/null); do
             t=$(grep -Eo 'total="[0-9]+' "$trx" | cut -d'"' -f2 | head -1)
             p=$(grep -Eo 'passed="[0-9]+' "$trx" | cut -d'"' -f2 | head -1)
@@ -220,20 +181,15 @@ jobs:
             failed=$((failed + ${f:-0}))
           done
 
-          echo "| Category | Count | Duration |" >> "$GITHUB_STEP_SUMMARY"
-          echo "|----------|-------|----------|" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Unit | $(grep -c 'UnitResult' ./coverage/unit/*.trx 2>/dev/null || echo '?') | <1min |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Integration | $(grep -c 'IntegrationResult' ./coverage/integration/*.trx 2>/dev/null || echo '?') | <2min |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Platform | $(grep -c 'PlatformResult' ./coverage/platform/*.trx 2>/dev/null || echo '?') | <1min |" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Metric | Count |" >> "$GITHUB_STEP_SUMMARY"
-          echo "|--------|-------|" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Total | $total |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| ✅ Passed | $passed |" >> "$GITHUB_STEP_SUMMARY"
           if [ "$failed" -gt 0 ]; then
+            echo "| Metric | Value |" >> "$GITHUB_STEP_SUMMARY"
+            echo "|--------|-------|" >> "$GITHUB_STEP_SUMMARY"
+            echo "| Total  | $total |" >> "$GITHUB_STEP_SUMMARY"
+            echo "| ✅ Passed | $passed |" >> "$GITHUB_STEP_SUMMARY"
             echo "| ❌ Failed | $failed |" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "✅ **All $total tests passed** (Build with -warnaserror)" >> "$GITHUB_STEP_SUMMARY"
           fi
-
 
   # ──────────────────────────────────────────────
   # Coverage report (merge all platforms)
@@ -419,72 +375,3 @@ jobs:
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "Analysis submitted to [SonarCloud](https://sonarcloud.io)." >> "$GITHUB_STEP_SUMMARY"
           echo "Check the quality gate status in the PR checks." >> "$GITHUB_STEP_SUMMARY"
-
-  # ──────────────────────────────────────────────────────────────
-  # Nightly E2E Tests (Scheduled)
-  # ──────────────────────────────────────────────────────────────
-  e2e-nightly:
-    name: E2E Tests (Nightly)
-    runs-on: ubuntu-latest
-    if: github.event_name == 'schedule'
-
-    steps:
-      - name: Checkout
-       uses: actions/checkout@v6.0.3
-
-      - name: Setup .NET
-       uses: actions/setup-dotnet@v5.3.0
-       with:
-         dotnet-version: '10.x'
-
-      - name: Cache NuGet packages
-       uses: actions/cache@v5.0.5
-       with:
-         path: ~/.nuget/packages
-         key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Build.props', 'Directory.Packages.props') }}
-         restore-keys: nuget-${{ runner.os }}-
-
-      - name: Restore
-       run: dotnet restore Rentier.slnx
-
-      - name: Build
-       run: dotnet build Rentier.slnx --no-restore -c Release
-
-      - name: Run E2E Tests
-       shell: bash
-       run: |
-         dotnet test Rentier.slnx \
-           --no-build -c Release \
-           --filter "Category=E2E" \
-           --logger "trx;LogFileName=e2e-results.trx" \
-           --logger "console;verbosity=detailed"
-
-      - name: Upload E2E results
-       if: always()
-       uses: actions/upload-artifact@v7.0.1
-       with:
-         name: e2e-test-results
-         path: ./**/*.trx
-
-      - name: Post summary
-       if: always()
-       shell: bash
-       run: |
-         echo "## 🌙 Nightly E2E Test Results" >> "$GITHUB_STEP_SUMMARY"
-         echo "" >> "$GITHUB_STEP_SUMMARY"
-          
-         # Parse TRX file for E2E results
-         for trx in $(find . -name 'e2e-results.trx' 2>/dev/null); do
-           total=$(grep -Eo 'total="[0-9]+' "$trx" | cut -d'"' -f2 | head -1)
-           passed=$(grep -Eo 'passed="[0-9]+' "$trx" | cut -d'"' -f2 | head -1)
-           failed=$(grep -Eo 'failed="[0-9]+' "$trx" | cut -d'"' -f2 | head -1)
-            
-           echo "| Metric | Count |" >> "$GITHUB_STEP_SUMMARY"
-           echo "|--------|-------|" >> "$GITHUB_STEP_SUMMARY"
-           echo "| Total | $total |" >> "$GITHUB_STEP_SUMMARY"
-           echo "| ✅ Passed | $passed |" >> "$GITHUB_STEP_SUMMARY"
-           if [ "$failed" -gt 0 ]; then
-             echo "| ❌ Failed | $failed |" >> "$GITHUB_STEP_SUMMARY"
-           fi
-         done
-

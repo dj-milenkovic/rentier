@@ -21,7 +21,6 @@ namespace Rentier.UnitTests;
 /// state reflection — things that cannot be tested at the ViewModel level alone.
 /// </summary>
 [Trait("Category", "UI")]
-[Collection("HeadlessUI")]
 public class SyncViewHeadlessTests
 {
     [AvaloniaFact]

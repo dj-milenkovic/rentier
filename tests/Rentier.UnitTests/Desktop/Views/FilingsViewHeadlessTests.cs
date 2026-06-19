@@ -26,7 +26,6 @@ namespace Rentier.UnitTests;
 /// at the ViewModel level.
 /// </summary>
 [Trait("Category", "UI")]
-[Collection("HeadlessUI")]
 public class FilingsViewHeadlessTests
 {
     [AvaloniaFact]
