@@ -293,7 +293,7 @@ jobs:
           dotnet-version: '10.x'
 
       - name: Setup Java (SonarScanner requirement)
-        uses: actions/setup-java@v5.2.0
+        uses: actions/setup-java@v5.3.0
         with:
           distribution: 'temurin'
           java-version: '17'
