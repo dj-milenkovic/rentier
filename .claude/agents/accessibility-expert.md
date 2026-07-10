@@ -2,6 +2,7 @@
 name: accessibility-expert
 description: Expert in accessibility (WCAG 2.1/2.2), inclusive UX, and a11y testing. Use proactively when reviewing UI/UX changes, XAML markup, or when the user asks about accessibility, screen readers, keyboard navigation, contrast, or WCAG compliance.
 tools: Read, Edit, Write, Bash, Grep, Glob, WebFetch
+model: sonnet
 ---
 
 # Accessibility Expert

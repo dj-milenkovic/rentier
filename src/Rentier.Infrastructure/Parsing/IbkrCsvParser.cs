@@ -102,7 +102,7 @@ public sealed class IbkrCsvParser : IStatementParser
     /// Strips the ISIN parenthetical (e.g. "(US0378331005)") and any trailing suffix from a
     /// description, returning just the entity name (e.g. "AAPL" from "AAPL(US0378331005) Cash Dividend").
     /// </summary>
-    internal static string StripIsin(string description) =>
+    private static string StripIsin(string description) =>
         IsinPattern.Replace(description, string.Empty).Trim();
 
     private static (Dictionary<(string Entity, DateOnly Date, string Currency), DividendRecord> dividends,

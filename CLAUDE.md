@@ -52,6 +52,7 @@ dotnet run --project src/Rentier.Desktop/Rentier.Desktop.csproj
 ```
 CI (`.github/workflows/ci.yml`) runs format check → migration tests → build/test matrix
 (Windows/macOS/Linux) → coverage merge → SonarCloud. Match this locally before pushing.
+The canonical remote is `github` (github.com/dj-milenkovic/rentier) — CI and PRs run there.
 
 ## Absolute Rules (non-negotiable)
 1. **`decimal` only** for all monetary values, tax amounts, exchange rates, percentages.
@@ -96,6 +97,6 @@ When implementing a feature, create:
   UI design/tests, package upgrades). Claude loads these on demand — invoke by name
   or let auto-matching trigger them.
 - **`.claude/agents/`** — specialized subagents (C# expert, .NET janitor, .NET upgrade,
-  accessibility review, Avalonia UX design) for isolated side-tasks via the Task tool.
+  accessibility review, Avalonia UX design) for isolated side-tasks via the Agent tool.
 - **`README.md`, `GETTING-STARTED.md`, `IBKR-SETUP.md`, `TAX-OVERVIEW.md`** — product
   and domain documentation.

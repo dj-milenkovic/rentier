@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet restore Rentier.slnx*)",
+      "Bash(dotnet build Rentier.slnx*)",
+      "Bash(dotnet test Rentier.slnx*)",
+      "Bash(dotnet test tests/*)",
+      "Bash(dotnet format Rentier.slnx*)",
+      "Bash(dotnet run --project src/Rentier.Desktop/Rentier.Desktop.csproj*)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git branch -vv)",
+      "Bash(git remote -v)"
+    ]
+  }
+}

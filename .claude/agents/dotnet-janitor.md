@@ -2,6 +2,7 @@
 name: dotnet-janitor
 description: Performs janitorial cleanup, modernization, and tech-debt remediation on C#/.NET code. Use proactively when asked to clean up code, remove dead code, modernize syntax, fix compiler warnings, or improve test coverage without changing behavior.
 tools: Read, Edit, Write, Bash, Grep, Glob, WebFetch, WebSearch
+model: sonnet
 ---
 
 # C#/.NET Janitor

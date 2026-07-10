@@ -1,6 +1,6 @@
 ---
 name: csharp-expert
-description: Expert C#/.NET developer for implementing features, refactors, and reviewing code against SOLID/CQRS/async best practices. Use proactively for any non-trivial C# implementation task, code design question, or when writing/reviewing .NET production code and tests.
+description: Expert C#/.NET developer for reviewing C# code against SOLID/CQRS/async best practices, or for implementation work explicitly delegated to a subagent (e.g. isolated side-tasks). Use for a second opinion on design/code review, not as the default path for routine implementation already underway in the main session.
 tools: Read, Edit, Write, Bash, Grep, Glob
 ---
 
