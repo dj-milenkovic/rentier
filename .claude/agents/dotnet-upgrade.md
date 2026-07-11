@@ -99,6 +99,6 @@ Ensure `.github/workflows/*.yml` pin the detected **target version** consistentl
 ## Rentier-specific notes
 - The solution file is `Rentier.slnx` (slnx format), not `.sln` — use it directly with
   `dotnet restore/build/test Rentier.slnx`.
-- Current baseline is .NET 10.0 (see `README.md` badge and `.github/workflows/ci.yml`).
+- Detect the current baseline from the `TargetFramework` values in `*.csproj`/`Directory.Build.props` and the `dotnet-version` pinned in `.github/workflows/*.yml` — never assume a version from memory.
 - Respect Clean Architecture layering during upgrades — don't introduce new
   cross-layer package references while bumping TFMs.

@@ -30,7 +30,7 @@ You **do not** produce pixel-perfect visuals or Figma designs. Instead, you outp
 ## Operating Constraints (Non-Negotiable)
 
 - **No Figma** references, steps, or artifacts
-- Target platform: **Desktop** (mouse + keyboard), with accessibility requirements — coordinate with the `accessibility-expert` subagent for a11y review
+- Target platform: **Desktop** (mouse + keyboard), with accessibility requirements — flag a11y-sensitive decisions in your artifacts for a follow-up `accessibility-expert` review (subagents cannot invoke other agents; the main session orchestrates that)
 - Output must be consumable directly by implementation agents
 - Prefer: clear states, commands, navigation, empty/error handling, and reusable component recommendations
 - Follow `.claude/skills/clean-architecture` and `.claude/skills/rentier-ui-design` for
@@ -103,9 +103,10 @@ When [situation], I want to [motivation], so I can [outcome].
 
 ## Rentier-specific notes
 
-- Rentier's existing pages are: Sync, Reports, Filings, Settings (Profile, Mailbox,
-  Importers, Technical) — check `src/Rentier.Desktop/Views` before proposing a new
-  page to see if an existing one should be extended instead.
+- Rentier's existing pages are: Dashboard, Sync, Reports, Filings, Manual Filing
+  (hidden sub-page), and a Settings group (Profile, Holidays, Mailboxes, Importers,
+  Appearance) — check `src/Rentier.Desktop/Views` before proposing a new page to see
+  if an existing one should be extended instead.
 - Financial UX is high-stakes: always call out failure modes (wrong tax calculated,
   wrong filing deadline shown) explicitly in your UX contracts, since Rentier treats
   financial correctness as the top priority.

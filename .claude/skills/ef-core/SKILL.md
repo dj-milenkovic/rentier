@@ -1,11 +1,18 @@
 ---
 name: ef-core
-description: 'Get best practices for Entity Framework Core'
+description: >
+  Entity Framework Core best practices for DbContext design, queries, change
+  tracking, and migrations. Make sure to use this skill when touching AppDbContext,
+  entity configurations, repository implementations, LINQ-to-entities queries, value
+  converters, or when adding EF Core migrations in Rentier.Infrastructure — even for
+  "just a small query change".
 ---
 
 # Entity Framework Core Best Practices
 
-Your goal is to help me follow best practices when working with Entity Framework Core.
+Apply these practices when working with Entity Framework Core. Rentier uses
+**EF Core 10 + SQLite**; migrations are forward-only — add a new migration, never
+edit a shipped one.
 
 ## Data Context Design
 
@@ -72,4 +79,4 @@ Your goal is to help me follow best practices when working with Entity Framework
 - Test migrations in isolated environments
 - Consider snapshot testing for model changes
 
-When reviewing my EF Core code, identify issues and suggest improvements that follow these best practices.
+When reviewing EF Core code, identify violations of these practices and suggest concrete fixes.

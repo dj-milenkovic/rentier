@@ -6,12 +6,36 @@
       "Bash(dotnet test Rentier.slnx*)",
       "Bash(dotnet test tests/*)",
       "Bash(dotnet format Rentier.slnx*)",
+      "Bash(dotnet list*)",
       "Bash(dotnet run --project src/Rentier.Desktop/Rentier.Desktop.csproj*)",
       "Bash(git status*)",
       "Bash(git diff*)",
       "Bash(git log*)",
+      "Bash(git show*)",
       "Bash(git branch -vv)",
-      "Bash(git remote -v)"
+      "Bash(git remote -v)",
+      "Bash(gh pr view*)",
+      "Bash(gh pr list*)",
+      "Bash(gh run view*)",
+      "Bash(gh run list*)"
+    ],
+    "deny": [
+      "Edit(src/Rentier.Infrastructure/Persistence/Migrations/**)",
+      "Write(src/Rentier.Infrastructure/Persistence/Migrations/**)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pwsh -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/format-on-edit.ps1",
+            "timeout": 60
+          }
+        ]
+      }
     ]
   }
 }

@@ -13,9 +13,10 @@ paths:
   block with `.Result`/`.Wait()`.
 - Standard ViewModel state properties: `IsLoading`, `ErrorMessage`, `HasItems` (or
   `HasData`). Every view that loads data binds to these three states.
-- Use `DataGrid` for lists. Use `ContentDialog` for dialogs — always invoked async.
-- Navigation goes through `INavigationService`; ViewModels request a page type and
-  never reference Views directly.
+- Use `DataGrid` for lists. Dialogs go through the shared helpers in `Dialogs/`
+  (`ConfirmDialogHelper`, `ImportDialogHelper`) — always invoked async.
+- Navigation is owned by `MainWindowViewModel`: sidebar `NavigationEntry` items swap
+  `CurrentViewModel`. Content ViewModels never reference Views or other pages directly.
 - See `.claude/skills/clean-architecture` for the full ViewModel pattern, navigation
   shell layout, and page-specific UX contracts (Filings grouping, Sync log format).
 - See `.claude/skills/rentier-ui-design` before adding/changing any AXAML, style,

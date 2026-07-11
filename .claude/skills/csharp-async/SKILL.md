@@ -1,11 +1,18 @@
 ---
 name: csharp-async
-description: 'Get best practices for C# async programming'
+description: >
+  C# async/await best-practice checklist. Make sure to use this skill when writing or
+  reviewing any async method, Task-returning API, or ReactiveCommand.CreateFromTask
+  body, and when debugging deadlocks, unawaited tasks, sync-over-async, or
+  cancellation problems — Rentier requires fully async I/O end-to-end, so most
+  non-trivial code changes here qualify.
 ---
 
 # C# Async Programming Best Practices
 
-Your goal is to help me follow best practices for asynchronous programming in C#.
+Apply these rules when writing or reviewing asynchronous C# code. In Rentier, all
+I/O is async end-to-end with no `.Result`/`.Wait()` anywhere — these are project
+rules, not preferences.
 
 ## Naming Conventions
 
@@ -46,4 +53,4 @@ Your goal is to help me follow best practices for asynchronous programming in C#
 - Use async streams (IAsyncEnumerable<T>) for processing sequences asynchronously
 - Consider the task-based asynchronous pattern (TAP) for public APIs
 
-When reviewing my C# code, identify these issues and suggest improvements that follow these best practices.
+When reviewing C# code, identify violations of these practices and suggest concrete fixes.

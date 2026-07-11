@@ -1,11 +1,18 @@
 ---
 name: csharp-xunit
-description: 'Get best practices for XUnit unit testing, including data-driven tests'
+description: >
+  xUnit v3 testing patterns, including data-driven [Theory] tests, fixtures, and
+  assertions. Make sure to use this skill when writing or modifying any test class,
+  adding [Fact]/[Theory] tests, organizing fixtures or traits, or choosing how to
+  parameterize test data — alongside the rentier-unit-tests / rentier-ui-tests /
+  rentier-integration-tests skill that matches the layer under test.
 ---
 
 # XUnit Best Practices
 
-Your goal is to help me write effective unit tests with XUnit, covering both standard and data-driven testing approaches.
+Apply these practices when writing xUnit tests. Rentier uses **xUnit v3 +
+FluentAssertions + NSubstitute**; project-wide conventions (naming, layer rules)
+live in `.claude/rules/tests.md` and take precedence.
 
 ## Project Setup
 
