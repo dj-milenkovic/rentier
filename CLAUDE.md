@@ -104,3 +104,5 @@ When implementing a feature, create:
   accessibility review, Avalonia UX design) for isolated side-tasks via the Agent tool.
 - **`README.md`, `GETTING-STARTED.md`, `IBKR-SETUP.md`, `TAX-OVERVIEW.md`** — product
   and domain documentation.
+- **`docs/TESTING.md`** — test types, frameworks, trait/CI contract, and the
+  add-X-add-Y checklist. Read before writing or reviewing tests.
