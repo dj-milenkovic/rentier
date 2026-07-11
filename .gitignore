@@ -141,6 +141,9 @@ dump/
 Thumbs.db
 .AppleDouble
 
+# Superpowers / plan scaffolding
+.superpowers/
+
 # Ruflo / Claude Flow runtime and auto-generated scaffolding
 .claude-flow/
 .ruflo/
