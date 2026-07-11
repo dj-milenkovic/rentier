@@ -16,10 +16,6 @@ public sealed class IbkrCsvParser : IStatementParser
     {
         try
         {
-            if (csvStream is null)
-                return Result<StatementParseResult, Error>.Failure(
-                    new Error("STREAM_ERROR", "CSV stream must not be null."));
-
             List<string[]> rows;
             try
             {
