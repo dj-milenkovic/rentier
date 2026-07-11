@@ -110,7 +110,9 @@ jobs:
         run: dotnet restore Rentier.slnx
 
       - name: Build
-        run: dotnet build tests/Rentier.Infrastructure.Tests tests/Rentier.Scenarios.Tests --no-restore -c Release
+        run: |
+          dotnet build tests/Rentier.Infrastructure.Tests --no-restore -c Release
+          dotnet build tests/Rentier.Scenarios.Tests --no-restore -c Release
 
       - name: Run integration tests
         run: |
