@@ -17,8 +17,8 @@ UI tests in Rentier split into two subtypes:
 
 | Subtype | What it tests | Avalonia app needed? | Test project |
 |---|---|---|---|
-| **ViewModel unit** | ReactiveUI state, commands, navigation | No | `Rentier.Desktop.Tests` |
-| **Headless UI** | XAML rendering, bindings, visual state | Yes (headless) | `Rentier.Desktop.Tests` |
+| **ViewModel unit** | ReactiveUI state, commands, navigation | No | `Rentier.UnitTests` |
+| **Headless UI** | XAML rendering, bindings, visual state | Yes (headless) | `Rentier.UnitTests` |
 
 Write ViewModel unit tests for all ViewModels. Write headless tests only when the bug is
 in XAML binding or visual state, not ViewModel logic.
