@@ -141,7 +141,8 @@ dump/
 Thumbs.db
 .AppleDouble
 
-# spec-kit
-#.specify
-#.github/prompts
-#.github/agents/speckit.*
+# Ruflo / Claude Flow runtime
+claude-flow/
+.ruflo/
+.rvf/
+.cache/
