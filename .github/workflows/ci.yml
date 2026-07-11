@@ -48,10 +48,10 @@ jobs:
         run: dotnet list Rentier.slnx package --vulnerable --include-transitive 2>&1 | tee vuln-report.txt && ! grep -qi "has the following vulnerable packages" vuln-report.txt
 
   # ──────────────────────────────────────────────
-  # Migration & upgrade tests (Ubuntu, parallel)
+  # Integration & Scenario tests (Ubuntu only)
   # ──────────────────────────────────────────────
-  migration-tests:
-    name: Migration & Upgrade Tests
+  integration-tests:
+    name: Integration & Scenario Tests
     needs: lint
     runs-on: ubuntu-latest
     steps:
@@ -74,22 +74,32 @@ jobs:
         run: dotnet restore Rentier.slnx
 
       - name: Build
-        run: dotnet build tests/Rentier.Infrastructure.Tests --no-restore -c Release
+        run: dotnet build tests/Rentier.Infrastructure.Tests tests/Rentier.Scenarios.Tests --no-restore -c Release
 
-      - name: Run migration tests
+      - name: Run integration tests
         run: |
-          dotnet test tests/Rentier.Infrastructure.Tests \
+          dotnet test tests/Rentier.Infrastructure.Tests tests/Rentier.Scenarios.Tests \
             --no-build -c Release \
-            --filter "Category=Integration&FullyQualifiedName~Migration" \
-            --logger "trx;LogFileName=migration-results.trx" \
+            --filter "Category=Integration" \
+            --collect:"XPlat Code Coverage" \
+            --settings coverlet.runsettings \
+            --results-directory ./coverage-integration \
+            --logger "trx;LogFileName=integration-results.trx" \
             --logger "console;verbosity=normal"
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: coverage-integration
+          path: ./coverage-integration/**/coverage.opencover.xml
 
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v7.0.1
         with:
-          name: migration-test-results
-          path: ./**/migration-results.trx
+          name: integration-test-results
+          path: ./coverage-integration/**/*.trx
 
   # ──────────────────────────────────────────────
   # Build & Test matrix (Windows, macOS, Ubuntu)
@@ -196,7 +206,7 @@ jobs:
   # ──────────────────────────────────────────────
   coverage:
     name: Coverage Report
-    needs: build
+    needs: [build, integration-tests]
     if: always() && !cancelled()
     runs-on: ubuntu-latest
     permissions:
@@ -248,6 +258,31 @@ jobs:
           fi
           echo "LINE_COVERAGE=$LINE_COV" >> "$GITHUB_ENV"
           echo "BRANCH_COVERAGE=$BRANCH_COV" >> "$GITHUB_ENV"
+
+      - name: Coverage ratchet — Domain + Application
+        shell: bash
+        run: |
+          if [ ! -f ./coverage-report/Summary.txt ]; then
+            echo "No summary file; skipping ratchet." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          # Extract line coverage for Domain and Application assemblies
+          COV=$(grep -E 'Rentier\.(Domain|Application)' ./coverage-report/Summary.txt \
+                | grep -oP 'Line coverage: \K[0-9.]+' \
+                | awk '{sum+=$1; n++} END{if(n>0) printf "%.1f", sum/n; else print "0"}')
+          echo "Domain+Application average line coverage: ${COV}%"
+          echo "## 🎯 Domain+Application Coverage: ${COV}%" >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "$COVERAGE_FLOOR" ]; then
+            python3 -c "
+          import sys
+          cov = float('${COV}' or 0)
+          floor = float('${COVERAGE_FLOOR}')
+          if cov < floor:
+              print(f'Coverage {cov}% below floor {floor}%')
+              sys.exit(1)
+          print(f'Coverage {cov}% >= floor {floor}% OK')
+          "
+          fi
 
       - name: Upload HTML coverage report
         uses: actions/upload-artifact@v7.0.1
