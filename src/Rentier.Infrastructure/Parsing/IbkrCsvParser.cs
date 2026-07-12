@@ -173,29 +173,9 @@ public sealed class IbkrCsvParser : IStatementParser
                 continue;
             }
 
-            var entity = StripIsin(description);
-            var exactKey = (entity, date, currency);
-
-            if (dividends.TryGetValue(exactKey, out _))
-            {
-                if (accumulator.TryGetValue(exactKey, out var existing))
-                    accumulator[exactKey] = existing + Math.Abs(rawAmount);
-                else
-                    accumulator[exactKey] = Math.Abs(rawAmount);
-            }
-            else
-            {
-                // Check if there's a dividend for same entity+date but different currency
-                bool sameDateEntity = dividends.Keys.Any(k =>
-                    k.Entity == entity && k.Date == date);
-
-                if (sameDateEntity)
-                    errors.Add(new ParseError("WHT_CURRENCY_MISMATCH",
-                        $"WHT currency '{currency}' does not match dividend currency for '{entity}' on {date:yyyy-MM-dd}.", rowIndex));
-                else
-                    errors.Add(new ParseError("WHT_UNMATCHED",
-                        $"No dividend found for WHT entry: entity='{entity}', date={date:yyyy-MM-dd}, currency='{currency}'.", rowIndex));
-            }
+            AccumulateOrErrorWht(
+                StripIsin(description), date, currency, Math.Abs(rawAmount),
+                rowIndex, dividends, accumulator, errors);
         }
 
         var result = accumulator
@@ -313,5 +293,31 @@ public sealed class IbkrCsvParser : IStatementParser
         errors.Add(new ParseError(errorCode,
             $"Cannot parse {valueLabel} '{raw}'.", rowIndex));
         return false;
+    }
+
+    private static void AccumulateOrErrorWht(
+        string entity, DateOnly date, string currency, decimal absAmount, int rowIndex,
+        Dictionary<(string Entity, DateOnly Date, string Currency), DividendRecord> dividends,
+        Dictionary<(string Entity, DateOnly Date, string Currency), decimal> accumulator,
+        List<ParseError> errors)
+    {
+        var exactKey = (entity, date, currency);
+        if (dividends.TryGetValue(exactKey, out _))
+        {
+            if (accumulator.TryGetValue(exactKey, out var existing))
+                accumulator[exactKey] = existing + absAmount;
+            else
+                accumulator[exactKey] = absAmount;
+        }
+        else
+        {
+            bool sameDateEntity = dividends.Keys.Any(k => k.Entity == entity && k.Date == date);
+            if (sameDateEntity)
+                errors.Add(new ParseError("WHT_CURRENCY_MISMATCH",
+                    $"WHT currency '{currency}' does not match dividend currency for '{entity}' on {date:yyyy-MM-dd}.", rowIndex));
+            else
+                errors.Add(new ParseError("WHT_UNMATCHED",
+                    $"No dividend found for WHT entry: entity='{entity}', date={date:yyyy-MM-dd}, currency='{currency}'.", rowIndex));
+        }
     }
 }
