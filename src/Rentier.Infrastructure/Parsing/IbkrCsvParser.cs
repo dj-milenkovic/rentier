@@ -112,20 +112,15 @@ public sealed class IbkrCsvParser : IStatementParser
         foreach (var record in rows)
         {
             rowIndex++;
-            if (record.Length < 1 || !string.Equals(record[0], "Dividends", StringComparison.OrdinalIgnoreCase))
-                continue;
-            if (record.Length < 2 || !string.Equals(record[1], "Data", StringComparison.OrdinalIgnoreCase))
-                continue;
+            if (!IsDataRow(record, "Dividends")) continue;
             if (record.Length < 6)
             {
                 errors.Add(new ParseError("ROW_TOO_SHORT", $"Dividends row has {record.Length} fields, expected >=6.", rowIndex));
                 continue;
             }
 
+            if (IsTotalRow(record)) continue;
             var currency = record[2].Trim();
-            // Skip summary/total rows (e.g. "Dividends,Data,Total,,,0.35")
-            if (currency.StartsWith("Total", StringComparison.OrdinalIgnoreCase))
-                continue;
 
             var dateStr = record[3].Trim();
             var description = record[4].Trim();
@@ -166,19 +161,15 @@ public sealed class IbkrCsvParser : IStatementParser
         foreach (var record in rows)
         {
             rowIndex++;
-            if (record.Length < 1 || !string.Equals(record[0], "Withholding Tax", StringComparison.OrdinalIgnoreCase))
-                continue;
-            if (record.Length < 2 || !string.Equals(record[1], "Data", StringComparison.OrdinalIgnoreCase))
-                continue;
+            if (!IsDataRow(record, "Withholding Tax")) continue;
             if (record.Length < 6)
             {
                 errors.Add(new ParseError("ROW_TOO_SHORT", $"WHT row has {record.Length} fields, expected >=6.", rowIndex));
                 continue;
             }
 
+            if (IsTotalRow(record)) continue;
             var currency = record[2].Trim();
-            if (currency.StartsWith("Total", StringComparison.OrdinalIgnoreCase))
-                continue;
 
             var dateStr = record[3].Trim();
             var description = record[4].Trim();
@@ -244,10 +235,7 @@ public sealed class IbkrCsvParser : IStatementParser
         foreach (var record in rows)
         {
             rowIndex++;
-            if (record.Length < 1 || !string.Equals(record[0], "Interest", StringComparison.OrdinalIgnoreCase))
-                continue;
-            if (record.Length < 2 || !string.Equals(record[1], "Data", StringComparison.OrdinalIgnoreCase))
-                continue;
+            if (!IsDataRow(record, "Interest")) continue;
             if (record.Length < 6)
                 continue; // silently skip short rows in Interest section
 
@@ -297,10 +285,7 @@ public sealed class IbkrCsvParser : IStatementParser
         foreach (var record in rows)
         {
             rowIndex++;
-            if (record.Length < 1 || !string.Equals(record[0], "Base Currency Exchange Rate", StringComparison.OrdinalIgnoreCase))
-                continue;
-            if (record.Length < 2 || !string.Equals(record[1], "Data", StringComparison.OrdinalIgnoreCase))
-                continue;
+            if (!IsDataRow(record, "Base Currency Exchange Rate")) continue;
             if (record.Length < 7)
                 continue; // silently skip short rows — custom statements use a 4-column FX format
 
@@ -335,4 +320,13 @@ public sealed class IbkrCsvParser : IStatementParser
 
         return (dict.Values.ToList().AsReadOnly(), errors);
     }
+
+    private static bool IsDataRow(string[] record, string sectionName)
+        => record.Length >= 2
+           && record[0].Equals(sectionName, StringComparison.OrdinalIgnoreCase)
+           && record[1].Equals("Data", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsTotalRow(string[] record)
+        => record.Length >= 3
+           && record[2].Trim().StartsWith("Total", StringComparison.OrdinalIgnoreCase);
 }
