@@ -89,7 +89,6 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
                 DeadlineFilter.Clear();
             }
             this.RaisePropertyChanged(nameof(IsFilterRowEnabled));
-            UpdateHasActiveFilters();
         }
     }
 
@@ -471,7 +470,6 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
                 PayingEntityFilter.Clear();
                 PaymentReferenceFilter.Clear();
                 DeadlineFilter.Clear();
-                UpdateHasActiveFilters();
                 _currentPage = 1;
                 this.RaisePropertyChanged(nameof(CurrentPage));
                 await LoadPageAsync(ct);
@@ -504,7 +502,6 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
                     PaymentReferenceFilter.Applied,
                     DeadlineFilter.Applied)
                 .ObserveOn(_scheduler)
-                .Do(_ => UpdateHasActiveFilters())
                 .Do(_ => { _currentPage = 1; this.RaisePropertyChanged(nameof(CurrentPage)); })
                 .Select(_ => Unit.Default)
                 .InvokeCommand(LoadPageCommand)
@@ -552,25 +549,16 @@ public sealed class FilingsViewModel : ReactiveObject, IActivatableViewModel
         });
     }
 
-    private void UpdateHasActiveFilters()
-    {
-        HasActiveFilters =
-            StatusFilter.IsActive ||
-            IncomeTypeFilter.IsActive ||
-            PayingEntityFilter.IsActive ||
-            PaymentReferenceFilter.IsActive ||
-            DeadlineFilter.IsActive;
-    }
-
     private void RebuildRowSubscriptions()
     {
         _rowSubscriptions.Clear();
         foreach (var row in Rows)
         {
             row.WhenAnyValue(r => r.IsSelected)
-                .Subscribe(_ =>
+                .Skip(1)
+                .Subscribe(isNowSelected =>
                 {
-                    SelectedCount = Rows.Count(r => r.IsSelected);
+                    SelectedCount += isNowSelected ? 1 : -1;
                     this.RaisePropertyChanged(nameof(IsAllSelected));
                 })
                 .DisposeWith(_rowSubscriptions);
