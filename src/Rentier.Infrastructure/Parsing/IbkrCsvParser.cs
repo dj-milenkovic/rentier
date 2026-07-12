@@ -122,20 +122,10 @@ public sealed class IbkrCsvParser : IStatementParser
             if (IsTotalRow(record)) continue;
             var currency = record[2].Trim();
 
-            var dateStr = record[3].Trim();
             var description = record[4].Trim();
-            var amountStr = record[5].Trim();
 
-            if (!DateOnly.TryParseExact(dateStr, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
-            {
-                errors.Add(new ParseError("ROW_DATE_INVALID", $"Cannot parse date '{dateStr}'.", rowIndex));
-                continue;
-            }
-            if (!decimal.TryParse(amountStr, NumberStyles.Any, CultureInfo.InvariantCulture, out var amount))
-            {
-                errors.Add(new ParseError("ROW_AMOUNT_INVALID", $"Cannot parse amount '{amountStr}'.", rowIndex));
-                continue;
-            }
+            if (!TryParseDate(record[3].Trim(), rowIndex, "", errors, out var date)) continue;
+            if (!TryParseDecimal(record[5].Trim(), rowIndex, "ROW_AMOUNT_INVALID", "amount", errors, out var amount)) continue;
 
             var entity = StripIsin(description);
             var key = (entity, date, currency);
@@ -171,20 +161,11 @@ public sealed class IbkrCsvParser : IStatementParser
             if (IsTotalRow(record)) continue;
             var currency = record[2].Trim();
 
-            var dateStr = record[3].Trim();
             var description = record[4].Trim();
             var amountStr = record[5].Trim();
 
-            if (!DateOnly.TryParseExact(dateStr, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
-            {
-                errors.Add(new ParseError("ROW_DATE_INVALID", $"Cannot parse WHT date '{dateStr}'.", rowIndex));
-                continue;
-            }
-            if (!decimal.TryParse(amountStr, NumberStyles.Any, CultureInfo.InvariantCulture, out var rawAmount))
-            {
-                errors.Add(new ParseError("ROW_AMOUNT_INVALID", $"Cannot parse WHT amount '{amountStr}'.", rowIndex));
-                continue;
-            }
+            if (!TryParseDate(record[3].Trim(), rowIndex, "WHT ", errors, out var date)) continue;
+            if (!TryParseDecimal(amountStr, rowIndex, "ROW_AMOUNT_INVALID", "WHT amount", errors, out var rawAmount)) continue;
             if (rawAmount > 0)
             {
                 errors.Add(new ParseError("WHT_POSITIVE_AMOUNT",
@@ -240,9 +221,7 @@ public sealed class IbkrCsvParser : IStatementParser
                 continue; // silently skip short rows in Interest section
 
             var currency = record[2].Trim();
-            var dateStr = record[3].Trim();
             var description = record[4].Trim();
-            var amountStr = record[5].Trim();
 
             InterestType type;
             if (description.Contains("Credit Interest", StringComparison.OrdinalIgnoreCase))
@@ -252,16 +231,8 @@ public sealed class IbkrCsvParser : IStatementParser
             else
                 continue; // silently skip non-standard interest rows
 
-            if (!DateOnly.TryParseExact(dateStr, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
-            {
-                errors.Add(new ParseError("ROW_DATE_INVALID", $"Cannot parse interest date '{dateStr}'.", rowIndex));
-                continue;
-            }
-            if (!decimal.TryParse(amountStr, NumberStyles.Any, CultureInfo.InvariantCulture, out var rawAmount))
-            {
-                errors.Add(new ParseError("ROW_AMOUNT_INVALID", $"Cannot parse interest amount '{amountStr}'.", rowIndex));
-                continue;
-            }
+            if (!TryParseDate(record[3].Trim(), rowIndex, "interest ", errors, out var date)) continue;
+            if (!TryParseDecimal(record[5].Trim(), rowIndex, "ROW_AMOUNT_INVALID", "interest amount", errors, out var rawAmount)) continue;
 
             var amount = Math.Abs(rawAmount); // always store positive
             var key = (currency, date, type);
@@ -290,20 +261,11 @@ public sealed class IbkrCsvParser : IStatementParser
                 continue; // silently skip short rows — custom statements use a 4-column FX format
 
             var fromCurrency = record[2].Trim();
-            var dateStr = record[3].Trim();
             var toCurrency = record[5].Trim();
             var rateStr = record[6].Trim();
 
-            if (!DateOnly.TryParseExact(dateStr, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
-            {
-                errors.Add(new ParseError("ROW_DATE_INVALID", $"Cannot parse FX rate date '{dateStr}'.", rowIndex));
-                continue;
-            }
-            if (!decimal.TryParse(rateStr, NumberStyles.Any, CultureInfo.InvariantCulture, out var rate))
-            {
-                errors.Add(new ParseError("ROW_AMOUNT_INVALID", $"Cannot parse FX rate '{rateStr}'.", rowIndex));
-                continue;
-            }
+            if (!TryParseDate(record[3].Trim(), rowIndex, "FX rate ", errors, out var date)) continue;
+            if (!TryParseDecimal(rateStr, rowIndex, "ROW_AMOUNT_INVALID", "FX rate", errors, out var rate)) continue;
             if (rate <= 0)
             {
                 errors.Add(new ParseError("RATE_NON_POSITIVE", $"FX rate must be positive, got '{rateStr}'.", rowIndex));
@@ -329,4 +291,27 @@ public sealed class IbkrCsvParser : IStatementParser
     private static bool IsTotalRow(string[] record)
         => record.Length >= 3
            && record[2].Trim().StartsWith("Total", StringComparison.OrdinalIgnoreCase);
+
+    private static bool TryParseDate(
+        string raw, int rowIndex, string contextLabel,
+        List<ParseError> errors, out DateOnly date)
+    {
+        if (DateOnly.TryParseExact(raw, "yyyy-MM-dd", CultureInfo.InvariantCulture,
+                DateTimeStyles.None, out date))
+            return true;
+        errors.Add(new ParseError("ROW_DATE_INVALID",
+            $"Cannot parse {contextLabel}date '{raw}'.", rowIndex));
+        return false;
+    }
+
+    private static bool TryParseDecimal(
+        string raw, int rowIndex, string errorCode, string valueLabel,
+        List<ParseError> errors, out decimal value)
+    {
+        if (decimal.TryParse(raw, NumberStyles.Any, CultureInfo.InvariantCulture, out value))
+            return true;
+        errors.Add(new ParseError(errorCode,
+            $"Cannot parse {valueLabel} '{raw}'.", rowIndex));
+        return false;
+    }
 }
