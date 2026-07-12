@@ -264,8 +264,8 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
         ClearErrorCommand = ReactiveCommand.Create(
             () => { ErrorMessage = null; }, outputScheduler: _scheduler);
 
-        ClearFiltersCommand = ReactiveCommand.Create(
-            () =>
+        ClearFiltersCommand = ReactiveCommand.CreateFromTask(
+            async (CancellationToken ct) =>
             {
                 NameFilter.Clear();
                 ImporterFilter.Clear();
@@ -274,7 +274,7 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
                 FilingCountFilter.Clear();
                 StatusFilter.Clear();
                 CurrentPage = 1;
-                LoadPageCommand.Execute().Subscribe();
+                await LoadPageAsync(ct);
             },
             this.WhenAnyValue(x => x.HasActiveFilters),
             outputScheduler: _scheduler);
@@ -353,9 +353,10 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
         foreach (var row in Rows)
         {
             row.WhenAnyValue(r => r.IsSelected)
-                .Subscribe(_ =>
+                .Skip(1)
+                .Subscribe(isNowSelected =>
                 {
-                    SelectedCount = Rows.Count(r => r.IsSelected);
+                    SelectedCount += isNowSelected ? 1 : -1;
                     this.RaisePropertyChanged(nameof(IsAllSelected));
                 })
                 .DisposeWith(_rowSubscriptions);
