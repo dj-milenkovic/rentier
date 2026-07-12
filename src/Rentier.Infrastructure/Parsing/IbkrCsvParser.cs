@@ -112,17 +112,7 @@ public sealed class IbkrCsvParser : IStatementParser
         foreach (var record in rows)
         {
             rowIndex++;
-            if (!IsDataRow(record, "Dividends")) continue;
-            if (record.Length < 6)
-            {
-                errors.Add(new ParseError("ROW_TOO_SHORT", $"Dividends row has {record.Length} fields, expected >=6.", rowIndex));
-                continue;
-            }
-
-            if (IsTotalRow(record)) continue;
-            var currency = record[2].Trim();
-
-            var description = record[4].Trim();
+            if (!TryReadDataRow(record, "Dividends", "Dividends", rowIndex, errors, out var currency, out var description)) continue;
 
             if (!TryParseDate(record[3].Trim(), rowIndex, "", errors, out var date)) continue;
             if (!TryParseDecimal(record[5].Trim(), rowIndex, "ROW_AMOUNT_INVALID", "amount", errors, out var amount)) continue;
@@ -151,17 +141,7 @@ public sealed class IbkrCsvParser : IStatementParser
         foreach (var record in rows)
         {
             rowIndex++;
-            if (!IsDataRow(record, "Withholding Tax")) continue;
-            if (record.Length < 6)
-            {
-                errors.Add(new ParseError("ROW_TOO_SHORT", $"WHT row has {record.Length} fields, expected >=6.", rowIndex));
-                continue;
-            }
-
-            if (IsTotalRow(record)) continue;
-            var currency = record[2].Trim();
-
-            var description = record[4].Trim();
+            if (!TryReadDataRow(record, "Withholding Tax", "WHT", rowIndex, errors, out var currency, out var description)) continue;
             var amountStr = record[5].Trim();
 
             if (!TryParseDate(record[3].Trim(), rowIndex, "WHT ", errors, out var date)) continue;
@@ -261,6 +241,25 @@ public sealed class IbkrCsvParser : IStatementParser
         }
 
         return (dict.Values.ToList().AsReadOnly(), errors);
+    }
+
+    private static bool TryReadDataRow(
+        string[] record, string sectionName, string tooShortPrefix,
+        int rowIndex, List<ParseError> errors,
+        out string currency, out string description)
+    {
+        currency = description = string.Empty;
+        if (!IsDataRow(record, sectionName)) return false;
+        if (record.Length < 6)
+        {
+            errors.Add(new ParseError("ROW_TOO_SHORT",
+                $"{tooShortPrefix} row has {record.Length} fields, expected >=6.", rowIndex));
+            return false;
+        }
+        if (IsTotalRow(record)) return false;
+        currency = record[2].Trim();
+        description = record[4].Trim();
+        return true;
     }
 
     private static bool IsDataRow(string[] record, string sectionName)
