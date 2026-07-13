@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Rentier.Application.DTOs;
 using Rentier.Domain.Entities;
 using Rentier.Infrastructure.Persistence;
@@ -28,7 +29,7 @@ public class HolidayRepositoryTests : IAsyncLifetime
 
         _context = new AppDbContext(options);
         await _context.Database.EnsureCreatedAsync(TestContext.Current.CancellationToken);
-        _repository = new HolidayRepository(_context);
+        _repository = new HolidayRepository(_context, Microsoft.Extensions.Logging.Abstractions.NullLogger<HolidayRepository>.Instance);
     }
 
     [Fact]

@@ -7,10 +7,8 @@ using Rentier.Infrastructure.Persistence;
 
 namespace Rentier.Infrastructure.Repositories;
 
-public sealed class HolidayRepository(AppDbContext db, ILogger<HolidayRepository>? logger = null) : IHolidayRepository
+public sealed class HolidayRepository(AppDbContext db, ILogger<HolidayRepository> logger) : IHolidayRepository
 {
-    private readonly ILogger<HolidayRepository> _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<HolidayRepository>.Instance;
-
     public async Task<HolidayConfDto> GetHolidayConfAsync(CancellationToken cancellationToken = default)
     {
         var holidays = await db.PublicHolidays
@@ -73,7 +71,7 @@ public sealed class HolidayRepository(AppDbContext db, ILogger<HolidayRepository
             catch (Exception rollbackEx)
             {
                 // Rollback failure is logged but not rethrown — the original exception is the root cause.
-                _logger.LogError(rollbackEx, "Transaction rollback failed after a holiday save error.");
+                logger.LogError(rollbackEx, "Transaction rollback failed after a holiday save error.");
             }
             throw;
         }

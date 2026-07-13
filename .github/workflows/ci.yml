@@ -48,11 +48,47 @@ jobs:
         run: dotnet list Rentier.slnx package --vulnerable --include-transitive 2>&1 | tee vuln-report.txt && ! grep -qi "has the following vulnerable packages" vuln-report.txt
 
   # ──────────────────────────────────────────────
-  # Migration & upgrade tests (Ubuntu, parallel)
+  # Migration tests (fast-fail gate, Ubuntu only)
   # ──────────────────────────────────────────────
   migration-tests:
-    name: Migration & Upgrade Tests
+    name: Migration Tests
     needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.3
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5.3.0
+        with:
+          dotnet-version: '10.x'
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v5.0.5
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Build.props', 'Directory.Packages.props') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Restore
+        run: dotnet restore tests/Rentier.Infrastructure.Tests/Rentier.Infrastructure.Tests.csproj
+
+      - name: Build
+        run: dotnet build tests/Rentier.Infrastructure.Tests --no-restore -c Release
+
+      - name: Run migration tests
+        run: |
+          dotnet test tests/Rentier.Infrastructure.Tests \
+            --no-build -c Release \
+            --filter "FullyQualifiedName~Migration|FullyQualifiedName~DatabaseInitializer" \
+            --logger "console;verbosity=normal"
+
+  # ──────────────────────────────────────────────
+  # Integration & Scenario tests (Ubuntu only)
+  # ──────────────────────────────────────────────
+  integration-tests:
+    name: Integration & Scenario Tests
+    needs: [lint, migration-tests]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -74,22 +110,42 @@ jobs:
         run: dotnet restore Rentier.slnx
 
       - name: Build
-        run: dotnet build tests/Rentier.Infrastructure.Tests --no-restore -c Release
+        run: |
+          dotnet build tests/Rentier.Infrastructure.Tests --no-restore -c Release
+          dotnet build tests/Rentier.Scenarios.Tests --no-restore -c Release
 
-      - name: Run migration tests
+      - name: Run integration tests
         run: |
           dotnet test tests/Rentier.Infrastructure.Tests \
             --no-build -c Release \
-            --filter "Category=Integration&FullyQualifiedName~Migration" \
-            --logger "trx;LogFileName=migration-results.trx" \
+            --filter "Category=Integration" \
+            --collect:"XPlat Code Coverage" \
+            --settings coverlet.runsettings \
+            --results-directory ./coverage-integration \
+            --logger "trx;LogFileName=infra-results.trx" \
             --logger "console;verbosity=normal"
+          dotnet test tests/Rentier.Scenarios.Tests \
+            --no-build -c Release \
+            --filter "Category=Integration" \
+            --collect:"XPlat Code Coverage" \
+            --settings coverlet.runsettings \
+            --results-directory ./coverage-integration \
+            --logger "trx;LogFileName=scenarios-results.trx" \
+            --logger "console;verbosity=normal"
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: coverage-integration
+          path: ./coverage-integration/**/coverage.opencover.xml
 
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v7.0.1
         with:
-          name: migration-test-results
-          path: ./**/migration-results.trx
+          name: integration-test-results
+          path: ./coverage-integration/**/*.trx
 
   # ──────────────────────────────────────────────
   # Build & Test matrix (Windows, macOS, Ubuntu)
@@ -196,7 +252,7 @@ jobs:
   # ──────────────────────────────────────────────
   coverage:
     name: Coverage Report
-    needs: build
+    needs: [build, integration-tests]
     if: always() && !cancelled()
     runs-on: ubuntu-latest
     permissions:
@@ -265,12 +321,23 @@ jobs:
       - name: Post coverage summary
         shell: bash
         run: |
-          echo "## 📊 Code Coverage (merged)" >> "$GITHUB_STEP_SUMMARY"
+          echo "## 📊 Code Coverage (merged — all assemblies)" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "| Metric | Coverage |" >> "$GITHUB_STEP_SUMMARY"
           echo "|--------|----------|" >> "$GITHUB_STEP_SUMMARY"
           echo "| Line   | ${LINE_COVERAGE:-N/A}% |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Branch | ${BRANCH_COVERAGE:-N/A}% |" >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "$COVERAGE_FLOOR" ] && [ "${LINE_COVERAGE:-N/A}" != "N/A" ]; then
+            python3 -c "
+          import sys
+          cov = float('${LINE_COVERAGE}')
+          floor = float('${COVERAGE_FLOOR}')
+          if cov < floor:
+              print(f'Coverage {cov}% below floor {floor}%')
+              sys.exit(1)
+          print(f'Coverage {cov}% >= floor {floor}% OK')
+          "
+          fi
 
   # ──────────────────────────────────────────────
   # SonarCloud analysis (Ubuntu only)

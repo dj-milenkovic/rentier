@@ -13,7 +13,7 @@ namespace Rentier.Desktop.ViewModels;
 /// View model row for a single filing in the filings list.
 /// All display formatting is done here; the view binds to these computed properties.
 /// </summary>
-public sealed class FilingRowViewModel : ReactiveObject
+public sealed class FilingRowViewModel : ReactiveObject, ISelectableRow
 {
     public Guid Id { get; }
     public FilingStatus Status { get; }

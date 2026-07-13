@@ -24,6 +24,9 @@
     <PackageReference Include="Microsoft.Extensions.Http" />
     <PackageReference Include="CsvHelper" />
     <PackageReference Include="Velopack" />
+
+
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" />
   </ItemGroup>
 
   <ItemGroup>
