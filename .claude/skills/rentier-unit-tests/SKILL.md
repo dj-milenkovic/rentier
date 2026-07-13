@@ -18,8 +18,8 @@ require no database, and cover the business rules that matter most. Write them f
 
 | Kind | Project | What it tests | Mocks? |
 |---|---|---|---|
-| **Domain unit** | `Rentier.Domain.Tests` | Entities, value objects, domain services | Never |
-| **Application unit** | `Rentier.Application.Tests` | CQRS command/query handlers | Yes — mock the repos |
+| **Domain unit** | `Rentier.UnitTests` | Entities, value objects, domain services | Never |
+| **Application unit** | `Rentier.UnitTests` | CQRS command/query handlers | Yes — mock the repos |
 
 ---
 
@@ -119,7 +119,7 @@ public class FilingStatusTransitionTests
 
 ### Namespace
 
-Use flat namespace: `Rentier.Domain.Tests` — not `Rentier.Domain.Tests.Services`.
+Use flat namespace: `Rentier.UnitTests.Domain` — not `Rentier.UnitTests.Domain.Services`.
 
 ---
 

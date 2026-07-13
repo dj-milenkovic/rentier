@@ -10,9 +10,10 @@ paths:
 - **`tests/Rentier.UnitTests`** — Domain tests use no mocks (test pure logic).
   Application tests mock repositories/ports with NSubstitute — never mock the code
   under test.
-- **`tests/Rentier.Infrastructure.Tests`** — use EF Core InMemory or SQLite
-  in-memory; real parsers/serializers against fixture files. Integration tests are
-  tagged `[Trait("Category", "Integration")]` (matches CI's `--filter` usage).
+- **`tests/Rentier.Infrastructure.Tests`** — use SQLite `:memory:` (kept-open
+  connection) for all repository and migration tests; never EF InMemory. Real
+  parsers/serializers against fixture files. Integration tests are tagged
+  `[Trait("Category", "Integration")]` (matches CI's `--filter` usage).
 - **`tests/Rentier.Scenarios.Tests`** — end-to-end scenarios spanning multiple
   layers; prefer realistic fixture data over mocks where practical.
 - **`tests/Rentier.Tests.Common`** — shared builders/fixtures; put reusable test

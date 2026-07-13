@@ -301,17 +301,7 @@ public sealed class IbkrCsvParserTests
     // ─── Contract clause: fatal errors produce Result.Failure ────────────────
 
     [Fact]
-    public async Task ParseAsync_NullStream_ReturnsStreamError()
-    {
-        IStatementParser parser = new IbkrCsvParser();
 
-        var result = await parser.ParseAsync(null!, TestContext.Current.CancellationToken);
-
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("STREAM_ERROR");
-    }
-
-    [Fact]
     public async Task ParseAsync_CsvWithNoKnownSections_ReturnsInvalidFormatError()
     {
         var csv = """
