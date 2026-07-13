@@ -1,0 +1,15 @@
+Dividends,Header,Currency,Date,Description,Amount
+Dividends,Data,USD,2026-06-12,ACME(US0000000000) Payment in Lieu of Dividend (Ordinary Dividend),0.09
+Dividends,Data,USD,2026-06-12,ACME(US0000000000) Cash Dividend USD 0.0875 per Share (Ordinary Dividend),0.26
+Dividends,Data,Total,,,0.35
+Dividends,Data,Total in EUR,,,0.302568
+Withholding Tax,Header,Currency,Date,Description,Amount,Code
+Withholding Tax,Data,USD,2026-06-12,ACME(US0000000000) Payment in Lieu of Dividend - US Tax,-0.03,
+Withholding Tax,Data,USD,2026-06-12,ACME(US0000000000) Cash Dividend USD 0.0875 per Share - US Tax,-0.08,
+Withholding Tax,Data,Total,,,-0.11,
+Withholding Tax,Data,Total in EUR,,,-0.0950928,
+Base Currency Exchange Rate,Header,Currency,Rate
+Base Currency Exchange Rate,Data,AUD,0.609110
+Base Currency Exchange Rate,Data,EUR,0.864480
+Base Currency Exchange Rate,Data,GBP,1.159100
+Base Currency Exchange Rate,Data,USD,0.864480

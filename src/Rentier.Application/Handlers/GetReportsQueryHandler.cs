@@ -54,12 +54,13 @@ public sealed class GetReportsQueryHandler
                 var (pageReports, totalCount) = await _reports.GetPagedAsync(
                     effectiveFilter, skip, query.PageSize, query.SortDescending, ct);
 
+                var reportIds = pageReports.Select(r => r.Id).ToList();
+                var aggregates = await _filings.GetAggregatesByReportIdsAsync(reportIds, ct);
+
                 var dtos = new List<ReportRowDto>(pageReports.Count);
                 foreach (var r in pageReports)
                 {
-                    ct.ThrowIfCancellationRequested();
-                    var count = await _filings.GetFilingCountByReportIdAsync(r.Id, ct);
-                    var earliest = await _filings.GetEarliestIncomeDateByReportIdAsync(r.Id, ct);
+                    var (count, earliest) = aggregates.GetValueOrDefault(r.Id);
                     var importerName = importerNames.GetValueOrDefault(r.ImporterId, "Unknown");
                     var datePart = (r.EmailDate ?? earliest ?? r.ImportDate).ToString("yyyy-MM-dd");
                     var displayName = $"{importerName} \u2013 {datePart}";
