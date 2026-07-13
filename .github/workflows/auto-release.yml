@@ -12,8 +12,7 @@ name: Auto Release
 # Skip release: include [skip release] anywhere in the commit message.
 
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:  # disabled auto-trigger; run manually when ready to release
 
 # Serialize releases so concurrent merges never compute the same tag.
 # cancel-in-progress: false ensures both releases still happen, just sequentially.

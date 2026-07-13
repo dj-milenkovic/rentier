@@ -16,10 +16,6 @@ public sealed class IbkrCsvParser : IStatementParser
     {
         try
         {
-            if (csvStream is null)
-                return Result<StatementParseResult, Error>.Failure(
-                    new Error("STREAM_ERROR", "CSV stream must not be null."));
-
             List<string[]> rows;
             try
             {
@@ -92,6 +88,8 @@ public sealed class IbkrCsvParser : IStatementParser
         return rows;
     }
 
+    private const string ROW_AMOUNT_INVALID = "ROW_AMOUNT_INVALID";
+
     // ISIN pattern: (XX0000000000) — 2 letter country + 9 alphanumeric + 1 digit.
     // IBKR descriptions look like "AAPL(US0378331005) Cash Dividend" — the ISIN is mid-string,
     // so we strip the ISIN parenthetical and everything after it to recover the entity name.
@@ -102,7 +100,7 @@ public sealed class IbkrCsvParser : IStatementParser
     /// Strips the ISIN parenthetical (e.g. "(US0378331005)") and any trailing suffix from a
     /// description, returning just the entity name (e.g. "AAPL" from "AAPL(US0378331005) Cash Dividend").
     /// </summary>
-    internal static string StripIsin(string description) =>
+    private static string StripIsin(string description) =>
         IsinPattern.Replace(description, string.Empty).Trim();
 
     private static (Dictionary<(string Entity, DateOnly Date, string Currency), DividendRecord> dividends,
@@ -116,31 +114,10 @@ public sealed class IbkrCsvParser : IStatementParser
         foreach (var record in rows)
         {
             rowIndex++;
-            if (record.Length < 1 || !string.Equals(record[0], "Dividends", StringComparison.OrdinalIgnoreCase))
-                continue;
-            if (record.Length < 2 || !string.Equals(record[1], "Data", StringComparison.OrdinalIgnoreCase))
-                continue;
-            if (record.Length < 6)
-            {
-                errors.Add(new ParseError("ROW_TOO_SHORT", $"Dividends row has {record.Length} fields, expected >=6.", rowIndex));
-                continue;
-            }
+            if (!TryReadDataRow(record, "Dividends", "Dividends", rowIndex, errors, out var currency, out var description)) continue;
 
-            var currency = record[2].Trim();
-            var dateStr = record[3].Trim();
-            var description = record[4].Trim();
-            var amountStr = record[5].Trim();
-
-            if (!DateOnly.TryParseExact(dateStr, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
-            {
-                errors.Add(new ParseError("ROW_DATE_INVALID", $"Cannot parse date '{dateStr}'.", rowIndex));
-                continue;
-            }
-            if (!decimal.TryParse(amountStr, NumberStyles.Any, CultureInfo.InvariantCulture, out var amount))
-            {
-                errors.Add(new ParseError("ROW_AMOUNT_INVALID", $"Cannot parse amount '{amountStr}'.", rowIndex));
-                continue;
-            }
+            if (!TryParseDate(record[3].Trim(), rowIndex, "", errors, out var date)) continue;
+            if (!TryParseDecimal(record[5].Trim(), rowIndex, ROW_AMOUNT_INVALID, "amount", errors, out var amount)) continue;
 
             var entity = StripIsin(description);
             var key = (entity, date, currency);
@@ -159,38 +136,18 @@ public sealed class IbkrCsvParser : IStatementParser
             List<string[]> rows,
             Dictionary<(string Entity, DateOnly Date, string Currency), DividendRecord> dividends)
     {
-        var result = new List<WithholdingTaxRecord>();
+        var accumulator = new Dictionary<(string Entity, DateOnly Date, string Currency), decimal>();
         var errors = new List<ParseError>();
         int rowIndex = 0;
 
         foreach (var record in rows)
         {
             rowIndex++;
-            if (record.Length < 1 || !string.Equals(record[0], "Withholding Tax", StringComparison.OrdinalIgnoreCase))
-                continue;
-            if (record.Length < 2 || !string.Equals(record[1], "Data", StringComparison.OrdinalIgnoreCase))
-                continue;
-            if (record.Length < 6)
-            {
-                errors.Add(new ParseError("ROW_TOO_SHORT", $"WHT row has {record.Length} fields, expected >=6.", rowIndex));
-                continue;
-            }
-
-            var currency = record[2].Trim();
-            var dateStr = record[3].Trim();
-            var description = record[4].Trim();
+            if (!TryReadDataRow(record, "Withholding Tax", "WHT", rowIndex, errors, out var currency, out var description)) continue;
             var amountStr = record[5].Trim();
 
-            if (!DateOnly.TryParseExact(dateStr, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
-            {
-                errors.Add(new ParseError("ROW_DATE_INVALID", $"Cannot parse WHT date '{dateStr}'.", rowIndex));
-                continue;
-            }
-            if (!decimal.TryParse(amountStr, NumberStyles.Any, CultureInfo.InvariantCulture, out var rawAmount))
-            {
-                errors.Add(new ParseError("ROW_AMOUNT_INVALID", $"Cannot parse WHT amount '{amountStr}'.", rowIndex));
-                continue;
-            }
+            if (!TryParseDate(record[3].Trim(), rowIndex, "WHT ", errors, out var date)) continue;
+            if (!TryParseDecimal(amountStr, rowIndex, ROW_AMOUNT_INVALID, "WHT amount", errors, out var rawAmount)) continue;
             if (rawAmount > 0)
             {
                 errors.Add(new ParseError("WHT_POSITIVE_AMOUNT",
@@ -198,27 +155,14 @@ public sealed class IbkrCsvParser : IStatementParser
                 continue;
             }
 
-            var entity = StripIsin(description);
-            var exactKey = (entity, date, currency);
-
-            if (dividends.TryGetValue(exactKey, out _))
-            {
-                result.Add(new WithholdingTaxRecord(date, currency, entity, Math.Abs(rawAmount)));
-            }
-            else
-            {
-                // Check if there's a dividend for same entity+date but different currency
-                bool sameDateEntity = dividends.Keys.Any(k =>
-                    k.Entity == entity && k.Date == date);
-
-                if (sameDateEntity)
-                    errors.Add(new ParseError("WHT_CURRENCY_MISMATCH",
-                        $"WHT currency '{currency}' does not match dividend currency for '{entity}' on {date:yyyy-MM-dd}.", rowIndex));
-                else
-                    errors.Add(new ParseError("WHT_UNMATCHED",
-                        $"No dividend found for WHT entry: entity='{entity}', date={date:yyyy-MM-dd}, currency='{currency}'.", rowIndex));
-            }
+            AccumulateOrErrorWht(
+                (StripIsin(description), date, currency), Math.Abs(rawAmount),
+                rowIndex, dividends, accumulator, errors);
         }
+
+        var result = accumulator
+            .Select(kvp => new WithholdingTaxRecord(kvp.Key.Date, kvp.Key.Currency, kvp.Key.Entity, kvp.Value))
+            .ToList();
 
         return (result.AsReadOnly(), errors);
     }
@@ -234,17 +178,12 @@ public sealed class IbkrCsvParser : IStatementParser
         foreach (var record in rows)
         {
             rowIndex++;
-            if (record.Length < 1 || !string.Equals(record[0], "Interest", StringComparison.OrdinalIgnoreCase))
-                continue;
-            if (record.Length < 2 || !string.Equals(record[1], "Data", StringComparison.OrdinalIgnoreCase))
-                continue;
+            if (!IsDataRow(record, "Interest")) continue;
             if (record.Length < 6)
                 continue; // silently skip short rows in Interest section
 
             var currency = record[2].Trim();
-            var dateStr = record[3].Trim();
             var description = record[4].Trim();
-            var amountStr = record[5].Trim();
 
             InterestType type;
             if (description.Contains("Credit Interest", StringComparison.OrdinalIgnoreCase))
@@ -254,16 +193,8 @@ public sealed class IbkrCsvParser : IStatementParser
             else
                 continue; // silently skip non-standard interest rows
 
-            if (!DateOnly.TryParseExact(dateStr, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
-            {
-                errors.Add(new ParseError("ROW_DATE_INVALID", $"Cannot parse interest date '{dateStr}'.", rowIndex));
-                continue;
-            }
-            if (!decimal.TryParse(amountStr, NumberStyles.Any, CultureInfo.InvariantCulture, out var rawAmount))
-            {
-                errors.Add(new ParseError("ROW_AMOUNT_INVALID", $"Cannot parse interest amount '{amountStr}'.", rowIndex));
-                continue;
-            }
+            if (!TryParseDate(record[3].Trim(), rowIndex, "interest ", errors, out var date)) continue;
+            if (!TryParseDecimal(record[5].Trim(), rowIndex, ROW_AMOUNT_INVALID, "interest amount", errors, out var rawAmount)) continue;
 
             var amount = Math.Abs(rawAmount); // always store positive
             var key = (currency, date, type);
@@ -287,31 +218,16 @@ public sealed class IbkrCsvParser : IStatementParser
         foreach (var record in rows)
         {
             rowIndex++;
-            if (record.Length < 1 || !string.Equals(record[0], "Base Currency Exchange Rate", StringComparison.OrdinalIgnoreCase))
-                continue;
-            if (record.Length < 2 || !string.Equals(record[1], "Data", StringComparison.OrdinalIgnoreCase))
-                continue;
+            if (!IsDataRow(record, "Base Currency Exchange Rate")) continue;
             if (record.Length < 7)
-            {
-                errors.Add(new ParseError("ROW_TOO_SHORT", $"FX rate row has {record.Length} fields, expected >=7.", rowIndex));
-                continue;
-            }
+                continue; // silently skip short rows — custom statements use a 4-column FX format
 
             var fromCurrency = record[2].Trim();
-            var dateStr = record[3].Trim();
             var toCurrency = record[5].Trim();
             var rateStr = record[6].Trim();
 
-            if (!DateOnly.TryParseExact(dateStr, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
-            {
-                errors.Add(new ParseError("ROW_DATE_INVALID", $"Cannot parse FX rate date '{dateStr}'.", rowIndex));
-                continue;
-            }
-            if (!decimal.TryParse(rateStr, NumberStyles.Any, CultureInfo.InvariantCulture, out var rate))
-            {
-                errors.Add(new ParseError("ROW_AMOUNT_INVALID", $"Cannot parse FX rate '{rateStr}'.", rowIndex));
-                continue;
-            }
+            if (!TryParseDate(record[3].Trim(), rowIndex, "FX rate ", errors, out var date)) continue;
+            if (!TryParseDecimal(rateStr, rowIndex, ROW_AMOUNT_INVALID, "FX rate", errors, out var rate)) continue;
             if (rate <= 0)
             {
                 errors.Add(new ParseError("RATE_NON_POSITIVE", $"FX rate must be positive, got '{rateStr}'.", rowIndex));
@@ -327,5 +243,81 @@ public sealed class IbkrCsvParser : IStatementParser
         }
 
         return (dict.Values.ToList().AsReadOnly(), errors);
+    }
+
+    private static bool TryReadDataRow(
+        string[] record, string sectionName, string tooShortPrefix,
+        int rowIndex, List<ParseError> errors,
+        out string currency, out string description)
+    {
+        currency = description = string.Empty;
+        if (!IsDataRow(record, sectionName)) return false;
+        if (record.Length < 6)
+        {
+            errors.Add(new ParseError("ROW_TOO_SHORT",
+                $"{tooShortPrefix} row has {record.Length} fields, expected >=6.", rowIndex));
+            return false;
+        }
+        if (IsTotalRow(record)) return false;
+        currency = record[2].Trim();
+        description = record[4].Trim();
+        return true;
+    }
+
+    private static bool IsDataRow(string[] record, string sectionName)
+        => record.Length >= 2
+           && record[0].Equals(sectionName, StringComparison.OrdinalIgnoreCase)
+           && record[1].Equals("Data", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsTotalRow(string[] record)
+        => record.Length >= 3
+           && record[2].Trim().StartsWith("Total", StringComparison.OrdinalIgnoreCase);
+
+    private static bool TryParseDate(
+        string raw, int rowIndex, string contextLabel,
+        List<ParseError> errors, out DateOnly date)
+    {
+        if (DateOnly.TryParseExact(raw, "yyyy-MM-dd", CultureInfo.InvariantCulture,
+                DateTimeStyles.None, out date))
+            return true;
+        errors.Add(new ParseError("ROW_DATE_INVALID",
+            $"Cannot parse {contextLabel}date '{raw}'.", rowIndex));
+        return false;
+    }
+
+    private static bool TryParseDecimal(
+        string raw, int rowIndex, string errorCode, string valueLabel,
+        List<ParseError> errors, out decimal value)
+    {
+        if (decimal.TryParse(raw, NumberStyles.Any, CultureInfo.InvariantCulture, out value))
+            return true;
+        errors.Add(new ParseError(errorCode,
+            $"Cannot parse {valueLabel} '{raw}'.", rowIndex));
+        return false;
+    }
+
+    private static void AccumulateOrErrorWht(
+        (string Entity, DateOnly Date, string Currency) key, decimal absAmount, int rowIndex,
+        Dictionary<(string Entity, DateOnly Date, string Currency), DividendRecord> dividends,
+        Dictionary<(string Entity, DateOnly Date, string Currency), decimal> accumulator,
+        List<ParseError> errors)
+    {
+        if (dividends.TryGetValue(key, out _))
+        {
+            if (accumulator.TryGetValue(key, out var existing))
+                accumulator[key] = existing + absAmount;
+            else
+                accumulator[key] = absAmount;
+        }
+        else
+        {
+            bool sameDateEntity = dividends.Keys.Any(k => k.Entity == key.Entity && k.Date == key.Date);
+            if (sameDateEntity)
+                errors.Add(new ParseError("WHT_CURRENCY_MISMATCH",
+                    $"WHT currency '{key.Currency}' does not match dividend currency for '{key.Entity}' on {key.Date:yyyy-MM-dd}.", rowIndex));
+            else
+                errors.Add(new ParseError("WHT_UNMATCHED",
+                    $"No dividend found for WHT entry: entity='{key.Entity}', date={key.Date:yyyy-MM-dd}, currency='{key.Currency}'.", rowIndex));
+        }
     }
 }

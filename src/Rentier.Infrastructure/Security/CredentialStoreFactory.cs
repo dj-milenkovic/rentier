@@ -44,8 +44,11 @@ public static class CredentialStoreFactory
                 var info = new ProviderInfo("Linux Secret Service", "Linux");
                 return Result<(ICredentialStore, ProviderInfo), Error>.Success((store, info));
             }
-            catch (DBusErrorReplyException ex)
+            catch (Exception ex)
             {
+                // ArgumentNullException when DBUS_SESSION_BUS_ADDRESS is unset (headless CI/container),
+                // DBusErrorReplyException when daemon rejects the connection.
+                // Either way: credential store is unavailable; fall back to NullCredentialStore.
                 return Result<(ICredentialStore, ProviderInfo), Error>.Failure(
                     Error.ProviderUnavailable(
                         $"Could not connect to the D-Bus Secret Service: {ex.Message}"));

@@ -8,7 +8,7 @@ namespace Rentier.Desktop.ViewModels;
 /// View model row for a single report in the reports list.
 /// All display formatting is done here; the view binds to these computed properties.
 /// </summary>
-public sealed class ReportRowViewModel : ReactiveObject
+public sealed class ReportRowViewModel : ReactiveObject, ISelectableRow
 {
     public Guid Id { get; }
     public string ReportName { get; }

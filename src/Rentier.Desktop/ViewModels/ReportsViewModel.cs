@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
@@ -16,10 +15,8 @@ using Rentier.Domain.Enums;
 
 namespace Rentier.Desktop.ViewModels;
 
-public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
+public sealed class ReportsViewModel : PagedSelectionViewModelBase<ReportRowViewModel>
 {
-    public ViewModelActivator Activator { get; } = new();
-
     private readonly IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>> _getReports;
     private readonly ICommandHandler<ImportReportCommand, Result<Guid, Error>> _importReport;
     private readonly ICommandHandler<DeleteReportCommand, Result<VoidResult, Error>> _deleteReport;
@@ -27,19 +24,14 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
     private readonly Func<string, string, Task<bool>> _confirmDelete;
     private readonly Func<Task<(Guid ImporterId, string FileName, byte[] Content)?>> _showImportDialog;
     private readonly Action<Guid> _navigateToFilings;
-    private readonly IScheduler _scheduler;
 
     private bool _isLoading;
     private string? _errorMessage;
-    private int _selectedCount;
     private int _currentPage = 1;
     private int _totalPages = 1;
     private int _totalCount;
     private bool _sortDescending = true;
-    private bool _isUpdatingSelection;
 
-    private readonly ObservableAsPropertyHelper<bool> _hasSelection;
-    private readonly ObservableAsPropertyHelper<string> _deleteSelectedLabel;
     private readonly ObservableAsPropertyHelper<bool> _hasActiveFilters;
 
     public bool IsLoading
@@ -54,14 +46,6 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
         private set => this.RaiseAndSetIfChanged(ref _errorMessage, value);
     }
 
-    public int SelectedCount
-    {
-        get => _selectedCount;
-        private set => this.RaiseAndSetIfChanged(ref _selectedCount, value);
-    }
-
-    public bool HasSelection => _hasSelection.Value;
-    public string DeleteSelectedLabel => _deleteSelectedLabel.Value;
     public bool HasActiveFilters => _hasActiveFilters.Value;
 
     // Filter flyout ViewModels
@@ -72,35 +56,7 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
     public TextFilterFlyoutViewModel FilingCountFilter { get; }
     public EnumFilterFlyoutViewModel<ReportStatus> StatusFilter { get; }
 
-    public bool? IsAllSelected
-    {
-        get
-        {
-            if (Rows.Count == 0 || _selectedCount == 0) return false;
-            if (_selectedCount == Rows.Count) return true;
-            return null; // indeterminate
-        }
-        set
-        {
-            if (_isUpdatingSelection) return;
-            _isUpdatingSelection = true;
-            try
-            {
-                if (value == true)
-                    SelectAllCommand.Execute().Subscribe();
-                else if (value == false)
-                    ClearSelectionCommand.Execute().Subscribe();
-            }
-            finally
-            {
-                _isUpdatingSelection = false;
-                this.RaisePropertyChanged(nameof(IsAllSelected));
-            }
-        }
-    }
-
     public bool IsEmpty => Rows.Count == 0 && !IsLoading;
-    public bool HasItems => Rows.Count > 0;
 
     public int CurrentPage
     {
@@ -149,8 +105,6 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
         }
     }
 
-    public ObservableCollection<ReportRowViewModel> Rows { get; } = new();
-
     public ReactiveCommand<Unit, Unit> LoadPageCommand { get; }
     public ReactiveCommand<Unit, Unit> PreviousPageCommand { get; }
     public ReactiveCommand<Unit, Unit> NextPageCommand { get; }
@@ -158,15 +112,11 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
     public ReactiveCommand<Guid, Unit> DeleteCommand { get; }
     public ReactiveCommand<Guid, Unit> ViewFilingsCommand { get; }
     public ReactiveCommand<Unit, Unit> ClearErrorCommand { get; }
-    public ReactiveCommand<Unit, Unit> SelectAllCommand { get; }
-    public ReactiveCommand<Unit, Unit> ClearSelectionCommand { get; }
     public ReactiveCommand<Unit, Unit> BulkDeleteCommand { get; }
     public ReactiveCommand<Unit, Unit> ClearFiltersCommand { get; }
 
     // Keep LoadReportsCommand as an alias for backward compat with existing AXAML / tests
     public ReactiveCommand<Unit, Unit> LoadReportsCommand => LoadPageCommand;
-
-    private readonly CompositeDisposable _rowSubscriptions = new();
 
     public ReportsViewModel(
         IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>> getReports,
@@ -176,7 +126,7 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
         Func<string, string, Task<bool>> confirmDelete,
         Func<Task<(Guid ImporterId, string FileName, byte[] Content)?>> showImportDialog,
         Action<Guid> navigateToFilings,
-        IScheduler? scheduler = null)
+        IScheduler? scheduler = null) : base(scheduler ?? RxSchedulers.MainThreadScheduler)
     {
         _getReports = getReports;
         _importReport = importReport;
@@ -185,17 +135,6 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
         _confirmDelete = confirmDelete;
         _showImportDialog = showImportDialog;
         _navigateToFilings = navigateToFilings;
-        _scheduler = scheduler ?? RxSchedulers.MainThreadScheduler;
-
-        _hasSelection = this.WhenAnyValue(x => x.SelectedCount)
-            .Select(c => c > 0)
-            .ToProperty(this, x => x.HasSelection, scheduler: _scheduler);
-
-        _deleteSelectedLabel = this.WhenAnyValue(x => x.SelectedCount)
-            .Select(c => string.Format(Strings.BulkDelete_Button_Template, c))
-            .ToProperty(this, x => x.DeleteSelectedLabel,
-                initialValue: string.Format(Strings.BulkDelete_Button_Template, 0),
-                scheduler: _scheduler);
 
         NameFilter = new TextFilterFlyoutViewModel();
         ImporterFilter = new TextFilterFlyoutViewModel();
@@ -264,8 +203,8 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
         ClearErrorCommand = ReactiveCommand.Create(
             () => { ErrorMessage = null; }, outputScheduler: _scheduler);
 
-        ClearFiltersCommand = ReactiveCommand.Create(
-            () =>
+        ClearFiltersCommand = ReactiveCommand.CreateFromTask(
+            async (CancellationToken ct) =>
             {
                 NameFilter.Clear();
                 ImporterFilter.Clear();
@@ -274,30 +213,9 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
                 FilingCountFilter.Clear();
                 StatusFilter.Clear();
                 CurrentPage = 1;
-                LoadPageCommand.Execute().Subscribe();
+                await LoadPageAsync(ct);
             },
             this.WhenAnyValue(x => x.HasActiveFilters),
-            outputScheduler: _scheduler);
-
-        var hasItemsObservable = this.WhenAnyValue(x => x.HasItems);
-        var hasSelectionObservable = this.WhenAnyValue(x => x.HasSelection);
-
-        SelectAllCommand = ReactiveCommand.Create(
-            () =>
-            {
-                foreach (var row in Rows)
-                    row.IsSelected = true;
-            },
-            hasItemsObservable,
-            outputScheduler: _scheduler);
-
-        ClearSelectionCommand = ReactiveCommand.Create(
-            () =>
-            {
-                foreach (var row in Rows)
-                    row.IsSelected = false;
-            },
-            hasSelectionObservable,
             outputScheduler: _scheduler);
 
         BulkDeleteCommand = ReactiveCommand.CreateFromTask(
@@ -345,23 +263,6 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
                 .Subscribe(ex => ErrorMessage = ex.Message)
                 .DisposeWith(disposables);
         });
-    }
-
-    private void RebuildRowSubscriptions()
-    {
-        _rowSubscriptions.Clear();
-        foreach (var row in Rows)
-        {
-            row.WhenAnyValue(r => r.IsSelected)
-                .Subscribe(_ =>
-                {
-                    SelectedCount = Rows.Count(r => r.IsSelected);
-                    this.RaisePropertyChanged(nameof(IsAllSelected));
-                })
-                .DisposeWith(_rowSubscriptions);
-        }
-        SelectedCount = Rows.Count(r => r.IsSelected);
-        this.RaisePropertyChanged(nameof(IsAllSelected));
     }
 
     private async Task LoadPageAsync(CancellationToken ct = default)
@@ -513,5 +414,4 @@ public sealed class ReportsViewModel : ReactiveObject, IActivatableViewModel
 
         await LoadPageAsync(ct);
     }
-
 }

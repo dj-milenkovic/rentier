@@ -26,10 +26,10 @@ public sealed class GetDashboardQueryHandler(IFilingRepository filingRepo, IMail
                 DateOnly? lastSync = mailboxes
                     .Select(m => m.Cursor switch
                     {
-                        MailboxCursor.SyncedTo s => s.Date,
-                        MailboxCursor.NeverSynced => (DateOnly?)null,
+                        Domain.ValueObjects.MailboxCursor.SyncedTo s => (DateOnly?)s.Date,
+                        Domain.ValueObjects.MailboxCursor.NeverSynced => (DateOnly?)null,
                         _ => throw new InvalidOperationException(
-                            $"Unknown MailboxCursor subtype: {m.Cursor.GetType().Name}")
+                            $"Unknown MailboxCursor subtype: {m.Cursor?.GetType().Name ?? "null"}")
                     })
                     .Where(d => d.HasValue)
                     .Select(d => d!.Value)
