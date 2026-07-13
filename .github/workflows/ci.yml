@@ -107,6 +107,42 @@ jobs:
           restore-keys: nuget-${{ runner.os }}-
 
       - name: Restore
+        run: dotnet restore tests/Rentier.Infrastructure.Tests/Rentier.Infrastructure.Tests.csproj
+
+      - name: Build
+        run: dotnet build tests/Rentier.Infrastructure.Tests --no-restore -c Release
+
+      - name: Run migration tests
+        run: |
+          dotnet test tests/Rentier.Infrastructure.Tests \
+            --no-build -c Release \
+            --filter "FullyQualifiedName~Migration|FullyQualifiedName~DatabaseInitializer" \
+            --logger "console;verbosity=normal"
+
+  # ──────────────────────────────────────────────
+  # Integration & Scenario tests (Ubuntu only)
+  # ──────────────────────────────────────────────
+  integration-tests:
+    name: Integration & Scenario Tests
+    needs: [lint, migration-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.3
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5.3.0
+        with:
+          dotnet-version: '10.x'
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v5.0.5
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Build.props', 'Directory.Packages.props') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Restore
         run: dotnet restore Rentier.slnx
 
       - name: Build
