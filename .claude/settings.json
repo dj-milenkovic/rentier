@@ -1,0 +1,50 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet restore Rentier.slnx*)",
+      "Bash(dotnet build Rentier.slnx*)",
+      "Bash(dotnet test Rentier.slnx*)",
+      "Bash(dotnet test tests/*)",
+      "Bash(dotnet format Rentier.slnx*)",
+      "Bash(dotnet list*)",
+      "Bash(dotnet run --project src/Rentier.Desktop/Rentier.Desktop.csproj*)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git show*)",
+      "Bash(git branch -vv)",
+      "Bash(git remote -v)",
+      "Bash(gh pr view*)",
+      "Bash(gh pr list*)",
+      "Bash(gh run view*)",
+      "Bash(gh run list*)",
+      "Bash(npx @claude-flow*)",
+      "Bash(npx claude-flow*)",
+      "Bash(node .claude/*)",
+      "mcp__claude-flow__*"
+    ],
+    "deny": [
+      "Edit(src/Rentier.Infrastructure/Persistence/Migrations/**)",
+      "Write(src/Rentier.Infrastructure/Persistence/Migrations/**)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pwsh -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/format-on-edit.ps1",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  },
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
+    "CLAUDE_FLOW_V3_ENABLED": "true",
+    "CLAUDE_FLOW_HOOKS_ENABLED": "true"
+  }
+}

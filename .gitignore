@@ -141,7 +141,37 @@ dump/
 Thumbs.db
 .AppleDouble
 
-# spec-kit
-#.specify
-#.github/prompts
-#.github/agents/speckit.*
+# Superpowers / plan scaffolding
+.superpowers/
+
+# Ruflo / Claude Flow runtime and auto-generated scaffolding
+.claude-flow/
+.ruflo/
+.rvf/
+.cache/
+.codegraph/
+.swarm/
+.claude/worktrees/
+.claude/.proven-config-version
+.claude/proven-config.json
+.claude/commands/
+.claude/helpers/
+.claude/agents/browser/
+.claude/agents/consensus/
+.claude/agents/core/
+.claude/agents/sparc/
+.claude/agents/swarm/
+.claude/agents/testing/
+.claude/skills/agentdb-*/
+.claude/skills/browser/
+.claude/skills/github-*/
+.claude/skills/hooks-automation/
+.claude/skills/pair-programming/
+.claude/skills/reasoningbank-*/
+.claude/skills/skill-builder/
+.claude/skills/sparc-methodology/
+.claude/skills/stream-chain/
+.claude/skills/swarm-advanced/
+.claude/skills/swarm-orchestration/
+.claude/skills/v3-*/
+.claude/skills/verification-quality/

@@ -69,4 +69,11 @@ public interface IFilingRepository
     /// Used by GetReportsQueryHandler to derive a human-readable display name.
     /// </summary>
     Task<DateOnly?> GetEarliestIncomeDateByReportIdAsync(Guid reportId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns filing count and earliest IncomeDate per Report ID in a single GROUP BY query.
+    /// Used by GetReportsQueryHandler to avoid N+1 queries when building the reports page.
+    /// </summary>
+    Task<IReadOnlyDictionary<Guid, (int Count, DateOnly? EarliestDate)>> GetAggregatesByReportIdsAsync(
+        IReadOnlyList<Guid> reportIds, CancellationToken ct = default);
 }
