@@ -640,6 +640,9 @@
   <data name="ManualFiling_NetReceived_Label" xml:space="preserve">
     <value>Net Received (optional)</value>
   </data>
+  <data name="ManualFiling_PaymentNotes_Label" xml:space="preserve">
+    <value>Payment Notes (optional)</value>
+  </data>
   <data name="ManualFiling_Calculate_Button" xml:space="preserve">
     <value>Calculate</value>
   </data>

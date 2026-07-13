@@ -393,6 +393,53 @@ public class ManualFilingViewModelTests
         vm.ErrorMessage.Should().NotBeNull();
     }
 
+    // ── Payment Notes (field 3.3 export) ──────────────────────────────────────
+
+    [Fact]
+    public async Task SaveCommand_WithPaymentNotesText_SendsTrimmedPaymentNotesToHandler()
+    {
+        CreateManualFilingCommand? capturedCmd = null;
+        var createHandler = Substitute.For<ICommandHandler<CreateManualFilingCommand, Result<Guid, Error>>>();
+        createHandler.HandleAsync(Arg.Do<CreateManualFilingCommand>(c => capturedCmd = c), Arg.Any<CancellationToken>())
+            .Returns(Result<Guid, Error>.Success(Guid.NewGuid()));
+
+        var vm = CreateFilledVm(createHandler: createHandler);
+        vm.PaymentNotesText = "  Isplata na brokerski racun  ";
+
+        await vm.CalculateCommand.Execute();
+        await vm.SaveCommand.Execute();
+
+        capturedCmd.Should().NotBeNull();
+        capturedCmd!.PaymentNotes.Should().Be("Isplata na brokerski racun");
+    }
+
+    [Fact]
+    public async Task SaveCommand_WithBlankPaymentNotesText_SendsNullPaymentNotesToHandler()
+    {
+        CreateManualFilingCommand? capturedCmd = null;
+        var createHandler = Substitute.For<ICommandHandler<CreateManualFilingCommand, Result<Guid, Error>>>();
+        createHandler.HandleAsync(Arg.Do<CreateManualFilingCommand>(c => capturedCmd = c), Arg.Any<CancellationToken>())
+            .Returns(Result<Guid, Error>.Success(Guid.NewGuid()));
+
+        var vm = CreateFilledVm(createHandler: createHandler);
+
+        await vm.CalculateCommand.Execute();
+        await vm.SaveCommand.Execute();
+
+        capturedCmd.Should().NotBeNull();
+        capturedCmd!.PaymentNotes.Should().BeNull();
+    }
+
+    [Fact]
+    public void PaymentNotesTextChange_MarksFormDirty()
+    {
+        var vm = CreateVm();
+
+        vm.PaymentNotesText = "Isplata na brokerski racun";
+
+        vm.IsDirty.Should().BeTrue();
+    }
+
     // ── No-WHT path through ViewModel (US2) ──────────────────────────────────
 
     [Fact]

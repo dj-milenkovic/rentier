@@ -94,6 +94,15 @@
                  PlaceholderText="e.g. 85.00" />
       </StackPanel>
 
+      <!-- Payment Notes -->
+      <StackPanel Spacing="4">
+        <TextBlock Text="{Binding [ManualFiling_PaymentNotes_Label], Source={StaticResource Localizer}}" FontWeight="SemiBold" />
+        <TextBox Text="{Binding PaymentNotesText, Mode=TwoWay}"
+                 IsEnabled="{Binding IsLoading, Converter={x:Static local:InvertBoolConverter.Instance}}"
+                 AcceptsReturn="True" TextWrapping="Wrap" Height="60"
+                 PlaceholderText="e.g. Isplata na brokerski racun" />
+      </StackPanel>
+
       <!-- Action Buttons -->
       <StackPanel Orientation="Horizontal" Spacing="8">
         <Button Content="{Binding [ManualFiling_Calculate_Button], Source={StaticResource Localizer}}"

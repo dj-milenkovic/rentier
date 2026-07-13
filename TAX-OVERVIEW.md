@@ -159,6 +159,9 @@ Yes, Serbia and the United States have a tax treaty. The standard US withholding
 **What if I missed a filing deadline?**  
 Rentier calculates deadlines for reference, but does not prevent you from filing late. Contact the Serbian Tax Administration or your tax advisor for guidance on late filing penalties.
 
+**What if my broker corrects a dividend after I already imported it?**  
+Brokers occasionally re-issue a dividend at a corrected amount (a reversal plus a re-booked payment in a later statement). Rentier detects this: if an imported statement contains an income event for the same company and payment date as an existing filing but with a different gross amount, no second filing is created. Instead the sync log shows a **"Broker correction detected"** error with both amounts, and you should review and adjust the existing filing manually. Importing the same statement (or an identical income event) twice is safe — exact duplicates are skipped silently.
+
 ---
 
 ## Further Reading

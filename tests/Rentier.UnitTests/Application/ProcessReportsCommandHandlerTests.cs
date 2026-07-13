@@ -37,6 +37,15 @@ public class ProcessReportsCommandHandlerTests
     private static Report MakeReportWithContent(Guid importerId)
         => Report.Create(importerId, "statement.csv", [1, 2, 3], null);
 
+    /// <summary>Builds a valid persisted-looking Filing for the given entity/gross on TestDate (no WHT).</summary>
+    private Filing MakeExistingFiling(string entity, decimal grossRsd, IncomeType incomeType = IncomeType.Dividend)
+    {
+        var grossTax = Math.Round(grossRsd * 0.15m, 2, MidpointRounding.AwayFromZero);
+        return Filing.CreateFromIncome(
+            ProfileId, incomeType, entity, TestDate,
+            grossRsd, 0m, grossTax, grossTax, TestDate.AddDays(30));
+    }
+
     private static ExchangeRateResolver MakeResolver(IExchangeRateFetcher fetcher)
         => new ExchangeRateResolver(fetcher, NullLogger<ExchangeRateResolver>.Instance);
 
@@ -203,9 +212,9 @@ public class ProcessReportsCommandHandlerTests
             .Returns(Result<ExchangeRate, Error>.Success(new ExchangeRate(TestDate, "USD", 117m)));
 
         var filingRepo = Substitute.For<IFilingRepository>();
-        filingRepo.ExistsByIncomeAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<DateOnly>(),
-                Arg.Any<decimal>(), Arg.Any<CancellationToken>())
-            .Returns(false);
+        filingRepo.GetByIncomeEventAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<DateOnly>(),
+                Arg.Any<CancellationToken>())
+            .Returns(Array.Empty<Filing>());
 
         var handler = MakeHandler(
             reportRepo: reportRepo, importerRepo: importerRepo,
@@ -242,10 +251,12 @@ public class ProcessReportsCommandHandlerTests
         rateFetcher.FetchRateAsync(Arg.Any<DateOnly>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(Result<ExchangeRate, Error>.Success(new ExchangeRate(TestDate, "USD", 117m)));
 
+        // Same income event with the same gross (100 USD × 117 = 11700 RSD) already filed
+        var existingFiling = MakeExistingFiling("ACME Corp", 11700.00m);
         var filingRepo = Substitute.For<IFilingRepository>();
-        filingRepo.ExistsByIncomeAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<DateOnly>(),
-                Arg.Any<decimal>(), Arg.Any<CancellationToken>())
-            .Returns(true);
+        filingRepo.GetByIncomeEventAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<DateOnly>(),
+                Arg.Any<CancellationToken>())
+            .Returns(new[] { existingFiling });
 
         var handler = MakeHandler(
             reportRepo: reportRepo, importerRepo: importerRepo,
@@ -254,6 +265,94 @@ public class ProcessReportsCommandHandlerTests
         var result = await handler.HandleAsync(new ProcessReportsCommand(), TestContext.Current.CancellationToken);
 
         result.Value.FilingsCreated.Should().Be(0);
+        result.Value.ReportsProcessed.Should().Be(1);
+        result.Value.EventErrors.Should().BeEmpty();
+        await filingRepo.DidNotReceive().AddAsync(Arg.Any<Filing>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_DividendCorrectionDetected_AddsErrorWithoutCreatingFiling()
+    {
+        var importer = MakeImporter();
+        var report = MakeReportWithContent(importer.Id);
+
+        var reportRepo = Substitute.For<IReportRepository>();
+        reportRepo.GetByStatusAsync(ReportStatus.Init, Arg.Any<CancellationToken>())
+            .Returns(new[] { report });
+
+        var importerRepo = Substitute.For<IImporterRepository>();
+        importerRepo.GetByIdAsync(importer.Id, Arg.Any<CancellationToken>()).Returns(importer);
+
+        var dividends = new[] { new DividendRecord(TestDate, "USD", "ACME Corp", 100m) };
+        var parseResult = new StatementParseResult(dividends, [], [], [], []);
+        var parser = Substitute.For<IStatementParser>();
+        parser.ParseAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
+            .Returns(Result<StatementParseResult, Error>.Success(parseResult));
+
+        var rateFetcher = Substitute.For<IExchangeRateFetcher>();
+        rateFetcher.FetchRateAsync(Arg.Any<DateOnly>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(Result<ExchangeRate, Error>.Success(new ExchangeRate(TestDate, "USD", 117m)));
+
+        // Same income event already filed, but with a DIFFERENT gross (broker correction scenario:
+        // this statement yields 11700 RSD, the earlier statement produced 11466 RSD)
+        var existingFiling = MakeExistingFiling("ACME Corp", 11466.00m);
+        var filingRepo = Substitute.For<IFilingRepository>();
+        filingRepo.GetByIncomeEventAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<DateOnly>(),
+                Arg.Any<CancellationToken>())
+            .Returns(new[] { existingFiling });
+
+        var handler = MakeHandler(
+            reportRepo: reportRepo, importerRepo: importerRepo,
+            filingRepo: filingRepo, rateFetcher: rateFetcher, parser: parser);
+
+        var result = await handler.HandleAsync(new ProcessReportsCommand(), TestContext.Current.CancellationToken);
+
+        result.Value.FilingsCreated.Should().Be(0);
+        result.Value.ReportsErrored.Should().Be(1);
+        result.Value.EventErrors.Should().HaveCount(1);
+        result.Value.EventErrors[0].ErrorCode.Should().Be(ErrorCodes.FILING_CORRECTION_DETECTED);
+        await filingRepo.DidNotReceive().AddAsync(Arg.Any<Filing>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_InterestCorrectionDetected_AddsErrorWithoutCreatingFiling()
+    {
+        var importer = MakeImporter();
+        var report = MakeReportWithContent(importer.Id);
+
+        var reportRepo = Substitute.For<IReportRepository>();
+        reportRepo.GetByStatusAsync(ReportStatus.Init, Arg.Any<CancellationToken>())
+            .Returns(new[] { report });
+
+        var importerRepo = Substitute.For<IImporterRepository>();
+        importerRepo.GetByIdAsync(importer.Id, Arg.Any<CancellationToken>()).Returns(importer);
+
+        var interests = new[] { new InterestRecord(TestDate, "USD", "IB LLC", 50m, InterestType.Credit) };
+        var parseResult = new StatementParseResult([], interests, [], [], []);
+        var parser = Substitute.For<IStatementParser>();
+        parser.ParseAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
+            .Returns(Result<StatementParseResult, Error>.Success(parseResult));
+
+        var rateFetcher = Substitute.For<IExchangeRateFetcher>();
+        rateFetcher.FetchRateAsync(Arg.Any<DateOnly>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(Result<ExchangeRate, Error>.Success(new ExchangeRate(TestDate, "USD", 117m)));
+
+        // 50 USD × 117 = 5850 RSD, but the earlier statement produced 5000 RSD
+        var existingFiling = MakeExistingFiling("IB LLC", 5000.00m, IncomeType.Interest);
+        var filingRepo = Substitute.For<IFilingRepository>();
+        filingRepo.GetByIncomeEventAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<DateOnly>(),
+                Arg.Any<CancellationToken>())
+            .Returns(new[] { existingFiling });
+
+        var handler = MakeHandler(
+            reportRepo: reportRepo, importerRepo: importerRepo,
+            filingRepo: filingRepo, rateFetcher: rateFetcher, parser: parser);
+
+        var result = await handler.HandleAsync(new ProcessReportsCommand(), TestContext.Current.CancellationToken);
+
+        result.Value.FilingsCreated.Should().Be(0);
+        result.Value.EventErrors.Should().HaveCount(1);
+        result.Value.EventErrors[0].ErrorCode.Should().Be(ErrorCodes.FILING_CORRECTION_DETECTED);
         await filingRepo.DidNotReceive().AddAsync(Arg.Any<Filing>(), Arg.Any<CancellationToken>());
     }
 
@@ -311,9 +410,9 @@ public class ProcessReportsCommandHandlerTests
             .Returns(Result<ExchangeRate, Error>.Success(new ExchangeRate(TestDate, "USD", 117m)));
 
         var filingRepo = Substitute.For<IFilingRepository>();
-        filingRepo.ExistsByIncomeAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<DateOnly>(),
-                Arg.Any<decimal>(), Arg.Any<CancellationToken>())
-            .Returns(false);
+        filingRepo.GetByIncomeEventAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<DateOnly>(),
+                Arg.Any<CancellationToken>())
+            .Returns(Array.Empty<Filing>());
 
         var handler = MakeHandler(
             reportRepo: reportRepo, importerRepo: importerRepo,
@@ -390,9 +489,9 @@ public class ProcessReportsCommandHandlerTests
             .Returns(Result<ExchangeRate, Error>.Success(new ExchangeRate(TestDate, "USD", 100m)));
 
         var filingRepo = Substitute.For<IFilingRepository>();
-        filingRepo.ExistsByIncomeAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<DateOnly>(),
-                Arg.Any<decimal>(), Arg.Any<CancellationToken>())
-            .Returns(false);
+        filingRepo.GetByIncomeEventAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<DateOnly>(),
+                Arg.Any<CancellationToken>())
+            .Returns(Array.Empty<Filing>());
 
         var handler = MakeHandler(
             reportRepo: reportRepo, importerRepo: importerRepo,
@@ -432,9 +531,9 @@ public class ProcessReportsCommandHandlerTests
             .Returns(Result<ExchangeRate, Error>.Success(new ExchangeRate(TestDate, "USD", 117m)));
 
         var filingRepo = Substitute.For<IFilingRepository>();
-        filingRepo.ExistsByIncomeAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<DateOnly>(),
-                Arg.Any<decimal>(), Arg.Any<CancellationToken>())
-            .Returns(false);
+        filingRepo.GetByIncomeEventAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<DateOnly>(),
+                Arg.Any<CancellationToken>())
+            .Returns(Array.Empty<Filing>());
 
         var handler = MakeHandler(
             reportRepo: reportRepo, importerRepo: importerRepo,
@@ -478,9 +577,9 @@ public class ProcessReportsCommandHandlerTests
             .Returns(Result<ExchangeRate, Error>.Success(new ExchangeRate(TestDate, "USD", 117m)));
 
         var filingRepo = Substitute.For<IFilingRepository>();
-        filingRepo.ExistsByIncomeAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<DateOnly>(),
-                Arg.Any<decimal>(), Arg.Any<CancellationToken>())
-            .Returns(false);
+        filingRepo.GetByIncomeEventAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<DateOnly>(),
+                Arg.Any<CancellationToken>())
+            .Returns(Array.Empty<Filing>());
 
         var handler = MakeHandler(
             reportRepo: reportRepo, importerRepo: importerRepo,
