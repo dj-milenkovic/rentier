@@ -88,6 +88,8 @@ public sealed class IbkrCsvParser : IStatementParser
         return rows;
     }
 
+    private const string ErrAmountInvalid = "ROW_AMOUNT_INVALID";
+
     // ISIN pattern: (XX0000000000) — 2 letter country + 9 alphanumeric + 1 digit.
     // IBKR descriptions look like "AAPL(US0378331005) Cash Dividend" — the ISIN is mid-string,
     // so we strip the ISIN parenthetical and everything after it to recover the entity name.
@@ -115,7 +117,7 @@ public sealed class IbkrCsvParser : IStatementParser
             if (!TryReadDataRow(record, "Dividends", "Dividends", rowIndex, errors, out var currency, out var description)) continue;
 
             if (!TryParseDate(record[3].Trim(), rowIndex, "", errors, out var date)) continue;
-            if (!TryParseDecimal(record[5].Trim(), rowIndex, "ROW_AMOUNT_INVALID", "amount", errors, out var amount)) continue;
+            if (!TryParseDecimal(record[5].Trim(), rowIndex, ErrAmountInvalid, "amount", errors, out var amount)) continue;
 
             var entity = StripIsin(description);
             var key = (entity, date, currency);
@@ -145,7 +147,7 @@ public sealed class IbkrCsvParser : IStatementParser
             var amountStr = record[5].Trim();
 
             if (!TryParseDate(record[3].Trim(), rowIndex, "WHT ", errors, out var date)) continue;
-            if (!TryParseDecimal(amountStr, rowIndex, "ROW_AMOUNT_INVALID", "WHT amount", errors, out var rawAmount)) continue;
+            if (!TryParseDecimal(amountStr, rowIndex, ErrAmountInvalid, "WHT amount", errors, out var rawAmount)) continue;
             if (rawAmount > 0)
             {
                 errors.Add(new ParseError("WHT_POSITIVE_AMOUNT",
@@ -154,7 +156,7 @@ public sealed class IbkrCsvParser : IStatementParser
             }
 
             AccumulateOrErrorWht(
-                StripIsin(description), date, currency, Math.Abs(rawAmount),
+                (StripIsin(description), date, currency), Math.Abs(rawAmount),
                 rowIndex, dividends, accumulator, errors);
         }
 
@@ -192,7 +194,7 @@ public sealed class IbkrCsvParser : IStatementParser
                 continue; // silently skip non-standard interest rows
 
             if (!TryParseDate(record[3].Trim(), rowIndex, "interest ", errors, out var date)) continue;
-            if (!TryParseDecimal(record[5].Trim(), rowIndex, "ROW_AMOUNT_INVALID", "interest amount", errors, out var rawAmount)) continue;
+            if (!TryParseDecimal(record[5].Trim(), rowIndex, ErrAmountInvalid, "interest amount", errors, out var rawAmount)) continue;
 
             var amount = Math.Abs(rawAmount); // always store positive
             var key = (currency, date, type);
@@ -225,7 +227,7 @@ public sealed class IbkrCsvParser : IStatementParser
             var rateStr = record[6].Trim();
 
             if (!TryParseDate(record[3].Trim(), rowIndex, "FX rate ", errors, out var date)) continue;
-            if (!TryParseDecimal(rateStr, rowIndex, "ROW_AMOUNT_INVALID", "FX rate", errors, out var rate)) continue;
+            if (!TryParseDecimal(rateStr, rowIndex, ErrAmountInvalid, "FX rate", errors, out var rate)) continue;
             if (rate <= 0)
             {
                 errors.Add(new ParseError("RATE_NON_POSITIVE", $"FX rate must be positive, got '{rateStr}'.", rowIndex));
@@ -295,28 +297,27 @@ public sealed class IbkrCsvParser : IStatementParser
     }
 
     private static void AccumulateOrErrorWht(
-        string entity, DateOnly date, string currency, decimal absAmount, int rowIndex,
+        (string Entity, DateOnly Date, string Currency) key, decimal absAmount, int rowIndex,
         Dictionary<(string Entity, DateOnly Date, string Currency), DividendRecord> dividends,
         Dictionary<(string Entity, DateOnly Date, string Currency), decimal> accumulator,
         List<ParseError> errors)
     {
-        var exactKey = (entity, date, currency);
-        if (dividends.TryGetValue(exactKey, out _))
+        if (dividends.TryGetValue(key, out _))
         {
-            if (accumulator.TryGetValue(exactKey, out var existing))
-                accumulator[exactKey] = existing + absAmount;
+            if (accumulator.TryGetValue(key, out var existing))
+                accumulator[key] = existing + absAmount;
             else
-                accumulator[exactKey] = absAmount;
+                accumulator[key] = absAmount;
         }
         else
         {
-            bool sameDateEntity = dividends.Keys.Any(k => k.Entity == entity && k.Date == date);
+            bool sameDateEntity = dividends.Keys.Any(k => k.Entity == key.Entity && k.Date == key.Date);
             if (sameDateEntity)
                 errors.Add(new ParseError("WHT_CURRENCY_MISMATCH",
-                    $"WHT currency '{currency}' does not match dividend currency for '{entity}' on {date:yyyy-MM-dd}.", rowIndex));
+                    $"WHT currency '{key.Currency}' does not match dividend currency for '{key.Entity}' on {key.Date:yyyy-MM-dd}.", rowIndex));
             else
                 errors.Add(new ParseError("WHT_UNMATCHED",
-                    $"No dividend found for WHT entry: entity='{entity}', date={date:yyyy-MM-dd}, currency='{currency}'.", rowIndex));
+                    $"No dividend found for WHT entry: entity='{key.Entity}', date={key.Date:yyyy-MM-dd}, currency='{key.Currency}'.", rowIndex));
         }
     }
 }
