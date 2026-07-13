@@ -194,10 +194,10 @@ public sealed class ProcessReportsCommandHandler
                     wht?.Amount ?? 0m, wht?.Currency ?? div.Currency,
                     (_, _) => Task.FromResult(resolution.Rate), ct);
 
-                var exists = await _filingRepository.ExistsByIncomeAsync(
-                    taxpayerProfileId, div.EntityName, div.Date, info.GrossIncomeRsd, ct);
+                var existingFilings = await _filingRepository.GetByIncomeEventAsync(
+                    taxpayerProfileId, div.EntityName, div.Date, ct);
 
-                if (!exists)
+                if (existingFilings.Count == 0)
                 {
                     var deadline = FilingDeadlineCalculator.CalculateDeadline(div.Date, holidays);
                     var filing = Filing.CreateFromIncome(
@@ -208,8 +208,25 @@ public sealed class ProcessReportsCommandHandler
 
                     await _filingRepository.AddAsync(filing, ct);
                     created++;
+                    succeeded++;
                 }
-                succeeded++;
+                else if (existingFilings.Any(f => f.GrossIncomeRsd == info.GrossIncomeRsd))
+                {
+                    // Same income event already imported from an earlier statement — idempotent skip
+                    succeeded++;
+                }
+                else
+                {
+                    // Same entity + income date but a different gross: the broker issued a
+                    // correction (reversal + re-book) in a later statement. Never silently
+                    // create a second filing for the same income event — flag for review.
+                    errors.Add(new FilingCreationError(div.EntityName, div.Date, div.Currency, div.Amount,
+                        ErrorCodes.FILING_CORRECTION_DETECTED,
+                        $"Broker correction detected for '{div.EntityName}' on {div.Date:yyyy-MM-dd}: " +
+                        $"an existing filing has gross {existingFilings[0].GrossIncomeRsd} RSD, this statement " +
+                        $"yields {info.GrossIncomeRsd} RSD. Review and adjust the filing manually."));
+                    failed++;
+                }
             }
             catch (OperationCanceledException)
             {
@@ -246,10 +263,10 @@ public sealed class ProcessReportsCommandHandler
                     wht?.Amount ?? 0m, wht?.Currency ?? interest.Currency,
                     (_, _) => Task.FromResult(resolution.Rate), ct);
 
-                var exists = await _filingRepository.ExistsByIncomeAsync(
-                    taxpayerProfileId, interest.EntityName, interest.Date, info.GrossIncomeRsd, ct);
+                var existingFilings = await _filingRepository.GetByIncomeEventAsync(
+                    taxpayerProfileId, interest.EntityName, interest.Date, ct);
 
-                if (!exists)
+                if (existingFilings.Count == 0)
                 {
                     var deadline = FilingDeadlineCalculator.CalculateDeadline(interest.Date, holidays);
                     var filing = Filing.CreateFromIncome(
@@ -260,8 +277,23 @@ public sealed class ProcessReportsCommandHandler
 
                     await _filingRepository.AddAsync(filing, ct);
                     created++;
+                    succeeded++;
                 }
-                succeeded++;
+                else if (existingFilings.Any(f => f.GrossIncomeRsd == info.GrossIncomeRsd))
+                {
+                    // Same income event already imported from an earlier statement — idempotent skip
+                    succeeded++;
+                }
+                else
+                {
+                    // Same entity + income date but a different gross: broker correction — flag for review
+                    errors.Add(new FilingCreationError(interest.EntityName, interest.Date, interest.Currency, interest.Amount,
+                        ErrorCodes.FILING_CORRECTION_DETECTED,
+                        $"Broker correction detected for '{interest.EntityName}' on {interest.Date:yyyy-MM-dd}: " +
+                        $"an existing filing has gross {existingFilings[0].GrossIncomeRsd} RSD, this statement " +
+                        $"yields {info.GrossIncomeRsd} RSD. Review and adjust the filing manually."));
+                    failed++;
+                }
             }
             catch (OperationCanceledException)
             {

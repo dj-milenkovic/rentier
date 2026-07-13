@@ -107,8 +107,8 @@ public class ProcessReportsProgressTests
                 new StatementParseResult(dividends, [], [], [], [])));
 
         var filingRepo = Substitute.For<IFilingRepository>();
-        filingRepo.ExistsByIncomeAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<DateOnly>(),
-            Arg.Any<decimal>(), Arg.Any<CancellationToken>()).Returns(false);
+        filingRepo.GetByIncomeEventAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<DateOnly>(),
+            Arg.Any<CancellationToken>()).Returns(Array.Empty<Filing>());
 
         var reported = new List<SyncProgressEntry>();
         var progress = new Progress<SyncProgressEntry>(e => reported.Add(e));
@@ -159,8 +159,8 @@ public class ProcessReportsProgressTests
             .Returns(Result<ExchangeRate, Error>.Failure(new Error("UNSUPPORTED_CURRENCY", "CHF not supported")));
 
         var filingRepo = Substitute.For<IFilingRepository>();
-        filingRepo.ExistsByIncomeAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<DateOnly>(),
-            Arg.Any<decimal>(), Arg.Any<CancellationToken>()).Returns(false);
+        filingRepo.GetByIncomeEventAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<DateOnly>(),
+            Arg.Any<CancellationToken>()).Returns(Array.Empty<Filing>());
 
         var reported = new List<SyncProgressEntry>();
         var progress = new Progress<SyncProgressEntry>(e => reported.Add(e));
