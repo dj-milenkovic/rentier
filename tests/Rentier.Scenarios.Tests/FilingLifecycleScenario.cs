@@ -12,24 +12,25 @@ namespace Rentier.Scenarios.Tests;
 /// Scenario tests for Filing lifecycle state transitions using real infrastructure.
 /// Tests the Init → Filed → Paid state machine via UpdateFilingStatusCommandHandler.
 /// </summary>
-[Trait("Category", "Scenario")]
-public sealed class FilingLifecycleScenario : IDisposable
+[Trait("Category", "Integration")]
+public sealed class FilingLifecycleScenario : IAsyncLifetime
 {
-    private readonly ScenarioFixture _fixture;
-    private readonly IFilingRepository _filingRepository;
-    private readonly ITaxpayerProfileRepository _profileRepository;
+    private readonly ScenarioFixture _fixture = new();
+    private IFilingRepository _filingRepository = null!;
+    private ITaxpayerProfileRepository _profileRepository = null!;
 
-    public FilingLifecycleScenario()
+    public async ValueTask InitializeAsync()
     {
-        _fixture = new ScenarioFixture();
-        _filingRepository = _fixture.GetService<IFilingRepository>();
-        _profileRepository = _fixture.GetService<ITaxpayerProfileRepository>();
+        await _fixture.InitializeAsync();
+        _filingRepository = _fixture.Get<IFilingRepository>();
+        _profileRepository = _fixture.Get<ITaxpayerProfileRepository>();
     }
+
+    public ValueTask DisposeAsync() => _fixture.DisposeAsync();
 
     [Fact]
     public async Task FilingLifecycle_FromInitToFiled_UpdatesStatusCorrectly()
     {
-        // Arrange - create taxpayer profile and filing directly in DB
         var taxpayerProfile = new TaxpayerProfile(
             id: Guid.NewGuid(),
             jmbg: "1234567890123",
@@ -55,13 +56,10 @@ public sealed class FilingLifecycleScenario : IDisposable
         var handler = new UpdateFilingStatusCommandHandler(_filingRepository);
         var command = new UpdateFilingStatusCommand(filing.Id, FilingStatus.Filed);
 
-        // Act
         var result = await handler.HandleAsync(command, TestContext.Current.CancellationToken);
 
-        // Assert - handler succeeded
         result.IsSuccess.Should().BeTrue("transition from Init to Filed should succeed");
 
-        // Assert - verify DB state via repository query
         var updatedFiling = await _filingRepository.GetByIdAsync(filing.Id, TestContext.Current.CancellationToken);
         updatedFiling.Should().NotBeNull();
         updatedFiling!.Status.Should().Be(FilingStatus.Filed, "status should be Filed after transition");
@@ -70,7 +68,6 @@ public sealed class FilingLifecycleScenario : IDisposable
     [Fact]
     public async Task FilingLifecycle_FromFiledToPaid_UpdatesStatusCorrectly()
     {
-        // Arrange - create taxpayer profile and filing already in Filed status
         var taxpayerProfile = new TaxpayerProfile(
             id: Guid.NewGuid(),
             jmbg: "1234567890123",
@@ -93,18 +90,18 @@ public sealed class FilingLifecycleScenario : IDisposable
 
         await _filingRepository.AddAsync(filing, TestContext.Current.CancellationToken);
 
-        // First transition: Init → Filed
         var handler = new UpdateFilingStatusCommandHandler(_filingRepository);
-        var toFiledResult = await handler.HandleAsync(new UpdateFilingStatusCommand(filing.Id, FilingStatus.Filed), TestContext.Current.CancellationToken);
+        var toFiledResult = await handler.HandleAsync(
+            new UpdateFilingStatusCommand(filing.Id, FilingStatus.Filed),
+            TestContext.Current.CancellationToken);
         toFiledResult.IsSuccess.Should().BeTrue();
 
-        // Act - Second transition: Filed → Paid
-        var toPaidResult = await handler.HandleAsync(new UpdateFilingStatusCommand(filing.Id, FilingStatus.Paid), TestContext.Current.CancellationToken);
+        var toPaidResult = await handler.HandleAsync(
+            new UpdateFilingStatusCommand(filing.Id, FilingStatus.Paid),
+            TestContext.Current.CancellationToken);
 
-        // Assert
         toPaidResult.IsSuccess.Should().BeTrue("transition from Filed to Paid should succeed");
 
-        // Assert - verify DB state
         var updatedFiling = await _filingRepository.GetByIdAsync(filing.Id, TestContext.Current.CancellationToken);
         updatedFiling.Should().NotBeNull();
         updatedFiling!.Status.Should().Be(FilingStatus.Paid, "status should be Paid after transition");
@@ -113,7 +110,6 @@ public sealed class FilingLifecycleScenario : IDisposable
     [Fact]
     public async Task FilingLifecycle_InvalidTransition_ReturnsDomainError()
     {
-        // Arrange - create filing in Init status and try to skip to Paid
         var taxpayerProfile = new TaxpayerProfile(
             id: Guid.NewGuid(),
             jmbg: "9876543210987",
@@ -138,15 +134,14 @@ public sealed class FilingLifecycleScenario : IDisposable
 
         var handler = new UpdateFilingStatusCommandHandler(_filingRepository);
 
-        // Act - try invalid transition Init → Paid (should fail)
-        var result = await handler.HandleAsync(new UpdateFilingStatusCommand(filing.Id, FilingStatus.Paid), TestContext.Current.CancellationToken);
+        var result = await handler.HandleAsync(
+            new UpdateFilingStatusCommand(filing.Id, FilingStatus.Paid),
+            TestContext.Current.CancellationToken);
 
-        // Assert
         result.IsSuccess.Should().BeFalse("Init → Paid is not a valid transition");
         result.Error.Code.Should().Be("DOMAIN_ERROR");
         result.Error.Message.Should().Contain("Invalid Filing status transition");
 
-        // Assert - verify DB state unchanged
         var unchangedFiling = await _filingRepository.GetByIdAsync(filing.Id, TestContext.Current.CancellationToken);
         unchangedFiling.Should().NotBeNull();
         unchangedFiling!.Status.Should().Be(FilingStatus.Init, "status should remain Init after failed transition");
@@ -155,21 +150,15 @@ public sealed class FilingLifecycleScenario : IDisposable
     [Fact]
     public async Task FilingLifecycle_NonExistentFiling_ReturnsNotFoundError()
     {
-        // Arrange
         var handler = new UpdateFilingStatusCommandHandler(_filingRepository);
         var nonExistentId = Guid.NewGuid();
 
-        // Act
-        var result = await handler.HandleAsync(new UpdateFilingStatusCommand(nonExistentId, FilingStatus.Filed), TestContext.Current.CancellationToken);
+        var result = await handler.HandleAsync(
+            new UpdateFilingStatusCommand(nonExistentId, FilingStatus.Filed),
+            TestContext.Current.CancellationToken);
 
-        // Assert
         result.IsSuccess.Should().BeFalse("updating non-existent filing should fail");
         result.Error.Code.Should().Be("NOT_FOUND");
         result.Error.Message.Should().Contain(nonExistentId.ToString());
-    }
-
-    public void Dispose()
-    {
-        _fixture.Dispose();
     }
 }

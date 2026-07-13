@@ -1,0 +1,7 @@
+Dividends,Header,Currency,Date,Description,Amount
+Dividends,Data,USD,2024-01-15,"AAPL(US0378331005) Cash Dividend USD 0.24 per Share",24.00
+Dividends,Total,USD,,Total,24.00
+Withholding Tax,Header,Currency,Date,Description,Amount
+Withholding Tax,Data,USD,2024-01-15,"AAPL(US0378331005) Cash Dividend USD 0.24 per Share - US Tax",-2.00
+Withholding Tax,Data,USD,2024-01-15,"AAPL(US0378331005) Cash Dividend USD 0.24 per Share - US Tax Adjustment",-1.60
+Withholding Tax,Total,USD,,Total,-3.60
