@@ -88,7 +88,7 @@ public sealed class IbkrCsvParser : IStatementParser
         return rows;
     }
 
-    private const string ErrAmountInvalid = "ROW_AMOUNT_INVALID";
+    private const string ROW_AMOUNT_INVALID = "ROW_AMOUNT_INVALID";
 
     // ISIN pattern: (XX0000000000) — 2 letter country + 9 alphanumeric + 1 digit.
     // IBKR descriptions look like "AAPL(US0378331005) Cash Dividend" — the ISIN is mid-string,
@@ -117,7 +117,7 @@ public sealed class IbkrCsvParser : IStatementParser
             if (!TryReadDataRow(record, "Dividends", "Dividends", rowIndex, errors, out var currency, out var description)) continue;
 
             if (!TryParseDate(record[3].Trim(), rowIndex, "", errors, out var date)) continue;
-            if (!TryParseDecimal(record[5].Trim(), rowIndex, ErrAmountInvalid, "amount", errors, out var amount)) continue;
+            if (!TryParseDecimal(record[5].Trim(), rowIndex, ROW_AMOUNT_INVALID, "amount", errors, out var amount)) continue;
 
             var entity = StripIsin(description);
             var key = (entity, date, currency);
@@ -147,7 +147,7 @@ public sealed class IbkrCsvParser : IStatementParser
             var amountStr = record[5].Trim();
 
             if (!TryParseDate(record[3].Trim(), rowIndex, "WHT ", errors, out var date)) continue;
-            if (!TryParseDecimal(amountStr, rowIndex, ErrAmountInvalid, "WHT amount", errors, out var rawAmount)) continue;
+            if (!TryParseDecimal(amountStr, rowIndex, ROW_AMOUNT_INVALID, "WHT amount", errors, out var rawAmount)) continue;
             if (rawAmount > 0)
             {
                 errors.Add(new ParseError("WHT_POSITIVE_AMOUNT",
@@ -194,7 +194,7 @@ public sealed class IbkrCsvParser : IStatementParser
                 continue; // silently skip non-standard interest rows
 
             if (!TryParseDate(record[3].Trim(), rowIndex, "interest ", errors, out var date)) continue;
-            if (!TryParseDecimal(record[5].Trim(), rowIndex, ErrAmountInvalid, "interest amount", errors, out var rawAmount)) continue;
+            if (!TryParseDecimal(record[5].Trim(), rowIndex, ROW_AMOUNT_INVALID, "interest amount", errors, out var rawAmount)) continue;
 
             var amount = Math.Abs(rawAmount); // always store positive
             var key = (currency, date, type);
@@ -227,7 +227,7 @@ public sealed class IbkrCsvParser : IStatementParser
             var rateStr = record[6].Trim();
 
             if (!TryParseDate(record[3].Trim(), rowIndex, "FX rate ", errors, out var date)) continue;
-            if (!TryParseDecimal(rateStr, rowIndex, ErrAmountInvalid, "FX rate", errors, out var rate)) continue;
+            if (!TryParseDecimal(rateStr, rowIndex, ROW_AMOUNT_INVALID, "FX rate", errors, out var rate)) continue;
             if (rate <= 0)
             {
                 errors.Add(new ParseError("RATE_NON_POSITIVE", $"FX rate must be positive, got '{rateStr}'.", rowIndex));
