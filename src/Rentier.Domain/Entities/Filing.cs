@@ -27,6 +27,7 @@ public sealed class Filing
     public DateOnly? ExchangeRateSourceDate { get; private set; }
     public ExchangeRateSourceType? ExchangeRateSourceType { get; private set; }
     public string? Ticker { get; private set; }
+    public string? PaymentNotes { get; private set; }
 
     // EF Core parameterless constructor
     private Filing() { }
@@ -56,7 +57,8 @@ public sealed class Filing
         Guid? reportId = null,
         DateOnly? exchangeRateSourceDate = null,
         Rentier.Domain.Enums.ExchangeRateSourceType? exchangeRateSourceType = null,
-        string? ticker = null)
+        string? ticker = null,
+        string? paymentNotes = null)
     {
         if (string.IsNullOrWhiteSpace(payingEntity))
             throw new DomainException("PayingEntity must not be empty");
@@ -84,6 +86,11 @@ public sealed class Filing
             trimmedTicker = null;
         if (trimmedTicker?.Length > 20)
             throw new DomainException("Ticker must not exceed 20 characters.");
+        var trimmedPaymentNotes = paymentNotes?.Trim();
+        if (string.IsNullOrEmpty(trimmedPaymentNotes))
+            trimmedPaymentNotes = null;
+        if (trimmedPaymentNotes?.Length > 4000)
+            throw new DomainException("PaymentNotes must not exceed 4000 characters.");
 
         return new Filing
         {
@@ -103,6 +110,7 @@ public sealed class Filing
             ExchangeRateSourceDate = exchangeRateSourceDate,
             ExchangeRateSourceType = exchangeRateSourceType,
             Ticker = trimmedTicker,
+            PaymentNotes = trimmedPaymentNotes,
         };
     }
 

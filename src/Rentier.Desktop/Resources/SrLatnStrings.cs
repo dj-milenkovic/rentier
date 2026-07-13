@@ -199,6 +199,7 @@ public static class SrLatnStrings
         ["ManualFiling_Currency_Label"] = "Valuta",
         ["ManualFiling_GrossAmount_Label"] = "Bruto iznos",
         ["ManualFiling_NetReceived_Label"] = "Neto primljeno (opciono)",
+        ["ManualFiling_PaymentNotes_Label"] = "Napomena o isplati (opciono)",
         ["ManualFiling_Calculate_Button"] = "Izračunaj",
         ["ManualFiling_Save_Button"] = "Sačuvaj prijavu",
         ["ManualFiling_Cancel_Button"] = "Otkaži",
