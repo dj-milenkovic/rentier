@@ -103,6 +103,13 @@ Examples: income 2024-03-01 → raw 2024-03-31 (Sunday) → **2024-04-01**; inco
 - **Each income event = one separate PP-OPO filing** (20 dividends → 20 filings).
 - Debit interest (margin interest paid to IBKR) is imported for completeness but
   **never creates a filing** — it is not taxable income.
+- **Duplicate/correction guard** (`ProcessReportsCommandHandler`): before creating a
+  filing, all existing filings for the same `(taxpayer, paying entity, income date)`
+  are fetched via `IFilingRepository.GetByIncomeEventAsync`. Same gross RSD → the
+  event was already imported; skip silently (idempotent re-import). Different gross
+  RSD → the broker issued a correction (reversal + re-book in a later statement);
+  **no filing is created** and a `FILING_CORRECTION_DETECTED` error is surfaced for
+  manual review — never silently create a second filing or mutate the existing one.
 
 ## Filing lifecycle
 

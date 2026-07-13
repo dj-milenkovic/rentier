@@ -128,6 +128,77 @@ public sealed class ImportPipelineScenarios : IAsyncLifetime
         second.Error.Code.Should().Be("REPORT_IMPORT_DUPLICATE");
     }
 
+    // ── Broker correction (reversal + re-book in a later statement) ──────────
+
+    private static readonly byte[] OriginalDividendCsvBytes = Encoding.UTF8.GetBytes(
+        "Dividends,Header,Currency,Date,Description,Amount\n" +
+        "Dividends,Data,USD,2024-06-12,\"IBKR(US45841N1072) Cash Dividend USD 0.0875 per Share (Ordinary Dividend)\",0.26\n" +
+        "Dividends,Total,USD,,Total,0.26\n" +
+        "Withholding Tax,Header,Currency,Date,Description,Amount\n" +
+        "Withholding Tax,Data,USD,2024-06-12,\"IBKR(US45841N1072) Cash Dividend USD 0.0875 per Share - US Tax\",-0.08\n" +
+        "Withholding Tax,Total,USD,,Total,-0.08\n");
+
+    /// <summary>
+    /// Replays the production bug: the broker pays a dividend ($0.26, statement 1), then four
+    /// days later re-issues it at a corrected amount via reversal −0.26 + re-book +0.28
+    /// (statement 2, same pay date). The parser nets statement 2 to +$0.02, which must NOT
+    /// become a second filing for the same income event — the report is flagged for review.
+    /// Hand-computed for rate = 117.5432: statement 1 gross = Round(0.26 × 117.5432, 2) = 30.56.
+    /// </summary>
+    [Fact]
+    public async Task BrokerCorrectionInLaterStatement_DoesNotCreateSecondFiling()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await SeedRateAsync(new DateOnly(2024, 6, 12), 117.5432m, ct);
+
+        var correctionCsvBytes = Encoding.UTF8.GetBytes(
+            "Dividends,Header,Currency,Date,Description,Amount\n" +
+            "Dividends,Data,USD,2024-06-12,\"IBKR(US45841N1072) Cash Dividend USD 0.0875 per Share - Reversal (Ordinary Dividend)\",-0.26\n" +
+            "Dividends,Data,USD,2024-06-12,\"IBKR(US45841N1072) Cash Dividend USD 0.0875 per Share (Ordinary Dividend)\",0.28\n" +
+            "Dividends,Total,USD,,Total,0.02\n");
+
+        var handler = _fixture.Get<ICommandHandler<ImportReportCommand, Result<Guid, Error>>>();
+
+        var first = await handler.HandleAsync(
+            new ImportReportCommand(_importerId, "statement_20240612.csv", OriginalDividendCsvBytes), ct);
+        first.IsSuccess.Should().BeTrue(because: first.IsSuccess ? string.Empty : first.Error.Message);
+
+        var second = await handler.HandleAsync(
+            new ImportReportCommand(_importerId, "statement_20240616.csv", correctionCsvBytes), ct);
+        second.IsSuccess.Should().BeTrue(because: second.IsSuccess ? string.Empty : second.Error.Message);
+
+        var filings = await _fixture.Get<IFilingRepository>().GetAllAsync(ct);
+        filings.Should().HaveCount(1, because: "the correction must not create a second filing for the same income event");
+        filings[0].GrossIncomeRsd.Should().Be(30.56m, because: "the original filing stays untouched");
+
+        var erroredReports = await _fixture.Get<IReportRepository>().GetByStatusAsync(ReportStatus.Error, ct);
+        erroredReports.Should().ContainSingle(r => r.ReportName == "statement_20240616.csv",
+            because: "the correction statement is flagged for manual review");
+    }
+
+    [Fact]
+    public async Task SameIncomeEventFromDifferentlyNamedFile_SkipsSilently()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await SeedRateAsync(new DateOnly(2024, 6, 12), 117.5432m, ct);
+
+        var handler = _fixture.Get<ICommandHandler<ImportReportCommand, Result<Guid, Error>>>();
+
+        var first = await handler.HandleAsync(
+            new ImportReportCommand(_importerId, "statement_a.csv", OriginalDividendCsvBytes), ct);
+        first.IsSuccess.Should().BeTrue(because: first.IsSuccess ? string.Empty : first.Error.Message);
+
+        var second = await handler.HandleAsync(
+            new ImportReportCommand(_importerId, "statement_b.csv", OriginalDividendCsvBytes), ct);
+        second.IsSuccess.Should().BeTrue(because: second.IsSuccess ? string.Empty : second.Error.Message);
+
+        var filings = await _fixture.Get<IFilingRepository>().GetAllAsync(ct);
+        filings.Should().HaveCount(1, because: "an identical income event from another statement is an idempotent skip");
+
+        var erroredReports = await _fixture.Get<IReportRepository>().GetByStatusAsync(ReportStatus.Error, ct);
+        erroredReports.Should().BeEmpty(because: "an exact duplicate is not a correction — no error is raised");
+    }
+
     // ── WHT cap ───────────────────────────────────────────────────────────────
 
     /// <summary>

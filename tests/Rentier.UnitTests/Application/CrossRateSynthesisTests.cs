@@ -214,9 +214,9 @@ public class CrossRateSynthesisTests
             .Returns(Result<ExchangeRate, Error>.Success(new ExchangeRate(TestDate, "EUR", 117m)));
 
         var filingRepo = Substitute.For<IFilingRepository>();
-        filingRepo.ExistsByIncomeAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<DateOnly>(),
-                Arg.Any<decimal>(), Arg.Any<CancellationToken>())
-            .Returns(false);
+        filingRepo.GetByIncomeEventAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<DateOnly>(),
+                Arg.Any<CancellationToken>())
+            .Returns(Array.Empty<Filing>());
 
         var handler = MakeHandler(reportRepo, importerRepo, filingRepo, rateFetcher, parser);
 
