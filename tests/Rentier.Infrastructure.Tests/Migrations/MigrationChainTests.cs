@@ -78,9 +78,9 @@ public sealed class MigrationChainTests : IAsyncDisposable
 
         var applied = await _context.Database.GetAppliedMigrationsAsync(cancellationToken: TestContext.Current.CancellationToken);
 
-        // 14 migrations: 0001 through 0014 (0011 has a July timestamp but is still one migration)
-        applied.Should().HaveCount(14,
-            because: "the migration history table must record exactly 14 applied migrations");
+        // 15 migrations: 0001 through 0015 (0011 has a July timestamp but is still one migration)
+        applied.Should().HaveCount(15,
+            because: "the migration history table must record exactly 15 applied migrations");
     }
 
     [Fact]

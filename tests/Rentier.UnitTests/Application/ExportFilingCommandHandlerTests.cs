@@ -32,14 +32,16 @@ public class ExportFilingCommandHandlerTests
         IncomeType incomeType = IncomeType.Dividend,
         Guid? reportId = null,
         string? ticker = null,
-        string payingEntity = "ACME Corp")
+        string payingEntity = "ACME Corp",
+        string? paymentNotes = null)
     {
         var filing = Filing.CreateFromIncome(
             Guid.NewGuid(), incomeType, payingEntity,
             new DateOnly(2025, 3, 15), 10000m, 1500m, 1500m, 0m,
             new DateOnly(2025, 4, 30),
             reportId,
-            ticker: ticker);
+            ticker: ticker,
+            paymentNotes: paymentNotes);
         return filing;
     }
 
@@ -85,6 +87,42 @@ public class ExportFilingCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         _serializer.Received(1).Serialize(filing, profile, string.Empty);
         await _reports.DidNotReceive().GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_NullReportIdWithFilingPaymentNotes_UsesFilingPaymentNotes()
+    {
+        var filing = MakeFiling(reportId: null, paymentNotes: "Isplata na brokerski racun");
+        var profile = MakeProfile();
+        _filings.GetByIdAsync(filing.Id, Arg.Any<CancellationToken>()).Returns(filing);
+        _profiles.GetAsync(Arg.Any<CancellationToken>()).Returns(profile);
+
+        var result = await _sut.HandleAsync(new ExportFilingCommand(filing.Id), TestContext.Current.CancellationToken);
+
+        result.IsSuccess.Should().BeTrue();
+        _serializer.Received(1).Serialize(filing, profile, "Isplata na brokerski racun");
+        await _reports.DidNotReceive().GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_ReportBackedFiling_IgnoresFilingPaymentNotesAndUsesImporterPaymentNotes()
+    {
+        var report = Report.Create(Guid.NewGuid(), "report.csv", null, null);
+        var filing = MakeFiling(reportId: report.Id, paymentNotes: "Should not be used");
+        var profile = MakeProfile();
+        var importer = Importer.Create("Test Importer");
+        importer.UpdateDetails(
+            "Test Importer", ReportType.IbkrCsv, null, null, "", "", "",
+            paymentNotes: "Importer payment notes");
+        _filings.GetByIdAsync(filing.Id, Arg.Any<CancellationToken>()).Returns(filing);
+        _profiles.GetAsync(Arg.Any<CancellationToken>()).Returns(profile);
+        _reports.GetByIdAsync(report.Id, Arg.Any<CancellationToken>()).Returns(report);
+        _importers.GetByIdAsync(report.ImporterId, Arg.Any<CancellationToken>()).Returns(importer);
+
+        var result = await _sut.HandleAsync(new ExportFilingCommand(filing.Id), TestContext.Current.CancellationToken);
+
+        result.IsSuccess.Should().BeTrue();
+        _serializer.Received(1).Serialize(filing, profile, "Importer payment notes");
     }
 
     // ── T013: New filename convention tests ───────────────────────────────────

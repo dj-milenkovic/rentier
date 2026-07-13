@@ -9,4 +9,5 @@ public sealed record CreateManualFilingCommand(
     DateOnly IncomeDate,
     string Currency,
     decimal GrossAmount,
-    decimal? NetReceived);
+    decimal? NetReceived,
+    string? PaymentNotes = null);
