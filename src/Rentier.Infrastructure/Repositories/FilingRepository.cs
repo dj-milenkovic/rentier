@@ -206,12 +206,29 @@ public sealed class FilingRepository : IFilingRepository
     }
 
     public async Task<DateOnly?> GetEarliestIncomeDateByReportIdAsync(Guid reportId, CancellationToken ct = default)
-    {
-        var dates = await _db.Filings.AsNoTracking()
+        => await _db.Filings.AsNoTracking()
             .Where(f => f.ReportId == reportId)
             .Select(f => (DateOnly?)f.IncomeDate)
+            .MinAsync(ct);
+
+    public async Task<IReadOnlyDictionary<Guid, (int Count, DateOnly? EarliestDate)>> GetAggregatesByReportIdsAsync(
+        IReadOnlyList<Guid> reportIds, CancellationToken ct = default)
+    {
+        if (reportIds.Count == 0)
+            return new Dictionary<Guid, (int, DateOnly?)>();
+
+        var rows = await _db.Filings.AsNoTracking()
+            .Where(f => f.ReportId.HasValue && reportIds.Contains(f.ReportId!.Value))
+            .GroupBy(f => f.ReportId!.Value)
+            .Select(g => new
+            {
+                ReportId = g.Key,
+                Count = g.Count(),
+                EarliestDate = g.Min(f => (DateOnly?)f.IncomeDate),
+            })
             .ToListAsync(ct);
-        return dates.Count == 0 ? null : dates.Min();
+
+        return rows.ToDictionary(x => x.ReportId, x => (x.Count, x.EarliestDate));
     }
 
     public async Task DeleteManyAsync(IReadOnlyList<Guid> ids, CancellationToken ct = default)

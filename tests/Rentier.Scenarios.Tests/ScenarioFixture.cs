@@ -1,64 +1,86 @@
 using Microsoft.Data.Sqlite;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Xunit;
+using Rentier.Application.Commands;
+using Rentier.Application.Common;
+using Rentier.Application.DTOs;
+using Rentier.Application.Handlers;
 using Rentier.Application.Interfaces;
-using Rentier.Application.Repositories;
-using Rentier.Infrastructure.Persistence;
-using Rentier.Infrastructure.Repositories;
+using Rentier.Infrastructure;
 using Rentier.Tests.Common.Fakes;
 
 namespace Rentier.Scenarios.Tests;
 
 /// <summary>
-/// Bootstraps real DI with SQLite in-memory for scenario tests.
-/// Each test should create a fresh instance to ensure data isolation.
+/// Bootstraps real DI with the production InfrastructureRegistrar and a SQLite temp file.
+/// Applies migrations via IDatabaseInitializer (MigrateAsync) — not EnsureCreated.
+/// Each test class creates its own instance for full data isolation.
 /// </summary>
-public sealed class ScenarioFixture : IDisposable
+public sealed class ScenarioFixture : IAsyncLifetime
 {
-    private readonly SqliteConnection _connection;
+    private string? _dbPath;
 
-    /// <summary>The configured service provider for resolving dependencies.</summary>
-    public IServiceProvider Services { get; }
+    public IServiceProvider Services { get; private set; } = null!;
 
-    public ScenarioFixture()
+    public async ValueTask InitializeAsync()
     {
-        // Keep connection open for SQLite in-memory DB lifetime
-        _connection = new SqliteConnection("Data Source=:memory:");
-        _connection.Open();
+        _dbPath = Path.Combine(Path.GetTempPath(), $"rentier_e2e_{Guid.NewGuid():N}.db");
 
         var services = new ServiceCollection();
+        services.AddLogging(b => b.SetMinimumLevel(LogLevel.Warning));
 
-        // Register DbContext with SQLite in-memory provider
-        services.AddDbContext<AppDbContext>(
-            o => o.UseSqlite(_connection),
-            ServiceLifetime.Transient);
+        await new InfrastructureRegistrar().RegisterServicesAsync(services, _dbPath);
 
-        // Register real repositories
-        services.AddTransient<ITaxpayerProfileRepository, TaxpayerProfileRepository>();
-        services.AddTransient<IFilingRepository, FilingRepository>();
-        services.AddTransient<IReportRepository, ReportRepository>();
-        services.AddTransient<IImporterRepository, ImporterRepository>();
-        services.AddTransient<IExchangeRateCacheRepository, ExchangeRateCacheRepository>();
-        services.AddTransient<IHolidayRepository, HolidayRepository>();
-        services.AddTransient<IMailboxRepository, MailboxRepository>();
-
-        // Mock external dependencies (credential store, mailbox sync)
+        // Override externals — last registration wins in .NET DI
         services.AddSingleton<ICredentialStore>(new FakeCredentialStore());
         services.AddSingleton(NSubstitute.Substitute.For<IMailboxSyncService>());
 
+        // Application layer: command handlers
+        services.AddTransient<
+            ICommandHandler<ProcessReportsCommand, Result<ProcessReportsResult, Error>>,
+            ProcessReportsCommandHandler>();
+        services.AddTransient<
+            ICommandHandler<ImportReportCommand, Result<Guid, Error>>,
+            ImportReportCommandHandler>();
+        services.AddTransient<
+            ICommandHandler<ExportFilingCommand, Result<ExportFilingResult, Error>>,
+            ExportFilingCommandHandler>();
+        services.AddTransient<
+            ICommandHandler<UpdateFilingStatusCommand, Result<VoidResult, Error>>,
+            UpdateFilingStatusCommandHandler>();
+        services.AddTransient<
+            ICommandHandler<SaveTaxpayerProfileCommand, Result<VoidResult, Error>>,
+            SaveTaxpayerProfileCommandHandler>();
+        services.AddTransient<
+            ICommandHandler<AddImporterCommand, Result<Guid, Error>>,
+            AddImporterCommandHandler>();
+
         Services = services.BuildServiceProvider();
 
-        // Create database schema
-        using var ctx = Services.GetRequiredService<AppDbContext>();
-        ctx.Database.EnsureCreated();
+        var dbInit = Services.GetRequiredService<IDatabaseInitializer>();
+        await dbInit.InitializeAsync();
     }
 
-    /// <summary>Resolves a service from the DI container.</summary>
-    public T GetService<T>() where T : notnull
-        => Services.GetRequiredService<T>();
+    public T Get<T>() where T : notnull => Services.GetRequiredService<T>();
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
-        _connection.Dispose();
+        if (Services is IAsyncDisposable asyncDisposable)
+            await asyncDisposable.DisposeAsync();
+
+        SqliteConnection.ClearAllPools();
+
+        if (_dbPath is null) return;
+        foreach (var path in new[] { _dbPath, $"{_dbPath}-wal", $"{_dbPath}-shm" })
+        {
+            for (var attempt = 1; attempt <= 3; attempt++)
+            {
+                if (!File.Exists(path)) break;
+                try { File.Delete(path); break; }
+                catch (IOException) when (attempt < 3) { await Task.Delay(50); }
+                catch (UnauthorizedAccessException) when (attempt < 3) { await Task.Delay(50); }
+            }
+        }
     }
 }
