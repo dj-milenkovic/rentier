@@ -79,8 +79,8 @@ public class ProcessReportsCommandHandlerPartialSuccessTests
             .Returns(Result<ExchangeRate, Error>.Success(new ExchangeRate(TestDate, "USD", 108m)));
 
         var filingRepo = Substitute.For<IFilingRepository>();
-        filingRepo.ExistsByIncomeAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<DateOnly>(),
-                Arg.Any<decimal>(), Arg.Any<CancellationToken>()).Returns(false);
+        filingRepo.GetByIncomeEventAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<DateOnly>(),
+                Arg.Any<CancellationToken>()).Returns(Array.Empty<Filing>());
 
         var handler = MakeHandler(reportRepo, importerRepo, filingRepo, MakeResolver(fetcher), parser);
         var result = await handler.HandleAsync(new ProcessReportsCommand(), TestContext.Current.CancellationToken);
@@ -124,8 +124,8 @@ public class ProcessReportsCommandHandlerPartialSuccessTests
             .Returns(Result<ExchangeRate, Error>.Failure(new Error("UNSUPPORTED_CURRENCY", "CHF not supported")));
 
         var filingRepo = Substitute.For<IFilingRepository>();
-        filingRepo.ExistsByIncomeAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<DateOnly>(),
-                Arg.Any<decimal>(), Arg.Any<CancellationToken>()).Returns(false);
+        filingRepo.GetByIncomeEventAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<DateOnly>(),
+                Arg.Any<CancellationToken>()).Returns(Array.Empty<Filing>());
 
         var handler = MakeHandler(reportRepo, importerRepo, filingRepo, MakeResolver(fetcher), parser);
         var result = await handler.HandleAsync(new ProcessReportsCommand(), TestContext.Current.CancellationToken);
@@ -237,8 +237,8 @@ public class ProcessReportsCommandHandlerPartialSuccessTests
             .Returns(Result<ExchangeRate, Error>.Failure(new Error("UNSUPPORTED_CURRENCY", "XYZ not supported")));
 
         var filingRepo = Substitute.For<IFilingRepository>();
-        filingRepo.ExistsByIncomeAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<DateOnly>(),
-                Arg.Any<decimal>(), Arg.Any<CancellationToken>()).Returns(false);
+        filingRepo.GetByIncomeEventAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<DateOnly>(),
+                Arg.Any<CancellationToken>()).Returns(Array.Empty<Filing>());
 
         var handler = MakeHandler(reportRepo, importerRepo, filingRepo, MakeResolver(fetcher), parser);
         var result = await handler.HandleAsync(new ProcessReportsCommand(), TestContext.Current.CancellationToken);

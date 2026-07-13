@@ -206,6 +206,7 @@ public static class Strings
     public static string ManualFiling_Currency_Label => "Currency";
     public static string ManualFiling_GrossAmount_Label => "Gross Amount";
     public static string ManualFiling_NetReceived_Label => "Net Received (optional)";
+    public static string ManualFiling_PaymentNotes_Label => "Payment Notes (optional)";
     public static string ManualFiling_Calculate_Button => "Calculate";
     public static string ManualFiling_Save_Button => "Save Filing";
     public static string ManualFiling_Cancel_Button => "Cancel";

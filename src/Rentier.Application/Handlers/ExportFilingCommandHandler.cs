@@ -53,6 +53,10 @@ public sealed class ExportFilingCommandHandler
                 paymentNotes = importer?.PaymentNotes ?? string.Empty;
             }
         }
+        else
+        {
+            paymentNotes = filing.PaymentNotes ?? string.Empty;
+        }
 
         var serializeResult = _serializer.Serialize(filing, profile, paymentNotes);
         if (!serializeResult.IsSuccess)

@@ -24,6 +24,7 @@ public static class ErrorCodes
     public const string FILING_BULK_DELETE_FAILED = "FILING_BULK_DELETE_FAILED";
     public const string FILING_BULK_DELETE_INVALID = "FILING_BULK_DELETE_INVALID";
     public const string FILING_CREATE_DUPLICATE = "FILING_CREATE_DUPLICATE";
+    public const string FILING_CORRECTION_DETECTED = "FILING_CORRECTION_DETECTED";
 
     // ── Report ─────────────────────────────────────────────────────────────
     public const string REPORT_BULK_DELETE_FAILED = "REPORT_BULK_DELETE_FAILED";
