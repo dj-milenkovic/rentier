@@ -305,31 +305,6 @@ jobs:
           echo "LINE_COVERAGE=$LINE_COV" >> "$GITHUB_ENV"
           echo "BRANCH_COVERAGE=$BRANCH_COV" >> "$GITHUB_ENV"
 
-      - name: Coverage ratchet — Domain + Application
-        shell: bash
-        run: |
-          if [ ! -f ./coverage-report/Summary.txt ]; then
-            echo "No summary file; skipping ratchet." >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
-          # Extract line coverage for Domain and Application assemblies
-          COV=$(grep -E 'Rentier\.(Domain|Application)' ./coverage-report/Summary.txt \
-                | grep -oP 'Line coverage: \K[0-9.]+' \
-                | awk '{sum+=$1; n++} END{if(n>0) printf "%.1f", sum/n; else print "0"}')
-          echo "Domain+Application average line coverage: ${COV}%"
-          echo "## 🎯 Domain+Application Coverage: ${COV}%" >> "$GITHUB_STEP_SUMMARY"
-          if [ -n "$COVERAGE_FLOOR" ]; then
-            python3 -c "
-          import sys
-          cov = float('${COV}' or 0)
-          floor = float('${COVERAGE_FLOOR}')
-          if cov < floor:
-              print(f'Coverage {cov}% below floor {floor}%')
-              sys.exit(1)
-          print(f'Coverage {cov}% >= floor {floor}% OK')
-          "
-          fi
-
       - name: Upload HTML coverage report
         uses: actions/upload-artifact@v7.0.1
         with:
@@ -346,12 +321,23 @@ jobs:
       - name: Post coverage summary
         shell: bash
         run: |
-          echo "## 📊 Code Coverage (merged)" >> "$GITHUB_STEP_SUMMARY"
+          echo "## 📊 Code Coverage (merged — all assemblies)" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "| Metric | Coverage |" >> "$GITHUB_STEP_SUMMARY"
           echo "|--------|----------|" >> "$GITHUB_STEP_SUMMARY"
           echo "| Line   | ${LINE_COVERAGE:-N/A}% |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Branch | ${BRANCH_COVERAGE:-N/A}% |" >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "$COVERAGE_FLOOR" ] && [ "${LINE_COVERAGE:-N/A}" != "N/A" ]; then
+            python3 -c "
+          import sys
+          cov = float('${LINE_COVERAGE}')
+          floor = float('${COVERAGE_FLOOR}')
+          if cov < floor:
+              print(f'Coverage {cov}% below floor {floor}%')
+              sys.exit(1)
+          print(f'Coverage {cov}% >= floor {floor}% OK')
+          "
+          fi
 
   # ──────────────────────────────────────────────
   # SonarCloud analysis (Ubuntu only)
