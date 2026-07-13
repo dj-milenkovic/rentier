@@ -301,7 +301,6 @@ public sealed class IbkrCsvParserTests
     // ─── Contract clause: fatal errors produce Result.Failure ────────────────
 
     [Fact]
-
     public async Task ParseAsync_CsvWithNoKnownSections_ReturnsInvalidFormatError()
     {
         var csv = """
