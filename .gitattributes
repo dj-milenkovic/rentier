@@ -1,2 +1,10 @@
 * text=auto
 *.cs text eol=crlf
+
+# Verify snapshot files must use LF line endings; Verify (31.24+) rejects
+# verified files containing CR. Pin them to LF so autocrlf on Windows does not
+# convert them to CRLF on checkout.
+*.verified.txt text eol=lf
+*.verified.xml text eol=lf
+*.received.txt text eol=lf
+*.received.xml text eol=lf
