@@ -110,6 +110,55 @@ public class FilingRepositoryTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task GetByIncomeEventAsync_SameEventDifferentGross_ReturnsFiling()
+    {
+        var profile = MakeProfile();
+        await _context.TaxpayerProfiles.AddAsync(profile, TestContext.Current.CancellationToken);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var date = new DateOnly(2024, 6, 15);
+        var filing = MakeFiling(profile.Id, "ACME", date, 1000m);
+        await _repository.AddAsync(filing, TestContext.Current.CancellationToken);
+
+        // Amount is not part of the key — a correction with a different gross must still match
+        var result = await _repository.GetByIncomeEventAsync(profile.Id, "ACME", date, TestContext.Current.CancellationToken);
+
+        result.Should().HaveCount(1);
+        result[0].GrossIncomeRsd.Should().Be(1000m);
+    }
+
+    [Fact]
+    public async Task GetByIncomeEventAsync_DifferentDate_ReturnsEmpty()
+    {
+        var profile = MakeProfile();
+        await _context.TaxpayerProfiles.AddAsync(profile, TestContext.Current.CancellationToken);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var filing = MakeFiling(profile.Id, "ACME", new DateOnly(2024, 6, 15), 1000m);
+        await _repository.AddAsync(filing, TestContext.Current.CancellationToken);
+
+        var result = await _repository.GetByIncomeEventAsync(profile.Id, "ACME", new DateOnly(2024, 6, 16), TestContext.Current.CancellationToken);
+
+        result.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetByIncomeEventAsync_DifferentEntity_ReturnsEmpty()
+    {
+        var profile = MakeProfile();
+        await _context.TaxpayerProfiles.AddAsync(profile, TestContext.Current.CancellationToken);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var date = new DateOnly(2024, 6, 15);
+        var filing = MakeFiling(profile.Id, "ACME", date, 1000m);
+        await _repository.AddAsync(filing, TestContext.Current.CancellationToken);
+
+        var result = await _repository.GetByIncomeEventAsync(profile.Id, "OTHER", date, TestContext.Current.CancellationToken);
+
+        result.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task GetByReportIdAsync_WithMatchingReport_ReturnsFiling()
     {
         var profile = MakeProfile();

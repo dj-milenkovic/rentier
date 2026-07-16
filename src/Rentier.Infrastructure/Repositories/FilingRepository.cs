@@ -47,6 +47,22 @@ public sealed class FilingRepository : IFilingRepository
                 f.IncomeDate == incomeDate &&
                 f.GrossIncomeRsd == grossIncomeRsd, ct);
 
+    public async Task<IReadOnlyList<Filing>> GetByIncomeEventAsync(
+        Guid taxpayerProfileId,
+        string payingEntity,
+        DateOnly incomeDate,
+        CancellationToken ct = default)
+    {
+        var list = await _db.Filings
+            .AsNoTracking()
+            .Where(f =>
+                f.TaxpayerProfileId == taxpayerProfileId &&
+                f.PayingEntity == payingEntity &&
+                f.IncomeDate == incomeDate)
+            .ToListAsync(ct);
+        return list.AsReadOnly();
+    }
+
     public async Task<IReadOnlyList<Filing>> GetByReportIdAsync(Guid reportId, CancellationToken ct = default)
     {
         var list = await _db.Filings

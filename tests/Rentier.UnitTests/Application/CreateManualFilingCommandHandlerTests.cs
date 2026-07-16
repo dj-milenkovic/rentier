@@ -133,6 +133,38 @@ public class CreateManualFilingCommandHandlerTests
             Arg.Any<CancellationToken>());
     }
 
+    // ── Payment Notes ────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task HandleAsync_WithPaymentNotes_FilingHasPaymentNotes()
+    {
+        var filingRepo = MakeFilingRepo(exists: false);
+        var handler = MakeHandler(filingRepo: filingRepo);
+        var cmd = new CreateManualFilingCommand(
+            ProfileId, IncomeType.Dividend, "AAPL", TestDate, "USD", 100.00m, 85.00m,
+            PaymentNotes: "Isplata na brokerski racun");
+
+        await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
+
+        await filingRepo.Received(1).AddAsync(
+            Arg.Is<Filing>(f => f.PaymentNotes == "Isplata na brokerski racun"),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_WithoutPaymentNotes_FilingPaymentNotesIsNull()
+    {
+        var filingRepo = MakeFilingRepo(exists: false);
+        var handler = MakeHandler(filingRepo: filingRepo);
+        var cmd = ValidCommand();
+
+        await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
+
+        await filingRepo.Received(1).AddAsync(
+            Arg.Is<Filing>(f => f.PaymentNotes == null),
+            Arg.Any<CancellationToken>());
+    }
+
     // ── No-WHT Path (US2) ─────────────────────────────────────────────────────
 
     [Fact]

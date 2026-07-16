@@ -64,7 +64,8 @@ public sealed class CreateManualFilingCommandHandler
             reportId: null,
             exchangeRateSourceDate: r.Rate.SourceDate,
             exchangeRateSourceType: r.Rate.SourceType,
-            ticker: r.TickerUpper);
+            ticker: r.TickerUpper,
+            paymentNotes: command.PaymentNotes);
 
         await _filingRepository.AddAsync(filing, ct);
 
