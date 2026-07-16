@@ -177,7 +177,7 @@ public class FilingsViewModelBulkDeleteTests
 
         await bulkDelete.Received(1).HandleAsync(
             Arg.Is<BulkDeleteFilingsCommand>(c =>
-                c.FilingIds.Count == 2 &&
+                c!.FilingIds.Count == 2 &&
                 c.FilingIds.Contains(id1) &&
                 c.FilingIds.Contains(id2)),
             Arg.Any<CancellationToken>());

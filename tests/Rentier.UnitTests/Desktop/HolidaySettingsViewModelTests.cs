@@ -82,7 +82,7 @@ public class HolidaySettingsViewModelTests
         vm.Entries.Add(new HolidayEntryViewModel { Date = new DateOnly(2025, 1, 1), Name = "Nova godina" });
         await vm.SaveCommand.Execute().FirstAsync();
         await saveHandler.Received(1).HandleAsync(
-            Arg.Is<SaveHolidayConfCommand>(c => c.Holidays.Any(h => h.Name == "Nova godina")),
+            Arg.Is<SaveHolidayConfCommand>(c => c!.Holidays.Any(h => h.Name == "Nova godina")),
             Arg.Any<CancellationToken>());
     }
 

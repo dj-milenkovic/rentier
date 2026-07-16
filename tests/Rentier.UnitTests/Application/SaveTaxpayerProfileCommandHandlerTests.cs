@@ -29,7 +29,7 @@ public class SaveTaxpayerProfileCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         await _repo.Received(1).SaveAsync(
             Arg.Is<TaxpayerProfile>(p =>
-                p.Jmbg == "1234567890123" &&
+                p!.Jmbg == "1234567890123" &&
                 p.FullName == "Test User"),
             Arg.Any<CancellationToken>());
     }
@@ -46,7 +46,7 @@ public class SaveTaxpayerProfileCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         await _repo.Received(1).SaveAsync(
-            Arg.Is<TaxpayerProfile>(p => p.Id == existingId && p.FullName == "New Name"),
+            Arg.Is<TaxpayerProfile>(p => p!.Id == existingId && p.FullName == "New Name"),
             Arg.Any<CancellationToken>());
     }
 

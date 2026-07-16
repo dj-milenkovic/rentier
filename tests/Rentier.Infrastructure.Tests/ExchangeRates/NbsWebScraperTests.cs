@@ -62,7 +62,7 @@ public class NbsWebScraperTests
         result.Value.Currency.Should().Be("USD");
         result.Value.RateToRsd.Should().Be(107.0539m);
         await cache.Received(1).SaveBatchAsync(
-            Arg.Is<IReadOnlyList<ExchangeRate>>(l => l.Count == 3), Arg.Any<CancellationToken>());
+            Arg.Is<IReadOnlyList<ExchangeRate>>(l => l!.Count == 3), Arg.Any<CancellationToken>());
     }
 
     [Fact]

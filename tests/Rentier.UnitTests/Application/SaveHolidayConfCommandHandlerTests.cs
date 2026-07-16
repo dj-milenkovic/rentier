@@ -44,7 +44,7 @@ public class SaveHolidayConfCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         await _repo.Received(1).SaveHolidaysAsync(
-            Arg.Is<IReadOnlyList<PublicHoliday>>(list => list.Count == 0),
+            Arg.Is<IReadOnlyList<PublicHoliday>>(list => list!.Count == 0),
             Arg.Any<HolidayYearRange>(),
             Arg.Any<CancellationToken>());
     }

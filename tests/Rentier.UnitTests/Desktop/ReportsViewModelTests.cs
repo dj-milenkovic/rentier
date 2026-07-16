@@ -208,7 +208,7 @@ public class ReportsViewModelTests
         await vm.DeleteCommand.Execute(reportId).FirstAsync();
 
         await deleteHandler.Received(1).HandleAsync(
-            Arg.Is<DeleteReportCommand>(c => c.ReportId == reportId),
+            Arg.Is<DeleteReportCommand>(c => c!.ReportId == reportId),
             Arg.Any<CancellationToken>());
     }
 

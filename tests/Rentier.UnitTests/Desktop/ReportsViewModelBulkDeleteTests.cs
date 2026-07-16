@@ -164,7 +164,7 @@ public class ReportsViewModelBulkDeleteTests
 
         await bulkDelete.Received(1).HandleAsync(
             Arg.Is<BulkDeleteReportsCommand>(c =>
-                c.ReportIds.Count == 2 &&
+                c!.ReportIds.Count == 2 &&
                 c.ReportIds.Contains(id1) &&
                 c.ReportIds.Contains(id2)),
             Arg.Any<CancellationToken>());

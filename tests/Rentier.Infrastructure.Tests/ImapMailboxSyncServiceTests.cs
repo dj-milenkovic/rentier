@@ -158,7 +158,7 @@ public class ImapMailboxSyncServiceTests
 
         result.IsSuccess.Should().BeTrue();
         progress.Received(1).Report(Arg.Is<SyncProgressEntry>(entry =>
-            entry.Message == "Downloading email 1/1: Dividend statement"
+            entry!.Message == "Downloading email 1/1: Dividend statement"
             && entry.Severity == SyncProgressSeverity.Info));
     }
 

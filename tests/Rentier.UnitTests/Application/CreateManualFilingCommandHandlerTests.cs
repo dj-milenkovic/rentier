@@ -101,7 +101,7 @@ public class CreateManualFilingCommandHandlerTests
         await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         await filingRepo.Received(1).AddAsync(
-            Arg.Is<Filing>(f => f.Ticker == "AAPL"),
+            Arg.Is<Filing>(f => f!.Ticker == "AAPL"),
             Arg.Any<CancellationToken>());
     }
 
@@ -115,7 +115,7 @@ public class CreateManualFilingCommandHandlerTests
         await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         await filingRepo.Received(1).AddAsync(
-            Arg.Is<Filing>(f => f.ReportId == null),
+            Arg.Is<Filing>(f => f!.ReportId == null),
             Arg.Any<CancellationToken>());
     }
 
@@ -129,7 +129,7 @@ public class CreateManualFilingCommandHandlerTests
         await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         await filingRepo.Received(1).AddAsync(
-            Arg.Is<Filing>(f => f.Status == FilingStatus.Init),
+            Arg.Is<Filing>(f => f!.Status == FilingStatus.Init),
             Arg.Any<CancellationToken>());
     }
 
@@ -147,7 +147,7 @@ public class CreateManualFilingCommandHandlerTests
         await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         await filingRepo.Received(1).AddAsync(
-            Arg.Is<Filing>(f => f.PaymentNotes == "Isplata na brokerski racun"),
+            Arg.Is<Filing>(f => f!.PaymentNotes == "Isplata na brokerski racun"),
             Arg.Any<CancellationToken>());
     }
 
@@ -161,7 +161,7 @@ public class CreateManualFilingCommandHandlerTests
         await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         await filingRepo.Received(1).AddAsync(
-            Arg.Is<Filing>(f => f.PaymentNotes == null),
+            Arg.Is<Filing>(f => f!.PaymentNotes == null),
             Arg.Any<CancellationToken>());
     }
 
@@ -177,7 +177,7 @@ public class CreateManualFilingCommandHandlerTests
         await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
         await filingRepo.Received(1).AddAsync(
-            Arg.Is<Filing>(f => f.WhtPaidRsd == 0m),
+            Arg.Is<Filing>(f => f!.WhtPaidRsd == 0m),
             Arg.Any<CancellationToken>());
     }
 
