@@ -82,39 +82,10 @@ public sealed class NbsExchangeRateFetcher : IExchangeRateFetcher
                     $"Failed to parse NBS XML: {ex.Message}"));
         }
 
-        // Step 7: Extract entries — empty = weekend / Serbian holiday
-        var entries = doc.Descendants()
-            .Where(e => e.Name.LocalName == "ExchangeRateXml")
-            .ToList();
-
-        if (entries.Count == 0)
-            return Result<ExchangeRate, Error>.Failure(
-                new Error("RATE_NOT_FOUND",
-                    $"No NBS exchange rate published for {date:yyyy-MM-dd}."));
-
-        // Step 8: Build batch — only SupportedCurrencies are retained
-        var allRates = new List<ExchangeRate>();
-        foreach (var entry in entries)
-        {
-            var code = entry.Elements()
-                .FirstOrDefault(e => e.Name.LocalName == "CurrencyCodeCo")?.Value;
-            if (code is null || !SupportedCurrencies.Contains(code)) continue;
-
-            var unitStr = entry.Elements()
-                .FirstOrDefault(e => e.Name.LocalName == "Unit")?.Value;
-            var middleStr = entry.Elements()
-                .FirstOrDefault(e => e.Name.LocalName == "Middle_Rate")?.Value;
-
-            if (unitStr is null || middleStr is null) continue;
-
-            if (!decimal.TryParse(unitStr, NumberStyles.Any, CultureInfo.InvariantCulture, out var unit) || unit == 0) continue;
-            if (!decimal.TryParse(middleStr, NumberStyles.Any, CultureInfo.InvariantCulture, out var middle)) continue;
-
-            var rateToRsd = middle / unit;
-            if (rateToRsd <= 0) continue;
-
-            allRates.Add(new ExchangeRate(date, code.ToUpperInvariant(), rateToRsd));
-        }
+        // Step 7-8: Extract entries (empty = weekend / Serbian holiday) and build the
+        // batch of supported-currency rates. "No entries" and "no supported rate among
+        // the entries" both surface as the same RATE_NOT_FOUND error below.
+        var allRates = ParseRatesFromXml(doc, date);
 
         if (allRates.Count == 0)
             return Result<ExchangeRate, Error>.Failure(
@@ -138,5 +109,39 @@ public sealed class NbsExchangeRateFetcher : IExchangeRateFetcher
             : Result<ExchangeRate, Error>.Failure(
                 new Error("RATE_NOT_FOUND",
                     $"Currency '{upperCurrency}' not found in NBS response for {date:yyyy-MM-dd}."));
+    }
+
+    // Extracted from FetchRateAsync (S3776 cognitive complexity) — parses the
+    // <ExchangeRateXml> entries and keeps only rates for SupportedCurrencies.
+    private static List<ExchangeRate> ParseRatesFromXml(XDocument doc, DateOnly date)
+    {
+        var entries = doc.Descendants()
+            .Where(e => e.Name.LocalName == "ExchangeRateXml")
+            .ToList();
+
+        var allRates = new List<ExchangeRate>();
+        foreach (var entry in entries)
+        {
+            var code = entry.Elements()
+                .FirstOrDefault(e => e.Name.LocalName == "CurrencyCodeCo")?.Value;
+            if (code is null || !SupportedCurrencies.Contains(code)) continue;
+
+            var unitStr = entry.Elements()
+                .FirstOrDefault(e => e.Name.LocalName == "Unit")?.Value;
+            var middleStr = entry.Elements()
+                .FirstOrDefault(e => e.Name.LocalName == "Middle_Rate")?.Value;
+
+            if (unitStr is null || middleStr is null) continue;
+
+            if (!decimal.TryParse(unitStr, NumberStyles.Any, CultureInfo.InvariantCulture, out var unit) || unit == 0) continue;
+            if (!decimal.TryParse(middleStr, NumberStyles.Any, CultureInfo.InvariantCulture, out var middle)) continue;
+
+            var rateToRsd = middle / unit;
+            if (rateToRsd <= 0) continue;
+
+            allRates.Add(new ExchangeRate(date, code.ToUpperInvariant(), rateToRsd));
+        }
+
+        return allRates;
     }
 }
