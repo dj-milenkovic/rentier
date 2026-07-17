@@ -28,7 +28,7 @@ public class SetUserPreferenceCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         await _repo.Received(1).SaveAsync(
-            Arg.Is<UserPreference>(p => p.Key == "Language" && p.Value == "en"),
+            Arg.Is<UserPreference>(p => p!.Key == "Language" && p.Value == "en"),
             Arg.Any<CancellationToken>());
     }
 

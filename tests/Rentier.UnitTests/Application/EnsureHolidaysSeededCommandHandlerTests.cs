@@ -59,7 +59,7 @@ public class EnsureHolidaysSeededCommandHandlerTests
 
         await _repo.Received(1).SaveHolidaysAsync(
             Arg.Any<IReadOnlyList<PublicHoliday>>(),
-            Arg.Is<HolidayYearRange>(range => range.StartYear == expectedStartYear),
+            Arg.Is<HolidayYearRange>(range => range!.StartYear == expectedStartYear),
             Arg.Any<CancellationToken>());
     }
 }

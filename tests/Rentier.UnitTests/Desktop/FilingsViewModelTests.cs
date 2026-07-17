@@ -87,7 +87,7 @@ public class FilingsViewModelTests
         using var _ = vm.Activator.Activate();
 
         getFilings.Received(1).HandleAsync(
-            Arg.Is<GetFilingsQuery>(q => q.Filter == FilingFilterMode.All),
+            Arg.Is<GetFilingsQuery>(q => q!.Filter == FilingFilterMode.All),
             Arg.Any<CancellationToken>());
     }
 
@@ -261,7 +261,7 @@ public class FilingsViewModelTests
         // Second call should use Unpaid filter
         getFilings.Received(1).HandleAsync(
             Arg.Is<GetFilingsQuery>(q =>
-                q.Filter == FilingFilterMode.Unpaid && q.Page == 1),
+                q!.Filter == FilingFilterMode.Unpaid && q.Page == 1),
             Arg.Any<CancellationToken>());
     }
 
@@ -287,7 +287,7 @@ public class FilingsViewModelTests
         // Default state: FilingDeadline DESC
         getFilings.Received(1).HandleAsync(
             Arg.Is<GetFilingsQuery>(q =>
-                q.SortColumn == FilingSortColumn.FilingDeadline &&
+                q!.SortColumn == FilingSortColumn.FilingDeadline &&
                 q.SortDescending == true),
             Arg.Any<CancellationToken>());
     }

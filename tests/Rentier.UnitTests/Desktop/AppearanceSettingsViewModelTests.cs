@@ -59,7 +59,7 @@ public class AppearanceSettingsViewModelTests
 
         await Task.Delay(50, TestContext.Current.CancellationToken); // allow async fire-and-forget
         await handler.Received(1).HandleAsync(
-            Arg.Is<SetUserPreferenceCommand>(c => c.Key == "Language" && c.Value == "en"),
+            Arg.Is<SetUserPreferenceCommand>(c => c!.Key == "Language" && c.Value == "en"),
             Arg.Any<CancellationToken>());
     }
 
@@ -77,7 +77,7 @@ public class AppearanceSettingsViewModelTests
         await Task.Delay(50, TestContext.Current.CancellationToken);
 
         await handler.Received(1).HandleAsync(
-            Arg.Is<SetUserPreferenceCommand>(c => c.Value == "en"),
+            Arg.Is<SetUserPreferenceCommand>(c => c!.Value == "en"),
             Arg.Any<CancellationToken>());
     }
 

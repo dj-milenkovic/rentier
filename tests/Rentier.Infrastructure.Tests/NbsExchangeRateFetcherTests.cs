@@ -123,7 +123,7 @@ public class NbsExchangeRateFetcherTests
         result.Value.RateToRsd.Should().Be(117.5952m);
 
         await repo.Received(1).SaveBatchAsync(
-            Arg.Is<IReadOnlyList<ExchangeRate>>(list => list.Count == 3),
+            Arg.Is<IReadOnlyList<ExchangeRate>>(list => list!.Count == 3),
             Arg.Any<CancellationToken>());
     }
 

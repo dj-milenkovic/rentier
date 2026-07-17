@@ -118,7 +118,7 @@ public class ProcessReportsCommandHandlerTests
         result.Value.ReportsErrored.Should().Be(1);
         result.Value.EventErrors.Should().BeEmpty();
         await reportRepo.Received(1).UpdateAsync(
-            Arg.Is<Report>(r => r.Status == ReportStatus.Error),
+            Arg.Is<Report>(r => r!.Status == ReportStatus.Error),
             Arg.Any<CancellationToken>());
     }
 
@@ -184,7 +184,7 @@ public class ProcessReportsCommandHandlerTests
         result.Value.ReportsProcessed.Should().Be(1);
         result.Value.FilingsCreated.Should().Be(0);
         await reportRepo.Received(1).UpdateAsync(
-            Arg.Is<Report>(r => r.Status == ReportStatus.Processed),
+            Arg.Is<Report>(r => r!.Status == ReportStatus.Processed),
             Arg.Any<CancellationToken>());
     }
 
@@ -224,7 +224,7 @@ public class ProcessReportsCommandHandlerTests
 
         result.Value.FilingsCreated.Should().Be(1);
         await filingRepo.Received(1).AddAsync(
-            Arg.Is<Filing>(f => f.PayingEntity == "ACME Corp" && f.IncomeType == IncomeType.Dividend),
+            Arg.Is<Filing>(f => f!.PayingEntity == "ACME Corp" && f.IncomeType == IncomeType.Dividend),
             Arg.Any<CancellationToken>());
     }
 
@@ -422,7 +422,7 @@ public class ProcessReportsCommandHandlerTests
 
         result.Value.FilingsCreated.Should().Be(1);
         await filingRepo.Received(1).AddAsync(
-            Arg.Is<Filing>(f => f.IncomeType == IncomeType.Interest),
+            Arg.Is<Filing>(f => f!.IncomeType == IncomeType.Interest),
             Arg.Any<CancellationToken>());
     }
 
@@ -589,7 +589,7 @@ public class ProcessReportsCommandHandlerTests
 
         // WHT of 15 USD * 117 RSD/USD = 1755 RSD — verify WHT was applied (not zero)
         await filingRepo.Received(1).AddAsync(
-            Arg.Is<Filing>(f => f.WhtPaidRsd > 0m),
+            Arg.Is<Filing>(f => f!.WhtPaidRsd > 0m),
             Arg.Any<CancellationToken>());
     }
 

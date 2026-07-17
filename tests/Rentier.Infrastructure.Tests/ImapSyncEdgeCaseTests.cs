@@ -179,7 +179,7 @@ public class ImapSyncEdgeCaseTests
 
         // The report name should use today's date (not 0001-01-01)
         await reportRepo.Received(1).AddAsync(
-            Arg.Is<Report>(r => r.ReportName.StartsWith(DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd"))),
+            Arg.Is<Report>(r => r!.ReportName.StartsWith(DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd"))),
             Arg.Any<CancellationToken>());
     }
 

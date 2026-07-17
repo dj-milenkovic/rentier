@@ -119,7 +119,7 @@ public class ProfileSettingsViewModelTests
 
         saveHandler.Received(1).HandleAsync(
             Arg.Is<SaveTaxpayerProfileCommand>(c =>
-                c.Jmbg == "1234567890123" &&
+                c!.Jmbg == "1234567890123" &&
                 c.FullName == "John Doe" &&
                 c.Address == "123 Main St" &&
                 c.OpstinaCode == "018"),
