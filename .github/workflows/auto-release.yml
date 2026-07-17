@@ -1,8 +1,9 @@
 name: Auto Release
 
-# Runs on every push to main (i.e. every merged PR).
-# Reads the PR title (or commit subject), computes the next semver from it,
-# creates an annotated git tag, then calls the reusable release.yml pipeline.
+# Manually triggered (workflow_dispatch) when ready to cut a release.
+# Reads the latest commit's PR title (or commit subject), computes the next semver
+# from it, creates an annotated git tag, then builds all platforms and publishes a
+# GitHub Release — all within this single workflow.
 #
 # Version bump rules (Conventional Commits):
 #   feat!: / fix!: / *!: or body contains "BREAKING CHANGE:" → MAJOR
@@ -154,8 +155,8 @@ jobs:
         env:
           NEW_TAG: ${{ needs.compute-version.outputs.tag }}
           NEW_VERSION: ${{ needs.compute-version.outputs.version }}
-          # GITHUB_TOKEN tag pushes don't re-trigger push.tags workflows,
-          # but release.yml is invoked directly via workflow_call below.
+          # GITHUB_TOKEN tag pushes don't re-trigger push.tags workflows, but the
+          # build + release jobs below run directly in this same workflow run.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name  "github-actions[bot]"
