@@ -238,21 +238,9 @@ public sealed class ImporterSettingsViewModel : ReactiveObject, IActivatableView
 
                 var result = await _updateImporter.HandleAsync(cmd, ct);
                 if (result.IsSuccess)
-                {
-                    var savedId = SelectedImporter.Id;
-                    await ReloadImportersAsync(ct);
-                    _selectedImporter = ImporterItems.FirstOrDefault(i => i.Id == savedId);
-                    this.RaisePropertyChanged(nameof(SelectedImporter));
-                    if (_selectedImporter != null)
-                        PopulateFormFromDto(_selectedImporter.Dto);
-                    else
-                        ClearForm();
-                    SuccessMessage = Strings.Importers_Saved_Confirmation;
-                }
+                    await ReloadReselectAndPopulateAsync(SelectedImporter.Id, ct);
                 else
-                {
                     ErrorMessage = result.Error.Message;
-                }
             }
             else
             {
@@ -268,27 +256,29 @@ public sealed class ImporterSettingsViewModel : ReactiveObject, IActivatableView
 
                 var result = await _addImporter.HandleAsync(cmd, ct);
                 if (result.IsSuccess)
-                {
-                    var newId = result.Value;
-                    await ReloadImportersAsync(ct);
-                    _selectedImporter = ImporterItems.FirstOrDefault(i => i.Id == newId);
-                    this.RaisePropertyChanged(nameof(SelectedImporter));
-                    if (_selectedImporter != null)
-                        PopulateFormFromDto(_selectedImporter.Dto);
-                    else
-                        ClearForm();
-                    SuccessMessage = Strings.Importers_Saved_Confirmation;
-                }
+                    await ReloadReselectAndPopulateAsync(result.Value, ct);
                 else
-                {
                     ErrorMessage = result.Error.Message;
-                }
             }
         }
         finally
         {
             IsLoading = false;
         }
+    }
+
+    /// <summary>Shared post-save flow for both add and edit: reload the importer list,
+    /// reselect the saved item, and repopulate the form (or clear it if it vanished).</summary>
+    private async Task ReloadReselectAndPopulateAsync(Guid savedId, CancellationToken ct)
+    {
+        await ReloadImportersAsync(ct);
+        _selectedImporter = ImporterItems.FirstOrDefault(i => i.Id == savedId);
+        this.RaisePropertyChanged(nameof(SelectedImporter));
+        if (_selectedImporter != null)
+            PopulateFormFromDto(_selectedImporter.Dto);
+        else
+            ClearForm();
+        SuccessMessage = Strings.Importers_Saved_Confirmation;
     }
 
     private async Task OnDeleteAsync(CancellationToken ct)

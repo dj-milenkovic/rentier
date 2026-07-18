@@ -75,14 +75,20 @@ public sealed class ExportFilingCommandHandler
     /// </summary>
     private static string BuildFileName(Filing filing)
     {
-        var raw = !string.IsNullOrWhiteSpace(filing.Ticker)
-            ? filing.Ticker
-            : !string.IsNullOrWhiteSpace(filing.PayingEntity)
-                ? filing.PayingEntity
-                : null;
-
+        var raw = FirstNonBlank(filing.Ticker, filing.PayingEntity);
         var identifier = Sanitize(raw);
         return $"{filing.IncomeDate:yyyy-MM}-{identifier}.xml";
+    }
+
+    /// <summary>Returns the first value that is not null/whitespace, or null if none qualify.</summary>
+    private static string? FirstNonBlank(params string?[] values)
+    {
+        foreach (var value in values)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+                return value;
+        }
+        return null;
     }
 
     private static readonly char[] UnsafeChars = ['\\', '/', ':', '*', '?', '"', '<', '>', '|', ' '];

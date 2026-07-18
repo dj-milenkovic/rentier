@@ -1,6 +1,7 @@
 using Avalonia.Media;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reactive.Concurrency;
+using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using ReactiveUI;
 using Rentier.Application.DTOs;
@@ -151,7 +152,7 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
             RunCheckForUpdateAsync, canCheck, outputScheduler: _outputScheduler);
 
         DismissUpdateCommand = ReactiveCommand.CreateFromTask(
-            async () => { CurrentUpdateState = UpdateState.Dismissed; await Task.CompletedTask; },
+            OnDismissUpdateAsync,
             canDismiss, outputScheduler: _outputScheduler);
 
         BeginUpdateCommand = ReactiveCommand.CreateFromTask(
@@ -162,17 +163,38 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
             canRestart, outputScheduler: _outputScheduler);
 
         DismissRestartCommand = ReactiveCommand.CreateFromTask(
-            async () =>
-            {
-                updateService.ScheduleUpdateOnExit();
-                CurrentUpdateState = UpdateState.Idle;
-                await Task.CompletedTask;
-            },
+            OnDismissRestartAsync,
             canDismissRestart, outputScheduler: _outputScheduler);
 
         RetryDownloadCommand = ReactiveCommand.CreateFromTask(
             RunDownloadUpdateAsync, canRetry, outputScheduler: _outputScheduler);
 
+        NavigationEntries = BuildNavigationEntries(provider, localizationService);
+
+        _selectedEntry = NavigationEntries[0];
+        _currentViewModel = NavigationEntries[0].ViewModel!;
+        _lastContentEntry = NavigationEntries[0];
+        NavigationEntries[0].IsActive = true;
+
+        this.WhenActivated(RegisterActivation);
+    }
+
+    private async Task OnDismissUpdateAsync()
+    {
+        CurrentUpdateState = UpdateState.Dismissed;
+        await Task.CompletedTask;
+    }
+
+    private async Task OnDismissRestartAsync()
+    {
+        _updateService.ScheduleUpdateOnExit();
+        CurrentUpdateState = UpdateState.Idle;
+        await Task.CompletedTask;
+    }
+
+    private IReadOnlyList<NavigationEntry> BuildNavigationEntries(
+        IServiceProvider provider, ILocalizationService localizationService)
+    {
         // ── Dashboard navigation ──────────────────────────────────────────────
         FilingsViewModel? filingsVm = null;
         Action navigateToDashboardFilings = () =>
@@ -237,7 +259,7 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
 
         settingsGroup.Children = new[] { profileChild, holidaysChild, mailboxesChild, importersChild, languageChild };
 
-        NavigationEntries = new List<NavigationEntry>
+        return new List<NavigationEntry>
         {
             new(localizationService["Nav_Dashboard"], dashboardVm, Icon: NavIcon("NavHomeIcon")),
             new(localizationService["Nav_Filings"],   filingsVm,   Icon: NavIcon("NavFilingsIcon")),
@@ -250,52 +272,47 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
             importersChild,
             languageChild,
         };
+    }
 
-        _selectedEntry = NavigationEntries[0];
-        _currentViewModel = dashboardVm;
-        _lastContentEntry = NavigationEntries[0];
-        NavigationEntries[0].IsActive = true;
+    private void RegisterActivation(CompositeDisposable disposables)
+    {
+        this.WhenAnyValue(x => x.SelectedEntry)
+            .Subscribe(entry =>
+            {
+                if (entry is null) return;
 
-        this.WhenActivated(disposables =>
-        {
-            this.WhenAnyValue(x => x.SelectedEntry)
-                .Subscribe(entry =>
+                if (entry.IsGroup)
                 {
-                    if (entry is null) return;
-
-                    if (entry.IsGroup)
-                    {
-                        entry.ToggleExpanded();
-                    }
-                    else if (entry.ViewModel is not null)
-                    {
-                        if (_lastContentEntry is not null)
-                            _lastContentEntry.IsActive = false;
-                        entry.IsActive = true;
-                        _lastContentEntry = entry;
-                        CurrentViewModel = entry.ViewModel;
-                    }
-
-                    SelectedEntry = null;
-                })
-                .DisposeWith(disposables);
-
-            localizationService.CultureChanged
-                .ObserveOn(_outputScheduler)
-                .Subscribe(_ =>
+                    entry.ToggleExpanded();
+                }
+                else if (entry.ViewModel is not null)
                 {
-                    UpdateNavigationLabels(localizationService);
-                    this.RaisePropertyChanged(nameof(UpdateAvailableText));
-                    this.RaisePropertyChanged(nameof(DownloadingText));
-                    this.RaisePropertyChanged(nameof(UpdateFailedText));
-                })
-                .DisposeWith(disposables);
+                    if (_lastContentEntry is not null)
+                        _lastContentEntry.IsActive = false;
+                    entry.IsActive = true;
+                    _lastContentEntry = entry;
+                    CurrentViewModel = entry.ViewModel;
+                }
 
-            // Auto-check for updates in background on activation
-            Observable.StartAsync(() => RunCheckForUpdateAsync(), RxSchedulers.TaskpoolScheduler)
-                .Subscribe()
-                .DisposeWith(disposables);
-        });
+                SelectedEntry = null;
+            })
+            .DisposeWith(disposables);
+
+        _localizationService.CultureChanged
+            .ObserveOn(_outputScheduler)
+            .Subscribe(_ =>
+            {
+                UpdateNavigationLabels(_localizationService);
+                this.RaisePropertyChanged(nameof(UpdateAvailableText));
+                this.RaisePropertyChanged(nameof(DownloadingText));
+                this.RaisePropertyChanged(nameof(UpdateFailedText));
+            })
+            .DisposeWith(disposables);
+
+        // Auto-check for updates in background on activation
+        Observable.StartAsync(() => RunCheckForUpdateAsync(), RxSchedulers.TaskpoolScheduler)
+            .Subscribe()
+            .DisposeWith(disposables);
     }
 
     private async Task RunCheckForUpdateAsync()
