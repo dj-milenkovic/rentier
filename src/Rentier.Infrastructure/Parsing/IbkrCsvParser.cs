@@ -9,7 +9,7 @@ using Rentier.Application.Parsing;
 
 namespace Rentier.Infrastructure.Parsing;
 
-public sealed class IbkrCsvParser : IStatementParser
+public sealed partial class IbkrCsvParser : IStatementParser
 {
     public async Task<Result<StatementParseResult, Error>> ParseAsync(
         Stream csvStream, CancellationToken cancellationToken = default)
@@ -93,15 +93,15 @@ public sealed class IbkrCsvParser : IStatementParser
     // ISIN pattern: (XX0000000000) — 2 letter country + 9 alphanumeric + 1 digit.
     // IBKR descriptions look like "AAPL(US0378331005) Cash Dividend" — the ISIN is mid-string,
     // so we strip the ISIN parenthetical and everything after it to recover the entity name.
-    private static readonly Regex IsinPattern =
-        new(@"\s*\([A-Z]{2}[A-Z0-9]{9}\d\).*$", RegexOptions.Compiled);
+    [GeneratedRegex(@"\s*\([A-Z]{2}[A-Z0-9]{9}\d\).*$")]
+    private static partial Regex IsinPattern();
 
     /// <summary>
     /// Strips the ISIN parenthetical (e.g. "(US0378331005)") and any trailing suffix from a
     /// description, returning just the entity name (e.g. "AAPL" from "AAPL(US0378331005) Cash Dividend").
     /// </summary>
     private static string StripIsin(string description) =>
-        IsinPattern.Replace(description, string.Empty).Trim();
+        IsinPattern().Replace(description, string.Empty).Trim();
 
     private static (Dictionary<(string Entity, DateOnly Date, string Currency), DividendRecord> dividends,
                     List<ParseError> errors)
@@ -185,13 +185,7 @@ public sealed class IbkrCsvParser : IStatementParser
             var currency = record[2].Trim();
             var description = record[4].Trim();
 
-            InterestType type;
-            if (description.Contains("Credit Interest", StringComparison.OrdinalIgnoreCase))
-                type = InterestType.Credit;
-            else if (description.Contains("Debit Interest", StringComparison.OrdinalIgnoreCase))
-                type = InterestType.Debit;
-            else
-                continue; // silently skip non-standard interest rows
+            if (!TryClassifyInterestType(description, out var type)) continue; // silently skip non-standard interest rows
 
             if (!TryParseDate(record[3].Trim(), rowIndex, "interest ", errors, out var date)) continue;
             if (!TryParseDecimal(record[5].Trim(), rowIndex, ROW_AMOUNT_INVALID, "interest amount", errors, out var rawAmount)) continue;
@@ -206,6 +200,28 @@ public sealed class IbkrCsvParser : IStatementParser
         }
 
         return (dict, errors);
+    }
+
+    /// <summary>
+    /// Classifies an Interest section row description as Credit or Debit interest.
+    /// Returns false for non-standard rows, which callers silently skip.
+    /// </summary>
+    private static bool TryClassifyInterestType(string description, out InterestType type)
+    {
+        if (description.Contains("Credit Interest", StringComparison.OrdinalIgnoreCase))
+        {
+            type = InterestType.Credit;
+            return true;
+        }
+
+        if (description.Contains("Debit Interest", StringComparison.OrdinalIgnoreCase))
+        {
+            type = InterestType.Debit;
+            return true;
+        }
+
+        type = default;
+        return false;
     }
 
     private static (IReadOnlyList<IbkrExchangeRate> rates, List<ParseError> errors)
