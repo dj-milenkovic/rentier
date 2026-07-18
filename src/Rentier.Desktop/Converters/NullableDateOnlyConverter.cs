@@ -17,7 +17,9 @@ public sealed class NullableDateOnlyConverter : IValueConverter
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        if (value is string s && DateOnly.TryParse(s, out var d))
+        // Invariant parse matches the ISO (yyyy-MM-dd) format emitted by Convert,
+        // keeping the round-trip stable regardless of the OS culture.
+        if (value is string s && DateOnly.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.None, out var d))
             return (DateOnly?)d;
         return null;
     }
