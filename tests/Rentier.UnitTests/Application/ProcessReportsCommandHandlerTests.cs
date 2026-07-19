@@ -30,7 +30,7 @@ public class ProcessReportsCommandHandlerTests
     private Importer MakeImporter(Guid? profileId = null)
     {
         var importer = Importer.Create("Test Importer");
-        importer.UpdateDetails("Test Importer", ReportType.IbkrCsv, profileId ?? ProfileId, null, "", "", "", "");
+        importer.UpdateDetails(new ImporterDetails("Test Importer", ReportType.IbkrCsv, profileId ?? ProfileId, null, "", "", "", ""));
         return importer;
     }
 

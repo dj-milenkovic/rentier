@@ -33,7 +33,7 @@ public class ProcessReportsProgressTests
     private Importer MakeImporter()
     {
         var importer = Importer.Create("Test Importer");
-        importer.UpdateDetails("Test Importer", ReportType.IbkrCsv, _profileId, null, "", "", "", "");
+        importer.UpdateDetails(new ImporterDetails("Test Importer", ReportType.IbkrCsv, _profileId, null, "", "", "", ""));
         return importer;
     }
 

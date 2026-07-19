@@ -7,6 +7,7 @@ using Rentier.Application.Interfaces;
 using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
+using Rentier.Domain.ValueObjects;
 using Xunit;
 
 namespace Rentier.UnitTests.Application;
@@ -111,9 +112,9 @@ public class ExportFilingCommandHandlerTests
         var filing = MakeFiling(reportId: report.Id, paymentNotes: "Should not be used");
         var profile = MakeProfile();
         var importer = Importer.Create("Test Importer");
-        importer.UpdateDetails(
+        importer.UpdateDetails(new ImporterDetails(
             "Test Importer", ReportType.IbkrCsv, null, null, "", "", "",
-            paymentNotes: "Importer payment notes");
+            PaymentNotes: "Importer payment notes"));
         _filings.GetByIdAsync(filing.Id, Arg.Any<CancellationToken>()).Returns(filing);
         _profiles.GetAsync(Arg.Any<CancellationToken>()).Returns(profile);
         _reports.GetByIdAsync(report.Id, Arg.Any<CancellationToken>()).Returns(report);

@@ -27,7 +27,7 @@ public class ProcessReportsCommandHandlerPartialSuccessTests
     private Importer MakeImporter()
     {
         var importer = Importer.Create("Test Importer");
-        importer.UpdateDetails("Test Importer", ReportType.IbkrCsv, ProfileId, null, "", "", "", "");
+        importer.UpdateDetails(new ImporterDetails("Test Importer", ReportType.IbkrCsv, ProfileId, null, "", "", "", ""));
         return importer;
     }
 

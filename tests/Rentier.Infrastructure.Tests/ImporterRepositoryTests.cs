@@ -3,6 +3,7 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
+using Rentier.Domain.ValueObjects;
 using Rentier.Infrastructure.Persistence;
 using Rentier.Infrastructure.Repositories;
 
@@ -90,7 +91,7 @@ public sealed class ImporterRepositoryTests : IAsyncLifetime
         var importer = MakeImporter("Original");
         await _repository.AddAsync(importer, TestContext.Current.CancellationToken);
 
-        importer.UpdateDetails("Updated", ReportType.IbkrCsv, null, null, "from@x.com", "Subject:", @"\d+", "Notes");
+        importer.UpdateDetails(new ImporterDetails("Updated", ReportType.IbkrCsv, null, null, "from@x.com", "Subject:", @"\d+", "Notes"));
         await _repository.UpdateAsync(importer, TestContext.Current.CancellationToken);
 
         var found = await _repository.GetByIdAsync(importer.Id, TestContext.Current.CancellationToken);

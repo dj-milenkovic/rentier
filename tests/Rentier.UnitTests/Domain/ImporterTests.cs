@@ -2,6 +2,7 @@ using FluentAssertions;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 using Rentier.Domain.Exceptions;
+using Rentier.Domain.ValueObjects;
 using Xunit;
 
 namespace Rentier.UnitTests;
@@ -68,7 +69,7 @@ public sealed class ImporterTests
         var profileId = Guid.NewGuid();
         var mailboxId = Guid.NewGuid();
 
-        importer.UpdateDetails(
+        importer.UpdateDetails(new ImporterDetails(
             "Updated",
             ReportType.IbkrCsv,
             profileId,
@@ -76,7 +77,7 @@ public sealed class ImporterTests
             "from@example.com",
             "Subject:",
             @"\d+\.csv",
-            "Payment notes here");
+            "Payment notes here"));
 
         importer.DisplayName.Should().Be("Updated");
         importer.ReportType.Should().Be(ReportType.IbkrCsv);
@@ -92,7 +93,7 @@ public sealed class ImporterTests
     public void UpdateDetails_EmptyDisplayName_ThrowsDomainException()
     {
         var importer = Importer.Create("Test");
-        var act = () => importer.UpdateDetails(string.Empty, ReportType.IbkrCsv, null, null, "", "", "", "");
+        var act = () => importer.UpdateDetails(new ImporterDetails(string.Empty, ReportType.IbkrCsv, null, null, "", "", "", ""));
         act.Should().Throw<DomainException>();
     }
 
@@ -100,7 +101,7 @@ public sealed class ImporterTests
     public void UpdateDetails_NullForeignKeys_AcceptsNulls()
     {
         var importer = Importer.Create("Test");
-        var act = () => importer.UpdateDetails("Test", ReportType.IbkrCsv, null, null, "", "", "", "");
+        var act = () => importer.UpdateDetails(new ImporterDetails("Test", ReportType.IbkrCsv, null, null, "", "", "", ""));
         act.Should().NotThrow();
         importer.TaxpayerProfileId.Should().BeNull();
         importer.MailboxId.Should().BeNull();
@@ -110,7 +111,7 @@ public sealed class ImporterTests
     public void UpdateDetails_NullFilters_StoresEmptyString()
     {
         var importer = Importer.Create("Test");
-        importer.UpdateDetails("Test", ReportType.IbkrCsv, null, null, null!, null!, null!, null!);
+        importer.UpdateDetails(new ImporterDetails("Test", ReportType.IbkrCsv, null, null, null!, null!, null!, null!));
         importer.FromFilter.Should().Be(string.Empty);
         importer.SubjectFilter.Should().Be(string.Empty);
         importer.AttachmentRegex.Should().Be(string.Empty);
@@ -123,7 +124,7 @@ public sealed class ImporterTests
         var importer = Importer.Create("Test");
         var longName = new string('x', 201);
 
-        var act = () => importer.UpdateDetails(longName, ReportType.IbkrCsv, null, null, "", "", "", "");
+        var act = () => importer.UpdateDetails(new ImporterDetails(longName, ReportType.IbkrCsv, null, null, "", "", "", ""));
 
         act.Should().Throw<DomainException>();
     }
@@ -142,7 +143,7 @@ public sealed class ImporterTests
         var importer = Importer.Create("Test");
         var notes = new string('x', 4000);
 
-        var act = () => importer.UpdateDetails("Test", ReportType.IbkrCsv, null, null, "", "", "", notes);
+        var act = () => importer.UpdateDetails(new ImporterDetails("Test", ReportType.IbkrCsv, null, null, "", "", "", notes));
 
         act.Should().NotThrow();
     }
@@ -152,7 +153,7 @@ public sealed class ImporterTests
     {
         var importer = Importer.Create("Test");
         var longNotes = new string('x', 4001);
-        var act = () => importer.UpdateDetails("Test", ReportType.IbkrCsv, null, null, "", "", "", longNotes);
+        var act = () => importer.UpdateDetails(new ImporterDetails("Test", ReportType.IbkrCsv, null, null, "", "", "", longNotes));
         act.Should().Throw<DomainException>();
     }
 }

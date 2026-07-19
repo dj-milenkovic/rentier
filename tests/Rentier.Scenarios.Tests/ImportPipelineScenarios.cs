@@ -49,8 +49,8 @@ public sealed class ImportPipelineScenarios : IAsyncLifetime
         await _fixture.Get<ITaxpayerProfileRepository>().SaveAsync(profile, ct);
 
         var importer = Importer.Create("IBKR Test");
-        importer.UpdateDetails("IBKR Test", ReportType.IbkrCsv, profile.Id, null,
-            string.Empty, string.Empty, string.Empty, string.Empty);
+        importer.UpdateDetails(new ImporterDetails("IBKR Test", ReportType.IbkrCsv, profile.Id, null,
+            string.Empty, string.Empty, string.Empty, string.Empty));
         await _fixture.Get<IImporterRepository>().AddAsync(importer, ct);
         _importerId = importer.Id;
     }
