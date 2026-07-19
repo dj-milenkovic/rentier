@@ -97,13 +97,15 @@ public sealed class MigrationChainTests : IAsyncDisposable
         await _context.TaxpayerProfiles.AddAsync(profile, TestContext.Current.CancellationToken);
 
         var filing = Domain.Entities.Filing.CreateFromIncome(
-            profileId, Domain.Enums.IncomeType.Dividend,
-            "Test Corp", new DateOnly(2024, 6, 15),
-            grossIncomeRsd: 123456.78m,
-            whtPaidRsd: 18518.61m,
-            grossTaxPayableRsd: 18518.61m,
-            taxPayableRsd: 0m,
-            filingDeadline: new DateOnly(2024, 7, 15));
+            new Domain.ValueObjects.FilingInfo(
+                Domain.Enums.IncomeType.Dividend, "Test Corp", new DateOnly(2024, 6, 15),
+                grossIncomeRsd: 123456.78m,
+                whtPaidRsd: 18518.61m,
+                grossTaxPayableRsd: 18518.61m,
+                taxPayableRsd: 0m),
+            profileId,
+            filingDeadline: new DateOnly(2024, 7, 15),
+            provenance: new Domain.ValueObjects.FilingProvenance());
         await _context.Filings.AddAsync(filing, TestContext.Current.CancellationToken);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
