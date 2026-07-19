@@ -43,7 +43,7 @@ public class FilingCreateFromIncomeTests
             new FilingInfo(IncomeType.Dividend, "  ", TestDate, 1000m, 0m, 150m, 150m),
             ProfileId, Deadline, new FilingProvenance());
 
-        act.Should().Throw<DomainException>().WithMessage("*PayingEntity must not be empty*");
+        act.Should().Throw<DomainException>().WithMessage("*PayingEntity must not be null or whitespace*");
     }
 
     [Fact]
@@ -53,7 +53,7 @@ public class FilingCreateFromIncomeTests
             new FilingInfo(IncomeType.Dividend, null!, TestDate, 1000m, 0m, 150m, 150m),
             ProfileId, Deadline, new FilingProvenance());
 
-        act.Should().Throw<DomainException>().WithMessage("*PayingEntity must not be empty*");
+        act.Should().Throw<DomainException>().WithMessage("*PayingEntity must not be null or whitespace*");
     }
 
     [Fact]
