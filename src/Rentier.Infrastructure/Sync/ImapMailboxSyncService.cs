@@ -139,7 +139,8 @@ public class ImapMailboxSyncService(
                         $"Downloading email {processed}/{total}: {subject}",
                         SyncProgressSeverity.Info));
 
-                    reportsCreated += await ProcessAttachmentsAsync(message, importer, uid, subject, attachmentRegex, ct);
+                    await ProcessAttachmentsAsync(
+                        message, importer, uid, subject, attachmentRegex, () => reportsCreated++, ct);
 
                     // Track the highest UID seen for this importer
                     if (maxUid == null || uid.Id > maxUid.Value)
@@ -161,19 +162,20 @@ public class ImapMailboxSyncService(
 
     /// <summary>
     /// Finds attachments on a single message that match the importer's attachment regex
-    /// and persists any not already recorded for this importer. Returns the number of
-    /// reports created.
+    /// and persists any not already recorded for this importer. Invokes
+    /// <paramref name="onReportCreated"/> immediately after each report is persisted so
+    /// the caller's running count reflects reports already saved even if a later
+    /// attachment on the same message throws.
     /// </summary>
-    private async Task<int> ProcessAttachmentsAsync(
+    private async Task ProcessAttachmentsAsync(
         MimeMessage message,
         Importer importer,
         UniqueId uid,
         string subject,
         Regex? attachmentRegex,
+        Action onReportCreated,
         CancellationToken ct)
     {
-        var reportsCreated = 0;
-
         foreach (var attachment in message.Attachments.OfType<MimePart>())
         {
             var filename = attachment.FileName
@@ -208,10 +210,8 @@ public class ImapMailboxSyncService(
 
             var report = Report.Create(importer.Id, reportName, content, uid.Id, emailDate);
             await reportRepository.AddAsync(report, ct);
-            reportsCreated++;
+            onReportCreated();
         }
-
-        return reportsCreated;
     }
 
     /// <summary>Per-importer outcome of <see cref="ProcessImporterAsync"/>: reports created, the highest UID seen, and any errors encountered.</summary>
