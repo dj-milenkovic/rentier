@@ -5,6 +5,7 @@ using Rentier.Application.Handlers;
 using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
+using Rentier.Domain.ValueObjects;
 using Xunit;
 
 namespace Rentier.UnitTests.Application;
@@ -22,9 +23,8 @@ public class UpdateFilingStatusCommandHandlerTests
     private static Filing MakeInitFiling()
     {
         return Filing.CreateFromIncome(
-            Guid.NewGuid(), IncomeType.Dividend, "ACME",
-            new DateOnly(2024, 3, 1), 1000m, 150m, 150m, 0m,
-            new DateOnly(2024, 4, 30));
+            new FilingInfo(IncomeType.Dividend, "ACME", new DateOnly(2024, 3, 1), 1000m, 150m, 150m, 0m),
+            Guid.NewGuid(), new DateOnly(2024, 4, 30), new FilingProvenance());
     }
 
     [Fact]

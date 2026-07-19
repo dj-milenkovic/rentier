@@ -37,12 +37,9 @@ public class ExportFilingCommandHandlerTests
         string? paymentNotes = null)
     {
         var filing = Filing.CreateFromIncome(
-            Guid.NewGuid(), incomeType, payingEntity,
-            new DateOnly(2025, 3, 15), 10000m, 1500m, 1500m, 0m,
-            new DateOnly(2025, 4, 30),
-            reportId,
-            ticker: ticker,
-            paymentNotes: paymentNotes);
+            new FilingInfo(incomeType, payingEntity, new DateOnly(2025, 3, 15), 10000m, 1500m, 1500m, 0m),
+            Guid.NewGuid(), new DateOnly(2025, 4, 30),
+            new FilingProvenance(ReportId: reportId, Ticker: ticker, PaymentNotes: paymentNotes));
         return filing;
     }
 

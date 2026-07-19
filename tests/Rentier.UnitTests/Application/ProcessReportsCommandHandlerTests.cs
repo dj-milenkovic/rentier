@@ -42,8 +42,8 @@ public class ProcessReportsCommandHandlerTests
     {
         var grossTax = Math.Round(grossRsd * 0.15m, 2, MidpointRounding.AwayFromZero);
         return Filing.CreateFromIncome(
-            ProfileId, incomeType, entity, TestDate,
-            grossRsd, 0m, grossTax, grossTax, TestDate.AddDays(30));
+            new FilingInfo(incomeType, entity, TestDate, grossRsd, 0m, grossTax, grossTax),
+            ProfileId, TestDate.AddDays(30), new FilingProvenance());
     }
 
     private static ExchangeRateResolver MakeResolver(IExchangeRateFetcher fetcher)
