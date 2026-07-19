@@ -93,13 +93,7 @@ public sealed class ManualFilingCalculator
 
             // ── Tax calculation ──────────────────────────────────────────────
             var info = await TaxCalculationService.CalculateAsync(
-                incomeType,
-                tickerUpper,
-                incomeDate,
-                grossAmount,
-                currency,
-                wht,
-                currency,
+                new IncomeTaxInput(incomeType, tickerUpper, incomeDate, grossAmount, currency, wht, currency),
                 (_, _) => Task.FromResult(resolution.Rate),
                 ct);
 

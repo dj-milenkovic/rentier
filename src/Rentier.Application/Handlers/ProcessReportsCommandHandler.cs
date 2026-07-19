@@ -106,9 +106,12 @@ public sealed class ProcessReportsCommandHandler
                 report.SetStatus(status);
                 await _reportRepository.UpdateAsync(report, ct);
 
-                _logger.LogInformation(
-                    "Report {ReportId}: {Total} events, {Created} filings, {Failed} failed -> {Status}",
-                    report.Id, succeeded + failed, created, failed, status);
+                if (_logger.IsEnabled(LogLevel.Information))
+                {
+                    _logger.LogInformation(
+                        "Report {ReportId}: {Total} events, {Created} filings, {Failed} failed -> {Status}",
+                        report.Id, succeeded + failed, created, failed, status);
+                }
 
                 var severity = ReportProcessingDetail.ClassifySeverity(created, failed);
                 var detail = new ReportProcessingDetail(report.ReportName, created, failed, severity);
@@ -179,54 +182,10 @@ public sealed class ProcessReportsCommandHandler
                 var wht = parsed.Withholdings.FirstOrDefault(w =>
                     w.Date == div.Date && w.EntityName == div.EntityName && w.Currency == div.Currency);
 
-                var rateResult = await rateProvider(div.Date, div.Currency);
-                if (!rateResult.IsSuccess)
-                {
-                    errors.Add(new FilingCreationError(div.EntityName, div.Date, div.Currency, div.Amount,
-                        rateResult.Error.Code, rateResult.Error.Message));
-                    failed++;
-                    continue;
-                }
-                var resolution = rateResult.Value;
-
-                var info = await TaxCalculationService.CalculateAsync(
-                    IncomeType.Dividend, div.EntityName, div.Date, div.Amount, div.Currency,
-                    wht?.Amount ?? 0m, wht?.Currency ?? div.Currency,
-                    (_, _) => Task.FromResult(resolution.Rate), ct);
-
-                var existingFilings = await _filingRepository.GetByIncomeEventAsync(
-                    taxpayerProfileId, div.EntityName, div.Date, ct);
-
-                if (existingFilings.Count == 0)
-                {
-                    var deadline = FilingDeadlineCalculator.CalculateDeadline(div.Date, holidays);
-                    var filing = Filing.CreateFromIncome(
-                        taxpayerProfileId, IncomeType.Dividend, div.EntityName, div.Date,
-                        info.GrossIncomeRsd, info.WhtPaidRsd, info.GrossTaxPayableRsd, info.TaxPayableRsd,
-                        deadline, report.Id, resolution.SourceDate, resolution.SourceType,
-                        ticker: div.EntityName);
-
-                    await _filingRepository.AddAsync(filing, ct);
-                    created++;
-                    succeeded++;
-                }
-                else if (existingFilings.Any(f => f.GrossIncomeRsd == info.GrossIncomeRsd))
-                {
-                    // Same income event already imported from an earlier statement — idempotent skip
-                    succeeded++;
-                }
-                else
-                {
-                    // Same entity + income date but a different gross: the broker issued a
-                    // correction (reversal + re-book) in a later statement. Never silently
-                    // create a second filing for the same income event — flag for review.
-                    errors.Add(new FilingCreationError(div.EntityName, div.Date, div.Currency, div.Amount,
-                        ErrorCodes.FILING_CORRECTION_DETECTED,
-                        $"Broker correction detected for '{div.EntityName}' on {div.Date:yyyy-MM-dd}: " +
-                        $"an existing filing has gross {existingFilings[0].GrossIncomeRsd} RSD, this statement " +
-                        $"yields {info.GrossIncomeRsd} RSD. Review and adjust the filing manually."));
-                    failed++;
-                }
+                var outcome = await ProcessIncomeEventAsync(
+                    IncomeType.Dividend, div.EntityName, div.Date, div.Currency, div.Amount, wht,
+                    taxpayerProfileId, report.Id, holidays, rateProvider, errors, ct);
+                ApplyOutcome(outcome, ref created, ref succeeded, ref failed);
             }
             catch (OperationCanceledException)
             {
@@ -248,52 +207,10 @@ public sealed class ProcessReportsCommandHandler
                 var wht = parsed.Withholdings.FirstOrDefault(w =>
                     w.Date == interest.Date && w.EntityName == interest.EntityName);
 
-                var rateResult = await rateProvider(interest.Date, interest.Currency);
-                if (!rateResult.IsSuccess)
-                {
-                    errors.Add(new FilingCreationError(interest.EntityName, interest.Date, interest.Currency, interest.Amount,
-                        rateResult.Error.Code, rateResult.Error.Message));
-                    failed++;
-                    continue;
-                }
-                var resolution = rateResult.Value;
-
-                var info = await TaxCalculationService.CalculateAsync(
-                    IncomeType.Interest, interest.EntityName, interest.Date, interest.Amount, interest.Currency,
-                    wht?.Amount ?? 0m, wht?.Currency ?? interest.Currency,
-                    (_, _) => Task.FromResult(resolution.Rate), ct);
-
-                var existingFilings = await _filingRepository.GetByIncomeEventAsync(
-                    taxpayerProfileId, interest.EntityName, interest.Date, ct);
-
-                if (existingFilings.Count == 0)
-                {
-                    var deadline = FilingDeadlineCalculator.CalculateDeadline(interest.Date, holidays);
-                    var filing = Filing.CreateFromIncome(
-                        taxpayerProfileId, IncomeType.Interest, interest.EntityName, interest.Date,
-                        info.GrossIncomeRsd, info.WhtPaidRsd, info.GrossTaxPayableRsd, info.TaxPayableRsd,
-                        deadline, report.Id, resolution.SourceDate, resolution.SourceType,
-                        ticker: interest.EntityName);
-
-                    await _filingRepository.AddAsync(filing, ct);
-                    created++;
-                    succeeded++;
-                }
-                else if (existingFilings.Any(f => f.GrossIncomeRsd == info.GrossIncomeRsd))
-                {
-                    // Same income event already imported from an earlier statement — idempotent skip
-                    succeeded++;
-                }
-                else
-                {
-                    // Same entity + income date but a different gross: broker correction — flag for review
-                    errors.Add(new FilingCreationError(interest.EntityName, interest.Date, interest.Currency, interest.Amount,
-                        ErrorCodes.FILING_CORRECTION_DETECTED,
-                        $"Broker correction detected for '{interest.EntityName}' on {interest.Date:yyyy-MM-dd}: " +
-                        $"an existing filing has gross {existingFilings[0].GrossIncomeRsd} RSD, this statement " +
-                        $"yields {info.GrossIncomeRsd} RSD. Review and adjust the filing manually."));
-                    failed++;
-                }
+                var outcome = await ProcessIncomeEventAsync(
+                    IncomeType.Interest, interest.EntityName, interest.Date, interest.Currency, interest.Amount, wht,
+                    taxpayerProfileId, report.Id, holidays, rateProvider, errors, ct);
+                ApplyOutcome(outcome, ref created, ref succeeded, ref failed);
             }
             catch (OperationCanceledException)
             {
@@ -308,6 +225,97 @@ public sealed class ProcessReportsCommandHandler
 
         return Result<(int, int, int, List<FilingCreationError>), Error>.Success(
             (created, succeeded, failed, errors));
+    }
+
+    private static void ApplyOutcome(IncomeEventOutcome outcome, ref int created, ref int succeeded, ref int failed)
+    {
+        switch (outcome)
+        {
+            case IncomeEventOutcome.Created:
+                created++;
+                succeeded++;
+                break;
+            case IncomeEventOutcome.SkippedIdempotent:
+                succeeded++;
+                break;
+            case IncomeEventOutcome.Failed:
+                failed++;
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Resolves the exchange rate, computes tax, and either creates a filing, skips a
+    /// duplicate (idempotent re-import), or flags a broker correction for manual review.
+    /// Shared tail for both the dividend and interest processing loops; the caller
+    /// supplies the already-matched WHT record (the matching rule differs per income type).
+    /// </summary>
+    private async Task<IncomeEventOutcome> ProcessIncomeEventAsync(
+        IncomeType incomeType,
+        string entityName,
+        DateOnly date,
+        string currency,
+        decimal amount,
+        WithholdingTaxRecord? wht,
+        Guid taxpayerProfileId,
+        Guid reportId,
+        HolidayConf holidays,
+        Func<DateOnly, string, Task<Result<RateResolution, Error>>> rateProvider,
+        List<FilingCreationError> errors,
+        CancellationToken ct)
+    {
+        var rateResult = await rateProvider(date, currency);
+        if (!rateResult.IsSuccess)
+        {
+            errors.Add(new FilingCreationError(entityName, date, currency, amount,
+                rateResult.Error.Code, rateResult.Error.Message));
+            return IncomeEventOutcome.Failed;
+        }
+        var resolution = rateResult.Value;
+
+        var info = await TaxCalculationService.CalculateAsync(
+            new IncomeTaxInput(incomeType, entityName, date, amount, currency, wht?.Amount ?? 0m, wht?.Currency ?? currency),
+            (_, _) => Task.FromResult(resolution.Rate), ct);
+
+        var existingFilings = await _filingRepository.GetByIncomeEventAsync(taxpayerProfileId, entityName, date, ct);
+
+        if (existingFilings.Count == 0)
+        {
+            var deadline = FilingDeadlineCalculator.CalculateDeadline(date, holidays);
+            var filing = Filing.CreateFromIncome(
+                info, taxpayerProfileId, deadline,
+                new FilingProvenance(
+                    ReportId: reportId,
+                    ExchangeRateSourceDate: resolution.SourceDate,
+                    ExchangeRateSourceType: resolution.SourceType,
+                    Ticker: entityName));
+
+            await _filingRepository.AddAsync(filing, ct);
+            return IncomeEventOutcome.Created;
+        }
+
+        if (existingFilings.Any(f => f.GrossIncomeRsd == info.GrossIncomeRsd))
+        {
+            // Same income event already imported from an earlier statement — idempotent skip
+            return IncomeEventOutcome.SkippedIdempotent;
+        }
+
+        // Same entity + income date but a different gross: the broker issued a
+        // correction (reversal + re-book) in a later statement. Never silently
+        // create a second filing for the same income event — flag for review.
+        errors.Add(new FilingCreationError(entityName, date, currency, amount,
+            ErrorCodes.FILING_CORRECTION_DETECTED,
+            $"Broker correction detected for '{entityName}' on {date:yyyy-MM-dd}: " +
+            $"an existing filing has gross {existingFilings[0].GrossIncomeRsd} RSD, this statement " +
+            $"yields {info.GrossIncomeRsd} RSD. Review and adjust the filing manually."));
+        return IncomeEventOutcome.Failed;
+    }
+
+    private enum IncomeEventOutcome
+    {
+        Created,
+        SkippedIdempotent,
+        Failed,
     }
 
     private Func<DateOnly, string, Task<Result<RateResolution, Error>>> BuildRateProvider(
