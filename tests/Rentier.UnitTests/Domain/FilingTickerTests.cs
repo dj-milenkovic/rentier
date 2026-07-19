@@ -2,6 +2,7 @@ using FluentAssertions;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 using Rentier.Domain.Exceptions;
+using Rentier.Domain.ValueObjects;
 using Xunit;
 
 namespace Rentier.UnitTests;
@@ -13,8 +14,9 @@ public class FilingTickerTests
     private static readonly DateOnly Deadline = new(2025, 4, 30);
 
     private static Filing Make(string? ticker) =>
-        Filing.CreateFromIncome(ProfileId, IncomeType.Dividend, "ACME Corp",
-            TestDate, 1000m, 150m, 150m, 0m, Deadline, ticker: ticker);
+        Filing.CreateFromIncome(
+            new FilingInfo(IncomeType.Dividend, "ACME Corp", TestDate, 1000m, 150m, 150m, 0m),
+            ProfileId, Deadline, new FilingProvenance(Ticker: ticker));
 
     [Fact]
     public void CreateFromIncome_WithValidTicker_StoresTrimmedValue()
