@@ -71,11 +71,14 @@ public sealed partial class WindowsCredentialStore : ICredentialStore
         return Task.Run<Result<VoidResult, Error>>(() =>
         {
             byte[] blob = Encoding.UTF8.GetBytes(secret);
-            IntPtr ptr = Marshal.AllocHGlobal(blob.Length);
-            IntPtr targetNamePtr = Marshal.StringToHGlobalUni(key);
-            IntPtr userNamePtr = Marshal.StringToHGlobalUni(key);
+            IntPtr ptr = IntPtr.Zero;
+            IntPtr targetNamePtr = IntPtr.Zero;
+            IntPtr userNamePtr = IntPtr.Zero;
             try
             {
+                ptr = Marshal.AllocHGlobal(blob.Length);
+                targetNamePtr = Marshal.StringToHGlobalUni(key);
+                userNamePtr = Marshal.StringToHGlobalUni(key);
                 Marshal.Copy(blob, 0, ptr, blob.Length);
                 var cred = new CredentialW
                 {
@@ -98,9 +101,12 @@ public sealed partial class WindowsCredentialStore : ICredentialStore
             {
                 // Zero the blob before freeing to avoid leaving the secret in unmanaged memory
                 Array.Clear(blob, 0, blob.Length);
-                Marshal.FreeHGlobal(ptr);
-                Marshal.FreeHGlobal(targetNamePtr);
-                Marshal.FreeHGlobal(userNamePtr);
+                if (ptr != IntPtr.Zero)
+                    Marshal.FreeHGlobal(ptr);
+                if (targetNamePtr != IntPtr.Zero)
+                    Marshal.FreeHGlobal(targetNamePtr);
+                if (userNamePtr != IntPtr.Zero)
+                    Marshal.FreeHGlobal(userNamePtr);
             }
         }, ct);
     }
