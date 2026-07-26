@@ -42,7 +42,7 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
 
@@ -120,7 +120,7 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
 
@@ -157,7 +157,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
 
       - uses: actions/setup-dotnet@v6.0.0
         with:
@@ -221,7 +221,7 @@ jobs:
       matrix:
         rid: [osx-x64, osx-arm64]
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
 
       - uses: actions/setup-dotnet@v6.0.0
         with:
@@ -329,7 +329,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
 
       - uses: actions/setup-dotnet@v6.0.0
         with:
@@ -476,7 +476,7 @@ jobs:
     permissions:
       contents: write  # create GitHub Release + upload release assets
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
 
