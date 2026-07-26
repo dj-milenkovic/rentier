@@ -9,6 +9,7 @@ using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
+using Rentier.Desktop.Resources;
 using Rentier.Desktop.ViewModels;
 using Rentier.Domain.Enums;
 using Xunit;
@@ -438,6 +439,32 @@ public class ManualFilingViewModelTests
         vm.PaymentNotesText = "Isplata na brokerski racun";
 
         vm.IsDirty.Should().BeTrue();
+    }
+
+    // ── Rate Source Display (US4) ─────────────────────────────────────────────
+
+    [Fact]
+    public async Task RateSourceDisplay_ExactRateSourcePreview_ReturnsExactFormattedText()
+    {
+        var dto = MakePreviewDto();
+        var vm = CreateFilledVm(calcHandler: MockCalculateHandler(dto));
+
+        await vm.CalculateCommand.Execute();
+
+        vm.RateSourceDisplay.Should().Be(
+            string.Format(Strings.ManualFiling_RateSource_Exact, TestDate.ToString("yyyy-MM-dd")));
+    }
+
+    [Fact]
+    public async Task RateSourceDisplay_FallbackRateSourcePreview_ReturnsFallbackFormattedText()
+    {
+        var dto = MakePreviewDto() with { ExchangeRateSourceType = ExchangeRateSourceType.Fallback };
+        var vm = CreateFilledVm(calcHandler: MockCalculateHandler(dto));
+
+        await vm.CalculateCommand.Execute();
+
+        vm.RateSourceDisplay.Should().Be(
+            string.Format(Strings.ManualFiling_RateSource_Fallback, TestDate.ToString("yyyy-MM-dd")));
     }
 
     // ── No-WHT path through ViewModel (US2) ──────────────────────────────────
