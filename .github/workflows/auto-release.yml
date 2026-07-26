@@ -159,7 +159,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.0
 
-      - uses: actions/setup-dotnet@v5.3.0
+      - uses: actions/setup-dotnet@v6.0.0
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
@@ -223,7 +223,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.0
 
-      - uses: actions/setup-dotnet@v5.3.0
+      - uses: actions/setup-dotnet@v6.0.0
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
@@ -331,7 +331,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.0
 
-      - uses: actions/setup-dotnet@v5.3.0
+      - uses: actions/setup-dotnet@v6.0.0
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
