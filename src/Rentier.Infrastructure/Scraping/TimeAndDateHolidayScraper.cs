@@ -1,5 +1,6 @@
 using System.Globalization;
 using AngleSharp;
+using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
@@ -46,39 +47,7 @@ internal sealed class TimeAndDateHolidayScraper : IHolidayImporter
                 return Result<IReadOnlyList<HolidayEntryDto>, Error>.Failure(
                     new Error("HOLIDAY_PARSE_ERROR", "Could not find #holidays-table in the response"));
 
-            var rows = table.QuerySelectorAll("tr");
-            var results = new List<HolidayEntryDto>();
-            var seenDates = new HashSet<DateOnly>();
-
-            foreach (var row in rows)
-            {
-                if (!row.ClassList.Contains("showrow"))
-                    continue;
-
-                var dateText = row.QuerySelector("th")?.TextContent.Trim();
-                if (string.IsNullOrWhiteSpace(dateText))
-                    continue;
-
-                var tds = row.QuerySelectorAll("td");
-                if (tds.Length < 3)
-                    continue;
-
-                var name = tds[1].QuerySelector("a")?.TextContent.Trim()
-                    ?? tds[1].TextContent.Trim();
-                var type = tds[2].TextContent.Trim();
-
-                if (!type.Contains("National Holiday") || string.IsNullOrWhiteSpace(name))
-                    continue;
-
-                DateOnly date;
-                if (!TryParseHolidayDate(dateText, year, out date))
-                    continue;
-
-                if (!seenDates.Add(date))
-                    continue;
-
-                results.Add(new HolidayEntryDto(date, name));
-            }
+            var results = ParseHolidays(table, year);
 
             if (results.Count == 0)
                 return Result<IReadOnlyList<HolidayEntryDto>, Error>.Failure(
@@ -91,6 +60,54 @@ internal sealed class TimeAndDateHolidayScraper : IHolidayImporter
             return Result<IReadOnlyList<HolidayEntryDto>, Error>.Failure(
                 new Error("HOLIDAY_PARSE_ERROR", $"Failed to parse holidays: {ex.Message}"));
         }
+    }
+
+    // Extracted from ImportAsync (S3776 cognitive complexity) — walks the holiday
+    // table rows, keeping the first occurrence of each date.
+    private static List<HolidayEntryDto> ParseHolidays(IElement table, int year)
+    {
+        var rows = table.QuerySelectorAll("tr");
+        var results = new List<HolidayEntryDto>();
+        var seenDates = new HashSet<DateOnly>();
+
+        foreach (var row in rows)
+        {
+            var entry = ParseHolidayRow(row, year);
+            if (entry is null)
+                continue;
+
+            if (!seenDates.Add(entry.Date))
+                continue;
+
+            results.Add(entry);
+        }
+
+        return results;
+    }
+
+    private static HolidayEntryDto? ParseHolidayRow(IElement row, int year)
+    {
+        if (!row.ClassList.Contains("showrow"))
+            return null;
+
+        var dateText = row.QuerySelector("th")?.TextContent.Trim();
+        if (string.IsNullOrWhiteSpace(dateText))
+            return null;
+
+        var tds = row.QuerySelectorAll("td");
+        if (tds.Length < 3)
+            return null;
+
+        var name = tds[1].QuerySelector("a")?.TextContent.Trim()
+            ?? tds[1].TextContent.Trim();
+        var type = tds[2].TextContent.Trim();
+
+        if (!type.Contains("National Holiday") || string.IsNullOrWhiteSpace(name))
+            return null;
+
+        return TryParseHolidayDate(dateText, year, out var date)
+            ? new HolidayEntryDto(date, name)
+            : null;
     }
 
     private static bool TryParseHolidayDate(string text, int year, out DateOnly date)
