@@ -35,7 +35,7 @@ public sealed class GetFilingsQueryHandler
         if (paginationFailure is not null)
             return paginationFailure;
 
-        if (!Enum.IsDefined(typeof(Enums.FilingSortColumn), query.SortColumn))
+        if (!Enum.IsDefined<Enums.FilingSortColumn>(query.SortColumn))
             return Result<FilingsPageResult, Error>.Failure(
                 new Error(ErrorCodes.PAGINATION_VALIDATION_FAILED, "Invalid sort column."));
 
