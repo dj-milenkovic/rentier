@@ -172,6 +172,44 @@ public class HolidaySettingsViewModelTests
         raised.Should().Contain(nameof(HolidaySettingsViewModel.HasItems));
     }
 
+    // Characterisation tests for the S3267 loop→Where refactor: lock in today's
+    // filtering behaviour so the rewrite cannot silently change it.
+    [Fact]
+    public void RebuildFilteredEntries_EntryOutsideYearRange_IsExcluded()
+    {
+        var queryHandler = MockQueryHandler();
+        queryHandler.HandleAsync(Arg.Any<GetHolidayConfQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<HolidayConfDto, Error>.Success(new HolidayConfDto(new List<HolidayEntryDto>(), 2024, 2024)));
+        var vm = CreateVm(query: queryHandler);
+        using var _ = vm.Activator.Activate();
+
+        vm.StartYear = 2024;
+        vm.EndYear = 2024;
+        vm.Entries.Clear();
+        vm.Entries.Add(HolidayEntryViewModel.FromDto(new HolidayEntryDto(new DateOnly(2024, 1, 1), "In range")));
+        vm.Entries.Add(HolidayEntryViewModel.FromDto(new HolidayEntryDto(new DateOnly(2023, 1, 1), "Out of range")));
+
+        vm.FilteredEntries.Select(e => e.Date).Should().ContainSingle()
+            .Which.Should().Be(new DateOnly(2024, 1, 1));
+    }
+
+    [Fact]
+    public void RebuildFilteredEntries_UnsetDateRow_IsAlwaysIncluded()
+    {
+        var queryHandler = MockQueryHandler();
+        queryHandler.HandleAsync(Arg.Any<GetHolidayConfQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<HolidayConfDto, Error>.Success(new HolidayConfDto(new List<HolidayEntryDto>(), 2024, 2024)));
+        var vm = CreateVm(query: queryHandler);
+        using var _ = vm.Activator.Activate();
+
+        vm.StartYear = 2024;
+        vm.EndYear = 2024;
+        vm.Entries.Clear();
+        vm.Entries.Add(HolidayEntryViewModel.FromDto(new HolidayEntryDto(DateOnly.MinValue, "New row")));
+
+        vm.FilteredEntries.Should().ContainSingle();
+    }
+
     private static void SetIsLoading(HolidaySettingsViewModel vm, bool value)
         => typeof(HolidaySettingsViewModel)
             .GetProperty(nameof(HolidaySettingsViewModel.IsLoading), BindingFlags.Public | BindingFlags.Instance)!
