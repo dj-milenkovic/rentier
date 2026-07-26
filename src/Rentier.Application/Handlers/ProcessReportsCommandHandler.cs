@@ -183,8 +183,9 @@ public sealed class ProcessReportsCommandHandler
                     w.Date == div.Date && w.EntityName == div.EntityName && w.Currency == div.Currency);
 
                 var outcome = await ProcessIncomeEventAsync(
-                    IncomeType.Dividend, div.EntityName, div.Date, div.Currency, div.Amount, wht,
-                    taxpayerProfileId, report.Id, holidays, rateProvider, errors, ct);
+                    new IncomeEventRequest(IncomeType.Dividend, div.EntityName, div.Date, div.Currency, div.Amount, wht,
+                        taxpayerProfileId, report.Id, holidays),
+                    rateProvider, errors, ct);
                 ApplyOutcome(outcome, ref created, ref succeeded, ref failed);
             }
             catch (OperationCanceledException)
@@ -208,8 +209,9 @@ public sealed class ProcessReportsCommandHandler
                     w.Date == interest.Date && w.EntityName == interest.EntityName);
 
                 var outcome = await ProcessIncomeEventAsync(
-                    IncomeType.Interest, interest.EntityName, interest.Date, interest.Currency, interest.Amount, wht,
-                    taxpayerProfileId, report.Id, holidays, rateProvider, errors, ct);
+                    new IncomeEventRequest(IncomeType.Interest, interest.EntityName, interest.Date, interest.Currency, interest.Amount, wht,
+                        taxpayerProfileId, report.Id, holidays),
+                    rateProvider, errors, ct);
                 ApplyOutcome(outcome, ref created, ref succeeded, ref failed);
             }
             catch (OperationCanceledException)
@@ -244,6 +246,18 @@ public sealed class ProcessReportsCommandHandler
         }
     }
 
+    /// <summary>Groups the per-event data needed to process a single dividend or interest entry.</summary>
+    private sealed record IncomeEventRequest(
+        IncomeType IncomeType,
+        string EntityName,
+        DateOnly Date,
+        string Currency,
+        decimal Amount,
+        WithholdingTaxRecord? Wht,
+        Guid TaxpayerProfileId,
+        Guid ReportId,
+        HolidayConf Holidays);
+
     /// <summary>
     /// Resolves the exchange rate, computes tax, and either creates a filing, skips a
     /// duplicate (idempotent re-import), or flags a broker correction for manual review.
@@ -251,44 +265,38 @@ public sealed class ProcessReportsCommandHandler
     /// supplies the already-matched WHT record (the matching rule differs per income type).
     /// </summary>
     private async Task<IncomeEventOutcome> ProcessIncomeEventAsync(
-        IncomeType incomeType,
-        string entityName,
-        DateOnly date,
-        string currency,
-        decimal amount,
-        WithholdingTaxRecord? wht,
-        Guid taxpayerProfileId,
-        Guid reportId,
-        HolidayConf holidays,
+        IncomeEventRequest request,
         Func<DateOnly, string, Task<Result<RateResolution, Error>>> rateProvider,
         List<FilingCreationError> errors,
         CancellationToken ct)
     {
-        var rateResult = await rateProvider(date, currency);
+        var rateResult = await rateProvider(request.Date, request.Currency);
         if (!rateResult.IsSuccess)
         {
-            errors.Add(new FilingCreationError(entityName, date, currency, amount,
+            errors.Add(new FilingCreationError(request.EntityName, request.Date, request.Currency, request.Amount,
                 rateResult.Error.Code, rateResult.Error.Message));
             return IncomeEventOutcome.Failed;
         }
         var resolution = rateResult.Value;
 
         var info = await TaxCalculationService.CalculateAsync(
-            new IncomeTaxInput(incomeType, entityName, date, amount, currency, wht?.Amount ?? 0m, wht?.Currency ?? currency),
+            new IncomeTaxInput(request.IncomeType, request.EntityName, request.Date, request.Amount, request.Currency,
+                request.Wht?.Amount ?? 0m, request.Wht?.Currency ?? request.Currency),
             (_, _) => Task.FromResult(resolution.Rate), ct);
 
-        var existingFilings = await _filingRepository.GetByIncomeEventAsync(taxpayerProfileId, entityName, date, ct);
+        var existingFilings = await _filingRepository.GetByIncomeEventAsync(
+            request.TaxpayerProfileId, request.EntityName, request.Date, ct);
 
         if (existingFilings.Count == 0)
         {
-            var deadline = FilingDeadlineCalculator.CalculateDeadline(date, holidays);
+            var deadline = FilingDeadlineCalculator.CalculateDeadline(request.Date, request.Holidays);
             var filing = Filing.CreateFromIncome(
-                info, taxpayerProfileId, deadline,
+                info, request.TaxpayerProfileId, deadline,
                 new FilingProvenance(
-                    ReportId: reportId,
+                    ReportId: request.ReportId,
                     ExchangeRateSourceDate: resolution.SourceDate,
                     ExchangeRateSourceType: resolution.SourceType,
-                    Ticker: entityName));
+                    Ticker: request.EntityName));
 
             await _filingRepository.AddAsync(filing, ct);
             return IncomeEventOutcome.Created;
@@ -303,9 +311,9 @@ public sealed class ProcessReportsCommandHandler
         // Same entity + income date but a different gross: the broker issued a
         // correction (reversal + re-book) in a later statement. Never silently
         // create a second filing for the same income event — flag for review.
-        errors.Add(new FilingCreationError(entityName, date, currency, amount,
+        errors.Add(new FilingCreationError(request.EntityName, request.Date, request.Currency, request.Amount,
             ErrorCodes.FILING_CORRECTION_DETECTED,
-            $"Broker correction detected for '{entityName}' on {date:yyyy-MM-dd}: " +
+            $"Broker correction detected for '{request.EntityName}' on {request.Date:yyyy-MM-dd}: " +
             $"an existing filing has gross {existingFilings[0].GrossIncomeRsd} RSD, this statement " +
             $"yields {info.GrossIncomeRsd} RSD. Review and adjust the filing manually."));
         return IncomeEventOutcome.Failed;
