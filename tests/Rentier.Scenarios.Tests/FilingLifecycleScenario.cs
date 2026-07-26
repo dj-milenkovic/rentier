@@ -4,6 +4,7 @@ using Rentier.Application.Handlers;
 using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
+using Rentier.Domain.ValueObjects;
 using Xunit;
 
 namespace Rentier.Scenarios.Tests;
@@ -41,15 +42,17 @@ public sealed class FilingLifecycleScenario : IAsyncLifetime
         await _profileRepository.SaveAsync(taxpayerProfile, TestContext.Current.CancellationToken);
 
         var filing = Filing.CreateFromIncome(
+            new FilingInfo(
+                incomeType: IncomeType.Dividend,
+                payingEntity: "Test Corp",
+                incomeDate: new DateOnly(2024, 6, 15),
+                grossIncomeRsd: 100_000m,
+                whtPaidRsd: 15_000m,
+                grossTaxPayableRsd: 15_000m,
+                taxPayableRsd: 0m),
             taxpayerProfileId: taxpayerProfile.Id,
-            incomeType: IncomeType.Dividend,
-            payingEntity: "Test Corp",
-            incomeDate: new DateOnly(2024, 6, 15),
-            grossIncomeRsd: 100_000m,
-            whtPaidRsd: 15_000m,
-            grossTaxPayableRsd: 15_000m,
-            taxPayableRsd: 0m,
-            filingDeadline: new DateOnly(2024, 7, 30));
+            filingDeadline: new DateOnly(2024, 7, 30),
+            provenance: new FilingProvenance());
 
         await _filingRepository.AddAsync(filing, TestContext.Current.CancellationToken);
 
@@ -78,15 +81,17 @@ public sealed class FilingLifecycleScenario : IAsyncLifetime
         await _profileRepository.SaveAsync(taxpayerProfile, TestContext.Current.CancellationToken);
 
         var filing = Filing.CreateFromIncome(
+            new FilingInfo(
+                incomeType: IncomeType.Interest,
+                payingEntity: "Bank XYZ",
+                incomeDate: new DateOnly(2024, 3, 10),
+                grossIncomeRsd: 50_000m,
+                whtPaidRsd: 7_500m,
+                grossTaxPayableRsd: 7_500m,
+                taxPayableRsd: 0m),
             taxpayerProfileId: taxpayerProfile.Id,
-            incomeType: IncomeType.Interest,
-            payingEntity: "Bank XYZ",
-            incomeDate: new DateOnly(2024, 3, 10),
-            grossIncomeRsd: 50_000m,
-            whtPaidRsd: 7_500m,
-            grossTaxPayableRsd: 7_500m,
-            taxPayableRsd: 0m,
-            filingDeadline: new DateOnly(2024, 4, 30));
+            filingDeadline: new DateOnly(2024, 4, 30),
+            provenance: new FilingProvenance());
 
         await _filingRepository.AddAsync(filing, TestContext.Current.CancellationToken);
 
@@ -120,15 +125,17 @@ public sealed class FilingLifecycleScenario : IAsyncLifetime
         await _profileRepository.SaveAsync(taxpayerProfile, TestContext.Current.CancellationToken);
 
         var filing = Filing.CreateFromIncome(
+            new FilingInfo(
+                incomeType: IncomeType.Dividend,
+                payingEntity: "Invalid Corp",
+                incomeDate: new DateOnly(2024, 5, 20),
+                grossIncomeRsd: 75_000m,
+                whtPaidRsd: 11_250m,
+                grossTaxPayableRsd: 11_250m,
+                taxPayableRsd: 0m),
             taxpayerProfileId: taxpayerProfile.Id,
-            incomeType: IncomeType.Dividend,
-            payingEntity: "Invalid Corp",
-            incomeDate: new DateOnly(2024, 5, 20),
-            grossIncomeRsd: 75_000m,
-            whtPaidRsd: 11_250m,
-            grossTaxPayableRsd: 11_250m,
-            taxPayableRsd: 0m,
-            filingDeadline: new DateOnly(2024, 6, 30));
+            filingDeadline: new DateOnly(2024, 6, 30),
+            provenance: new FilingProvenance());
 
         await _filingRepository.AddAsync(filing, TestContext.Current.CancellationToken);
 

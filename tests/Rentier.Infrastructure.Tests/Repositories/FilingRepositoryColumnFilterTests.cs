@@ -5,6 +5,7 @@ using Rentier.Application.Enums;
 using Rentier.Application.Queries;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
+using Rentier.Domain.ValueObjects;
 using Rentier.Infrastructure.Persistence;
 using Rentier.Infrastructure.Repositories;
 
@@ -51,12 +52,14 @@ public class FilingRepositoryColumnFilterTests : IAsyncLifetime
     // ── helper factories ────────────────────────────────────────────────────
 
     private Filing MakeDividend(string entity, DateOnly incomeDate, decimal tax = 100m)
-        => Filing.CreateFromIncome(_profile.Id, IncomeType.Dividend, entity,
-            incomeDate, 1000m, 0m, tax, tax, incomeDate.AddDays(30));
+        => Filing.CreateFromIncome(
+            new FilingInfo(IncomeType.Dividend, entity, incomeDate, 1000m, 0m, tax, tax),
+            _profile.Id, incomeDate.AddDays(30), new FilingProvenance());
 
     private Filing MakeInterest(string entity, DateOnly incomeDate, decimal tax = 50m)
-        => Filing.CreateFromIncome(_profile.Id, IncomeType.Interest, entity,
-            incomeDate, 500m, 0m, tax, tax, incomeDate.AddDays(30));
+        => Filing.CreateFromIncome(
+            new FilingInfo(IncomeType.Interest, entity, incomeDate, 500m, 0m, tax, tax),
+            _profile.Id, incomeDate.AddDays(30), new FilingProvenance());
 
     // ── multi-select Statuses (feature 050) ────────────────────────────────
 
@@ -164,8 +167,9 @@ public class FilingRepositoryColumnFilterTests : IAsyncLifetime
         // Deadline is incomeDate + 30 days, stored in SQLite as "yyyy-MM-dd" TEXT.
         // Searching "2024" should only match the 2024 deadline.
         var f2024 = MakeDividend("Co2024", new DateOnly(2024, 1, 1)); // deadline → 2024-01-31
-        var f2025 = Filing.CreateFromIncome(_profile.Id, IncomeType.Dividend, "Co2025",
-            new DateOnly(2025, 1, 1), 1000m, 0m, 100m, 100m, new DateOnly(2025, 1, 31));
+        var f2025 = Filing.CreateFromIncome(
+            new FilingInfo(IncomeType.Dividend, "Co2025", new DateOnly(2025, 1, 1), 1000m, 0m, 100m, 100m),
+            _profile.Id, new DateOnly(2025, 1, 31), new FilingProvenance());
 
         await _repository.AddAsync(f2024, TestContext.Current.CancellationToken);
         await _repository.AddAsync(f2025, TestContext.Current.CancellationToken);

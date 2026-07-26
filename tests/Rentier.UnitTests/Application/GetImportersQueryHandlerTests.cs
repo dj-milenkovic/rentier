@@ -5,6 +5,7 @@ using Rentier.Application.Queries;
 using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
+using Rentier.Domain.ValueObjects;
 using Xunit;
 
 namespace Rentier.UnitTests.Application;
@@ -37,10 +38,10 @@ public sealed class GetImportersQueryHandlerTests
         var mailboxId = Guid.NewGuid();
 
         var a = Importer.Create("Alpha", ReportType.IbkrCsv);
-        a.UpdateDetails("Alpha", ReportType.IbkrCsv, profileId, null, "f1", "s1", "r1", "p1");
+        a.UpdateDetails(new ImporterDetails("Alpha", ReportType.IbkrCsv, profileId, null, "f1", "s1", "r1", "p1"));
 
         var b = Importer.Create("Beta", ReportType.IbkrCsv);
-        b.UpdateDetails("Beta", ReportType.IbkrCsv, null, mailboxId, "", "", "", "");
+        b.UpdateDetails(new ImporterDetails("Beta", ReportType.IbkrCsv, null, mailboxId, "", "", "", ""));
 
         _repo.GetAllAsync(TestContext.Current.CancellationToken).ReturnsForAnyArgs(new List<Importer> { a, b });
 

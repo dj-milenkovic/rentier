@@ -18,8 +18,8 @@ public class SyncMailboxCommandHandlerTests
     private static Importer MakeImporterWithMailbox(Guid mailboxId)
     {
         var importer = Importer.Create("Test Importer");
-        importer.UpdateDetails("Test Importer", ReportType.IbkrCsv,
-            Guid.NewGuid(), mailboxId, "", "", "", "");
+        importer.UpdateDetails(new ImporterDetails("Test Importer", ReportType.IbkrCsv,
+            Guid.NewGuid(), mailboxId, "", "", "", ""));
         return importer;
     }
 
@@ -54,9 +54,9 @@ public class SyncMailboxCommandHandlerTests
         var mailboxId2 = Guid.NewGuid();
 
         var importer1 = Importer.Create("Importer1");
-        importer1.UpdateDetails("Importer1", ReportType.IbkrCsv, null, mailboxId1, "", "", "", "");
+        importer1.UpdateDetails(new ImporterDetails("Importer1", ReportType.IbkrCsv, null, mailboxId1, "", "", "", ""));
         var importer2 = Importer.Create("Importer2");
-        importer2.UpdateDetails("Importer2", ReportType.IbkrCsv, null, mailboxId2, "", "", "", "");
+        importer2.UpdateDetails(new ImporterDetails("Importer2", ReportType.IbkrCsv, null, mailboxId2, "", "", "", ""));
 
         var importerRepo = Substitute.For<IImporterRepository>();
         importerRepo.GetAllAsync(Arg.Any<CancellationToken>())
@@ -88,7 +88,7 @@ public class SyncMailboxCommandHandlerTests
     {
         var mailboxId = Guid.NewGuid();
         var importer = Importer.Create("Importer");
-        importer.UpdateDetails("Importer", ReportType.IbkrCsv, null, mailboxId, "", "", "", "");
+        importer.UpdateDetails(new ImporterDetails("Importer", ReportType.IbkrCsv, null, mailboxId, "", "", "", ""));
 
         var importerRepo = Substitute.For<IImporterRepository>();
         importerRepo.GetAllAsync(Arg.Any<CancellationToken>())
@@ -113,7 +113,7 @@ public class SyncMailboxCommandHandlerTests
     {
         var mailboxId = Guid.NewGuid();
         var importer = Importer.Create("Importer");
-        importer.UpdateDetails("Importer", ReportType.IbkrCsv, null, mailboxId, "", "", "", "");
+        importer.UpdateDetails(new ImporterDetails("Importer", ReportType.IbkrCsv, null, mailboxId, "", "", "", ""));
 
         var importerRepo = Substitute.For<IImporterRepository>();
         importerRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(new[] { importer });
@@ -140,7 +140,7 @@ public class SyncMailboxCommandHandlerTests
     {
         var mailboxId = Guid.NewGuid();
         var importer = Importer.Create("Importer");
-        importer.UpdateDetails("Importer", ReportType.IbkrCsv, null, mailboxId, "", "", "", "");
+        importer.UpdateDetails(new ImporterDetails("Importer", ReportType.IbkrCsv, null, mailboxId, "", "", "", ""));
 
         var importerRepo = Substitute.For<IImporterRepository>();
         importerRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(new[] { importer });
@@ -169,7 +169,7 @@ public class SyncMailboxCommandHandlerTests
     {
         var mailboxId = Guid.NewGuid();
         var importer = Importer.Create("Importer");
-        importer.UpdateDetails("Importer", ReportType.IbkrCsv, null, mailboxId, "", "", "", "");
+        importer.UpdateDetails(new ImporterDetails("Importer", ReportType.IbkrCsv, null, mailboxId, "", "", "", ""));
 
         var importerRepo = Substitute.For<IImporterRepository>();
         importerRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(new[] { importer });

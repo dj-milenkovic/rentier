@@ -3,6 +3,7 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
+using Rentier.Domain.ValueObjects;
 using Rentier.Infrastructure.Persistence;
 using Rentier.Infrastructure.Repositories;
 
@@ -48,10 +49,8 @@ public class FilingTickerPersistenceTests : IAsyncLifetime
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var filing = Filing.CreateFromIncome(
-            profile.Id, IncomeType.Dividend, "ACME Corp",
-            new DateOnly(2025, 3, 15), 1000m, 150m, 150m, 0m,
-            new DateOnly(2025, 4, 30),
-            ticker: "AAPL");
+            new FilingInfo(IncomeType.Dividend, "ACME Corp", new DateOnly(2025, 3, 15), 1000m, 150m, 150m, 0m),
+            profile.Id, new DateOnly(2025, 4, 30), new FilingProvenance(Ticker: "AAPL"));
 
         await _repository.AddAsync(filing, CancellationToken.None);
 
@@ -75,10 +74,8 @@ public class FilingTickerPersistenceTests : IAsyncLifetime
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var filing = Filing.CreateFromIncome(
-            profile.Id, IncomeType.Dividend, "ACME Corp",
-            new DateOnly(2025, 3, 15), 1000m, 150m, 150m, 0m,
-            new DateOnly(2025, 4, 30),
-            ticker: null);
+            new FilingInfo(IncomeType.Dividend, "ACME Corp", new DateOnly(2025, 3, 15), 1000m, 150m, 150m, 0m),
+            profile.Id, new DateOnly(2025, 4, 30), new FilingProvenance(Ticker: null));
 
         await _repository.AddAsync(filing, CancellationToken.None);
 

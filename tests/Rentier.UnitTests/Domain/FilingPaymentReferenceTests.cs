@@ -2,6 +2,7 @@ using FluentAssertions;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 using Rentier.Domain.Exceptions;
+using Rentier.Domain.ValueObjects;
 using Xunit;
 
 namespace Rentier.UnitTests;
@@ -10,15 +11,17 @@ public class FilingPaymentReferenceTests
 {
     private static Filing MakeFiling() =>
         Filing.CreateFromIncome(
+            new FilingInfo(
+                incomeType: IncomeType.Dividend,
+                payingEntity: "Test Corp",
+                incomeDate: new DateOnly(2024, 1, 15),
+                grossIncomeRsd: 1000m,
+                whtPaidRsd: 150m,
+                grossTaxPayableRsd: 150m,
+                taxPayableRsd: 0m),
             taxpayerProfileId: Guid.NewGuid(),
-            incomeType: IncomeType.Dividend,
-            payingEntity: "Test Corp",
-            incomeDate: new DateOnly(2024, 1, 15),
-            grossIncomeRsd: 1000m,
-            whtPaidRsd: 150m,
-            grossTaxPayableRsd: 150m,
-            taxPayableRsd: 0m,
-            filingDeadline: new DateOnly(2024, 2, 14));
+            filingDeadline: new DateOnly(2024, 2, 14),
+            provenance: new FilingProvenance());
 
     [Fact]
     public void SetPaymentReference_WithNull_StoresNull()

@@ -48,8 +48,8 @@ public class ImapSyncEdgeCaseTests
     private static Importer MakeImporter(Guid mailboxId)
     {
         var importer = Importer.Create("Importer");
-        importer.UpdateDetails("Importer", ReportType.IbkrCsv, null, mailboxId,
-            string.Empty, string.Empty, @".*\.csv", string.Empty);
+        importer.UpdateDetails(new ImporterDetails("Importer", ReportType.IbkrCsv, null, mailboxId,
+            string.Empty, string.Empty, @".*\.csv", string.Empty));
         return importer;
     }
 

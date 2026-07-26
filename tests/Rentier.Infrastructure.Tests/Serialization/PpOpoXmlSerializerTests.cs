@@ -4,6 +4,7 @@ using System.Xml.Linq;
 using FluentAssertions;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
+using Rentier.Domain.ValueObjects;
 using Rentier.Infrastructure.Serialization;
 using Xunit;
 
@@ -28,8 +29,8 @@ public class PpOpoXmlSerializerTests
         var date = incomeDate ?? new DateOnly(2025, 3, 15);
         var dl = deadline ?? new DateOnly(2025, 4, 30);
         return Filing.CreateFromIncome(
-            Guid.NewGuid(), incomeType, "ACME Corp",
-            date, grossIncome, whtPaid, grossTaxPayable, taxPayable, dl);
+            new FilingInfo(incomeType, "ACME Corp", date, grossIncome, whtPaid, grossTaxPayable, taxPayable),
+            Guid.NewGuid(), dl, new FilingProvenance());
     }
 
     private static TaxpayerProfile MakeProfile(

@@ -6,6 +6,7 @@ using Rentier.Application.Queries;
 using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
+using Rentier.Domain.ValueObjects;
 using Xunit;
 
 namespace Rentier.UnitTests.Application;
@@ -23,9 +24,8 @@ public class GetFilingsQueryHandlerTests
     private static Filing MakeFiling(DateOnly? deadline = null, FilingStatus status = FilingStatus.Init)
     {
         var f = Filing.CreateFromIncome(
-            Guid.NewGuid(), IncomeType.Dividend, "ACME Corp",
-            new DateOnly(2024, 3, 1), 1000m, 150m, 150m, 0m,
-            deadline ?? new DateOnly(2024, 4, 30));
+            new FilingInfo(IncomeType.Dividend, "ACME Corp", new DateOnly(2024, 3, 1), 1000m, 150m, 150m, 0m),
+            Guid.NewGuid(), deadline ?? new DateOnly(2024, 4, 30), new FilingProvenance());
         if (status == FilingStatus.Filed) f.AdvanceStatus(FilingStatus.Filed);
         if (status == FilingStatus.Paid) { f.AdvanceStatus(FilingStatus.Filed); f.AdvanceStatus(FilingStatus.Paid); }
         return f;

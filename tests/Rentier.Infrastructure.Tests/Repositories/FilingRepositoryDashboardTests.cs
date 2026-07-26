@@ -3,6 +3,7 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
+using Rentier.Domain.ValueObjects;
 using Rentier.Infrastructure.Persistence;
 using Rentier.Infrastructure.Repositories;
 
@@ -48,9 +49,8 @@ public class FilingRepositoryDashboardTests : IAsyncLifetime
         // grossTaxPayable == taxPayable with whtPaid == 0 satisfies the domain invariant:
         // TaxPayableRsd == Math.Max(GrossTaxPayable - WhtPaid, 0)
         var f = Filing.CreateFromIncome(
-            profileId, IncomeType.Dividend, entity,
-            new DateOnly(2024, 3, 1), 1000m, 0m, taxPayable, taxPayable,
-            deadline);
+            new FilingInfo(IncomeType.Dividend, entity, new DateOnly(2024, 3, 1), 1000m, 0m, taxPayable, taxPayable),
+            profileId, deadline, new FilingProvenance());
         if (status == FilingStatus.Filed) f.AdvanceStatus(FilingStatus.Filed);
         if (status == FilingStatus.Paid) { f.AdvanceStatus(FilingStatus.Filed); f.AdvanceStatus(FilingStatus.Paid); }
         return f;

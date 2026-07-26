@@ -5,6 +5,7 @@ using Rentier.Application.Enums;
 using Rentier.Application.Queries;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
+using Rentier.Domain.ValueObjects;
 using Rentier.Infrastructure.Persistence;
 using Rentier.Infrastructure.Repositories;
 
@@ -45,8 +46,9 @@ public class FilingRepositoryTests : IAsyncLifetime
     private static Filing MakeFiling(Guid profileId, string entity = "ACME", DateOnly? date = null, decimal gross = 1000m)
     {
         var d = date ?? new DateOnly(2024, 6, 15);
-        return Filing.CreateFromIncome(profileId, IncomeType.Dividend, entity, d,
-            gross, 150m, 150m, 0m, d.AddDays(30));
+        return Filing.CreateFromIncome(
+            new FilingInfo(IncomeType.Dividend, entity, d, gross, 150m, 150m, 0m),
+            profileId, d.AddDays(30), new FilingProvenance());
     }
 
     [Fact]
@@ -173,8 +175,9 @@ public class FilingRepositoryTests : IAsyncLifetime
         await _context.Reports.AddAsync(report, TestContext.Current.CancellationToken);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var filing = Filing.CreateFromIncome(profile.Id, IncomeType.Dividend, "ACME",
-            new DateOnly(2024, 6, 15), 1000m, 0m, 150m, 150m, new DateOnly(2024, 7, 15), report.Id);
+        var filing = Filing.CreateFromIncome(
+            new FilingInfo(IncomeType.Dividend, "ACME", new DateOnly(2024, 6, 15), 1000m, 0m, 150m, 150m),
+            profile.Id, new DateOnly(2024, 7, 15), new FilingProvenance(ReportId: report.Id));
         await _repository.AddAsync(filing, TestContext.Current.CancellationToken);
 
         var results = await _repository.GetByReportIdAsync(report.Id, TestContext.Current.CancellationToken);
@@ -473,9 +476,9 @@ public class FilingRepositoryTests : IAsyncLifetime
         var (_, report, profile) = await SeedReportAsync();
         for (var i = 0; i < 3; i++)
         {
-            var f = Filing.CreateFromIncome(profile.Id, IncomeType.Dividend, $"Co{i}",
-                new DateOnly(2024, 1 + i, 15), 1000m, 0m, 150m, 150m,
-                new DateOnly(2024, 2 + i, 15), report.Id);
+            var f = Filing.CreateFromIncome(
+                new FilingInfo(IncomeType.Dividend, $"Co{i}", new DateOnly(2024, 1 + i, 15), 1000m, 0m, 150m, 150m),
+                profile.Id, new DateOnly(2024, 2 + i, 15), new FilingProvenance(ReportId: report.Id));
             await _repository.AddAsync(f, TestContext.Current.CancellationToken);
         }
 
@@ -500,9 +503,9 @@ public class FilingRepositoryTests : IAsyncLifetime
         var (_, report, profile) = await SeedReportAsync();
         for (var i = 0; i < 3; i++)
         {
-            var f = Filing.CreateFromIncome(profile.Id, IncomeType.Dividend, $"Co{i}",
-                new DateOnly(2024, 1 + i, 15), 1000m, 0m, 150m, 150m,
-                new DateOnly(2024, 2 + i, 15), report.Id);
+            var f = Filing.CreateFromIncome(
+                new FilingInfo(IncomeType.Dividend, $"Co{i}", new DateOnly(2024, 1 + i, 15), 1000m, 0m, 150m, 150m),
+                profile.Id, new DateOnly(2024, 2 + i, 15), new FilingProvenance(ReportId: report.Id));
             await _repository.AddAsync(f, TestContext.Current.CancellationToken);
         }
 
@@ -526,9 +529,9 @@ public class FilingRepositoryTests : IAsyncLifetime
     public async Task DeleteByReportIdAsync_WhenCalledTwice_IsIdempotent()
     {
         var (_, report, profile) = await SeedReportAsync();
-        var f = Filing.CreateFromIncome(profile.Id, IncomeType.Dividend, "ACME",
-            new DateOnly(2024, 3, 15), 1000m, 0m, 150m, 150m,
-            new DateOnly(2024, 4, 15), report.Id);
+        var f = Filing.CreateFromIncome(
+            new FilingInfo(IncomeType.Dividend, "ACME", new DateOnly(2024, 3, 15), 1000m, 0m, 150m, 150m),
+            profile.Id, new DateOnly(2024, 4, 15), new FilingProvenance(ReportId: report.Id));
         await _repository.AddAsync(f, TestContext.Current.CancellationToken);
 
         await _repository.DeleteByReportIdAsync(report.Id, TestContext.Current.CancellationToken);
@@ -549,12 +552,12 @@ public class FilingRepositoryTests : IAsyncLifetime
         await _context.Reports.AddAsync(report2, TestContext.Current.CancellationToken);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var f1 = Filing.CreateFromIncome(profile.Id, IncomeType.Dividend, "Co1",
-            new DateOnly(2024, 1, 15), 1000m, 0m, 150m, 150m,
-            new DateOnly(2024, 2, 15), report1.Id);
-        var f2 = Filing.CreateFromIncome(profile.Id, IncomeType.Dividend, "Co2",
-            new DateOnly(2024, 3, 15), 2000m, 0m, 300m, 300m,
-            new DateOnly(2024, 4, 15), report2.Id);
+        var f1 = Filing.CreateFromIncome(
+            new FilingInfo(IncomeType.Dividend, "Co1", new DateOnly(2024, 1, 15), 1000m, 0m, 150m, 150m),
+            profile.Id, new DateOnly(2024, 2, 15), new FilingProvenance(ReportId: report1.Id));
+        var f2 = Filing.CreateFromIncome(
+            new FilingInfo(IncomeType.Dividend, "Co2", new DateOnly(2024, 3, 15), 2000m, 0m, 300m, 300m),
+            profile.Id, new DateOnly(2024, 4, 15), new FilingProvenance(ReportId: report2.Id));
         await _repository.AddAsync(f1, TestContext.Current.CancellationToken);
         await _repository.AddAsync(f2, TestContext.Current.CancellationToken);
 
@@ -624,8 +627,9 @@ public class FilingRepositoryTests : IAsyncLifetime
         var dates = new[] { new DateOnly(2024, 6, 1), new DateOnly(2024, 1, 1), new DateOnly(2024, 3, 1) };
         foreach (var d in dates)
         {
-            var f = Filing.CreateFromIncome(profile.Id, IncomeType.Dividend, $"Co-{d.Month}",
-                d, 1000m, 0m, 150m, 150m, d.AddDays(30), report.Id);
+            var f = Filing.CreateFromIncome(
+                new FilingInfo(IncomeType.Dividend, $"Co-{d.Month}", d, 1000m, 0m, 150m, 150m),
+                profile.Id, d.AddDays(30), new FilingProvenance(ReportId: report.Id));
             await _repository.AddAsync(f, TestContext.Current.CancellationToken);
         }
 
@@ -683,10 +687,12 @@ public class FilingRepositoryTests : IAsyncLifetime
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Dividend = 0, Interest = 1; descending puts Interest first
-        var fDividend = Filing.CreateFromIncome(profile.Id, IncomeType.Dividend, "DivCo",
-            new DateOnly(2024, 1, 1), 1000m, 0m, 150m, 150m, new DateOnly(2024, 2, 1));
-        var fInterest = Filing.CreateFromIncome(profile.Id, IncomeType.Interest, "IntCo",
-            new DateOnly(2024, 2, 1), 1000m, 0m, 150m, 150m, new DateOnly(2024, 3, 1));
+        var fDividend = Filing.CreateFromIncome(
+            new FilingInfo(IncomeType.Dividend, "DivCo", new DateOnly(2024, 1, 1), 1000m, 0m, 150m, 150m),
+            profile.Id, new DateOnly(2024, 2, 1), new FilingProvenance());
+        var fInterest = Filing.CreateFromIncome(
+            new FilingInfo(IncomeType.Interest, "IntCo", new DateOnly(2024, 2, 1), 1000m, 0m, 150m, 150m),
+            profile.Id, new DateOnly(2024, 3, 1), new FilingProvenance());
         await _repository.AddAsync(fDividend, TestContext.Current.CancellationToken);
         await _repository.AddAsync(fInterest, TestContext.Current.CancellationToken);
 
@@ -703,10 +709,12 @@ public class FilingRepositoryTests : IAsyncLifetime
         await _context.TaxpayerProfiles.AddAsync(profile, TestContext.Current.CancellationToken);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var fLow = Filing.CreateFromIncome(profile.Id, IncomeType.Dividend, "Co1",
-            new DateOnly(2024, 1, 1), 1000m, 0m, 100m, 100m, new DateOnly(2024, 2, 1));
-        var fHigh = Filing.CreateFromIncome(profile.Id, IncomeType.Dividend, "Co2",
-            new DateOnly(2024, 2, 1), 2000m, 0m, 400m, 400m, new DateOnly(2024, 3, 1));
+        var fLow = Filing.CreateFromIncome(
+            new FilingInfo(IncomeType.Dividend, "Co1", new DateOnly(2024, 1, 1), 1000m, 0m, 100m, 100m),
+            profile.Id, new DateOnly(2024, 2, 1), new FilingProvenance());
+        var fHigh = Filing.CreateFromIncome(
+            new FilingInfo(IncomeType.Dividend, "Co2", new DateOnly(2024, 2, 1), 2000m, 0m, 400m, 400m),
+            profile.Id, new DateOnly(2024, 3, 1), new FilingProvenance());
         await _repository.AddAsync(fLow, TestContext.Current.CancellationToken);
         await _repository.AddAsync(fHigh, TestContext.Current.CancellationToken);
 
@@ -767,10 +775,12 @@ public class FilingRepositoryTests : IAsyncLifetime
         await _context.TaxpayerProfiles.AddAsync(profile, TestContext.Current.CancellationToken);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var div = Filing.CreateFromIncome(profile.Id, IncomeType.Dividend, "DivCo",
-            new DateOnly(2024, 3, 1), 1000m, 150m, 150m, 0m, new DateOnly(2024, 6, 15));
-        var interest = Filing.CreateFromIncome(profile.Id, IncomeType.Interest, "IntCo",
-            new DateOnly(2024, 3, 2), 500m, 75m, 75m, 0m, new DateOnly(2024, 6, 16));
+        var div = Filing.CreateFromIncome(
+            new FilingInfo(IncomeType.Dividend, "DivCo", new DateOnly(2024, 3, 1), 1000m, 150m, 150m, 0m),
+            profile.Id, new DateOnly(2024, 6, 15), new FilingProvenance());
+        var interest = Filing.CreateFromIncome(
+            new FilingInfo(IncomeType.Interest, "IntCo", new DateOnly(2024, 3, 2), 500m, 75m, 75m, 0m),
+            profile.Id, new DateOnly(2024, 6, 16), new FilingProvenance());
         await _repository.AddAsync(div, TestContext.Current.CancellationToken);
         await _repository.AddAsync(interest, TestContext.Current.CancellationToken);
 
@@ -825,12 +835,15 @@ public class FilingRepositoryTests : IAsyncLifetime
         await _context.TaxpayerProfiles.AddAsync(profile, TestContext.Current.CancellationToken);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var f1 = Filing.CreateFromIncome(profile.Id, IncomeType.Dividend, "DivInit",
-            new DateOnly(2024, 3, 1), 1000m, 150m, 150m, 0m, new DateOnly(2024, 6, 15));
-        var f2 = Filing.CreateFromIncome(profile.Id, IncomeType.Interest, "IntInit",
-            new DateOnly(2024, 3, 2), 500m, 75m, 75m, 0m, new DateOnly(2024, 6, 16));
-        var f3 = Filing.CreateFromIncome(profile.Id, IncomeType.Dividend, "DivFiled",
-            new DateOnly(2024, 3, 3), 800m, 120m, 120m, 0m, new DateOnly(2024, 6, 17));
+        var f1 = Filing.CreateFromIncome(
+            new FilingInfo(IncomeType.Dividend, "DivInit", new DateOnly(2024, 3, 1), 1000m, 150m, 150m, 0m),
+            profile.Id, new DateOnly(2024, 6, 15), new FilingProvenance());
+        var f2 = Filing.CreateFromIncome(
+            new FilingInfo(IncomeType.Interest, "IntInit", new DateOnly(2024, 3, 2), 500m, 75m, 75m, 0m),
+            profile.Id, new DateOnly(2024, 6, 16), new FilingProvenance());
+        var f3 = Filing.CreateFromIncome(
+            new FilingInfo(IncomeType.Dividend, "DivFiled", new DateOnly(2024, 3, 3), 800m, 120m, 120m, 0m),
+            profile.Id, new DateOnly(2024, 6, 17), new FilingProvenance());
         f3.AdvanceStatus(FilingStatus.Filed);
         await _repository.AddAsync(f1, TestContext.Current.CancellationToken);
         await _repository.AddAsync(f2, TestContext.Current.CancellationToken);
