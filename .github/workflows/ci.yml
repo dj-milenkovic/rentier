@@ -359,12 +359,6 @@ jobs:
         with:
           dotnet-version: '10.x'
 
-      - name: Setup Java (SonarScanner requirement)
-        uses: actions/setup-java@v5.6.0
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
       - name: Cache NuGet packages
         uses: actions/cache@v5.0.5
         with:
@@ -409,13 +403,12 @@ jobs:
             /o:"${SONAR_ORGANIZATION}" \
             /d:sonar.token="${SONAR_TOKEN}" \
             /d:sonar.host.url="https://sonarcloud.io" \
+            /d:sonar.sourceEncoding="UTF-8" \
             /d:sonar.cs.opencover.reportsPaths="${COV_PATHS}" \
             /d:sonar.exclusions="**/Migrations/**,**/obj/**,**/bin/**,**/Properties/**,**/*.Designer.cs,**/*.g.cs,**/*.axaml.cs,**/AssemblyInfo.cs,**/coverage-raw/**,**/coverage-report/**" \
             /d:sonar.coverage.exclusions="**/*.Tests/**,**/Migrations/**,**/Program.cs,**/*.axaml.cs,**/Properties/**" \
             /d:sonar.cpd.exclusions="**/*.Tests/**,**/*.g.cs" \
-            /d:sonar.test.inclusions="**/*.Tests/**,**/*Tests.cs" \
-            /d:sonar.scanner.skipJreProvisioning=true \
-            /d:sonar.scanner.javaExePath="${JAVA_HOME}/bin/java"
+            /d:sonar.test.inclusions="**/*.Tests/**,**/*Tests.cs"
       
           for proj in \
             src/Rentier.Domain/Rentier.Domain.csproj \
@@ -428,7 +421,7 @@ jobs:
           dotnet sonarscanner end /d:sonar.token="${SONAR_TOKEN}"
 
       - name: Check Quality Gate
-        uses: sonarsource/sonarqube-quality-gate-action@master
+        uses: sonarsource/sonarqube-quality-gate-action@cf038b0e0cdecfa9e56c198bbb7d21d751d62c3b # v1.2.0
         timeout-minutes: 5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
