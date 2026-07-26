@@ -45,7 +45,7 @@ public class ImapMailboxSyncServiceTests
     private static Importer MakeImporter(string attachmentRegex = @".*\.csv")
     {
         var importer = Importer.Create("Importer");
-        importer.UpdateDetails("Importer", ReportType.IbkrCsv, null, null, string.Empty, string.Empty, attachmentRegex, string.Empty);
+        importer.UpdateDetails(new ImporterDetails("Importer", ReportType.IbkrCsv, null, null, string.Empty, string.Empty, attachmentRegex, string.Empty));
         return importer;
     }
 
