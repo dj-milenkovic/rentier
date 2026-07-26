@@ -1,8 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-  </PropertyGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\Rentier.Domain\Rentier.Domain.csproj" />
     <ProjectReference Include="..\Rentier.Application\Rentier.Application.csproj" />
@@ -20,6 +17,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="MailKit" />
+    <PackageReference Include="Meziantou.Framework.Win32.CredentialManager" />
     <PackageReference Include="AngleSharp" />
     <PackageReference Include="Microsoft.Extensions.Http" />
     <PackageReference Include="CsvHelper" />

@@ -3,6 +3,15 @@
     "context7": {
       "type": "http",
       "url": "https://mcp.context7.com/mcp"
+    },
+    "sonarqube": {
+      "command": "sonar.exe",
+      "args": [
+        "run",
+        "mcp",
+        "--project",
+        "dj-milenkovic_rentier"
+      ]
     }
   }
 }

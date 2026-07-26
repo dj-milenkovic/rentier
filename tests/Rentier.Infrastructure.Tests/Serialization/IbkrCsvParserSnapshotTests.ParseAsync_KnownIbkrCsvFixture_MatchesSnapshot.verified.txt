@@ -1,4 +1,4 @@
-﻿{
+{
   Dividends: [
     {
       Date: Date_1,

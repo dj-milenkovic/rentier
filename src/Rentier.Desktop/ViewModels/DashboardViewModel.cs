@@ -18,7 +18,6 @@ public sealed class DashboardViewModel : ReactiveObject, IActivatableViewModel
 
     private readonly IQueryHandler<GetDashboardQuery, Result<DashboardDto, Error>> _handler;
     private readonly Action _navigateToFilings;
-    private readonly IScheduler _scheduler;
 
     private bool _isLoading;
     private string? _errorMessage;
@@ -110,11 +109,11 @@ public sealed class DashboardViewModel : ReactiveObject, IActivatableViewModel
     {
         _handler = handler;
         _navigateToFilings = navigateToFilings;
-        _scheduler = scheduler ?? RxSchedulers.MainThreadScheduler;
+        var outputScheduler = scheduler ?? RxSchedulers.MainThreadScheduler;
 
-        LoadCommand = ReactiveCommand.CreateFromTask(LoadAsync, outputScheduler: _scheduler);
+        LoadCommand = ReactiveCommand.CreateFromTask(LoadAsync, outputScheduler: outputScheduler);
         NavigateToFilingsCommand = ReactiveCommand.Create(
-            () => _navigateToFilings(), outputScheduler: _scheduler);
+            () => _navigateToFilings(), outputScheduler: outputScheduler);
 
         this.WhenActivated(disposables =>
         {

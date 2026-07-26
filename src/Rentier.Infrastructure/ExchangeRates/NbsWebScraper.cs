@@ -61,39 +61,10 @@ public sealed class NbsWebScraper : IExchangeRateFetcher
             var context = BrowsingContext.New(config);
             var document = await context.OpenAsync(req => req.Content(html), ct);
 
-            // Find data rows: rows with at least 6 td cells
-            var dataRows = document
-                .QuerySelectorAll("table tbody tr, table tr")
-                .Where(r => r.QuerySelectorAll("td").Length >= 6)
-                .ToList();
-
-            if (dataRows.Count == 0)
-                return Result<ExchangeRate, Error>.Failure(
-                    new Error("RATE_NOT_FOUND",
-                        $"No exchange rates published for {date:yyyy-MM-dd} (NBS web app)."));
-
-            var allRates = new List<ExchangeRate>();
-            foreach (var row in dataRows)
-            {
-                var cells = row.QuerySelectorAll("td").ToList();
-                if (cells.Count < 6) continue;
-
-                var code = cells[0].TextContent.Trim();
-                var unitStr = cells[3].TextContent.Trim();
-                var buyingStr = cells[4].TextContent.Trim();
-                var sellingStr = cells[5].TextContent.Trim();
-
-                if (string.IsNullOrEmpty(code)) continue;
-                if (!int.TryParse(unitStr, out var unit) || unit <= 0) continue;
-                if (!decimal.TryParse(buyingStr, NumberStyles.Any, SerbianCulture, out var buying)) continue;
-                if (!decimal.TryParse(sellingStr, NumberStyles.Any, SerbianCulture, out var selling)) continue;
-
-                var middle = (buying + selling) / 2m;
-                var rateToRsd = middle / unit;
-                if (rateToRsd <= 0) continue;
-
-                allRates.Add(new ExchangeRate(date, code.ToUpperInvariant(), rateToRsd));
-            }
+            // Find data rows (at least 6 td cells) and parse supported rates from them.
+            // "No rows" and "no rows that parsed into a rate" both surface as the same
+            // RATE_NOT_FOUND error below.
+            var allRates = ParseRatesFromHtml(document, date);
 
             if (allRates.Count == 0)
                 return Result<ExchangeRate, Error>.Failure(
@@ -117,5 +88,41 @@ public sealed class NbsWebScraper : IExchangeRateFetcher
             return Result<ExchangeRate, Error>.Failure(
                 new Error("NBS_SCRAPE_ERROR", $"Failed to parse NBS web app HTML: {ex.Message}"));
         }
+    }
+
+    // Extracted from FetchRateAsync (S3776 cognitive complexity) — parses the NBS web
+    // app's exchange-rate table rows into ExchangeRate values.
+    private static List<ExchangeRate> ParseRatesFromHtml(IDocument document, DateOnly date)
+    {
+        // Find data rows: rows with at least 6 td cells
+        var dataRows = document
+            .QuerySelectorAll("table tbody tr, table tr")
+            .Where(r => r.QuerySelectorAll("td").Length >= 6)
+            .ToList();
+
+        var allRates = new List<ExchangeRate>();
+        foreach (var row in dataRows)
+        {
+            var cells = row.QuerySelectorAll("td").ToList();
+            if (cells.Count < 6) continue;
+
+            var code = cells[0].TextContent.Trim();
+            var unitStr = cells[3].TextContent.Trim();
+            var buyingStr = cells[4].TextContent.Trim();
+            var sellingStr = cells[5].TextContent.Trim();
+
+            if (string.IsNullOrEmpty(code)) continue;
+            if (!int.TryParse(unitStr, out var unit) || unit <= 0) continue;
+            if (!decimal.TryParse(buyingStr, NumberStyles.Any, SerbianCulture, out var buying)) continue;
+            if (!decimal.TryParse(sellingStr, NumberStyles.Any, SerbianCulture, out var selling)) continue;
+
+            var middle = (buying + selling) / 2m;
+            var rateToRsd = middle / unit;
+            if (rateToRsd <= 0) continue;
+
+            allRates.Add(new ExchangeRate(date, code.ToUpperInvariant(), rateToRsd));
+        }
+
+        return allRates;
     }
 }

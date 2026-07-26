@@ -21,7 +21,7 @@ public sealed class EnumFilterFlyoutViewModel<T> : ReactiveObject
     private readonly Subject<Unit> _applied = new();
     private bool _isOpen;
     private bool _isActive;
-    private IReadOnlySet<T>? _committed; // null = all selected (no filter active)
+    private HashSet<T>? _committed; // null = all selected (no filter active)
 
     /// <summary>Fires each time the user clicks Apply.</summary>
     public IObservable<Unit> Applied => _applied.AsObservable();

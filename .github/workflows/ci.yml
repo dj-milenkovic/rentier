@@ -24,15 +24,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v7.0.0
+        uses: actions/checkout@v7.0.1
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5.3.0
+        uses: actions/setup-dotnet@v6.0.0
         with:
           dotnet-version: '10.x'
 
       - name: Cache NuGet packages
-        uses: actions/cache@v5.0.5
+        uses: actions/cache@v6.1.0
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Build.props', 'Directory.Packages.props') }}
@@ -56,15 +56,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v7.0.0
+        uses: actions/checkout@v7.0.1
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5.3.0
+        uses: actions/setup-dotnet@v6.0.0
         with:
           dotnet-version: '10.x'
 
       - name: Cache NuGet packages
-        uses: actions/cache@v5.0.5
+        uses: actions/cache@v6.1.0
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Build.props', 'Directory.Packages.props') }}
@@ -92,15 +92,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6.0.3
+        uses: actions/checkout@v7.0.1
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5.3.0
+        uses: actions/setup-dotnet@v6.0.0
         with:
           dotnet-version: '10.x'
 
       - name: Cache NuGet packages
-        uses: actions/cache@v5.0.5
+        uses: actions/cache@v6.1.0
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Build.props', 'Directory.Packages.props') }}
@@ -168,17 +168,17 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v7.0.0
+        uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0  # full history for SonarCloud
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5.3.0
+        uses: actions/setup-dotnet@v6.0.0
         with:
           dotnet-version: '10.x'
 
       - name: Cache NuGet packages
-        uses: actions/cache@v5.0.5
+        uses: actions/cache@v6.1.0
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Build.props', 'Directory.Packages.props') }}
@@ -260,10 +260,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v7.0.0
+        uses: actions/checkout@v7.0.1
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5.3.0
+        uses: actions/setup-dotnet@v6.0.0
         with:
           dotnet-version: '10.x'
 
@@ -350,30 +350,24 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v7.0.0
+        uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5.3.0
+        uses: actions/setup-dotnet@v6.0.0
         with:
           dotnet-version: '10.x'
 
-      - name: Setup Java (SonarScanner requirement)
-        uses: actions/setup-java@v5.6.0
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
       - name: Cache NuGet packages
-        uses: actions/cache@v5.0.5
+        uses: actions/cache@v6.1.0
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Build.props', 'Directory.Packages.props') }}
           restore-keys: nuget-${{ runner.os }}-
 
       - name: Cache SonarCloud packages
-        uses: actions/cache@v5.0.5
+        uses: actions/cache@v6.1.0
         with:
           path: ~/.sonar/cache
           key: sonar-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
@@ -409,13 +403,12 @@ jobs:
             /o:"${SONAR_ORGANIZATION}" \
             /d:sonar.token="${SONAR_TOKEN}" \
             /d:sonar.host.url="https://sonarcloud.io" \
+            /d:sonar.sourceEncoding="UTF-8" \
             /d:sonar.cs.opencover.reportsPaths="${COV_PATHS}" \
             /d:sonar.exclusions="**/Migrations/**,**/obj/**,**/bin/**,**/Properties/**,**/*.Designer.cs,**/*.g.cs,**/*.axaml.cs,**/AssemblyInfo.cs,**/coverage-raw/**,**/coverage-report/**" \
             /d:sonar.coverage.exclusions="**/*.Tests/**,**/Migrations/**,**/Program.cs,**/*.axaml.cs,**/Properties/**" \
             /d:sonar.cpd.exclusions="**/*.Tests/**,**/*.g.cs" \
-            /d:sonar.test.inclusions="**/*.Tests/**,**/*Tests.cs" \
-            /d:sonar.scanner.skipJreProvisioning=true \
-            /d:sonar.scanner.javaExePath="${JAVA_HOME}/bin/java"
+            /d:sonar.test.inclusions="**/*.Tests/**,**/*Tests.cs"
       
           for proj in \
             src/Rentier.Domain/Rentier.Domain.csproj \
@@ -428,7 +421,7 @@ jobs:
           dotnet sonarscanner end /d:sonar.token="${SONAR_TOKEN}"
 
       - name: Check Quality Gate
-        uses: sonarsource/sonarqube-quality-gate-action@master
+        uses: sonarsource/sonarqube-quality-gate-action@cf038b0e0cdecfa9e56c198bbb7d21d751d62c3b # v1.2.0
         timeout-minutes: 5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

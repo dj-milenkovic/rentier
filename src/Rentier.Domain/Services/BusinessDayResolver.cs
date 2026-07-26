@@ -46,8 +46,9 @@ public static class BusinessDayResolver
     public static DateOnly FindPreviousBusinessDay(DateOnly date, HolidayConf holidays)
     {
         if (IsBusinessDay(date, holidays)) return date;
-        foreach (var d in WalkBackward(date.AddDays(1), holidays))
-            return d;
-        throw new DomainException($"No business day found within 10 calendar days before {date}");
+        var found = WalkBackward(date.AddDays(1), holidays)
+            .Select(d => (DateOnly?)d)
+            .FirstOrDefault();
+        return found ?? throw new DomainException($"No business day found within 10 calendar days before {date}");
     }
 }
