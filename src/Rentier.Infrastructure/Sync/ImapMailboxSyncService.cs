@@ -62,86 +62,20 @@ public class ImapMailboxSyncService(
             // Build base time/uid search query using SyncParameters
             var baseQuery = BuildBaseQuery(cursor, parameters);
 
-            // Process each importer within this mailbox
+            // Process each importer within this mailbox. A single importer's failure is
+            // recorded in `errors` and does not abort the remaining importers.
             foreach (var importer in importers)
             {
                 ct.ThrowIfCancellationRequested();
-                try
-                {
-                    // Compile the attachment regex once per importer rather than on every filename check
-                    Regex? attachmentRegex = string.IsNullOrEmpty(importer.AttachmentRegex)
-                        ? null
-                        : new Regex(importer.AttachmentRegex, RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-                    var importerQuery = ComposeImporterQuery(baseQuery, importer);
-                    var uids = await inbox.SearchAsync(importerQuery, ct);
-                    var total = uids.Count;
-                    var processed = 0;
+                var importerResult = await ProcessImporterAsync(inbox, importer, baseQuery, progress, ct);
 
-                    foreach (var uid in uids)
-                    {
-                        ct.ThrowIfCancellationRequested();
-                        try
-                        {
-                            var message = await inbox.GetMessageAsync(uid, ct);
-                            var subject = message.Subject ?? string.Empty;
-                            processed++;
-                            progress?.Report(new SyncProgressEntry(
-                                DateTimeOffset.Now,
-                                $"Downloading email {processed}/{total}: {subject}",
-                                SyncProgressSeverity.Info));
+                reportsCreated += importerResult.ReportsCreated;
+                errors.AddRange(importerResult.Errors);
 
-                            foreach (var attachment in message.Attachments.OfType<MimePart>())
-                            {
-                                var filename = attachment.FileName
-                                    ?? attachment.ContentType.Name
-                                    ?? string.Empty;
-
-                                if (string.IsNullOrEmpty(filename))
-                                    continue;
-
-                                // attachmentRegex is null when AttachmentRegex is empty → skip all attachments
-                                if (attachmentRegex is null || !attachmentRegex.IsMatch(filename))
-                                    continue;
-
-                                var rawDate = message.Date;
-                                // Guard against missing/default Date header (MimeKit returns DateTimeOffset.MinValue).
-                                // Use Unix epoch as a stable sentinel so the report name is deterministic
-                                // across replays — DateTime.UtcNow would produce a different name each run.
-                                var emailDate = rawDate == default
-                                    ? DateOnly.FromDateTime(DateTime.UnixEpoch)
-                                    : DateOnly.FromDateTime(rawDate.UtcDateTime);
-                                var reportName = BuildReportName(emailDate, subject, filename);
-
-                                var exists = await reportRepository.ExistsByImporterAndNameAsync(
-                                    importer.Id, reportName, ct);
-                                if (exists)
-                                    continue;
-
-                                using var ms = new MemoryStream();
-                                if (attachment.Content != null)
-                                    await attachment.Content.DecodeToAsync(ms, ct);
-                                var content = ms.ToArray();
-
-                                var report = Report.Create(importer.Id, reportName, content, uid.Id, emailDate);
-                                await reportRepository.AddAsync(report, ct);
-                                reportsCreated++;
-                            }
-
-                            // Track the highest UID seen across all importers
-                            if (maxUid == null || uid.Id > maxUid.Value)
-                                maxUid = uid.Id;
-                        }
-                        catch (Exception ex)
-                        {
-                            errors.Add($"Importer {importer.Id} UID {uid.Id}: {ex.Message}");
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    errors.Add($"Importer {importer.Id}: {ex.Message}");
-                }
+                // Track the highest UID seen across all importers
+                if (importerResult.MaxUid is { } importerMaxUid && (maxUid == null || importerMaxUid > maxUid.Value))
+                    maxUid = importerMaxUid;
             }
 
             await inbox.CloseAsync(expunge: false, ct);
@@ -162,6 +96,126 @@ public class ImapMailboxSyncService(
                 Error.Infrastructure($"IMAP sync failed for mailbox {mailbox.Id}: {ex.Message}"));
         }
     }
+
+    /// <summary>
+    /// Searches the inbox for messages matching a single importer's filters and processes
+    /// their attachments. Any failure (regex compile, search, or a specific message) is
+    /// captured in <see cref="ImporterSyncResult.Errors"/> rather than thrown, so one bad
+    /// importer or message never aborts the rest of the sync.
+    /// </summary>
+    private async Task<ImporterSyncResult> ProcessImporterAsync(
+        IMailFolder inbox,
+        Importer importer,
+        SearchQuery baseQuery,
+        IProgress<SyncProgressEntry>? progress,
+        CancellationToken ct)
+    {
+        var errors = new List<string>();
+        var reportsCreated = 0;
+        long? maxUid = null;
+
+        try
+        {
+            // Compile the attachment regex once per importer rather than on every filename check
+            Regex? attachmentRegex = string.IsNullOrEmpty(importer.AttachmentRegex)
+                ? null
+                : new Regex(importer.AttachmentRegex, RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+            var importerQuery = ComposeImporterQuery(baseQuery, importer);
+            var uids = await inbox.SearchAsync(importerQuery, ct);
+            var total = uids.Count;
+            var processed = 0;
+
+            foreach (var uid in uids)
+            {
+                ct.ThrowIfCancellationRequested();
+                try
+                {
+                    var message = await inbox.GetMessageAsync(uid, ct);
+                    var subject = message.Subject ?? string.Empty;
+                    processed++;
+                    progress?.Report(new SyncProgressEntry(
+                        DateTimeOffset.Now,
+                        $"Downloading email {processed}/{total}: {subject}",
+                        SyncProgressSeverity.Info));
+
+                    await ProcessAttachmentsAsync(
+                        message, importer, uid, subject, attachmentRegex, () => reportsCreated++, ct);
+
+                    // Track the highest UID seen for this importer
+                    if (maxUid == null || uid.Id > maxUid.Value)
+                        maxUid = uid.Id;
+                }
+                catch (Exception ex)
+                {
+                    errors.Add($"Importer {importer.Id} UID {uid.Id}: {ex.Message}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            errors.Add($"Importer {importer.Id}: {ex.Message}");
+        }
+
+        return new ImporterSyncResult(reportsCreated, maxUid, errors);
+    }
+
+    /// <summary>
+    /// Finds attachments on a single message that match the importer's attachment regex
+    /// and persists any not already recorded for this importer. Invokes
+    /// <paramref name="onReportCreated"/> immediately after each report is persisted so
+    /// the caller's running count reflects reports already saved even if a later
+    /// attachment on the same message throws.
+    /// </summary>
+    private async Task ProcessAttachmentsAsync(
+        MimeMessage message,
+        Importer importer,
+        UniqueId uid,
+        string subject,
+        Regex? attachmentRegex,
+        Action onReportCreated,
+        CancellationToken ct)
+    {
+        foreach (var attachment in message.Attachments.OfType<MimePart>())
+        {
+            var filename = attachment.FileName
+                ?? attachment.ContentType.Name
+                ?? string.Empty;
+
+            if (string.IsNullOrEmpty(filename))
+                continue;
+
+            // attachmentRegex is null when AttachmentRegex is empty → skip all attachments
+            if (attachmentRegex is null || !attachmentRegex.IsMatch(filename))
+                continue;
+
+            var rawDate = message.Date;
+            // Guard against missing/default Date header (MimeKit returns DateTimeOffset.MinValue).
+            // Use Unix epoch as a stable sentinel so the report name is deterministic
+            // across replays — DateTime.UtcNow would produce a different name each run.
+            var emailDate = rawDate == default
+                ? DateOnly.FromDateTime(DateTime.UnixEpoch)
+                : DateOnly.FromDateTime(rawDate.UtcDateTime);
+            var reportName = BuildReportName(emailDate, subject, filename);
+
+            var exists = await reportRepository.ExistsByImporterAndNameAsync(
+                importer.Id, reportName, ct);
+            if (exists)
+                continue;
+
+            using var ms = new MemoryStream();
+            if (attachment.Content != null)
+                await attachment.Content.DecodeToAsync(ms, ct);
+            var content = ms.ToArray();
+
+            var report = Report.Create(importer.Id, reportName, content, uid.Id, emailDate);
+            await reportRepository.AddAsync(report, ct);
+            onReportCreated();
+        }
+    }
+
+    /// <summary>Per-importer outcome of <see cref="ProcessImporterAsync"/>: reports created, the highest UID seen, and any errors encountered.</summary>
+    private readonly record struct ImporterSyncResult(int ReportsCreated, long? MaxUid, IReadOnlyList<string> Errors);
 
     private static SearchQuery BuildBaseQuery(MailboxCursor cursor, SyncParameters parameters)
     {
