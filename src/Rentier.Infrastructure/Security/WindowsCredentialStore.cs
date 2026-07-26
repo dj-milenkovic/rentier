@@ -15,16 +15,13 @@ namespace Rentier.Infrastructure.Security;
 [ExcludeFromCodeCoverage]
 public sealed partial class WindowsCredentialStore : ICredentialStore
 {
-    // All fields are blittable (uint/IntPtr) so the struct can be marshalled directly by the
-    // LibraryImport source generator; the string fields we populate (TargetName/UserName) are
-    // marshalled manually to native memory in SaveCredentialAsync.
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     private struct CredentialW
     {
         public uint Flags;
         public uint Type;
-        public IntPtr TargetName;
-        public IntPtr Comment;
+        [MarshalAs(UnmanagedType.LPWStr)] public string TargetName;
+        [MarshalAs(UnmanagedType.LPWStr)] public string? Comment;
         public uint LastWrittenLow;
         public uint LastWrittenHigh;
         public uint CredentialBlobSize;
@@ -32,17 +29,25 @@ public sealed partial class WindowsCredentialStore : ICredentialStore
         public uint Persist;
         public uint AttributeCount;
         public IntPtr Attributes;
-        public IntPtr TargetAlias;
-        public IntPtr UserName;
+        [MarshalAs(UnmanagedType.LPWStr)] public string? TargetAlias;
+        [MarshalAs(UnmanagedType.LPWStr)] public string? UserName;
     }
 
     private const uint CRED_TYPE_GENERIC = 1u;
     private const uint CRED_PERSIST_LOCAL_MACHINE = 2u;
     private const int ERROR_NOT_FOUND = 1168;
 
-    [LibraryImport("advapi32.dll", SetLastError = true)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static partial bool CredWriteW(ref CredentialW credential, uint flags);
+    // CredWriteW takes the struct by ref; LibraryImport's source generator only auto-marshals
+    // by-ref parameters when the struct is blittable, which would force TargetName/UserName to
+    // IntPtr and push manual native-memory alloc/free into every caller. Keeping this one
+    // P/Invoke on the classic marshaler (which walks LPWStr fields automatically) avoids that for
+    // a rarely-called, non-hot-path native call; SYSLIB1054 (LibraryImport-vs-DllImport) is an
+    // AOT-readiness/perf rule that doesn't apply here. The other three below have no by-ref
+    // struct parameter and convert to LibraryImport cleanly.
+#pragma warning disable SYSLIB1054
+    [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern bool CredWriteW(ref CredentialW credential, uint flags);
+#pragma warning restore SYSLIB1054
 
     [LibraryImport("advapi32.dll", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
@@ -72,22 +77,18 @@ public sealed partial class WindowsCredentialStore : ICredentialStore
         {
             byte[] blob = Encoding.UTF8.GetBytes(secret);
             IntPtr ptr = IntPtr.Zero;
-            IntPtr targetNamePtr = IntPtr.Zero;
-            IntPtr userNamePtr = IntPtr.Zero;
             try
             {
                 ptr = Marshal.AllocHGlobal(blob.Length);
-                targetNamePtr = Marshal.StringToHGlobalUni(key);
-                userNamePtr = Marshal.StringToHGlobalUni(key);
                 Marshal.Copy(blob, 0, ptr, blob.Length);
                 var cred = new CredentialW
                 {
                     Type = CRED_TYPE_GENERIC,
-                    TargetName = targetNamePtr,
+                    TargetName = key,
                     CredentialBlobSize = (uint)blob.Length,
                     CredentialBlob = ptr,
                     Persist = CRED_PERSIST_LOCAL_MACHINE,
-                    UserName = userNamePtr
+                    UserName = key
                 };
                 if (!CredWriteW(ref cred, 0))
                 {
@@ -103,10 +104,6 @@ public sealed partial class WindowsCredentialStore : ICredentialStore
                 Array.Clear(blob, 0, blob.Length);
                 if (ptr != IntPtr.Zero)
                     Marshal.FreeHGlobal(ptr);
-                if (targetNamePtr != IntPtr.Zero)
-                    Marshal.FreeHGlobal(targetNamePtr);
-                if (userNamePtr != IntPtr.Zero)
-                    Marshal.FreeHGlobal(userNamePtr);
             }
         }, ct);
     }
