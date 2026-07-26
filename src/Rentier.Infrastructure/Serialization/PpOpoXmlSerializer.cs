@@ -11,6 +11,8 @@ namespace Rentier.Infrastructure.Serialization;
 
 public sealed class PpOpoXmlSerializer : IXmlFilingSerializer
 {
+    private const string UTF_8 = "UTF-8";
+
     private static readonly XNamespace Ns1 = "http://pid.purs.gov.rs";
 
     /// <summary>
@@ -19,9 +21,9 @@ public sealed class PpOpoXmlSerializer : IXmlFilingSerializer
     private sealed class UppercaseUtf8Encoding : UTF8Encoding
     {
         internal UppercaseUtf8Encoding() : base(encoderShouldEmitUTF8Identifier: false) { }
-        public override string WebName => "UTF-8";
-        public override string HeaderName => "UTF-8";
-        public override string BodyName => "UTF-8";
+        public override string WebName => UTF_8;
+        public override string HeaderName => UTF_8;
+        public override string BodyName => UTF_8;
     }
 
     public Result<byte[], Error> Serialize(Filing filing, TaxpayerProfile profile, string paymentNotes)
@@ -35,7 +37,7 @@ public sealed class PpOpoXmlSerializer : IXmlFilingSerializer
         var xsi = XNamespace.Get("http://www.w3.org/2001/XMLSchema-instance");
 
         var doc = new XDocument(
-            new XDeclaration("1.0", "UTF-8", null),
+            new XDeclaration("1.0", UTF_8, null),
             new XElement(Ns1 + "PodaciPoreskeDeklaracije",
                 new XAttribute(XNamespace.Xmlns + "xsi", xsi),
                 new XAttribute(XNamespace.Xmlns + "ns1", Ns1),

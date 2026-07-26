@@ -22,7 +22,7 @@ public sealed class ReportConfiguration : IEntityTypeConfiguration<Report>
         builder.Property(r => r.EmailDate).IsRequired(false);
         builder.Property(r => r.OriginalReportId).IsRequired(false);
         builder.HasIndex(r => r.ImporterId);
-        builder.HasIndex(new[] { "ImporterId", "ReportName" }).IsUnique();
+        builder.HasIndex("ImporterId", "ReportName").IsUnique();
         builder.HasIndex(r => r.OriginalReportId);
         builder.HasOne<Importer>()
             .WithMany()

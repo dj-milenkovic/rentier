@@ -36,6 +36,7 @@
     <PackageVersion Include="AngleSharp" Version="1.5.2" />
     <PackageVersion Include="CsvHelper" Version="33.1.0" />
     <PackageVersion Include="MailKit" Version="4.17.0" />
+    <PackageVersion Include="Meziantou.Framework.Win32.CredentialManager" Version="3.0.1" />
     <PackageVersion Include="Velopack" Version="1.2.0" />
 
     <!-- Testing -->
