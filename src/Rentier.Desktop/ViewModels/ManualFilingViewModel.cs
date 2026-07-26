@@ -40,7 +40,6 @@ public sealed class ManualFilingViewModel : ReactiveObject, IActivatableViewMode
     private bool _isDirty = false;
     private Guid? _taxpayerProfileId = null;
 
-    private readonly IScheduler _scheduler;
     private readonly ICommandHandler<CalculateManualFilingCommand, Result<ManualFilingPreviewDto, Error>> _calculateHandler;
     private readonly ICommandHandler<CreateManualFilingCommand, Result<Guid, Error>> _createHandler;
     private readonly IQueryHandler<GetTaxpayerProfileQuery, Result<TaxpayerProfileDto?, Error>> _profileQueryHandler;
@@ -148,10 +147,20 @@ public sealed class ManualFilingViewModel : ReactiveObject, IActivatableViewMode
     }
 
     /// <summary>Formatted exchange rate source string combining type (Exact/Fallback) and date.</summary>
-    public string? RateSourceDisplay => Preview is null ? null :
-        Preview.ExchangeRateSourceType == ExchangeRateSourceType.Exact
-            ? string.Format(Strings.ManualFiling_RateSource_Exact, Preview.ExchangeRateSourceDate.ToString("yyyy-MM-dd"))
-            : string.Format(Strings.ManualFiling_RateSource_Fallback, Preview.ExchangeRateSourceDate.ToString("yyyy-MM-dd"));
+    public string? RateSourceDisplay
+    {
+        get
+        {
+            if (Preview is null) return null;
+
+            var dateText = Preview.ExchangeRateSourceDate.ToString("yyyy-MM-dd");
+            return Preview.ExchangeRateSourceType switch
+            {
+                ExchangeRateSourceType.Exact => string.Format(Strings.ManualFiling_RateSource_Exact, dateText),
+                _ => string.Format(Strings.ManualFiling_RateSource_Fallback, dateText),
+            };
+        }
+    }
 
     // Helper properties for RadioButton binding
     public bool IsDividend
@@ -186,7 +195,7 @@ public sealed class ManualFilingViewModel : ReactiveObject, IActivatableViewMode
         _createHandler = createHandler;
         _profileQueryHandler = profileQueryHandler;
         _navigateBackToFilings = navigateBackToFilings;
-        _scheduler = scheduler ?? RxSchedulers.MainThreadScheduler;
+        scheduler ??= RxSchedulers.MainThreadScheduler;
 
         // CalculateCommand canExecute: ticker not blank, gross > 0, date set, not loading
         var canCalculate = this.WhenAnyValue(
@@ -210,12 +219,12 @@ public sealed class ManualFilingViewModel : ReactiveObject, IActivatableViewMode
         CalculateCommand = ReactiveCommand.CreateFromTask(
             CalculateAsync,
             canCalculate,
-            outputScheduler: _scheduler);
+            outputScheduler: scheduler);
 
         SaveCommand = ReactiveCommand.CreateFromTask(
             SaveAsync,
             canSave,
-            outputScheduler: _scheduler);
+            outputScheduler: scheduler);
 
         CancelCommand = ReactiveCommand.CreateFromTask(async () =>
         {
@@ -229,11 +238,11 @@ public sealed class ManualFilingViewModel : ReactiveObject, IActivatableViewMode
                 if (!confirmed) return;
             }
             _navigateBackToFilings();
-        }, outputScheduler: _scheduler);
+        }, outputScheduler: scheduler);
 
         ClearErrorCommand = ReactiveCommand.Create(
             () => { ErrorMessage = null; },
-            outputScheduler: _scheduler);
+            outputScheduler: scheduler);
 
         this.WhenActivated(disposables =>
         {
