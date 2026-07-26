@@ -8,8 +8,10 @@ namespace Rentier.Desktop.Services;
 
 public sealed class LocalizationService : ILocalizationService
 {
+    private const string SR_LATN = "sr-Latn";
+
     // Cached English strings built via reflection on the static Strings class
-    private static readonly IReadOnlyDictionary<string, string> _englishStrings =
+    private static readonly Dictionary<string, string> _englishStrings =
         typeof(Strings)
             .GetProperties(BindingFlags.Public | BindingFlags.Static)
             .Where(p => p.PropertyType == typeof(string))
@@ -20,7 +22,7 @@ public sealed class LocalizationService : ILocalizationService
 
     public LocalizationService()
     {
-        _currentCultureCode = "sr-Latn";
+        _currentCultureCode = SR_LATN;
     }
 
     public string this[string key]
@@ -33,9 +35,9 @@ public sealed class LocalizationService : ILocalizationService
                 return value;
 
             // Fallback to Serbian
-            if (_currentCultureCode != "sr-Latn")
+            if (_currentCultureCode != SR_LATN)
             {
-                var srDict = GetDictionary("sr-Latn");
+                var srDict = GetDictionary(SR_LATN);
                 if (srDict is not null && srDict.TryGetValue(key, out var srValue) && !string.IsNullOrEmpty(srValue))
                     return srValue;
             }
@@ -65,7 +67,7 @@ public sealed class LocalizationService : ILocalizationService
         cultureCode switch
         {
             "en" => _englishStrings,
-            "sr-Latn" => SrLatnStrings.All,
+            SR_LATN => SrLatnStrings.All,
             _ => null
         };
 }
