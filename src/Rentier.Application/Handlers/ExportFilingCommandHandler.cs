@@ -81,12 +81,8 @@ public sealed class ExportFilingCommandHandler
     }
 
     /// <summary>Returns the first value that is not null/whitespace, or null if none qualify.</summary>
-    private static string? FirstNonBlank(params string?[] values)
-    {
-        foreach (var value in values.Where(value => !string.IsNullOrWhiteSpace(value)))
-            return value;
-        return null;
-    }
+    private static string? FirstNonBlank(params string?[] values) =>
+        values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
 
     private static readonly char[] UnsafeChars = ['\\', '/', ':', '*', '?', '"', '<', '>', '|', ' '];
 
