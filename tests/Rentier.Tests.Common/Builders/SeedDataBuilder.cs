@@ -56,10 +56,10 @@ public static class SeedDataBuilder
     public static Importer LinkedImporter(Guid taxpayerProfileId, Guid mailboxId)
     {
         var imp = Importer.Create("IBKR Primary Account");
-        imp.UpdateDetails("IBKR Primary Account", ReportType.IbkrCsv,
+        imp.UpdateDetails(new ImporterDetails("IBKR Primary Account", ReportType.IbkrCsv,
             taxpayerProfileId, mailboxId,
             "no-reply@ibkr.com", "Activity Statement",
-            @"U\d{8}\.csv", "Standard payment notes");
+            @"U\d{8}\.csv", "Standard payment notes"));
         return imp;
     }
 
@@ -67,9 +67,9 @@ public static class SeedDataBuilder
     public static Importer StandaloneImporter()
     {
         var imp = Importer.Create("Manual Import");
-        imp.UpdateDetails("Manual Import", ReportType.IbkrCsv,
-            taxpayerProfileId: null, mailboxId: null,
-            fromFilter: "", subjectFilter: "", attachmentRegex: "", paymentNotes: "");
+        imp.UpdateDetails(new ImporterDetails("Manual Import", ReportType.IbkrCsv,
+            TaxpayerProfileId: null, MailboxId: null,
+            FromFilter: "", SubjectFilter: "", AttachmentRegex: "", PaymentNotes: ""));
         return imp;
     }
 
@@ -119,11 +119,11 @@ public static class SeedDataBuilder
         var incomeDate = new DateOnly(2024, 3, 15);
         return
         [
-            Filing.CreateFromIncome(primaryProfileId, IncomeType.Dividend,
-                "Apple Inc", incomeDate,
-                grossIncomeRsd: 123456.78m, whtPaidRsd: 18518.52m,
-                grossTaxPayableRsd: 18518.52m, taxPayableRsd: 0m,
-                filingDeadline: incomeDate.AddDays(30)),
+            Filing.CreateFromIncome(
+                new FilingInfo(IncomeType.Dividend, "Apple Inc", incomeDate,
+                    grossIncomeRsd: 123456.78m, whtPaidRsd: 18518.52m,
+                    grossTaxPayableRsd: 18518.52m, taxPayableRsd: 0m),
+                primaryProfileId, incomeDate.AddDays(30), new FilingProvenance()),
 
             FiledFiling(primaryProfileId, "Microsoft Corp",
                 new DateOnly(2024, 4, 10), 87654.32m),
@@ -131,20 +131,20 @@ public static class SeedDataBuilder
             PaidFiling(primaryProfileId, "Alphabet Inc",
                 new DateOnly(2024, 5, 20), 56789.01m),
 
-            Filing.CreateFromIncome(secondaryProfileId, IncomeType.Interest,
-                "Interactive Brokers LLC", new DateOnly(2024, 6, 1),
-                grossIncomeRsd: 9876.54m, whtPaidRsd: 0m,
-                grossTaxPayableRsd: 1481.48m, taxPayableRsd: 1481.48m,
-                filingDeadline: new DateOnly(2024, 7, 1)),
+            Filing.CreateFromIncome(
+                new FilingInfo(IncomeType.Interest, "Interactive Brokers LLC", new DateOnly(2024, 6, 1),
+                    grossIncomeRsd: 9876.54m, whtPaidRsd: 0m,
+                    grossTaxPayableRsd: 1481.48m, taxPayableRsd: 1481.48m),
+                secondaryProfileId, new DateOnly(2024, 7, 1), new FilingProvenance()),
 
             FilingWithReference(primaryProfileId, "Amazon.com Inc",
                 new DateOnly(2024, 7, 5), 44321.67m, "97-123456789-12"),
 
-            Filing.CreateFromIncome(secondaryProfileId, IncomeType.Dividend,
-                "NIS AD Novi Sad", new DateOnly(2024, 8, 15),
-                grossIncomeRsd: 33000.00m, whtPaidRsd: 0m,
-                grossTaxPayableRsd: 4950.00m, taxPayableRsd: 4950.00m,
-                filingDeadline: new DateOnly(2024, 9, 14)),
+            Filing.CreateFromIncome(
+                new FilingInfo(IncomeType.Dividend, "NIS AD Novi Sad", new DateOnly(2024, 8, 15),
+                    grossIncomeRsd: 33000.00m, whtPaidRsd: 0m,
+                    grossTaxPayableRsd: 4950.00m, taxPayableRsd: 4950.00m),
+                secondaryProfileId, new DateOnly(2024, 9, 14), new FilingProvenance()),
         ];
     }
 
@@ -170,16 +170,18 @@ public static class SeedDataBuilder
 
     private static Filing FiledFiling(Guid profileId, string entity, DateOnly date, decimal gross)
     {
-        var filing = Filing.CreateFromIncome(profileId, IncomeType.Dividend, entity, date,
-            gross, gross * 0.15m, gross * 0.15m, 0m, date.AddDays(30));
+        var filing = Filing.CreateFromIncome(
+            new FilingInfo(IncomeType.Dividend, entity, date, gross, gross * 0.15m, gross * 0.15m, 0m),
+            profileId, date.AddDays(30), new FilingProvenance());
         filing.AdvanceStatus(FilingStatus.Filed);
         return filing;
     }
 
     private static Filing PaidFiling(Guid profileId, string entity, DateOnly date, decimal gross)
     {
-        var filing = Filing.CreateFromIncome(profileId, IncomeType.Dividend, entity, date,
-            gross, gross * 0.15m, gross * 0.15m, 0m, date.AddDays(30));
+        var filing = Filing.CreateFromIncome(
+            new FilingInfo(IncomeType.Dividend, entity, date, gross, gross * 0.15m, gross * 0.15m, 0m),
+            profileId, date.AddDays(30), new FilingProvenance());
         filing.AdvanceStatus(FilingStatus.Filed);
         filing.AdvanceStatus(FilingStatus.Paid);
         return filing;
@@ -188,8 +190,9 @@ public static class SeedDataBuilder
     private static Filing FilingWithReference(
         Guid profileId, string entity, DateOnly date, decimal gross, string reference)
     {
-        var filing = Filing.CreateFromIncome(profileId, IncomeType.Dividend, entity, date,
-            gross, gross * 0.15m, gross * 0.15m, 0m, date.AddDays(30));
+        var filing = Filing.CreateFromIncome(
+            new FilingInfo(IncomeType.Dividend, entity, date, gross, gross * 0.15m, gross * 0.15m, 0m),
+            profileId, date.AddDays(30), new FilingProvenance());
         filing.SetPaymentReference(reference);
         return filing;
     }

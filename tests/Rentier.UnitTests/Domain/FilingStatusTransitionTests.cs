@@ -3,6 +3,7 @@ using FluentAssertions;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 using Rentier.Domain.Exceptions;
+using Rentier.Domain.ValueObjects;
 
 namespace Rentier.UnitTests;
 
@@ -81,9 +82,8 @@ public class FilingStatusTransitionTests
     private static Filing CreateFilingInState(FilingStatus status)
     {
         var filing = Filing.CreateFromIncome(
-            Guid.NewGuid(), IncomeType.Dividend, "ACME Corp",
-            new DateOnly(2025, 1, 1), 1000m, 150m, 150m, 0m,
-            new DateOnly(2025, 2, 1));
+            new FilingInfo(IncomeType.Dividend, "ACME Corp", new DateOnly(2025, 1, 1), 1000m, 150m, 150m, 0m),
+            Guid.NewGuid(), new DateOnly(2025, 2, 1), new FilingProvenance());
 
         if (status is FilingStatus.Filed or FilingStatus.Paid)
             filing.AdvanceStatus(FilingStatus.Filed);

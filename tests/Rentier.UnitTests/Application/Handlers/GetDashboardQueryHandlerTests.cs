@@ -43,9 +43,8 @@ public class GetDashboardQueryHandlerTests
         // grossTax == taxPayable with whtPaid == 0 satisfies the domain invariant:
         // TaxPayableRsd == Math.Max(GrossTaxPayable - WhtPaid, 0)
         var f = Filing.CreateFromIncome(
-            Guid.NewGuid(), IncomeType.Dividend, entity, incomeDate,
-            1000m, 0m, taxPayable, taxPayable,
-            deadline ?? new DateOnly(2024, 4, 30));
+            new FilingInfo(IncomeType.Dividend, entity, incomeDate, 1000m, 0m, taxPayable, taxPayable),
+            Guid.NewGuid(), deadline ?? new DateOnly(2024, 4, 30), new FilingProvenance());
         if (status == FilingStatus.Filed) f.AdvanceStatus(FilingStatus.Filed);
         if (status == FilingStatus.Paid) { f.AdvanceStatus(FilingStatus.Filed); f.AdvanceStatus(FilingStatus.Paid); }
         return f;

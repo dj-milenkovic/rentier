@@ -33,13 +33,7 @@ public class TaxCalculationProperties
         var whtAmount = whtInt.Get / 100m;
 
         var result = TaxCalculationService.CalculateAsync(
-            IncomeType.Dividend,
-            "TEST_ENTITY",
-            FixedIncomeDate,
-            incomeAmount,
-            "USD",
-            whtAmount,
-            "USD",
+            new IncomeTaxInput(IncomeType.Dividend, "TEST_ENTITY", FixedIncomeDate, incomeAmount, "USD", whtAmount, "USD"),
             CreateFixedRateProvider())
             .GetAwaiter().GetResult();
 
@@ -57,13 +51,7 @@ public class TaxCalculationProperties
         var whtAmount = whtInt.Get / 100m;
 
         var result = TaxCalculationService.CalculateAsync(
-            IncomeType.Dividend,
-            "TEST_ENTITY",
-            FixedIncomeDate,
-            incomeAmount,
-            "USD",
-            whtAmount,
-            "USD",
+            new IncomeTaxInput(IncomeType.Dividend, "TEST_ENTITY", FixedIncomeDate, incomeAmount, "USD", whtAmount, "USD"),
             CreateFixedRateProvider())
             .GetAwaiter().GetResult();
 
@@ -82,13 +70,7 @@ public class TaxCalculationProperties
         var rate = (rateInt.Get % 1000) / 100m + 0.01m;
 
         var result = TaxCalculationService.CalculateAsync(
-            IncomeType.Interest,
-            "TEST_ENTITY",
-            FixedIncomeDate,
-            incomeAmount,
-            "EUR",
-            0m,
-            "EUR",
+            new IncomeTaxInput(IncomeType.Interest, "TEST_ENTITY", FixedIncomeDate, incomeAmount, "EUR", 0m, "EUR"),
             (date, currency) => Task.FromResult(new ExchangeRate(date, currency, rate)))
             .GetAwaiter().GetResult();
 

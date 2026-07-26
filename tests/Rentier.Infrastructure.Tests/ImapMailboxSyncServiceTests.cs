@@ -111,7 +111,7 @@ public class ImapMailboxSyncServiceTests
     {
         var mailbox = MakeMailbox();
         var importer = Importer.Create("Importer");
-        importer.UpdateDetails("Importer", ReportType.IbkrCsv, null, mailbox.Id, string.Empty, string.Empty, @".*\.csv", string.Empty);
+        importer.UpdateDetails(new ImporterDetails("Importer", ReportType.IbkrCsv, null, mailbox.Id, string.Empty, string.Empty, @".*\.csv", string.Empty));
 
         var reportRepository = Substitute.For<IReportRepository>();
         reportRepository.ExistsByImporterAndNameAsync(importer.Id, Arg.Any<string>(), Arg.Any<CancellationToken>())

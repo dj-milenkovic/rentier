@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
+using Rentier.Domain.ValueObjects;
 using Rentier.Infrastructure.Serialization;
 using Xunit;
 
@@ -23,9 +24,8 @@ public class PpOpoXmlSerializerUnsupportedTypeTests
     {
         var unsupportedType = (IncomeType)999;
         var filing = Filing.CreateFromIncome(
-            Guid.NewGuid(), unsupportedType, "ACME Corp",
-            new DateOnly(2025, 3, 15), 10000m, 0m, 1500m, 1500m,
-            new DateOnly(2025, 4, 30));
+            new FilingInfo(unsupportedType, "ACME Corp", new DateOnly(2025, 3, 15), 10000m, 0m, 1500m, 1500m),
+            Guid.NewGuid(), new DateOnly(2025, 4, 30), new FilingProvenance());
 
         var result = _sut.Serialize(filing, MakeProfile(), string.Empty);
 
@@ -38,9 +38,8 @@ public class PpOpoXmlSerializerUnsupportedTypeTests
     {
         var unsupportedType = (IncomeType)42;
         var filing = Filing.CreateFromIncome(
-            Guid.NewGuid(), unsupportedType, "ACME Corp",
-            new DateOnly(2025, 3, 15), 10000m, 0m, 1500m, 1500m,
-            new DateOnly(2025, 4, 30));
+            new FilingInfo(unsupportedType, "ACME Corp", new DateOnly(2025, 3, 15), 10000m, 0m, 1500m, 1500m),
+            Guid.NewGuid(), new DateOnly(2025, 4, 30), new FilingProvenance());
 
         var result = _sut.Serialize(filing, MakeProfile(), string.Empty);
 
@@ -57,9 +56,8 @@ public class PpOpoXmlSerializerUnsupportedTypeTests
     public void Serialize_KnownIncomeType_ReturnsSuccess(IncomeType incomeType)
     {
         var filing = Filing.CreateFromIncome(
-            Guid.NewGuid(), incomeType, "ACME Corp",
-            new DateOnly(2025, 3, 15), 10000m, 0m, 1500m, 1500m,
-            new DateOnly(2025, 4, 30));
+            new FilingInfo(incomeType, "ACME Corp", new DateOnly(2025, 3, 15), 10000m, 0m, 1500m, 1500m),
+            Guid.NewGuid(), new DateOnly(2025, 4, 30), new FilingProvenance());
 
         var result = _sut.Serialize(filing, MakeProfile(), string.Empty);
 
@@ -75,9 +73,8 @@ public class PpOpoXmlSerializerUnsupportedTypeTests
     {
         // whtPaid=121.9 so taxPayable = Math.Max(123.4 - 121.9, 0) = 1.5  (satisfies domain invariant)
         var filing = Filing.CreateFromIncome(
-            Guid.NewGuid(), IncomeType.Dividend, "ACME Corp",
-            new DateOnly(2025, 3, 15), 1234.5m, 121.9m, 123.4m, 1.5m,
-            new DateOnly(2025, 4, 30));
+            new FilingInfo(IncomeType.Dividend, "ACME Corp", new DateOnly(2025, 3, 15), 1234.5m, 121.9m, 123.4m, 1.5m),
+            Guid.NewGuid(), new DateOnly(2025, 4, 30), new FilingProvenance());
 
         var result = _sut.Serialize(filing, MakeProfile(), string.Empty);
 

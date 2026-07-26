@@ -1,6 +1,7 @@
 using System.Text;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
+using Rentier.Domain.ValueObjects;
 using Rentier.Infrastructure.Serialization;
 
 namespace Rentier.Infrastructure.Tests.Serialization;
@@ -16,15 +17,17 @@ public class PpOpoXmlSerializerSnapshotTests
     // IMPORTANT: All test data must be deterministic (no random GUIDs, fixed dates)
     private static Filing MakeRepresentativeFiling() =>
         Filing.CreateFromIncome(
+            new FilingInfo(
+                incomeType: IncomeType.Dividend,
+                payingEntity: "ACME Corp",
+                incomeDate: new DateOnly(2025, 3, 15),
+                grossIncomeRsd: 12345.50m,
+                whtPaidRsd: 123.45m,
+                grossTaxPayableRsd: 1234.55m,
+                taxPayableRsd: 1111.10m),
             taxpayerProfileId: new Guid("00000000-0000-0000-0000-000000000001"),
-            incomeType: IncomeType.Dividend,
-            payingEntity: "ACME Corp",
-            incomeDate: new DateOnly(2025, 3, 15),
-            grossIncomeRsd: 12345.50m,
-            whtPaidRsd: 123.45m,
-            grossTaxPayableRsd: 1234.55m,
-            taxPayableRsd: 1111.10m,
-            filingDeadline: new DateOnly(2025, 4, 30));
+            filingDeadline: new DateOnly(2025, 4, 30),
+            provenance: new FilingProvenance());
 
     private static TaxpayerProfile MakeProfile() =>
         new(
@@ -60,15 +63,17 @@ public class PpOpoXmlSerializerSnapshotTests
     public async Task Serialize_InterestIncomeFiling_MatchesSnapshot()
     {
         var filing = Filing.CreateFromIncome(
+            new FilingInfo(
+                incomeType: IncomeType.Interest,
+                payingEntity: "First Bank",
+                incomeDate: new DateOnly(2025, 5, 10),
+                grossIncomeRsd: 5000.00m,
+                whtPaidRsd: 0m,
+                grossTaxPayableRsd: 750.00m,
+                taxPayableRsd: 750.00m),
             taxpayerProfileId: new Guid("00000000-0000-0000-0000-000000000003"),
-            incomeType: IncomeType.Interest,
-            payingEntity: "First Bank",
-            incomeDate: new DateOnly(2025, 5, 10),
-            grossIncomeRsd: 5000.00m,
-            whtPaidRsd: 0m,
-            grossTaxPayableRsd: 750.00m,
-            taxPayableRsd: 750.00m,
-            filingDeadline: new DateOnly(2025, 6, 15));
+            filingDeadline: new DateOnly(2025, 6, 15),
+            provenance: new FilingProvenance());
 
         var bytes = _sut.Serialize(filing, MakeProfile(), "Interest payment reference").Value;
         var xml = Encoding.UTF8.GetString(bytes);
@@ -86,15 +91,17 @@ public class PpOpoXmlSerializerSnapshotTests
     public async Task Serialize_FilingWithPaymentReference_MatchesSnapshot()
     {
         var filing = Filing.CreateFromIncome(
+            new FilingInfo(
+                incomeType: IncomeType.Dividend,
+                payingEntity: "ACME Corp",
+                incomeDate: new DateOnly(2025, 3, 15),
+                grossIncomeRsd: 12345.50m,
+                whtPaidRsd: 123.45m,
+                grossTaxPayableRsd: 1234.55m,
+                taxPayableRsd: 1111.10m),
             taxpayerProfileId: new Guid("00000000-0000-0000-0000-000000000001"),
-            incomeType: IncomeType.Dividend,
-            payingEntity: "ACME Corp",
-            incomeDate: new DateOnly(2025, 3, 15),
-            grossIncomeRsd: 12345.50m,
-            whtPaidRsd: 123.45m,
-            grossTaxPayableRsd: 1234.55m,
-            taxPayableRsd: 1111.10m,
-            filingDeadline: new DateOnly(2025, 4, 30));
+            filingDeadline: new DateOnly(2025, 4, 30),
+            provenance: new FilingProvenance());
 
         filing.SetPaymentReference("REF-12345");
 
@@ -114,15 +121,17 @@ public class PpOpoXmlSerializerSnapshotTests
     public async Task Serialize_FullyPopulatedFilingDetails_MatchesSnapshot()
     {
         var filing = Filing.CreateFromIncome(
+            new FilingInfo(
+                incomeType: IncomeType.Interest,
+                payingEntity: "Premium Bank d.o.o.",
+                incomeDate: new DateOnly(2025, 2, 28),
+                grossIncomeRsd: 98765.43m,
+                whtPaidRsd: 987.65m,
+                grossTaxPayableRsd: 14814.81m,
+                taxPayableRsd: 13827.16m),
             taxpayerProfileId: new Guid("00000000-0000-0000-0000-000000000001"),
-            incomeType: IncomeType.Interest,
-            payingEntity: "Premium Bank d.o.o.",
-            incomeDate: new DateOnly(2025, 2, 28),
-            grossIncomeRsd: 98765.43m,
-            whtPaidRsd: 987.65m,
-            grossTaxPayableRsd: 14814.81m,
-            taxPayableRsd: 13827.16m,
-            filingDeadline: new DateOnly(2025, 4, 15));
+            filingDeadline: new DateOnly(2025, 4, 15),
+            provenance: new FilingProvenance());
 
         filing.SetPaymentReference("IBAN: RS35170006000987654321 Model: 97 Poziv: 2025-0042");
 

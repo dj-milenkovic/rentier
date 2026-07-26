@@ -14,59 +14,53 @@ public static class TaxCalculationService
     private const decimal TaxRate = 0.15m;
 
     public static async Task<FilingInfo> CalculateAsync(
-        IncomeType incomeType,
-        string payingEntity,
-        DateOnly incomeDate,
-        decimal incomeAmount,
-        string incomeCurrency,
-        decimal whtAmount,
-        string whtCurrency,
+        IncomeTaxInput input,
         Func<DateOnly, string, Task<ExchangeRate>> rateProvider,
         CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(payingEntity))
+        if (string.IsNullOrWhiteSpace(input.PayingEntity))
             throw new DomainException("PayingEntity must not be empty");
-        if (string.IsNullOrWhiteSpace(incomeCurrency))
+        if (string.IsNullOrWhiteSpace(input.IncomeCurrency))
             throw new DomainException("IncomeCurrency must not be empty");
-        if (string.IsNullOrWhiteSpace(whtCurrency))
+        if (string.IsNullOrWhiteSpace(input.WhtCurrency))
             throw new DomainException("WhtCurrency must not be empty");
-        if (incomeAmount < 0)
+        if (input.IncomeAmount < 0)
             throw new DomainException("Income amount must not be negative");
-        if (whtAmount < 0)
+        if (input.WhtAmount < 0)
             throw new DomainException("WHT amount must not be negative");
         if (rateProvider is null)
             throw new DomainException("Rate provider must not be null");
 
-        var upperIncome = incomeCurrency.ToUpperInvariant();
-        var upperWht = whtCurrency.ToUpperInvariant();
+        var upperIncome = input.IncomeCurrency.ToUpperInvariant();
+        var upperWht = input.WhtCurrency.ToUpperInvariant();
 
-        if (whtAmount > 0 && upperWht != upperIncome)
+        if (input.WhtAmount > 0 && upperWht != upperIncome)
             throw new DomainException("WHT currency must match income currency");
 
-        var incomeRate = await rateProvider(incomeDate, upperIncome);
+        var incomeRate = await rateProvider(input.IncomeDate, upperIncome);
         if (incomeRate is null)
-            throw new DomainException($"Exchange rate not found for currency '{upperIncome}' on {incomeDate}");
+            throw new DomainException($"Exchange rate not found for currency '{upperIncome}' on {input.IncomeDate}");
         ct.ThrowIfCancellationRequested();
 
-        var grossIncomeRsd = Round(incomeAmount * incomeRate.RateToRsd);
+        var grossIncomeRsd = Round(input.IncomeAmount * incomeRate.RateToRsd);
 
         decimal whtPaidRsd = 0m;
-        if (whtAmount > 0)
+        if (input.WhtAmount > 0)
         {
-            var whtRate = (upperWht == upperIncome) ? incomeRate : await rateProvider(incomeDate, upperWht);
+            var whtRate = (upperWht == upperIncome) ? incomeRate : await rateProvider(input.IncomeDate, upperWht);
             if (whtRate is null)
-                throw new DomainException($"Exchange rate not found for WHT currency '{upperWht}' on {incomeDate}");
+                throw new DomainException($"Exchange rate not found for WHT currency '{upperWht}' on {input.IncomeDate}");
             ct.ThrowIfCancellationRequested();
-            whtPaidRsd = Round(whtAmount * whtRate.RateToRsd);
+            whtPaidRsd = Round(input.WhtAmount * whtRate.RateToRsd);
         }
 
         var grossTaxPayableRsd = Round(grossIncomeRsd * TaxRate);
         var taxPayableRsd = Math.Max(grossTaxPayableRsd - whtPaidRsd, 0m);
 
         return new FilingInfo(
-            incomeType,
-            payingEntity,
-            incomeDate,
+            input.IncomeType,
+            input.PayingEntity,
+            input.IncomeDate,
             grossIncomeRsd,
             whtPaidRsd,
             grossTaxPayableRsd,

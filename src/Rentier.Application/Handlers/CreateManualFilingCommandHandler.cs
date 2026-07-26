@@ -4,6 +4,7 @@ using Rentier.Application.Interfaces;
 using Rentier.Application.Repositories;
 using Rentier.Application.Services;
 using Rentier.Domain.Entities;
+using Rentier.Domain.ValueObjects;
 
 namespace Rentier.Application.Handlers;
 
@@ -52,20 +53,15 @@ public sealed class CreateManualFilingCommandHandler
 
         // ── Persist filing ───────────────────────────────────────────────
         var filing = Filing.CreateFromIncome(
+            r.TaxInfo,
             command.TaxpayerProfileId,
-            command.IncomeType,
-            r.TickerUpper,
-            command.IncomeDate,
-            r.TaxInfo.GrossIncomeRsd,
-            r.TaxInfo.WhtPaidRsd,
-            r.TaxInfo.GrossTaxPayableRsd,
-            r.TaxInfo.TaxPayableRsd,
             r.Deadline,
-            reportId: null,
-            exchangeRateSourceDate: r.Rate.SourceDate,
-            exchangeRateSourceType: r.Rate.SourceType,
-            ticker: r.TickerUpper,
-            paymentNotes: command.PaymentNotes);
+            new FilingProvenance(
+                ReportId: null,
+                ExchangeRateSourceDate: r.Rate.SourceDate,
+                ExchangeRateSourceType: r.Rate.SourceType,
+                Ticker: r.TickerUpper,
+                PaymentNotes: command.PaymentNotes));
 
         await _filingRepository.AddAsync(filing, ct);
 

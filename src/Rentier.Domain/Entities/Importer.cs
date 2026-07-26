@@ -1,5 +1,6 @@
 using Rentier.Domain.Enums;
 using Rentier.Domain.Exceptions;
+using Rentier.Domain.ValueObjects;
 
 namespace Rentier.Domain.Entities;
 
@@ -35,31 +36,24 @@ public sealed class Importer
         };
     }
 
-    public void UpdateDetails(
-        string displayName,
-        ReportType reportType,
-        Guid? taxpayerProfileId,
-        Guid? mailboxId,
-        string fromFilter,
-        string subjectFilter,
-        string attachmentRegex,
-        string paymentNotes)
+    public void UpdateDetails(ImporterDetails details)
     {
+        var displayName = details.DisplayName;
         if (string.IsNullOrWhiteSpace(displayName))
             throw new DomainException("DisplayName must not be null or whitespace");
         displayName = displayName.Trim();
         if (displayName.Length > 200)
             throw new DomainException("DisplayName must not exceed 200 characters");
-        if ((paymentNotes ?? string.Empty).Length > 4000)
+        if ((details.PaymentNotes ?? string.Empty).Length > 4000)
             throw new DomainException("PaymentNotes must not exceed 4000 characters");
 
         DisplayName = displayName;
-        ReportType = reportType;
-        TaxpayerProfileId = taxpayerProfileId;
-        MailboxId = mailboxId;
-        FromFilter = string.IsNullOrWhiteSpace(fromFilter) ? string.Empty : fromFilter.Trim();
-        SubjectFilter = subjectFilter ?? string.Empty;
-        AttachmentRegex = attachmentRegex ?? string.Empty;
-        PaymentNotes = paymentNotes ?? string.Empty;
+        ReportType = details.ReportType;
+        TaxpayerProfileId = details.TaxpayerProfileId;
+        MailboxId = details.MailboxId;
+        FromFilter = string.IsNullOrWhiteSpace(details.FromFilter) ? string.Empty : details.FromFilter.Trim();
+        SubjectFilter = details.SubjectFilter ?? string.Empty;
+        AttachmentRegex = details.AttachmentRegex ?? string.Empty;
+        PaymentNotes = details.PaymentNotes ?? string.Empty;
     }
 }

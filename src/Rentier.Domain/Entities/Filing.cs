@@ -1,5 +1,6 @@
 using Rentier.Domain.Enums;
 using Rentier.Domain.Exceptions;
+using Rentier.Domain.ValueObjects;
 
 namespace Rentier.Domain.Entities;
 
@@ -45,48 +46,38 @@ public sealed class Filing
 
     /// <summary>Creates a Filing from a computed income event.</summary>
     public static Filing CreateFromIncome(
+        FilingInfo info,
         Guid taxpayerProfileId,
-        IncomeType incomeType,
-        string payingEntity,
-        DateOnly incomeDate,
-        decimal grossIncomeRsd,
-        decimal whtPaidRsd,
-        decimal grossTaxPayableRsd,
-        decimal taxPayableRsd,
         DateOnly filingDeadline,
-        Guid? reportId = null,
-        DateOnly? exchangeRateSourceDate = null,
-        Rentier.Domain.Enums.ExchangeRateSourceType? exchangeRateSourceType = null,
-        string? ticker = null,
-        string? paymentNotes = null)
+        FilingProvenance provenance)
     {
-        if (string.IsNullOrWhiteSpace(payingEntity))
+        if (string.IsNullOrWhiteSpace(info.PayingEntity))
             throw new DomainException("PayingEntity must not be empty");
-        if (grossIncomeRsd < 0)
+        if (info.GrossIncomeRsd < 0)
             throw new DomainException("GrossIncomeRsd must not be negative");
-        if (whtPaidRsd < 0)
+        if (info.WhtPaidRsd < 0)
             throw new DomainException("WhtPaidRsd must not be negative");
-        if (grossTaxPayableRsd < 0)
+        if (info.GrossTaxPayableRsd < 0)
             throw new DomainException("GrossTaxPayableRsd must not be negative");
-        if (taxPayableRsd < 0)
+        if (info.TaxPayableRsd < 0)
             throw new DomainException("TaxPayableRsd must not be negative");
 
         // WHT paid by a foreign broker can legitimately exceed the computed Serbian gross tax
         // (over-withholding). The credit is capped at gross, so the net payable clamps to zero.
-        var expectedTaxPayable = Math.Max(grossTaxPayableRsd - whtPaidRsd, 0m);
-        if (taxPayableRsd != expectedTaxPayable)
+        var expectedTaxPayable = Math.Max(info.GrossTaxPayableRsd - info.WhtPaidRsd, 0m);
+        if (info.TaxPayableRsd != expectedTaxPayable)
             throw new DomainException(
-                $"TaxPayableRsd ({taxPayableRsd}) must equal Math.Max(GrossTaxPayable - WhtPaid, 0) = {expectedTaxPayable}.");
+                $"TaxPayableRsd ({info.TaxPayableRsd}) must equal Math.Max(GrossTaxPayable - WhtPaid, 0) = {expectedTaxPayable}.");
 
-        var trimmedEntity = payingEntity.Trim();
+        var trimmedEntity = info.PayingEntity.Trim();
         if (trimmedEntity.Length > 200)
             throw new DomainException("PayingEntity must not exceed 200 characters.");
-        var trimmedTicker = ticker?.Trim();
+        var trimmedTicker = provenance.Ticker?.Trim();
         if (string.IsNullOrEmpty(trimmedTicker))
             trimmedTicker = null;
         if (trimmedTicker?.Length > 20)
             throw new DomainException("Ticker must not exceed 20 characters.");
-        var trimmedPaymentNotes = paymentNotes?.Trim();
+        var trimmedPaymentNotes = provenance.PaymentNotes?.Trim();
         if (string.IsNullOrEmpty(trimmedPaymentNotes))
             trimmedPaymentNotes = null;
         if (trimmedPaymentNotes?.Length > 4000)
@@ -96,19 +87,19 @@ public sealed class Filing
         {
             Id = Guid.NewGuid(),
             TaxpayerProfileId = taxpayerProfileId,
-            TaxPeriod = incomeDate,
+            TaxPeriod = info.IncomeDate,
             Status = FilingStatus.Init,
-            IncomeType = incomeType,
+            IncomeType = info.IncomeType,
             PayingEntity = trimmedEntity,
-            IncomeDate = incomeDate,
-            GrossIncomeRsd = grossIncomeRsd,
-            WhtPaidRsd = whtPaidRsd,
-            GrossTaxPayableRsd = grossTaxPayableRsd,
-            TaxPayableRsd = taxPayableRsd,
+            IncomeDate = info.IncomeDate,
+            GrossIncomeRsd = info.GrossIncomeRsd,
+            WhtPaidRsd = info.WhtPaidRsd,
+            GrossTaxPayableRsd = info.GrossTaxPayableRsd,
+            TaxPayableRsd = info.TaxPayableRsd,
             FilingDeadline = filingDeadline,
-            ReportId = reportId,
-            ExchangeRateSourceDate = exchangeRateSourceDate,
-            ExchangeRateSourceType = exchangeRateSourceType,
+            ReportId = provenance.ReportId,
+            ExchangeRateSourceDate = provenance.ExchangeRateSourceDate,
+            ExchangeRateSourceType = provenance.ExchangeRateSourceType,
             Ticker = trimmedTicker,
             PaymentNotes = trimmedPaymentNotes,
         };

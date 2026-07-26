@@ -4,6 +4,7 @@ using Rentier.Application.Interfaces;
 using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Exceptions;
+using Rentier.Domain.ValueObjects;
 
 namespace Rentier.Application.Handlers;
 
@@ -39,7 +40,7 @@ public sealed class AddImporterCommandHandler
             async () =>
             {
                 var importer = Importer.Create(command.DisplayName, command.ReportType);
-                importer.UpdateDetails(
+                importer.UpdateDetails(new ImporterDetails(
                     command.DisplayName,
                     command.ReportType,
                     command.TaxpayerProfileId,
@@ -47,7 +48,7 @@ public sealed class AddImporterCommandHandler
                     command.FromFilter,
                     command.SubjectFilter,
                     command.AttachmentRegex,
-                    command.PaymentNotes);
+                    command.PaymentNotes));
                 await _repository.AddAsync(importer, ct);
                 return Result<Guid, Error>.Success(importer.Id);
             },
