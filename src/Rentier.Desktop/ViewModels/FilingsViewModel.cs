@@ -220,20 +220,12 @@ public sealed class FilingsViewModel : PagedSelectionViewModelBase<FilingRowView
             outputScheduler: _scheduler);
 
         PreviousPageCommand = ReactiveCommand.CreateFromTask(
-            async (CancellationToken ct) =>
-            {
-                _currentPage--;
-                await LoadPageAsync(ct);
-            },
+            OnPreviousPageAsync,
             this.WhenAnyValue(x => x.HasPreviousPage),
             outputScheduler: _scheduler);
 
         NextPageCommand = ReactiveCommand.CreateFromTask(
-            async (CancellationToken ct) =>
-            {
-                _currentPage++;
-                await LoadPageAsync(ct);
-            },
+            OnNextPageAsync,
             this.WhenAnyValue(x => x.HasNextPage),
             outputScheduler: _scheduler);
 
@@ -246,92 +238,23 @@ public sealed class FilingsViewModel : PagedSelectionViewModelBase<FilingRowView
             outputScheduler: _scheduler);
 
         AdvanceStatusCommand = ReactiveCommand.CreateFromTask<(Guid Id, FilingStatus NewStatus)>(
-            async (args, ct) =>
-            {
-                var result = await _updateStatus.HandleAsync(
-                    new UpdateFilingStatusCommand(args.Id, args.NewStatus), ct);
-                var errorToPreserve = result.IsSuccess ? null : result.Error.Message;
-                await LoadPageAsync(ct);
-                if (errorToPreserve is not null)
-                    ErrorMessage = errorToPreserve;
-            },
+            OnAdvanceStatusAsync,
             outputScheduler: _scheduler);
 
         SavePaymentRefCommand = ReactiveCommand.CreateFromTask<(Guid Id, string? Reference)>(
-            async (args, ct) =>
-            {
-                var result = await _updateReference.HandleAsync(
-                    new UpdatePaymentReferenceCommand(args.Id, args.Reference), ct);
-                var errorToPreserve = result.IsSuccess ? null : result.Error.Message;
-                await LoadPageAsync(ct);
-                if (errorToPreserve is not null)
-                    ErrorMessage = errorToPreserve;
-            },
+            OnSavePaymentRefAsync,
             outputScheduler: _scheduler);
 
         DeleteCommand = ReactiveCommand.CreateFromTask<Guid>(
-            async (id, ct) =>
-            {
-                var confirmed = await _confirmDelete(Strings.Filings_Delete_Confirmation_Message);
-                if (!confirmed) return;
-
-                var result = await _deleteFiling.HandleAsync(new DeleteFilingCommand(id), ct);
-                if (!result.IsSuccess)
-                {
-                    ErrorMessage = result.Error.Message;
-                    return;
-                }
-
-                // Decrement page when last item on a non-first page is deleted
-                if (Rows.Count == 1 && _currentPage > 1)
-                    _currentPage--;
-
-                await LoadPageAsync(ct);
-            },
+            OnDeleteAsync,
             outputScheduler: _scheduler);
 
         ExportCommand = ReactiveCommand.CreateFromTask<Guid>(
-            async (id, ct) =>
-            {
-                var result = await _exportFiling.HandleAsync(new ExportFilingCommand(id), ct);
-                if (!result.IsSuccess)
-                {
-                    ErrorMessage = result.Error.Message;
-                    return;
-                }
-                await _saveFile(result.Value);
-            },
+            OnExportAsync,
             outputScheduler: _scheduler);
 
         BulkDeleteCommand = ReactiveCommand.CreateFromTask(
-            async (CancellationToken ct) =>
-            {
-                var selectedIds = Rows
-                    .Where(r => r.IsSelected)
-                    .Select(r => r.Id)
-                    .ToList();
-
-                if (selectedIds.Count == 0) return;
-
-                var message = string.Format(Strings.BulkDelete_Filings_Confirmation_Message, selectedIds.Count);
-                var confirmed = await _confirmDelete(message);
-                if (!confirmed) return;
-
-                var result = await _bulkDeleteFilings.HandleAsync(
-                    new BulkDeleteFilingsCommand(selectedIds), ct);
-
-                if (!result.IsSuccess)
-                {
-                    ErrorMessage = Strings.BulkDelete_Error_Failed;
-                    return;
-                }
-
-                // Decrement page when all visible items on a non-first page are deleted
-                if (selectedIds.Count == Rows.Count && _currentPage > 1)
-                    _currentPage--;
-
-                await LoadPageAsync(ct);
-            },
+            OnBulkDeleteAsync,
             this.WhenAnyValue(x => x.HasSelection),
             outputScheduler: _scheduler);
 
@@ -340,128 +263,225 @@ public sealed class FilingsViewModel : PagedSelectionViewModelBase<FilingRowView
         // Same column, descending → null/unsorted (keep page).
         // Different column or null → ascending, reset to page 1.
         ApplySortCommand = ReactiveCommand.CreateFromTask<(string ColumnTag, bool? CurrentDirection)>(
-            async (args, ct) =>
-            {
-                if (!Enum.TryParse<FilingSortColumn>(args.ColumnTag, out var newColumn))
-                    return;
-
-                if (_sortColumn == newColumn)
-                {
-                    if (!_sortDescending)
-                    {
-                        // Ascending → descending (second click on same column); keep page.
-                        _sortDescending = true;
-                        this.RaisePropertyChanged(nameof(SortDescending));
-                    }
-                    else
-                    {
-                        // Descending → null/unsorted (third click on same column); keep page.
-                        _sortColumn = null;
-                        _sortDescending = false;
-                        this.RaisePropertyChanged(nameof(SortColumn));
-                        this.RaisePropertyChanged(nameof(SortDescending));
-                    }
-                }
-                else
-                {
-                    // Different column (or currently unsorted) → ascending, reset to page 1.
-                    _sortColumn = newColumn;
-                    _sortDescending = false;
-                    _currentPage = 1;
-                    this.RaisePropertyChanged(nameof(SortColumn));
-                    this.RaisePropertyChanged(nameof(SortDescending));
-                    this.RaisePropertyChanged(nameof(CurrentPage));
-                }
-
-                await LoadPageAsync(ct);
-            },
+            OnApplySortAsync,
             outputScheduler: _scheduler);
 
         ClearFiltersCommand = ReactiveCommand.CreateFromTask(
-            async (CancellationToken ct) =>
-            {
-                StatusFilter.Clear();
-                IncomeTypeFilter.Clear();
-                PayingEntityFilter.Clear();
-                PaymentReferenceFilter.Clear();
-                DeadlineFilter.Clear();
-                _currentPage = 1;
-                this.RaisePropertyChanged(nameof(CurrentPage));
-                await LoadPageAsync(ct);
-            },
+            OnClearFiltersAsync,
             this.WhenAnyValue(x => x.HasActiveFilters),
             outputScheduler: _scheduler);
 
-        this.WhenActivated(disposables =>
+        this.WhenActivated(RegisterActivation);
+    }
+
+    private async Task OnPreviousPageAsync(CancellationToken ct)
+    {
+        _currentPage--;
+        await LoadPageAsync(ct);
+    }
+
+    private async Task OnNextPageAsync(CancellationToken ct)
+    {
+        _currentPage++;
+        await LoadPageAsync(ct);
+    }
+
+    private async Task OnAdvanceStatusAsync((Guid Id, FilingStatus NewStatus) args, CancellationToken ct)
+    {
+        var result = await _updateStatus.HandleAsync(
+            new UpdateFilingStatusCommand(args.Id, args.NewStatus), ct);
+        var errorToPreserve = result.IsSuccess ? null : result.Error.Message;
+        await LoadPageAsync(ct);
+        if (errorToPreserve is not null)
+            ErrorMessage = errorToPreserve;
+    }
+
+    private async Task OnSavePaymentRefAsync((Guid Id, string? Reference) args, CancellationToken ct)
+    {
+        var result = await _updateReference.HandleAsync(
+            new UpdatePaymentReferenceCommand(args.Id, args.Reference), ct);
+        var errorToPreserve = result.IsSuccess ? null : result.Error.Message;
+        await LoadPageAsync(ct);
+        if (errorToPreserve is not null)
+            ErrorMessage = errorToPreserve;
+    }
+
+    private async Task OnDeleteAsync(Guid id, CancellationToken ct)
+    {
+        var confirmed = await _confirmDelete(Strings.Filings_Delete_Confirmation_Message);
+        if (!confirmed) return;
+
+        var result = await _deleteFiling.HandleAsync(new DeleteFilingCommand(id), ct);
+        if (!result.IsSuccess)
         {
-            LoadPageCommand.Execute().Subscribe().DisposeWith(disposables);
+            ErrorMessage = result.Error.Message;
+            return;
+        }
 
-            // M2: InvokeCommand pattern prevents undisposed Subscribe() calls in property setters
-            this.WhenAnyValue(x => x.ShowAll)
-                .Skip(1)
-                .Select(_ => Unit.Default)
-                .InvokeCommand(LoadPageCommand)
-                .DisposeWith(disposables);
+        // Decrement page when last item on a non-first page is deleted
+        if (Rows.Count == 1 && _currentPage > 1)
+            _currentPage--;
 
-            this.WhenAnyValue(x => x.ReportIdFilter)
-                .Skip(1)
-                .Select(_ => Unit.Default)
-                .InvokeCommand(LoadPageCommand)
-                .DisposeWith(disposables);
+        await LoadPageAsync(ct);
+    }
 
-            // Feature 050: when any flyout applies a filter → reset page + reload
-            Observable.Merge(
-                    StatusFilter.Applied,
-                    IncomeTypeFilter.Applied,
-                    PayingEntityFilter.Applied,
-                    PaymentReferenceFilter.Applied,
-                    DeadlineFilter.Applied)
-                .ObserveOn(_scheduler)
-                .Do(_ => { _currentPage = 1; this.RaisePropertyChanged(nameof(CurrentPage)); })
-                .Select(_ => Unit.Default)
-                .InvokeCommand(LoadPageCommand)
-                .DisposeWith(disposables);
+    private async Task OnExportAsync(Guid id, CancellationToken ct)
+    {
+        var result = await _exportFiling.HandleAsync(new ExportFilingCommand(id), ct);
+        if (!result.IsSuccess)
+        {
+            ErrorMessage = result.Error.Message;
+            return;
+        }
+        await _saveFile(result.Value);
+    }
 
-            // Feature 050: update HasActiveFilters whenever any flyout's IsActive changes
-            Observable.CombineLatest(
-                    this.WhenAnyValue(x => x.StatusFilter.IsActive),
-                    this.WhenAnyValue(x => x.IncomeTypeFilter.IsActive),
-                    this.WhenAnyValue(x => x.PayingEntityFilter.IsActive),
-                    this.WhenAnyValue(x => x.PaymentReferenceFilter.IsActive),
-                    this.WhenAnyValue(x => x.DeadlineFilter.IsActive),
-                    (s, i, p, r, d) => s || i || p || r || d)
-                .Subscribe(active => HasActiveFilters = active)
-                .DisposeWith(disposables);
+    private async Task OnBulkDeleteAsync(CancellationToken ct)
+    {
+        var selectedIds = Rows
+            .Where(r => r.IsSelected)
+            .Select(r => r.Id)
+            .ToList();
 
-            // C2: dispose row subscriptions on every deactivation cycle
-            Disposable.Create(() => _rowSubscriptions.Clear())
-                .DisposeWith(disposables);
+        if (selectedIds.Count == 0) return;
 
-            LoadPageCommand.ThrownExceptions
-                .Subscribe(ex => ErrorMessage = ex.Message)
-                .DisposeWith(disposables);
-            AdvanceStatusCommand.ThrownExceptions
-                .Subscribe(ex => ErrorMessage = ex.Message)
-                .DisposeWith(disposables);
-            SavePaymentRefCommand.ThrownExceptions
-                .Subscribe(ex => ErrorMessage = ex.Message)
-                .DisposeWith(disposables);
-            DeleteCommand.ThrownExceptions
-                .Subscribe(ex => ErrorMessage = ex.Message)
-                .DisposeWith(disposables);
-            ExportCommand.ThrownExceptions
-                .Subscribe(ex => ErrorMessage = ex.Message)
-                .DisposeWith(disposables);
-            BulkDeleteCommand.ThrownExceptions
-                .Subscribe(ex => ErrorMessage = ex.Message)
-                .DisposeWith(disposables);
-            ApplySortCommand.ThrownExceptions
-                .Subscribe(ex => ErrorMessage = ex.Message)
-                .DisposeWith(disposables);
-            ClearFiltersCommand.ThrownExceptions
-                .Subscribe(ex => ErrorMessage = ex.Message)
-                .DisposeWith(disposables);
-        });
+        var message = string.Format(Strings.BulkDelete_Filings_Confirmation_Message, selectedIds.Count);
+        var confirmed = await _confirmDelete(message);
+        if (!confirmed) return;
+
+        var result = await _bulkDeleteFilings.HandleAsync(
+            new BulkDeleteFilingsCommand(selectedIds), ct);
+
+        if (!result.IsSuccess)
+        {
+            ErrorMessage = Strings.BulkDelete_Error_Failed;
+            return;
+        }
+
+        // Decrement page when all visible items on a non-first page are deleted
+        if (selectedIds.Count == Rows.Count && _currentPage > 1)
+            _currentPage--;
+
+        await LoadPageAsync(ct);
+    }
+
+    private async Task OnApplySortAsync((string ColumnTag, bool? CurrentDirection) args, CancellationToken ct)
+    {
+        if (!Enum.TryParse<FilingSortColumn>(args.ColumnTag, out var newColumn))
+            return;
+
+        if (_sortColumn == newColumn)
+        {
+            if (!_sortDescending)
+            {
+                // Ascending → descending (second click on same column); keep page.
+                _sortDescending = true;
+                this.RaisePropertyChanged(nameof(SortDescending));
+            }
+            else
+            {
+                // Descending → null/unsorted (third click on same column); keep page.
+                _sortColumn = null;
+                _sortDescending = false;
+                this.RaisePropertyChanged(nameof(SortColumn));
+                this.RaisePropertyChanged(nameof(SortDescending));
+            }
+        }
+        else
+        {
+            // Different column (or currently unsorted) → ascending, reset to page 1.
+            _sortColumn = newColumn;
+            _sortDescending = false;
+            _currentPage = 1;
+            this.RaisePropertyChanged(nameof(SortColumn));
+            this.RaisePropertyChanged(nameof(SortDescending));
+            this.RaisePropertyChanged(nameof(CurrentPage));
+        }
+
+        await LoadPageAsync(ct);
+    }
+
+    private async Task OnClearFiltersAsync(CancellationToken ct)
+    {
+        StatusFilter.Clear();
+        IncomeTypeFilter.Clear();
+        PayingEntityFilter.Clear();
+        PaymentReferenceFilter.Clear();
+        DeadlineFilter.Clear();
+        _currentPage = 1;
+        this.RaisePropertyChanged(nameof(CurrentPage));
+        await LoadPageAsync(ct);
+    }
+
+    private void RegisterActivation(CompositeDisposable disposables)
+    {
+        LoadPageCommand.Execute().Subscribe().DisposeWith(disposables);
+
+        // M2: InvokeCommand pattern prevents undisposed Subscribe() calls in property setters
+        this.WhenAnyValue(x => x.ShowAll)
+            .Skip(1)
+            .Select(_ => Unit.Default)
+            .InvokeCommand(LoadPageCommand)
+            .DisposeWith(disposables);
+
+        this.WhenAnyValue(x => x.ReportIdFilter)
+            .Skip(1)
+            .Select(_ => Unit.Default)
+            .InvokeCommand(LoadPageCommand)
+            .DisposeWith(disposables);
+
+        // Feature 050: when any flyout applies a filter → reset page + reload
+        Observable.Merge(
+                StatusFilter.Applied,
+                IncomeTypeFilter.Applied,
+                PayingEntityFilter.Applied,
+                PaymentReferenceFilter.Applied,
+                DeadlineFilter.Applied)
+            .ObserveOn(_scheduler)
+            .Do(_ => { _currentPage = 1; this.RaisePropertyChanged(nameof(CurrentPage)); })
+            .Select(_ => Unit.Default)
+            .InvokeCommand(LoadPageCommand)
+            .DisposeWith(disposables);
+
+        // Feature 050: update HasActiveFilters whenever any flyout's IsActive changes
+        Observable.CombineLatest(
+                this.WhenAnyValue(x => x.StatusFilter.IsActive),
+                this.WhenAnyValue(x => x.IncomeTypeFilter.IsActive),
+                this.WhenAnyValue(x => x.PayingEntityFilter.IsActive),
+                this.WhenAnyValue(x => x.PaymentReferenceFilter.IsActive),
+                this.WhenAnyValue(x => x.DeadlineFilter.IsActive),
+                (s, i, p, r, d) => s || i || p || r || d)
+            .Subscribe(active => HasActiveFilters = active)
+            .DisposeWith(disposables);
+
+        // C2: dispose row subscriptions on every deactivation cycle
+        Disposable.Create(() => _rowSubscriptions.Clear())
+            .DisposeWith(disposables);
+
+        LoadPageCommand.ThrownExceptions
+            .Subscribe(ex => ErrorMessage = ex.Message)
+            .DisposeWith(disposables);
+        AdvanceStatusCommand.ThrownExceptions
+            .Subscribe(ex => ErrorMessage = ex.Message)
+            .DisposeWith(disposables);
+        SavePaymentRefCommand.ThrownExceptions
+            .Subscribe(ex => ErrorMessage = ex.Message)
+            .DisposeWith(disposables);
+        DeleteCommand.ThrownExceptions
+            .Subscribe(ex => ErrorMessage = ex.Message)
+            .DisposeWith(disposables);
+        ExportCommand.ThrownExceptions
+            .Subscribe(ex => ErrorMessage = ex.Message)
+            .DisposeWith(disposables);
+        BulkDeleteCommand.ThrownExceptions
+            .Subscribe(ex => ErrorMessage = ex.Message)
+            .DisposeWith(disposables);
+        ApplySortCommand.ThrownExceptions
+            .Subscribe(ex => ErrorMessage = ex.Message)
+            .DisposeWith(disposables);
+        ClearFiltersCommand.ThrownExceptions
+            .Subscribe(ex => ErrorMessage = ex.Message)
+            .DisposeWith(disposables);
     }
 
     private async Task LoadPageAsync(CancellationToken ct = default)

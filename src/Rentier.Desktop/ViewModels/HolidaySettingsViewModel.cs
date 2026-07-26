@@ -104,74 +104,80 @@ public sealed class HolidaySettingsViewModel : ReactiveObject, IActivatableViewM
             HasUnsavedChanges = true;
         }, canDelete);
 
-        SaveCommand = ReactiveCommand.CreateFromTask(async (CancellationToken ct) =>
-        {
-            IsLoading = true;
-            ErrorMessage = null;
-            SuccessMessage = null;
-            try
-            {
-                var cmd = new SaveHolidayConfCommand(Entries.Select(e => e.ToDto()).ToList(), StartYear, EndYear);
-                var result = await _saveHandler.HandleAsync(cmd, ct);
-                if (result.IsSuccess) { SuccessMessage = Strings.Holidays_Saved_Confirmation; HasUnsavedChanges = false; }
-                else { ErrorMessage = result.Error.Message; }
-            }
-            finally { IsLoading = false; }
-        }, canSaveOrFetch);
+        SaveCommand = ReactiveCommand.CreateFromTask(OnSaveAsync, canSaveOrFetch);
 
-        FetchFromWebCommand = ReactiveCommand.CreateFromTask(async (CancellationToken ct) =>
+        FetchFromWebCommand = ReactiveCommand.CreateFromTask(OnFetchAsync, canSaveOrFetch);
+
+        this.WhenActivated(RegisterActivation);
+    }
+
+    private async Task OnSaveAsync(CancellationToken ct)
+    {
+        IsLoading = true;
+        ErrorMessage = null;
+        SuccessMessage = null;
+        try
         {
-            IsLoading = true;
-            ErrorMessage = null;
-            SuccessMessage = null;
-            try
+            var cmd = new SaveHolidayConfCommand(Entries.Select(e => e.ToDto()).ToList(), StartYear, EndYear);
+            var result = await _saveHandler.HandleAsync(cmd, ct);
+            if (result.IsSuccess) { SuccessMessage = Strings.Holidays_Saved_Confirmation; HasUnsavedChanges = false; }
+            else { ErrorMessage = result.Error.Message; }
+        }
+        finally { IsLoading = false; }
+    }
+
+    private async Task OnFetchAsync(CancellationToken ct)
+    {
+        IsLoading = true;
+        ErrorMessage = null;
+        SuccessMessage = null;
+        try
+        {
+            var cmd = new FetchHolidaysFromWebCommand(StartYear, EndYear);
+            var result = await _fetchHandler.HandleAsync(cmd, ct);
+            if (result.IsSuccess)
             {
-                var cmd = new FetchHolidaysFromWebCommand(StartYear, EndYear);
-                var result = await _fetchHandler.HandleAsync(cmd, ct);
-                if (result.IsSuccess)
+                var existingDates = Entries.Select(e => e.Date).ToHashSet();
+                int added = 0;
+                foreach (var dto in result.Value.OrderBy(d => d.Date))
                 {
-                    var existingDates = Entries.Select(e => e.Date).ToHashSet();
-                    int added = 0;
-                    foreach (var dto in result.Value.OrderBy(d => d.Date))
+                    if (existingDates.Add(dto.Date))
                     {
-                        if (existingDates.Add(dto.Date))
-                        {
-                            Entries.Add(HolidayEntryViewModel.FromDto(dto));
-                            added++;
-                        }
+                        Entries.Add(HolidayEntryViewModel.FromDto(dto));
+                        added++;
                     }
-                    if (added > 0) HasUnsavedChanges = true;
-                    SuccessMessage = string.Format(Strings.Holidays_FetchFromWeb_Success, added, EndYear - StartYear + 1);
                 }
-                else { ErrorMessage = result.Error.Message; }
+                if (added > 0) HasUnsavedChanges = true;
+                SuccessMessage = string.Format(Strings.Holidays_FetchFromWeb_Success, added, EndYear - StartYear + 1);
             }
-            finally { IsLoading = false; }
-        }, canSaveOrFetch);
+            else { ErrorMessage = result.Error.Message; }
+        }
+        finally { IsLoading = false; }
+    }
 
-        this.WhenActivated(disposables =>
+    private void RegisterActivation(CompositeDisposable disposables)
+    {
+        // Raise HasItems when collection size changes and rebuild the filtered view.
+        // Managed here so the subscription is tied to the activation lifecycle.
+        NotifyCollectionChangedEventHandler onEntriesChanged = (_, _) =>
         {
-            // Raise HasItems when collection size changes and rebuild the filtered view.
-            // Managed here so the subscription is tied to the activation lifecycle.
-            NotifyCollectionChangedEventHandler onEntriesChanged = (_, _) =>
-            {
-                this.RaisePropertyChanged(nameof(HasItems));
-                RebuildFilteredEntries();
-            };
-            Entries.CollectionChanged += onEntriesChanged;
-            Disposable.Create(() => Entries.CollectionChanged -= onEntriesChanged)
-                .DisposeWith(disposables);
+            this.RaisePropertyChanged(nameof(HasItems));
+            RebuildFilteredEntries();
+        };
+        Entries.CollectionChanged += onEntriesChanged;
+        Disposable.Create(() => Entries.CollectionChanged -= onEntriesChanged)
+            .DisposeWith(disposables);
 
-            Observable.FromAsync(ct => LoadAsync(ct))
-                .ObserveOn(_scheduler)
-                .Subscribe()
-                .DisposeWith(disposables);
-            SaveCommand.ThrownExceptions
-                .Subscribe(ex => ErrorMessage = ex.Message)
-                .DisposeWith(disposables);
-            FetchFromWebCommand.ThrownExceptions
-                .Subscribe(ex => ErrorMessage = ex.Message)
-                .DisposeWith(disposables);
-        });
+        Observable.FromAsync(ct => LoadAsync(ct))
+            .ObserveOn(_scheduler)
+            .Subscribe()
+            .DisposeWith(disposables);
+        SaveCommand.ThrownExceptions
+            .Subscribe(ex => ErrorMessage = ex.Message)
+            .DisposeWith(disposables);
+        FetchFromWebCommand.ThrownExceptions
+            .Subscribe(ex => ErrorMessage = ex.Message)
+            .DisposeWith(disposables);
     }
 
     private void RebuildFilteredEntries()
