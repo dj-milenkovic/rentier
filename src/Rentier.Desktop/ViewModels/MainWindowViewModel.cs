@@ -192,7 +192,7 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
         await Task.CompletedTask;
     }
 
-    private IReadOnlyList<NavigationEntry> BuildNavigationEntries(
+    private List<NavigationEntry> BuildNavigationEntries(
         IServiceProvider provider, ILocalizationService localizationService)
     {
         // ── Dashboard navigation ──────────────────────────────────────────────
