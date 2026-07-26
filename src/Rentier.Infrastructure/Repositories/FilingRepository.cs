@@ -245,7 +245,7 @@ public sealed class FilingRepository : IFilingRepository
             return new Dictionary<Guid, (int, DateOnly?)>();
 
         var rows = await _db.Filings.AsNoTracking()
-            .Where(f => f.ReportId.HasValue && reportIds.Contains(f.ReportId!.Value))
+            .Where(f => f.ReportId.HasValue && reportIds.Contains(f.ReportId.Value))
             .GroupBy(f => f.ReportId!.Value)
             .Select(g => new
             {
