@@ -112,34 +112,54 @@ public sealed class FilingRepository : IFilingRepository
             query = query.Where(f =>
                 f.Status == FilingStatus.Init || f.Status == FilingStatus.Filed);
 
-        if (columnFilter is not null)
-        {
-            if (columnFilter.Status.HasValue)
-                query = query.Where(f => f.Status == columnFilter.Status.Value);
-            if (columnFilter.IncomeType.HasValue)
-                query = query.Where(f => f.IncomeType == columnFilter.IncomeType.Value);
-            if (!string.IsNullOrEmpty(columnFilter.PayingEntity))
-                query = query.Where(f => EF.Functions.Like(f.PayingEntity, $"%{columnFilter.PayingEntity}%"));
-            if (columnFilter.FilingDeadline.HasValue)
-                query = query.Where(f => f.FilingDeadline == columnFilter.FilingDeadline.Value);
-            if (!string.IsNullOrEmpty(columnFilter.PaymentReference))
-                query = query.Where(f => f.PaymentReference != null && EF.Functions.Like(f.PaymentReference, $"%{columnFilter.PaymentReference}%"));
-
-            // Feature 050: multi-select enum filters and text-based deadline search
-            if (columnFilter.Statuses is { Count: > 0 } statuses)
-                query = query.Where(f => statuses.Contains(f.Status));
-            if (columnFilter.IncomeTypes is { Count: > 0 } incomeTypes)
-                query = query.Where(f => incomeTypes.Contains(f.IncomeType));
-            if (!string.IsNullOrEmpty(columnFilter.FilingDeadlineText))
-            {
-                var dlPattern = $"%{columnFilter.FilingDeadlineText}%";
-                query = query.Where(f => EF.Functions.Like(f.FilingDeadline.ToString(), dlPattern));
-            }
-        }
+        query = ApplyColumnFilters(query, columnFilter);
 
         var total = await query.CountAsync(ct);
 
-        IOrderedQueryable<Filing> ordered = (sortColumn, sortDescending) switch
+        var ordered = ApplySort(query, sortColumn, sortDescending);
+
+        var items = await ordered
+            .ThenBy(f => f.Id)
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync(ct);
+
+        return (items.AsReadOnly(), total);
+    }
+
+    private static IQueryable<Filing> ApplyColumnFilters(IQueryable<Filing> query, FilingColumnFilter? columnFilter)
+    {
+        if (columnFilter is null)
+            return query;
+
+        if (columnFilter.Status.HasValue)
+            query = query.Where(f => f.Status == columnFilter.Status.Value);
+        if (columnFilter.IncomeType.HasValue)
+            query = query.Where(f => f.IncomeType == columnFilter.IncomeType.Value);
+        if (!string.IsNullOrEmpty(columnFilter.PayingEntity))
+            query = query.Where(f => EF.Functions.Like(f.PayingEntity, $"%{columnFilter.PayingEntity}%"));
+        if (columnFilter.FilingDeadline.HasValue)
+            query = query.Where(f => f.FilingDeadline == columnFilter.FilingDeadline.Value);
+        if (!string.IsNullOrEmpty(columnFilter.PaymentReference))
+            query = query.Where(f => f.PaymentReference != null && EF.Functions.Like(f.PaymentReference, $"%{columnFilter.PaymentReference}%"));
+
+        // Feature 050: multi-select enum filters and text-based deadline search
+        if (columnFilter.Statuses is { Count: > 0 } statuses)
+            query = query.Where(f => statuses.Contains(f.Status));
+        if (columnFilter.IncomeTypes is { Count: > 0 } incomeTypes)
+            query = query.Where(f => incomeTypes.Contains(f.IncomeType));
+        if (!string.IsNullOrEmpty(columnFilter.FilingDeadlineText))
+        {
+            var dlPattern = $"%{columnFilter.FilingDeadlineText}%";
+            query = query.Where(f => EF.Functions.Like(f.FilingDeadline.ToString(), dlPattern));
+        }
+
+        return query;
+    }
+
+    private static IOrderedQueryable<Filing> ApplySort(
+        IQueryable<Filing> query, FilingSortColumn sortColumn, bool sortDescending)
+        => (sortColumn, sortDescending) switch
         {
             (FilingSortColumn.FilingDeadline, true) => query.OrderByDescending(f => f.FilingDeadline),
             (FilingSortColumn.FilingDeadline, false) => query.OrderBy(f => f.FilingDeadline),
@@ -155,15 +175,6 @@ public sealed class FilingRepository : IFilingRepository
             (FilingSortColumn.PaymentReference, false) => query.OrderBy(f => f.PaymentReference),
             _ => throw new ArgumentOutOfRangeException(nameof(sortColumn))
         };
-
-        var items = await ordered
-            .ThenBy(f => f.Id)
-            .Skip(skip)
-            .Take(take)
-            .ToListAsync(ct);
-
-        return (items.AsReadOnly(), total);
-    }
 
     public async Task<int> GetFilingCountByReportIdAsync(Guid reportId, CancellationToken ct = default)
         => await _db.Filings.AsNoTracking().CountAsync(f => f.ReportId == reportId, ct);
