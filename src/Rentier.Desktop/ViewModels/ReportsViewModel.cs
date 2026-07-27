@@ -3,7 +3,6 @@ using ReactiveUI.Primitives.Concurrency;
 using ReactiveUI.Primitives.Disposables;
 using Rentier.Desktop.Extensions;
 using ReactiveUI;
-using static ReactiveUI.Primitives.LinqExtensions;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
@@ -149,14 +148,14 @@ public sealed class ReportsViewModel : PagedSelectionViewModelBase<ReportRowView
             new CheckableItem<ReportStatus>("Partial Error", ReportStatus.PartialError),
         });
 
-        _hasActiveFilters = CombineLatest(
-            this.WhenAnyValue(x => x.NameFilter.IsActive),
-            this.WhenAnyValue(x => x.ImporterFilter.IsActive),
-            this.WhenAnyValue(x => x.ImportDateFilter.IsActive),
-            this.WhenAnyValue(x => x.EmailDateFilter.IsActive),
-            this.WhenAnyValue(x => x.FilingCountFilter.IsActive),
-            this.WhenAnyValue(x => x.StatusFilter.IsActive),
-            (a, b, c, d, e, f) => a || b || c || d || e || f)
+        _hasActiveFilters = this.WhenAnyValue(x => x.NameFilter.IsActive)
+            .CombineLatest(
+                this.WhenAnyValue(x => x.ImporterFilter.IsActive),
+                this.WhenAnyValue(x => x.ImportDateFilter.IsActive),
+                this.WhenAnyValue(x => x.EmailDateFilter.IsActive),
+                this.WhenAnyValue(x => x.FilingCountFilter.IsActive),
+                this.WhenAnyValue(x => x.StatusFilter.IsActive),
+                (a, b, c, d, e, f) => a || b || c || d || e || f)
             .ToProperty(this, x => x.HasActiveFilters, scheduler: _scheduler);
 
         var canGoToPreviousPage = this.WhenAnyValue(

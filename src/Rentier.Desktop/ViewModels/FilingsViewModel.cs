@@ -3,7 +3,6 @@ using ReactiveUI.Primitives.Concurrency;
 using ReactiveUI.Primitives.Disposables;
 using Rentier.Desktop.Extensions;
 using ReactiveUI;
-using static ReactiveUI.Primitives.LinqExtensions;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
@@ -442,8 +441,8 @@ public sealed class FilingsViewModel : PagedSelectionViewModelBase<FilingRowView
             .DisposeWith(disposables);
 
         // Feature 050: update HasActiveFilters whenever any flyout's IsActive changes
-        CombineLatest(
-                this.WhenAnyValue(x => x.StatusFilter.IsActive),
+        this.WhenAnyValue(x => x.StatusFilter.IsActive)
+            .CombineLatest(
                 this.WhenAnyValue(x => x.IncomeTypeFilter.IsActive),
                 this.WhenAnyValue(x => x.PayingEntityFilter.IsActive),
                 this.WhenAnyValue(x => x.PaymentReferenceFilter.IsActive),
