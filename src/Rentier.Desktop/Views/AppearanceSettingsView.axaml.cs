@@ -1,5 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
-using ReactiveUI.Avalonia;
+using ReactiveUI.Avalonia.Reactive;
 using Rentier.Desktop.ViewModels;
 
 namespace Rentier.Desktop.Views;
