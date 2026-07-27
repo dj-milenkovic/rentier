@@ -1,9 +1,9 @@
 using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
-using System.Reactive.Disposables.Fluent;
 using System.Reactive.Linq;
-using ReactiveUI;
+using ReactiveUI.Primitives.Disposables;
+using ReactiveUI.Reactive;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
@@ -408,7 +408,7 @@ public sealed class FilingsViewModel : PagedSelectionViewModelBase<FilingRowView
         await LoadPageAsync(ct);
     }
 
-    private void RegisterActivation(CompositeDisposable disposables)
+    private void RegisterActivation(MultipleDisposable disposables)
     {
         LoadPageCommand.Execute().Subscribe().DisposeWith(disposables);
 

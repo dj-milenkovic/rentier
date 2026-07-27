@@ -2,7 +2,7 @@ using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using FluentAssertions;
 using NSubstitute;
-using ReactiveUI;
+using ReactiveUI.Reactive;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;

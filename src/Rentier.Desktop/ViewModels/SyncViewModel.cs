@@ -1,15 +1,14 @@
 using System.Collections.ObjectModel;
 using System.Reactive;
 using System.Reactive.Concurrency;
-using System.Reactive.Disposables;
 using System.Reactive.Linq;
-using ReactiveUI;
+using ReactiveUI.Primitives.Disposables;
+using ReactiveUI.Reactive;
 using Rentier.Application.Commands;
 using Rentier.Domain.Enums;
 using Rentier.Domain.ValueObjects;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
-using System.Reactive.Disposables.Fluent;
 
 namespace Rentier.Desktop.ViewModels;
 
@@ -190,7 +189,7 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
             this.WhenAnyValue(x => x.IsRunning),
             outputScheduler: effectiveScheduler);
 
-        this.WhenActivated(disposables =>
+        this.WhenActivated((MultipleDisposable disposables) =>
         {
             SyncCommand.IsExecuting
                 .Subscribe(v => IsRunning = v)

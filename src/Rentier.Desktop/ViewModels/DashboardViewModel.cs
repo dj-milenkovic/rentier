@@ -2,13 +2,13 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Reactive;
 using System.Reactive.Concurrency;
-using ReactiveUI;
+using ReactiveUI.Primitives.Disposables;
+using ReactiveUI.Reactive;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
 using Rentier.Desktop.Resources;
-using System.Reactive.Disposables.Fluent;
 
 namespace Rentier.Desktop.ViewModels;
 
@@ -115,7 +115,7 @@ public sealed class DashboardViewModel : ReactiveObject, IActivatableViewModel
         NavigateToFilingsCommand = ReactiveCommand.Create(
             () => _navigateToFilings(), outputScheduler: outputScheduler);
 
-        this.WhenActivated(disposables =>
+        this.WhenActivated((MultipleDisposable disposables) =>
         {
             LoadCommand.Execute().Subscribe().DisposeWith(disposables);
             LoadCommand.ThrownExceptions

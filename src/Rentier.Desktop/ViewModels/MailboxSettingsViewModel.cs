@@ -1,10 +1,9 @@
 using System.Collections.ObjectModel;
 using System.Reactive;
 using System.Reactive.Concurrency;
-using System.Reactive.Disposables;
-using System.Reactive.Disposables.Fluent;
 using System.Reactive.Linq;
-using ReactiveUI;
+using ReactiveUI.Primitives.Disposables;
+using ReactiveUI.Reactive;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
@@ -136,7 +135,7 @@ public sealed class MailboxSettingsViewModel : ReactiveObject, IActivatableViewM
                 }
             });
 
-        this.WhenActivated(disposables =>
+        this.WhenActivated((MultipleDisposable disposables) =>
         {
             Observable.FromAsync(ct => LoadAsync(ct))
                 .ObserveOn(_scheduler)

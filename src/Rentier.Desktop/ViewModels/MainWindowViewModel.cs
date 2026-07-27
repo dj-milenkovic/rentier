@@ -1,13 +1,12 @@
 using Avalonia.Media;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reactive.Concurrency;
-using System.Reactive.Disposables;
 using System.Reactive.Linq;
-using ReactiveUI;
+using ReactiveUI.Primitives.Disposables;
+using ReactiveUI.Reactive;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Desktop.Services;
-using System.Reactive.Disposables.Fluent;
 
 namespace Rentier.Desktop.ViewModels;
 
@@ -274,7 +273,7 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
         };
     }
 
-    private void RegisterActivation(CompositeDisposable disposables)
+    private void RegisterActivation(MultipleDisposable disposables)
     {
         this.WhenAnyValue(x => x.SelectedEntry)
             .Subscribe(entry =>

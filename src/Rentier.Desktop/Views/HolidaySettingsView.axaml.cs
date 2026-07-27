@@ -1,5 +1,6 @@
-using ReactiveUI.Avalonia;
-using ReactiveUI;
+using ReactiveUI.Avalonia.Reactive;
+using ReactiveUI.Primitives.Disposables;
+using ReactiveUI.Reactive;
 using Rentier.Desktop.ViewModels;
 
 namespace Rentier.Desktop.Views;
@@ -9,6 +10,6 @@ public partial class HolidaySettingsView : ReactiveUserControl<HolidaySettingsVi
     public HolidaySettingsView()
     {
         InitializeComponent();
-        this.WhenActivated(disposables => { });
+        this.WhenActivated((MultipleDisposable disposables) => { });
     }
 }

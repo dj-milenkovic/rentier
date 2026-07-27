@@ -1,4 +1,4 @@
-using ReactiveUI;
+using ReactiveUI.Reactive;
 using Rentier.Application.DTOs;
 
 namespace Rentier.Desktop.ViewModels;

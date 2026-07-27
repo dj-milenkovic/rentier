@@ -1,10 +1,9 @@
 using System.Collections.ObjectModel;
 using System.Reactive;
 using System.Reactive.Concurrency;
-using System.Reactive.Disposables;
-using System.Reactive.Disposables.Fluent;
 using System.Reactive.Linq;
-using ReactiveUI;
+using ReactiveUI.Primitives.Disposables;
+using ReactiveUI.Reactive;
 using Rentier.Desktop.Resources;
 
 namespace Rentier.Desktop.ViewModels;
@@ -17,7 +16,7 @@ public abstract class PagedSelectionViewModelBase<TRow> : ReactiveObject, IActiv
     protected readonly IScheduler _scheduler;
     private int _selectedCount;
     private bool _isUpdatingSelection;
-    protected readonly CompositeDisposable _rowSubscriptions = new();
+    protected readonly MultipleDisposable _rowSubscriptions = new();
 
     private readonly ObservableAsPropertyHelper<bool> _hasSelection;
     private readonly ObservableAsPropertyHelper<string> _deleteSelectedLabel;
