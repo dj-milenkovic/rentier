@@ -1,6 +1,6 @@
 using System.Globalization;
-using System.Reactive;
-using System.Reactive.Linq;
+using ReactiveUI.Primitives;
+using ReactiveUI.Primitives.Extensions;
 using ReactiveUI;
 using Rentier.Application.DTOs;
 using Rentier.Desktop.Extensions;
@@ -63,13 +63,13 @@ public sealed class FilingRowViewModel : ReactiveObject, ISelectableRow
         : Strings.Filings_Tooltip_AdvanceStatus_None;
 
     /// <summary>Per-row command to advance this filing to its next status.</summary>
-    public ReactiveCommand<Unit, Unit> AdvanceStatusCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> AdvanceStatusCommand { get; }
 
     /// <summary>Per-row command to export this filing as PP-OPO XML.</summary>
-    public ReactiveCommand<Unit, Unit> ExportCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> ExportCommand { get; }
 
     /// <summary>Per-row command to delete this filing.</summary>
-    public ReactiveCommand<Unit, Unit> DeleteCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> DeleteCommand { get; }
 
     private FilingRowViewModel(
         FilingRowDto dto,
@@ -87,7 +87,7 @@ public sealed class FilingRowViewModel : ReactiveObject, ISelectableRow
 
         AdvanceStatusCommand = ReactiveCommand.Create(
             () => advanceStatus((Id, AvailableNextStatuses[0])),
-            Observable.Return(HasNextStatus));
+            Observables.Return(HasNextStatus));
         ExportCommand = ReactiveCommand.Create(() => export(Id));
         DeleteCommand = ReactiveCommand.Create(() => delete(Id));
     }
