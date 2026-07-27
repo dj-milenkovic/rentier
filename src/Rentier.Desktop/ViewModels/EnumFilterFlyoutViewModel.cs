@@ -1,7 +1,6 @@
 using System.Collections.ObjectModel;
-using System.Reactive;
-using System.Reactive.Linq;
-using System.Reactive.Subjects;
+using ReactiveUI.Primitives;
+using ReactiveUI.Primitives.Signals;
 using ReactiveUI;
 using Rentier.Desktop.Models;
 
@@ -18,13 +17,13 @@ namespace Rentier.Desktop.ViewModels;
 public sealed class EnumFilterFlyoutViewModel<T> : ReactiveObject
     where T : struct, Enum
 {
-    private readonly Subject<Unit> _applied = new();
+    private readonly Signal<RxVoid> _applied = new();
     private bool _isOpen;
     private bool _isActive;
     private HashSet<T>? _committed; // null = all selected (no filter active)
 
     /// <summary>Fires each time the user clicks Apply.</summary>
-    public IObservable<Unit> Applied => _applied.AsObservable();
+    public IObservable<RxVoid> Applied => _applied.AsObservable();
 
     /// <summary>Whether the flyout popup is currently open.</summary>
     public bool IsOpen
@@ -49,10 +48,10 @@ public sealed class EnumFilterFlyoutViewModel<T> : ReactiveObject
     /// <summary>Working-copy checkbox items shown inside the flyout.</summary>
     public ObservableCollection<CheckableItem<T>> WorkingItems { get; }
 
-    public ReactiveCommand<Unit, Unit> ToggleOpenCommand { get; }
-    public ReactiveCommand<Unit, Unit> SelectAllCommand { get; }
-    public ReactiveCommand<Unit, Unit> ClearAllCommand { get; }
-    public ReactiveCommand<Unit, Unit> ApplyCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> ToggleOpenCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> SelectAllCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> ClearAllCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> ApplyCommand { get; }
 
     public EnumFilterFlyoutViewModel(IEnumerable<CheckableItem<T>> items)
     {
@@ -92,7 +91,7 @@ public sealed class EnumFilterFlyoutViewModel<T> : ReactiveObject
             }
 
             IsOpen = false;
-            _applied.OnNext(Unit.Default);
+            _applied.OnNext(RxVoid.Default);
         });
     }
 
