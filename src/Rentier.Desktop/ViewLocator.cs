@@ -1,7 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
-using ReactiveUI;
+using ReactiveUI.Reactive;
 
 namespace Rentier.Desktop;
 

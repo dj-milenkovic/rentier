@@ -1,9 +1,9 @@
 using System.Reactive;
 using System.Reactive.Concurrency;
-using System.Reactive.Disposables;
-using System.Reactive.Disposables.Fluent;
 using System.Reactive.Linq;
-using ReactiveUI;
+using ReactiveUI.Primitives.Disposables;
+using Rentier.Desktop.Extensions;
+using ReactiveUI.Reactive;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
@@ -244,7 +244,7 @@ public sealed class ManualFilingViewModel : ReactiveObject, IActivatableViewMode
             () => { ErrorMessage = null; },
             outputScheduler: scheduler);
 
-        this.WhenActivated(disposables =>
+        this.WhenActivated((MultipleDisposable disposables) =>
         {
             // C3: profile load moved out of constructor to avoid fire-and-forget task
             Observable.FromAsync(ct => LoadProfileAsync(ct))

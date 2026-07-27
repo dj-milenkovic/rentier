@@ -1,6 +1,6 @@
 using Avalonia;
 using Avalonia.Headless;
-using ReactiveUI.Avalonia;
+using ReactiveUI.Avalonia.Reactive;
 using Rentier.UnitTests.Desktop;
 using Xunit;
 

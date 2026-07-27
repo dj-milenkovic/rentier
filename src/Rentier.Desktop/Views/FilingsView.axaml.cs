@@ -2,11 +2,11 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.LogicalTree;
-using ReactiveUI.Avalonia;
-using ReactiveUI;
-using System.Reactive.Disposables;
+using ReactiveUI.Avalonia.Reactive;
+using ReactiveUI.Primitives.Disposables;
+using Rentier.Desktop.Extensions;
+using ReactiveUI.Reactive;
 using Rentier.Desktop.ViewModels;
-using System.Reactive.Disposables.Fluent;
 
 namespace Rentier.Desktop.Views;
 
@@ -16,7 +16,7 @@ namespace Rentier.Desktop.Views;
 /// </summary>
 public partial class FilingsView : ReactiveUserControl<FilingsViewModel>
 {
-    private readonly CompositeDisposable _disposables = new();
+    private readonly MultipleDisposable _disposables = new();
 
     public FilingsView() => InitializeComponent();
 

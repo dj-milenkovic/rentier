@@ -17,8 +17,27 @@ updates:
       prefix: "chore"
       include: "scope"
     groups:
+      # ── Version-locked families ─────────────────────────────────────────────
+      # These ship as matched sets: bumping one member without the others produces
+      # a PR that cannot build. ReactiveUI.Avalonia[.Reactive] is compiled against
+      # an exact ReactiveUI version and pins an exact Avalonia version, so the whole
+      # UI stack has to move as one unit. Listed before the catch-all group below
+      # (Dependabot assigns each dependency to the first group it matches) and with
+      # no `update-types` filter, so majors group here too instead of splitting into
+      # single-package PRs.
+      avalonia-reactiveui:
+        patterns:
+          - "Avalonia*"
+          - "ReactiveUI*"
+      entity-framework-core:
+        patterns:
+          - "Microsoft.EntityFrameworkCore*"
+      xunit:
+        patterns:
+          - "xunit*"
+
       # Minor and patch updates ship together in a single PR — less noise.
-      # Major updates always get their own individual PRs for conscious review.
+      # Major updates outside the families above still get their own PRs.
       nuget-minor-patch:
         update-types:
           - "minor"
