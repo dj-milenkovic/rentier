@@ -138,15 +138,16 @@ public sealed class HolidaySettingsViewModel : ReactiveObject, IActivatableViewM
             if (result.IsSuccess)
             {
                 var existingDates = Entries.Select(e => e.Date).ToHashSet();
-                int added = 0;
-                foreach (var dto in result.Value.OrderBy(d => d.Date))
-                {
-                    if (existingDates.Add(dto.Date))
-                    {
-                        Entries.Add(HolidayEntryViewModel.FromDto(dto));
-                        added++;
-                    }
-                }
+                var newHolidays = result.Value
+                    .OrderBy(d => d.Date)
+                    .Where(d => !existingDates.Contains(d.Date))
+                    .DistinctBy(d => d.Date)
+                    .ToList();
+
+                foreach (var dto in newHolidays)
+                    Entries.Add(HolidayEntryViewModel.FromDto(dto));
+
+                var added = newHolidays.Count;
                 if (added > 0) HasUnsavedChanges = true;
                 SuccessMessage = string.Format(Strings.Holidays_FetchFromWeb_Success, added, EndYear - StartYear + 1);
             }
@@ -183,13 +184,14 @@ public sealed class HolidaySettingsViewModel : ReactiveObject, IActivatableViewM
     private void RebuildFilteredEntries()
     {
         FilteredEntries.Clear();
-        foreach (var entry in Entries)
-        {
-            // Always include newly-added rows (DateOnly.MinValue = not yet set)
-            if (entry.Date == DateOnly.MinValue ||
-                (entry.Date.Year >= StartYear && entry.Date.Year <= EndYear))
-                FilteredEntries.Add(entry);
-        }
+
+        // Always include newly-added rows (DateOnly.MinValue = not yet set)
+        var visible = Entries.Where(entry =>
+            entry.Date == DateOnly.MinValue ||
+            (entry.Date.Year >= StartYear && entry.Date.Year <= EndYear));
+
+        foreach (var entry in visible)
+            FilteredEntries.Add(entry);
     }
 
     private async Task LoadAsync(CancellationToken ct = default)

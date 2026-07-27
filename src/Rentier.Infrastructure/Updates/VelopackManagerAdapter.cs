@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using Velopack;
 using Velopack.Sources;
 
@@ -12,14 +13,38 @@ namespace Rentier.Infrastructure.Updates;
 [ExcludeFromCodeCoverage]
 internal sealed class VelopackManagerAdapter : IVelopackManager
 {
-    private const string RepoUrl = "https://github.com/zribktad/Rentier";
+    private const string UPDATE_FEED_METADATA_KEY = "UpdateFeedUrl";
 
     private readonly UpdateManager _manager;
     private UpdateInfo? _pendingUpdate;
 
     public VelopackManagerAdapter()
+        : this(ResolveUpdateFeedUrl()) { }
+
+    internal VelopackManagerAdapter(string updateFeedUrl)
     {
-        _manager = new UpdateManager(new GithubSource(RepoUrl, null, false));
+        _manager = new UpdateManager(new GithubSource(updateFeedUrl, null, false));
+    }
+
+    /// <summary>
+    /// Reads the update feed from this assembly's <c>UpdateFeedUrl</c> metadata, which is
+    /// emitted from the <c>RentierUpdateFeedUrl</c> MSBuild property. Keeping the location in
+    /// build configuration rather than source avoids a hardcoded URI (Sonar S1075) and lets a
+    /// fork retarget the updater without editing code.
+    /// </summary>
+    private static string ResolveUpdateFeedUrl()
+    {
+        var url = typeof(VelopackManagerAdapter).Assembly
+            .GetCustomAttributes<AssemblyMetadataAttribute>()
+            .FirstOrDefault(a => a.Key == UPDATE_FEED_METADATA_KEY)?
+            .Value;
+
+        if (string.IsNullOrWhiteSpace(url))
+            throw new InvalidOperationException(
+                $"Assembly metadata '{UPDATE_FEED_METADATA_KEY}' is missing. " +
+                "Set the RentierUpdateFeedUrl MSBuild property in Rentier.Infrastructure.csproj.");
+
+        return url;
     }
 
     public bool IsInstalled => _manager.IsInstalled;

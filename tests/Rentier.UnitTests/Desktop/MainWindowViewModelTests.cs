@@ -44,6 +44,7 @@ public class MainWindowViewModelTests
             Substitute.For<ICommandHandler<BulkDeleteFilingsCommand, Result<VoidResult, Error>>>());
         services.AddTransient<Func<string, Task<bool>>>(_ => _ => Task.FromResult(false));
         services.AddTransient<Func<ExportFilingResult, Task>>(_ => _ => Task.CompletedTask);
+        services.AddTransient<FilingsHandlers>();
 
         // ManualFiling
         services.AddTransient(_ =>
@@ -122,8 +123,9 @@ public class MainWindowViewModelTests
         var updateImporter = Substitute.For<ICommandHandler<UpdateImporterCommand, Result<VoidResult, Error>>>();
         var deleteImporter = Substitute.For<ICommandHandler<DeleteImporterCommand, Result<VoidResult, Error>>>();
         return new ImporterSettingsViewModel(
-            getImporters, getProfile, getMailboxes,
-            addImporter, updateImporter, deleteImporter);
+            new ImporterSettingsHandlers(
+                getImporters, getProfile, getMailboxes,
+                addImporter, updateImporter, deleteImporter));
     }
 
     private static AppearanceSettingsViewModel BuildAppearanceVm()

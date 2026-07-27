@@ -173,19 +173,14 @@ public sealed class ProcessReportsCommandHandler
         var failed = 0;
         var errors = new List<FilingCreationError>();
 
-        // Process dividends
-        foreach (var div in parsed.Dividends)
+        // Dividends first, then credit-side interest — same order as before the merge,
+        // preserving error-list ordering.
+        foreach (var ev in BuildIncomeEvents(parsed, taxpayerProfileId, report.Id, holidays))
         {
             ct.ThrowIfCancellationRequested();
             try
             {
-                var wht = parsed.Withholdings.FirstOrDefault(w =>
-                    w.Date == div.Date && w.EntityName == div.EntityName && w.Currency == div.Currency);
-
-                var outcome = await ProcessIncomeEventAsync(
-                    new IncomeEventRequest(IncomeType.Dividend, div.EntityName, div.Date, div.Currency, div.Amount, wht,
-                        taxpayerProfileId, report.Id, holidays),
-                    rateProvider, errors, ct);
+                var outcome = await ProcessIncomeEventAsync(ev, rateProvider, errors, ct);
                 ApplyOutcome(outcome, ref created, ref succeeded, ref failed);
             }
             catch (OperationCanceledException)
@@ -194,39 +189,41 @@ public sealed class ProcessReportsCommandHandler
             }
             catch (Exception ex)
             {
-                errors.Add(new FilingCreationError(div.EntityName, div.Date, div.Currency, div.Amount, ErrorCodes.DOMAIN_ERROR, ex.Message));
-                failed++;
-            }
-        }
-
-        // Process interest - credit entries only
-        foreach (var interest in parsed.Interest.Where(i => i.Type == InterestType.Credit))
-        {
-            ct.ThrowIfCancellationRequested();
-            try
-            {
-                var wht = parsed.Withholdings.FirstOrDefault(w =>
-                    w.Date == interest.Date && w.EntityName == interest.EntityName);
-
-                var outcome = await ProcessIncomeEventAsync(
-                    new IncomeEventRequest(IncomeType.Interest, interest.EntityName, interest.Date, interest.Currency, interest.Amount, wht,
-                        taxpayerProfileId, report.Id, holidays),
-                    rateProvider, errors, ct);
-                ApplyOutcome(outcome, ref created, ref succeeded, ref failed);
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                errors.Add(new FilingCreationError(interest.EntityName, interest.Date, interest.Currency, interest.Amount, ErrorCodes.DOMAIN_ERROR, ex.Message));
+                errors.Add(new FilingCreationError(ev.EntityName, ev.Date, ev.Currency, ev.Amount, ErrorCodes.DOMAIN_ERROR, ex.Message));
                 failed++;
             }
         }
 
         return Result<(int, int, int, List<FilingCreationError>), Error>.Success(
             (created, succeeded, failed, errors));
+    }
+
+    /// <summary>
+    /// Flattens the parsed statement into a single ordered event stream: all dividends
+    /// first, then credit-side interest. Withholding matching differs between the two —
+    /// dividends match on currency as well, interest does not.
+    /// </summary>
+    private static IEnumerable<IncomeEventRequest> BuildIncomeEvents(
+        StatementParseResult parsed, Guid taxpayerProfileId, Guid reportId, HolidayConf holidays)
+    {
+        foreach (var div in parsed.Dividends)
+        {
+            var wht = parsed.Withholdings.FirstOrDefault(w =>
+                w.Date == div.Date && w.EntityName == div.EntityName && w.Currency == div.Currency);
+
+            yield return new IncomeEventRequest(IncomeType.Dividend, div.EntityName, div.Date, div.Currency, div.Amount, wht,
+                taxpayerProfileId, reportId, holidays);
+        }
+
+        // Interest - credit entries only
+        foreach (var interest in parsed.Interest.Where(i => i.Type == InterestType.Credit))
+        {
+            var wht = parsed.Withholdings.FirstOrDefault(w =>
+                w.Date == interest.Date && w.EntityName == interest.EntityName);
+
+            yield return new IncomeEventRequest(IncomeType.Interest, interest.EntityName, interest.Date, interest.Currency, interest.Amount, wht,
+                taxpayerProfileId, reportId, holidays);
+        }
     }
 
     private static void ApplyOutcome(IncomeEventOutcome outcome, ref int created, ref int succeeded, ref int failed)

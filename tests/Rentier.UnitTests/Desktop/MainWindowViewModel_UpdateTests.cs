@@ -48,6 +48,7 @@ public class MainWindowViewModel_UpdateTests
         services.AddTransient(_ => Substitute.For<ICommandHandler<BulkDeleteFilingsCommand, Result<VoidResult, Error>>>());
         services.AddTransient<Func<string, Task<bool>>>(_ => _ => Task.FromResult(false));
         services.AddTransient<Func<ExportFilingResult, Task>>(_ => _ => Task.CompletedTask);
+        services.AddTransient<FilingsHandlers>();
         services.AddTransient(_ => Substitute.For<ICommandHandler<CalculateManualFilingCommand, Result<ManualFilingPreviewDto, Error>>>());
         services.AddTransient(_ => Substitute.For<ICommandHandler<CreateManualFilingCommand, Result<Guid, Error>>>());
 
@@ -107,12 +108,13 @@ public class MainWindowViewModel_UpdateTests
     private static ImporterSettingsViewModel BuildImporterVm()
     {
         return new ImporterSettingsViewModel(
-            Substitute.For<IQueryHandler<GetImportersQuery, Result<IReadOnlyList<ImporterDto>, Error>>>(),
-            Substitute.For<IQueryHandler<GetTaxpayerProfileQuery, Result<TaxpayerProfileDto?, Error>>>(),
-            Substitute.For<IQueryHandler<GetMailboxesQuery, Result<IReadOnlyList<MailboxDto>, Error>>>(),
-            Substitute.For<ICommandHandler<AddImporterCommand, Result<Guid, Error>>>(),
-            Substitute.For<ICommandHandler<UpdateImporterCommand, Result<VoidResult, Error>>>(),
-            Substitute.For<ICommandHandler<DeleteImporterCommand, Result<VoidResult, Error>>>());
+            new ImporterSettingsHandlers(
+                Substitute.For<IQueryHandler<GetImportersQuery, Result<IReadOnlyList<ImporterDto>, Error>>>(),
+                Substitute.For<IQueryHandler<GetTaxpayerProfileQuery, Result<TaxpayerProfileDto?, Error>>>(),
+                Substitute.For<IQueryHandler<GetMailboxesQuery, Result<IReadOnlyList<MailboxDto>, Error>>>(),
+                Substitute.For<ICommandHandler<AddImporterCommand, Result<Guid, Error>>>(),
+                Substitute.For<ICommandHandler<UpdateImporterCommand, Result<VoidResult, Error>>>(),
+                Substitute.For<ICommandHandler<DeleteImporterCommand, Result<VoidResult, Error>>>()));
     }
 
     private static AppearanceSettingsViewModel BuildAppearanceVm()

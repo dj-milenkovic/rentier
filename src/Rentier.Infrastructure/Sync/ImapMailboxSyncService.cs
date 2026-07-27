@@ -230,7 +230,7 @@ public class ImapMailboxSyncService(
         {
             return SearchQuery.Uids(
                 new UniqueIdRange(
-                    new UniqueId((uint)(synced.Uid!.Value + 1)),
+                    new UniqueId((uint)(synced.Uid.Value + 1)),
                     UniqueId.MaxValue));
         }
 

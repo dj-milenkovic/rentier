@@ -170,23 +170,18 @@ public sealed class FilingsViewModel : PagedSelectionViewModelBase<FilingRowView
     public ReactiveCommand<Unit, Unit> ClearFiltersCommand { get; }
 
     public FilingsViewModel(
-        IQueryHandler<GetFilingsQuery, Result<FilingsPageResult, Error>> getFilings,
-        ICommandHandler<UpdateFilingStatusCommand, Result<VoidResult, Error>> updateStatus,
-        ICommandHandler<UpdatePaymentReferenceCommand, Result<VoidResult, Error>> updateReference,
-        ICommandHandler<DeleteFilingCommand, Result<VoidResult, Error>> deleteFiling,
-        ICommandHandler<ExportFilingCommand, Result<ExportFilingResult, Error>> exportFiling,
-        ICommandHandler<BulkDeleteFilingsCommand, Result<VoidResult, Error>> bulkDeleteFilings,
+        FilingsHandlers handlers,
         Func<string, Task<bool>> confirmDelete,
         Func<ExportFilingResult, Task> saveFile,
         Action navigateToManualFiling,
         IScheduler? scheduler = null) : base(scheduler ?? RxSchedulers.MainThreadScheduler)
     {
-        _getFilings = getFilings;
-        _updateStatus = updateStatus;
-        _updateReference = updateReference;
-        _deleteFiling = deleteFiling;
-        _exportFiling = exportFiling;
-        _bulkDeleteFilings = bulkDeleteFilings;
+        _getFilings = handlers.GetFilings;
+        _updateStatus = handlers.UpdateStatus;
+        _updateReference = handlers.UpdateReference;
+        _deleteFiling = handlers.DeleteFiling;
+        _exportFiling = handlers.ExportFiling;
+        _bulkDeleteFilings = handlers.BulkDeleteFilings;
         _confirmDelete = confirmDelete;
         _saveFile = saveFile;
         _navigateToManualFiling = navigateToManualFiling;

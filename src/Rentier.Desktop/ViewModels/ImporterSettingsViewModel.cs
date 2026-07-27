@@ -141,21 +141,16 @@ public sealed class ImporterSettingsViewModel : ReactiveObject, IActivatableView
     public ViewModelActivator Activator { get; } = new();
 
     public ImporterSettingsViewModel(
-        IQueryHandler<GetImportersQuery, Result<IReadOnlyList<ImporterDto>, Error>> getImporters,
-        IQueryHandler<GetTaxpayerProfileQuery, Result<TaxpayerProfileDto?, Error>> getProfile,
-        IQueryHandler<GetMailboxesQuery, Result<IReadOnlyList<MailboxDto>, Error>> getMailboxes,
-        ICommandHandler<AddImporterCommand, Result<Guid, Error>> addImporter,
-        ICommandHandler<UpdateImporterCommand, Result<VoidResult, Error>> updateImporter,
-        ICommandHandler<DeleteImporterCommand, Result<VoidResult, Error>> deleteImporter,
+        ImporterSettingsHandlers handlers,
         IScheduler? scheduler = null,
         Func<string, string, string, string, Task<bool>>? confirmAction = null)
     {
-        _getImporters = getImporters;
-        _getProfile = getProfile;
-        _getMailboxes = getMailboxes;
-        _addImporter = addImporter;
-        _updateImporter = updateImporter;
-        _deleteImporter = deleteImporter;
+        _getImporters = handlers.GetImporters;
+        _getProfile = handlers.GetProfile;
+        _getMailboxes = handlers.GetMailboxes;
+        _addImporter = handlers.AddImporter;
+        _updateImporter = handlers.UpdateImporter;
+        _deleteImporter = handlers.DeleteImporter;
         _scheduler = scheduler ?? RxSchedulers.MainThreadScheduler;
         _confirmAction = confirmAction ?? ConfirmDialogHelper.ShowAsync;
 

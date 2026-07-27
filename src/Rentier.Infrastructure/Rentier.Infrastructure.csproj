@@ -1,5 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <PropertyGroup>
+    <!-- Update feed for the in-app Velopack updater. Kept in build configuration
+         rather than source so the location is not a literal in the codebase. -->
+    <RentierUpdateFeedUrl>https://github.com/dj-milenkovic/rentier</RentierUpdateFeedUrl>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\Rentier.Domain\Rentier.Domain.csproj" />
     <ProjectReference Include="..\Rentier.Application\Rentier.Application.csproj" />
@@ -30,6 +36,10 @@
   <ItemGroup>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
       <_Parameter1>Rentier.Infrastructure.Tests</_Parameter1>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>UpdateFeedUrl</_Parameter1>
+      <_Parameter2>$(RentierUpdateFeedUrl)</_Parameter2>
     </AssemblyAttribute>
   </ItemGroup>
 

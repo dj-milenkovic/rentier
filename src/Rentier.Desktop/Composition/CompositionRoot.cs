@@ -105,6 +105,7 @@ public static class CompositionRoot
         services.AddTransient<
             ICommandHandler<DeleteImporterCommand, Result<VoidResult, Error>>,
             DeleteImporterCommandHandler>();
+        services.AddTransient<ImporterSettingsHandlers>();
         services.AddSingleton<ImporterSettingsViewModel>();
 
         // Filing handlers — registered in CompositionRoot (not InfrastructureServiceExtensions)
@@ -126,6 +127,7 @@ public static class CompositionRoot
         services.AddTransient<
             ICommandHandler<BulkDeleteFilingsCommand, Result<VoidResult, Error>>,
             BulkDeleteFilingsCommandHandler>();
+        services.AddTransient<FilingsHandlers>();
 
         // Confirmation delegate for delete — must be explicitly registered so FilingsViewModel resolves
         services.AddTransient<Func<string, Task<bool>>>(provider => msg =>
