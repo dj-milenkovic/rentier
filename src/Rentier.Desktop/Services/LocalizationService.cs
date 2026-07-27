@@ -1,6 +1,6 @@
 using System.ComponentModel;
 using System.Globalization;
-using System.Reactive.Subjects;
+using ReactiveUI.Primitives.Signals;
 using System.Reflection;
 using Rentier.Desktop.Resources;
 
@@ -17,7 +17,7 @@ public sealed class LocalizationService : ILocalizationService
             .Where(p => p.PropertyType == typeof(string))
             .ToDictionary(p => p.Name, p => (string?)p.GetValue(null) ?? string.Empty);
 
-    private readonly Subject<string> _cultureChanged = new();
+    private readonly Signal<string> _cultureChanged = new();
     private string _currentCultureCode;
 
     public LocalizationService()
