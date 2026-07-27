@@ -1,9 +1,8 @@
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
-using System.Reactive;
-using System.Reactive.Concurrency;
-using System.Reactive.Disposables;
-using System.Reactive.Linq;
+using ReactiveUI.Primitives;
+using ReactiveUI.Primitives.Concurrency;
+using ReactiveUI.Primitives.Signals;
 using ReactiveUI.Primitives.Disposables;
 using Rentier.Desktop.Extensions;
 using ReactiveUI;
@@ -21,7 +20,7 @@ public sealed class HolidaySettingsViewModel : ReactiveObject, IActivatableViewM
     private readonly IQueryHandler<GetHolidayConfQuery, Result<HolidayConfDto, Error>> _queryHandler;
     private readonly ICommandHandler<SaveHolidayConfCommand, Result<VoidResult, Error>> _saveHandler;
     private readonly ICommandHandler<FetchHolidaysFromWebCommand, Result<IReadOnlyList<HolidayEntryDto>, Error>> _fetchHandler;
-    private readonly IScheduler _scheduler;
+    private readonly ISequencer _scheduler;
 
     private int _startYear;
     private int _endYear;
@@ -54,10 +53,10 @@ public sealed class HolidaySettingsViewModel : ReactiveObject, IActivatableViewM
     /// <summary>True when FilteredEntries is empty (no holidays in the selected range).</summary>
     public bool IsFilteredEmpty => FilteredEntries.Count == 0;
 
-    public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> AddRowCommand { get; }
-    public ReactiveCommand<HolidayEntryViewModel, System.Reactive.Unit> DeleteRowCommand { get; }
-    public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> SaveCommand { get; }
-    public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> FetchFromWebCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> AddRowCommand { get; }
+    public ReactiveCommand<HolidayEntryViewModel, RxVoid> DeleteRowCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> SaveCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> FetchFromWebCommand { get; }
 
     public ViewModelActivator Activator { get; } = new();
 
@@ -65,7 +64,7 @@ public sealed class HolidaySettingsViewModel : ReactiveObject, IActivatableViewM
         IQueryHandler<GetHolidayConfQuery, Result<HolidayConfDto, Error>> queryHandler,
         ICommandHandler<SaveHolidayConfCommand, Result<VoidResult, Error>> saveHandler,
         ICommandHandler<FetchHolidaysFromWebCommand, Result<IReadOnlyList<HolidayEntryDto>, Error>> fetchHandler,
-        IScheduler? scheduler = null)
+        ISequencer? scheduler = null)
     {
         _queryHandler = queryHandler;
         _saveHandler = saveHandler;
@@ -168,10 +167,10 @@ public sealed class HolidaySettingsViewModel : ReactiveObject, IActivatableViewM
             RebuildFilteredEntries();
         };
         Entries.CollectionChanged += onEntriesChanged;
-        Disposable.Create(() => Entries.CollectionChanged -= onEntriesChanged)
+        new ActionDisposable(() => Entries.CollectionChanged -= onEntriesChanged)
             .DisposeWith(disposables);
 
-        Observable.FromAsync(ct => LoadAsync(ct))
+        Signal.FromAsync(async ct => { await LoadAsync(ct); return RxVoid.Default; })
             .ObserveOn(_scheduler)
             .Subscribe()
             .DisposeWith(disposables);
