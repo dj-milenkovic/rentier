@@ -4,6 +4,7 @@ using Avalonia.Interactivity;
 using Avalonia.LogicalTree;
 using ReactiveUI.Avalonia.Reactive;
 using ReactiveUI.Primitives.Disposables;
+using Rentier.Desktop.Extensions;
 using ReactiveUI.Reactive;
 using Rentier.Desktop.ViewModels;
 

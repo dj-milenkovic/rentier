@@ -2,6 +2,7 @@ using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using ReactiveUI.Primitives.Disposables;
+using Rentier.Desktop.Extensions;
 using ReactiveUI.Reactive;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;

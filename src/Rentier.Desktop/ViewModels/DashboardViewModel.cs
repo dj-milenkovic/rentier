@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Reactive;
 using System.Reactive.Concurrency;
 using ReactiveUI.Primitives.Disposables;
+using Rentier.Desktop.Extensions;
 using ReactiveUI.Reactive;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
