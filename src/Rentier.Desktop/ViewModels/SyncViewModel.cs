@@ -1,7 +1,6 @@
 using System.Collections.ObjectModel;
-using System.Reactive;
-using System.Reactive.Concurrency;
-using System.Reactive.Linq;
+using ReactiveUI.Primitives;
+using ReactiveUI.Primitives.Concurrency;
 using ReactiveUI.Primitives.Disposables;
 using Rentier.Desktop.Extensions;
 using ReactiveUI;
@@ -18,7 +17,7 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
     public ViewModelActivator Activator { get; } = new();
 
     private readonly ISyncAllCommandHandler _handler;
-    private readonly IScheduler _scheduler;
+    private readonly ISequencer _scheduler;
     private CancellationTokenSource? _cts;
 
     // ── Running state ────────────────────────────────────────────────────────
@@ -111,10 +110,10 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
     public string? ValidationError => _validationError.Value;
 
     // ── Commands ─────────────────────────────────────────────────────────────
-    public ReactiveCommand<Unit, Unit> SyncCommand { get; }
-    public ReactiveCommand<Unit, Unit> CancelCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> SyncCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> CancelCommand { get; }
 
-    public SyncViewModel(ISyncAllCommandHandler handler, IScheduler? scheduler = null)
+    public SyncViewModel(ISyncAllCommandHandler handler, ISequencer? scheduler = null)
     {
         _handler = handler;
         var effectiveScheduler = scheduler ?? RxSchedulers.MainThreadScheduler;
@@ -267,7 +266,7 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
 /// while making them synchronous in tests (ImmediateScheduler), eliminating the
 /// async-post race that <see cref="Progress{T}"/> exhibits on macOS.
 /// </summary>
-file sealed class SchedulerProgress<T>(Action<T> handler, IScheduler scheduler) : IProgress<T>
+file sealed class SchedulerProgress<T>(Action<T> handler, ISequencer scheduler) : IProgress<T>
 {
     public void Report(T value) => scheduler.Schedule(() => handler(value));
 }
