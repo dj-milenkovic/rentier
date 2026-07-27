@@ -1,5 +1,5 @@
 using Avalonia.Controls;
-using ReactiveUI.Avalonia.Reactive;
+using ReactiveUI.Avalonia;
 using Rentier.Desktop.ViewModels;
 
 namespace Rentier.Desktop.Views;

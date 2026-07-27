@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Reactive;
 using System.Reactive.Linq;
-using ReactiveUI.Reactive;
+using ReactiveUI;
 using Rentier.Application.DTOs;
 using Rentier.Desktop.Extensions;
 using Rentier.Desktop.Resources;

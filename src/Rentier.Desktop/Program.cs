@@ -1,6 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using Avalonia;
-using ReactiveUI.Avalonia.Reactive;
+using ReactiveUI.Avalonia;
 using Microsoft.Extensions.DependencyInjection;
 using Rentier.Application.Interfaces;
 using Velopack;

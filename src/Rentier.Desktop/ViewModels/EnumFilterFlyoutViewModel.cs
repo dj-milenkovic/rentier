@@ -2,7 +2,7 @@ using System.Collections.ObjectModel;
 using System.Reactive;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
-using ReactiveUI.Reactive;
+using ReactiveUI;
 using Rentier.Desktop.Models;
 
 namespace Rentier.Desktop.ViewModels;

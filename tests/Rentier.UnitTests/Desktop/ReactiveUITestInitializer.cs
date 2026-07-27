@@ -1,6 +1,6 @@
 using System.Reactive;
 using System.Runtime.CompilerServices;
-using ReactiveUI.Avalonia.Reactive;
+using ReactiveUI.Avalonia;
 using ReactiveUI.Reactive.Builder;
 
 namespace Rentier.UnitTests.Desktop;

@@ -1,6 +1,6 @@
-using ReactiveUI.Avalonia.Reactive;
+using ReactiveUI.Avalonia;
 using ReactiveUI.Primitives.Disposables;
-using ReactiveUI.Reactive;
+using ReactiveUI;
 using Rentier.Desktop.ViewModels;
 
 namespace Rentier.Desktop.Views;

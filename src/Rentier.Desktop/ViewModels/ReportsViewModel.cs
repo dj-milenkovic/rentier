@@ -4,7 +4,7 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using ReactiveUI.Primitives.Disposables;
 using Rentier.Desktop.Extensions;
-using ReactiveUI.Reactive;
+using ReactiveUI;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;

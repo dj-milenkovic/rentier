@@ -1,5 +1,5 @@
 using Avalonia.Media;
-using ReactiveUI.Reactive;
+using ReactiveUI;
 
 namespace Rentier.Desktop.ViewModels;
 

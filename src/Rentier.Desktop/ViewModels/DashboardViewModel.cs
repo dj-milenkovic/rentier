@@ -4,7 +4,7 @@ using System.Reactive;
 using System.Reactive.Concurrency;
 using ReactiveUI.Primitives.Disposables;
 using Rentier.Desktop.Extensions;
-using ReactiveUI.Reactive;
+using ReactiveUI;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
