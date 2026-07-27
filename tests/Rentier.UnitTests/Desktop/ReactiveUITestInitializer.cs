@@ -1,7 +1,6 @@
-using System.Reactive;
 using System.Runtime.CompilerServices;
 using ReactiveUI.Avalonia;
-using ReactiveUI.Reactive.Builder;
+using ReactiveUI.Builder;
 
 namespace Rentier.UnitTests.Desktop;
 
@@ -15,8 +14,14 @@ internal static class ReactiveUiTestInitializer
 
         RxAppBuilder.CreateReactiveUIBuilder()
             .WithAvalonia()
-            .WithExceptionHandler(Observer.Create<Exception>(_ => { }))
+            .WithExceptionHandler(new NoOpExceptionObserver())
             .BuildApp();
     }
 
+    private sealed class NoOpExceptionObserver : IObserver<Exception>
+    {
+        public void OnCompleted() { }
+        public void OnError(Exception error) { }
+        public void OnNext(Exception value) { }
+    }
 }

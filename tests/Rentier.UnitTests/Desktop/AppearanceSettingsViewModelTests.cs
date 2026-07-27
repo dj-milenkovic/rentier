@@ -1,3 +1,4 @@
+using ReactiveUI.Primitives.Signals;
 using FluentAssertions;
 using NSubstitute;
 using Rentier.Application.Commands;
@@ -20,7 +21,7 @@ public class AppearanceSettingsViewModelTests
         var locService = Substitute.For<ILocalizationService>();
         locService.CurrentCultureCode.Returns(initialCulture);
         // Make CultureChanged observable never emit (test-only stub)
-        locService.CultureChanged.Returns(System.Reactive.Linq.Observable.Never<string>());
+        locService.CultureChanged.Returns(Signal.Never<string>());
 
         var setHandler = Substitute.For<ICommandHandler<SetUserPreferenceCommand, Result<VoidResult, Error>>>();
         setHandler.HandleAsync(Arg.Any<SetUserPreferenceCommand>(), Arg.Any<CancellationToken>())

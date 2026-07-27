@@ -1,4 +1,4 @@
-using System.Reactive;
+using ReactiveUI.Primitives;
 using FluentAssertions;
 using Rentier.Desktop.ViewModels;
 using Xunit;

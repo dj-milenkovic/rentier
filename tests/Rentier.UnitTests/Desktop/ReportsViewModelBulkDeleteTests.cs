@@ -1,5 +1,5 @@
-using System.Reactive.Concurrency;
-using System.Reactive.Linq;
+using ReactiveUI.Primitives.Concurrency;
+using ReactiveUI.Primitives;
 using FluentAssertions;
 using NSubstitute;
 using Rentier.Application.Commands;
@@ -53,7 +53,7 @@ public class ReportsViewModelBulkDeleteTests
             confirmDelete ?? ((_, _) => Task.FromResult(false)),
             () => Task.FromResult<(Guid, string, byte[])?>(null),
             _ => { },
-            ImmediateScheduler.Instance);
+            ImmediateSequencer.Instance);
     }
 
     [Fact]

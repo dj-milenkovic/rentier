@@ -1,4 +1,5 @@
-using System.Reactive.Concurrency;
+using ReactiveUI.Primitives;
+using ReactiveUI.Primitives.Concurrency;
 using FluentAssertions;
 using NSubstitute;
 using Rentier.Application.Common;
@@ -48,7 +49,7 @@ public class DashboardViewModelTests
         return new DashboardViewModel(
             handler ?? MakeHandler(),
             navigateToFilings ?? (() => { }),
-            ImmediateScheduler.Instance);
+            ImmediateSequencer.Instance);
     }
 
     [Fact]

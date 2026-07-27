@@ -1,5 +1,5 @@
-using System.Reactive.Concurrency;
-using System.Reactive.Linq;
+using ReactiveUI.Primitives.Concurrency;
+using ReactiveUI.Primitives;
 using FluentAssertions;
 using NSubstitute;
 using Rentier.Application.Commands;
@@ -56,7 +56,7 @@ public class FilingsViewModelBulkDeleteTests
             confirmDelete ?? (_ => Task.FromResult(false)),
             _ => Task.CompletedTask,
             () => { },
-            ImmediateScheduler.Instance);
+            ImmediateSequencer.Instance);
     }
 
     [Fact]

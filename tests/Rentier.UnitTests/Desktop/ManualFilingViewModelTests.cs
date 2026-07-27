@@ -1,6 +1,6 @@
-using System.Reactive.Concurrency;
-using System.Reactive.Linq;
-using System.Reactive.Threading.Tasks;
+using ReactiveUI.Primitives.Concurrency;
+using ReactiveUI.Primitives;
+using ReactiveUI.Primitives.Signals;
 using FluentAssertions;
 using NSubstitute;
 using ReactiveUI;
@@ -77,7 +77,7 @@ public class ManualFilingViewModelTests
             createHandler ?? MockCreateHandler(),
             profileQueryHandler ?? MockProfileQueryHandler(),
             navigateBack ?? (() => { }),
-            ImmediateScheduler.Instance);
+            ImmediateSequencer.Instance);
 
     private static ManualFilingViewModel CreateFilledVm(
         ICommandHandler<CalculateManualFilingCommand, Result<ManualFilingPreviewDto, Error>>? calcHandler = null,
@@ -191,7 +191,7 @@ public class ManualFilingViewModelTests
         var vm = CreateFilledVm(calcHandler: calcHandler);
         vm.WhenAnyValue(x => x.IsLoading).Subscribe(v => loadingStates.Add(v));
 
-        var execTask = vm.CalculateCommand.Execute().ToTask();
+        var execTask = vm.CalculateCommand.Execute().ToTask(TestContext.Current.CancellationToken);
         tcs.SetResult(Result<ManualFilingPreviewDto, Error>.Success(MakePreviewDto()));
         await execTask;
 

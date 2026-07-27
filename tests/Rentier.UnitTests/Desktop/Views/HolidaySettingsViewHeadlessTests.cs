@@ -1,5 +1,5 @@
 using System.Collections;
-using System.Reactive.Concurrency;
+using ReactiveUI.Primitives.Concurrency;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
@@ -198,7 +198,7 @@ public class HolidaySettingsViewHeadlessTests
             queryHandler,
             saveHandler,
             fetchHandler,
-            scheduler: ImmediateScheduler.Instance);
+            scheduler: ImmediateSequencer.Instance);
     }
 
     private static IQueryHandler<GetHolidayConfQuery, Result<HolidayConfDto, Error>> CreateEmptyHolidayQueryHandler()

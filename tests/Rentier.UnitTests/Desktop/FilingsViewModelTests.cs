@@ -1,5 +1,5 @@
-using System.Reactive;
-using System.Reactive.Concurrency;
+using ReactiveUI.Primitives;
+using ReactiveUI.Primitives.Concurrency;
 using FluentAssertions;
 using NSubstitute;
 using Rentier.Application.Commands;
@@ -76,7 +76,7 @@ public class FilingsViewModelTests
             confirmDelete ?? (_ => Task.FromResult(false)),
             saveFile ?? (_ => Task.CompletedTask),
             () => { },
-            ImmediateScheduler.Instance);
+            ImmediateSequencer.Instance);
     }
 
     [Fact]
@@ -554,7 +554,7 @@ public class FilingsViewModelTests
         var vm = CreateVm();
         vm.ReportIdFilter = Guid.NewGuid();
 
-        vm.ClearReportFilterCommand.Execute(Unit.Default).Subscribe();
+        vm.ClearReportFilterCommand.Execute(RxVoid.Default).Subscribe();
 
         vm.ReportIdFilter.Should().BeNull();
         vm.HasReportFilter.Should().BeFalse();
@@ -574,7 +574,7 @@ public class FilingsViewModelTests
         getFilings.ClearReceivedCalls();
 
         // Setting ReportIdFilter = null via the command triggers the reactive pipeline
-        vm.ClearReportFilterCommand.Execute(Unit.Default).Subscribe();
+        vm.ClearReportFilterCommand.Execute(RxVoid.Default).Subscribe();
 
         // LoadPageCommand should have fired due to ReportIdFilter change
         getFilings.Received().HandleAsync(Arg.Any<GetFilingsQuery>(), Arg.Any<CancellationToken>());

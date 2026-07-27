@@ -1,5 +1,5 @@
-using System.Reactive.Concurrency;
-using System.Reactive.Linq;
+using ReactiveUI.Primitives.Concurrency;
+using ReactiveUI.Primitives;
 using FluentAssertions;
 using NSubstitute;
 using Rentier.Application.Commands;
@@ -69,7 +69,7 @@ public sealed class ImporterSettingsViewModelTests
                 add ?? MockAdd(),
                 update ?? MockUpdate(),
                 delete ?? MockDelete()),
-            ImmediateScheduler.Instance,
+            ImmediateSequencer.Instance,
             confirmAction: (_, _, _, _) => Task.FromResult(true));
     }
 
@@ -174,7 +174,7 @@ public sealed class ImporterSettingsViewModelTests
         vm.DisplayName = "New Importer";
         vm.IsEditMode = false;
 
-        await vm.SaveCommand.Execute().FirstAsync();
+        await vm.SaveCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         await addHandler.Received(1).HandleAsync(Arg.Any<AddImporterCommand>(), Arg.Any<CancellationToken>());
         await updateHandler.DidNotReceive().HandleAsync(Arg.Any<UpdateImporterCommand>(), Arg.Any<CancellationToken>());
@@ -200,7 +200,7 @@ public sealed class ImporterSettingsViewModelTests
         vm.SelectedImporter = item;
         // IsEditMode is now true because SelectedImporter was set
 
-        await vm.SaveCommand.Execute().FirstAsync();
+        await vm.SaveCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         await updateHandler.Received(1).HandleAsync(Arg.Any<UpdateImporterCommand>(), Arg.Any<CancellationToken>());
         await addHandler.DidNotReceive().HandleAsync(Arg.Any<AddImporterCommand>(), Arg.Any<CancellationToken>());
@@ -261,7 +261,7 @@ public sealed class ImporterSettingsViewModelTests
         vm.ImporterItems.Add(item);
         vm.SelectedImporter = item;
 
-        await vm.SaveCommand.Execute().FirstAsync();
+        await vm.SaveCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.DisplayName.Should().Be(refreshedDto.DisplayName);
         vm.ReportType.Should().Be(refreshedDto.ReportType);
@@ -304,7 +304,7 @@ public sealed class ImporterSettingsViewModelTests
         vm.DisplayName = "Saved Importer";
         vm.IsEditMode = false;
 
-        await vm.SaveCommand.Execute().FirstAsync();
+        await vm.SaveCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.DisplayName.Should().Be(savedDto.DisplayName);
         vm.ReportType.Should().Be(savedDto.ReportType);
@@ -404,7 +404,7 @@ public sealed class ImporterSettingsViewModelTests
         vm.ImporterItems.Add(item);
         vm.SelectedImporter = item;
 
-        await vm.SaveCommand.Execute().FirstAsync();
+        await vm.SaveCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.SelectedImporter.Should().BeNull();
         vm.DisplayName.Should().Be(string.Empty);
@@ -438,7 +438,7 @@ public sealed class ImporterSettingsViewModelTests
         vm.AttachmentRegex = @"typed\d+";
         vm.PaymentNotes = "Typed Notes";
 
-        await vm.SaveCommand.Execute().FirstAsync();
+        await vm.SaveCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.DisplayName.Should().Be("User Typed Name");
         vm.FromFilter.Should().Be("typed@x.com");
@@ -505,7 +505,7 @@ public sealed class ImporterSettingsViewModelTests
         vm.ImporterItems.Add(item);
         vm.SelectedImporter = item; // triggers PopulateFormFromDto → IsEditMode = true
 
-        await vm.DeleteCommand.Execute().FirstAsync();
+        await vm.DeleteCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         await deleteHandler.Received(1).HandleAsync(Arg.Any<DeleteImporterCommand>(), Arg.Any<CancellationToken>());
         vm.SelectedImporter.Should().BeNull();
@@ -524,7 +524,7 @@ public sealed class ImporterSettingsViewModelTests
         vm.ImporterItems.Add(item);
         vm.SelectedImporter = item; // triggers PopulateFormFromDto → IsEditMode = true
 
-        await vm.DeleteCommand.Execute().FirstAsync();
+        await vm.DeleteCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.ErrorMessage.Should().Be("Delete failed");
     }

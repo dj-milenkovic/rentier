@@ -1,5 +1,5 @@
-using System.Reactive.Concurrency;
-using System.Reactive.Linq;
+using ReactiveUI.Primitives.Concurrency;
+using ReactiveUI.Primitives;
 using FluentAssertions;
 using NSubstitute;
 using ReactiveUI;
@@ -34,7 +34,7 @@ public class SyncViewModelTests
         ISyncAllCommandHandler? handler = null)
         => new(
             handler ?? MakeHandler(),
-            ImmediateScheduler.Instance);
+            ImmediateSequencer.Instance);
 
     // ── Tests ────────────────────────────────────────────────────────────────
 
@@ -68,7 +68,7 @@ public class SyncViewModelTests
         var runningValues = new List<bool>();
         vm.WhenAnyValue(x => x.IsRunning).Subscribe(v => runningValues.Add(v));
 
-        var executeTask = vm.SyncCommand.Execute().FirstAsync().GetAwaiter();
+        var executeTask = vm.SyncCommand.Execute().FirstAsync(TestContext.Current.CancellationToken).GetAwaiter();
 
         // Allow command to start
         await Task.Delay(50, TestContext.Current.CancellationToken);
@@ -96,9 +96,9 @@ public class SyncViewModelTests
                 return Result<SyncAllResult, Error>.Success(new SyncAllResult(1, 0, 0, 0, []));
             });
 
-        var vm = new SyncViewModel(handler, ImmediateScheduler.Instance);
+        var vm = new SyncViewModel(handler, ImmediateSequencer.Instance);
 
-        await vm.SyncCommand.Execute().FirstAsync();
+        await vm.SyncCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.LogEntries.Should().NotBeEmpty();
     }
@@ -111,7 +111,7 @@ public class SyncViewModelTests
 
         var vm = CreateVm(handler);
 
-        await vm.SyncCommand.Execute().FirstAsync();
+        await vm.SyncCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.SummaryMessage.Should().Contain("4 filing(s) created");
         vm.SummaryMessage.Should().Contain("0 error(s)");
@@ -125,7 +125,7 @@ public class SyncViewModelTests
 
         var vm = CreateVm(handler);
 
-        await vm.SyncCommand.Execute().FirstAsync();
+        await vm.SyncCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.HasErrors.Should().BeTrue();
     }
@@ -149,7 +149,7 @@ public class SyncViewModelTests
 
         var vm = CreateVm(handler);
 
-        await vm.SyncCommand.Execute().FirstAsync();
+        await vm.SyncCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.LogEntries.Should().HaveCount(2);
         vm.LogEntries.Should().Contain(e => e.Message.Contains("Dividend notice"));
@@ -164,7 +164,7 @@ public class SyncViewModelTests
 
         var vm = CreateVm(handler);
 
-        await vm.SyncCommand.Execute().FirstAsync();
+        await vm.SyncCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.SummaryMessage.Should().NotBeNullOrEmpty();
         vm.SummaryMessage.Should().Contain("2 filing(s) created");
@@ -180,7 +180,7 @@ public class SyncViewModelTests
         var vm = CreateVm(handler);
         using var _ = vm.Activator.Activate();
 
-        await vm.SyncCommand.Execute().FirstAsync();
+        await vm.SyncCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.IsRunning.Should().BeFalse();
 
@@ -197,7 +197,7 @@ public class SyncViewModelTests
 
         var vm = CreateVm(handler);
 
-        await vm.SyncCommand.Execute().FirstAsync();
+        await vm.SyncCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.ErrorMessage.Should().Be("IMAP connection refused");
         vm.SummaryMessage.Should().NotBeNullOrEmpty();
@@ -213,7 +213,7 @@ public class SyncViewModelTests
 
         var vm = CreateVm(handler);
 
-        await vm.SyncCommand.Execute().FirstAsync();
+        await vm.SyncCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.HasErrors.Should().BeTrue();
         vm.SummaryMessage.Should().Contain("1 filing(s) created");
@@ -229,7 +229,7 @@ public class SyncViewModelTests
 
         var vm = CreateVm(handler);
 
-        await vm.SyncCommand.Execute().FirstAsync();
+        await vm.SyncCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.ErrorMessage.Should().Be("Connection refused");
     }
@@ -242,7 +242,7 @@ public class SyncViewModelTests
 
         var vm = CreateVm(handler);
 
-        await vm.SyncCommand.Execute().FirstAsync();
+        await vm.SyncCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.HasErrors.Should().BeTrue();
     }
@@ -267,13 +267,13 @@ public class SyncViewModelTests
         var vm = new SyncViewModel(handler);
         using var _ = vm.Activator.Activate();
 
-        var executeTask = vm.SyncCommand.Execute().FirstAsync().GetAwaiter();
+        var executeTask = vm.SyncCommand.Execute().FirstAsync(TestContext.Current.CancellationToken).GetAwaiter();
 
         // Wait until the handler is invoked and running
         await Task.Delay(100, TestContext.Current.CancellationToken);
 
         // Cancel
-        await vm.CancelCommand.Execute().FirstAsync();
+        await vm.CancelCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
         tcs.SetCanceled(capturedToken);
 
         await Task.Delay(100, TestContext.Current.CancellationToken);
@@ -294,7 +294,7 @@ public class SyncViewModelTests
             new SyncProgressEntry(DateTimeOffset.Now, "Old entry", SyncProgressSeverity.Info)));
 
         // Second run
-        await vm.SyncCommand.Execute().FirstAsync();
+        await vm.SyncCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.LogEntries.Should().NotContain(e => e.Message == "Old entry");
     }
@@ -316,7 +316,7 @@ public class SyncViewModelTests
                 return Result<SyncAllResult, Error>.Success(new SyncAllResult(1, 0, 0, 0, []));
             });
 
-        var vm = new SyncViewModel(handler, ImmediateScheduler.Instance);
+        var vm = new SyncViewModel(handler, ImmediateSequencer.Instance);
 
         // Progress<T> captures the SynchronizationContext at creation time and may
         // post callbacks to a thread-pool thread rather than the current thread.
@@ -330,7 +330,7 @@ public class SyncViewModelTests
                 tcs.TrySetResult();
         };
 
-        await vm.SyncCommand.Execute().FirstAsync();
+        await vm.SyncCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         // If callbacks already ran synchronously, TCS is already set; otherwise wait.
         await tcs.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);

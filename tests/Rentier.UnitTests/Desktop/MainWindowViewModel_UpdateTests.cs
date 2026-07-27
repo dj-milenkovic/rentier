@@ -1,5 +1,6 @@
-using System.Reactive.Concurrency;
-using System.Reactive.Linq;
+using ReactiveUI.Primitives.Concurrency;
+using ReactiveUI.Primitives;
+using ReactiveUI.Primitives.Signals;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
@@ -123,7 +124,7 @@ public class MainWindowViewModel_UpdateTests
         themeService.GetPreference().Returns(ThemePreference.System);
         var locService = Substitute.For<ILocalizationService>();
         locService.CurrentCultureCode.Returns("sr-Latn");
-        locService.CultureChanged.Returns(System.Reactive.Linq.Observable.Never<string>());
+        locService.CultureChanged.Returns(Signal.Never<string>());
         var setCmd = Substitute.For<ICommandHandler<SetUserPreferenceCommand, Result<VoidResult, Error>>>();
         setCmd.HandleAsync(Arg.Any<SetUserPreferenceCommand>(), Arg.Any<CancellationToken>())
             .Returns(Result<VoidResult, Error>.Success(VoidResult.Value));
@@ -133,7 +134,7 @@ public class MainWindowViewModel_UpdateTests
     private static ILocalizationService BuildLocalizationService()
     {
         var locService = Substitute.For<ILocalizationService>();
-        locService.CultureChanged.Returns(System.Reactive.Linq.Observable.Never<string>());
+        locService.CultureChanged.Returns(Signal.Never<string>());
         locService["Nav_Dashboard"].Returns("Dashboard");
         locService["Nav_Filings"].Returns("Filings");
         locService["Nav_Reports"].Returns("Reports");
@@ -153,7 +154,7 @@ public class MainWindowViewModel_UpdateTests
     private static MainWindowViewModel CreateVm(IUpdateService? updateService = null)
     {
         var svc = updateService ?? BuildUpdateService();
-        return new MainWindowViewModel(BuildProvider(svc), BuildLocalizationService(), svc, ImmediateScheduler.Instance);
+        return new MainWindowViewModel(BuildProvider(svc), BuildLocalizationService(), svc, ImmediateSequencer.Instance);
     }
 
     [Fact]
@@ -183,7 +184,7 @@ public class MainWindowViewModel_UpdateTests
         var updateService = BuildUpdateService(new UpdateCheckResult(true, "2.0.0"));
         var vm = CreateVm(updateService);
 
-        await vm.CheckForUpdateCommand.Execute().FirstAsync();
+        await vm.CheckForUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.CurrentUpdateState.Should().Be(UpdateState.UpdateAvailable);
     }
@@ -194,7 +195,7 @@ public class MainWindowViewModel_UpdateTests
         var updateService = BuildUpdateService(new UpdateCheckResult(true, "2.5.1"));
         var vm = CreateVm(updateService);
 
-        await vm.CheckForUpdateCommand.Execute().FirstAsync();
+        await vm.CheckForUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.AvailableVersion.Should().Be("2.5.1");
     }
@@ -205,7 +206,7 @@ public class MainWindowViewModel_UpdateTests
         var updateService = BuildUpdateService(new UpdateCheckResult(false, null));
         var vm = CreateVm(updateService);
 
-        await vm.CheckForUpdateCommand.Execute().FirstAsync();
+        await vm.CheckForUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.CurrentUpdateState.Should().Be(UpdateState.Idle);
     }
@@ -216,7 +217,7 @@ public class MainWindowViewModel_UpdateTests
         var updateService = BuildUpdateService(new UpdateCheckResult(true, "3.0.0"));
         var vm = CreateVm(updateService);
 
-        await vm.CheckForUpdateCommand.Execute().FirstAsync();
+        await vm.CheckForUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.UpdateBarVisible.Should().BeTrue();
     }
@@ -226,9 +227,9 @@ public class MainWindowViewModel_UpdateTests
     {
         var updateService = BuildUpdateService(new UpdateCheckResult(true, "2.0.0"));
         var vm = CreateVm(updateService);
-        await vm.CheckForUpdateCommand.Execute().FirstAsync();
+        await vm.CheckForUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
-        await vm.DismissUpdateCommand.Execute().FirstAsync();
+        await vm.DismissUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.CurrentUpdateState.Should().Be(UpdateState.Dismissed);
     }
@@ -238,9 +239,9 @@ public class MainWindowViewModel_UpdateTests
     {
         var updateService = BuildUpdateService(new UpdateCheckResult(true, "2.0.0"));
         var vm = CreateVm(updateService);
-        await vm.CheckForUpdateCommand.Execute().FirstAsync();
+        await vm.CheckForUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
-        await vm.DismissUpdateCommand.Execute().FirstAsync();
+        await vm.DismissUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.UpdateBarVisible.Should().BeFalse();
     }
@@ -252,9 +253,9 @@ public class MainWindowViewModel_UpdateTests
         updateService.DownloadUpdateAsync(Arg.Any<Action<int>>(), Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
         var vm = CreateVm(updateService);
-        await vm.CheckForUpdateCommand.Execute().FirstAsync();
+        await vm.CheckForUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
-        await vm.BeginUpdateCommand.Execute().FirstAsync();
+        await vm.BeginUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.CurrentUpdateState.Should().Be(UpdateState.Downloaded);
     }
@@ -266,9 +267,9 @@ public class MainWindowViewModel_UpdateTests
         updateService.DownloadUpdateAsync(Arg.Any<Action<int>>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromException(new InvalidOperationException("Network error")));
         var vm = CreateVm(updateService);
-        await vm.CheckForUpdateCommand.Execute().FirstAsync();
+        await vm.CheckForUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
-        await vm.BeginUpdateCommand.Execute().FirstAsync();
+        await vm.BeginUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.CurrentUpdateState.Should().Be(UpdateState.Error);
     }
@@ -280,9 +281,9 @@ public class MainWindowViewModel_UpdateTests
         updateService.DownloadUpdateAsync(Arg.Any<Action<int>>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromException(new InvalidOperationException("Network error")));
         var vm = CreateVm(updateService);
-        await vm.CheckForUpdateCommand.Execute().FirstAsync();
+        await vm.CheckForUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
-        await vm.BeginUpdateCommand.Execute().FirstAsync();
+        await vm.BeginUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.UpdateErrorMessage.Should().NotBeNullOrEmpty();
     }
@@ -294,9 +295,9 @@ public class MainWindowViewModel_UpdateTests
         updateService.DownloadUpdateAsync(Arg.Any<Action<int>>(), Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
         var vm = CreateVm(updateService);
-        await vm.CheckForUpdateCommand.Execute().FirstAsync();
+        await vm.CheckForUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
-        await vm.BeginUpdateCommand.Execute().FirstAsync();
+        await vm.BeginUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.UpdateBarVisible.Should().BeTrue();
     }
@@ -308,9 +309,9 @@ public class MainWindowViewModel_UpdateTests
         updateService.DownloadUpdateAsync(Arg.Any<Action<int>>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromException(new InvalidOperationException("Network error")));
         var vm = CreateVm(updateService);
-        await vm.CheckForUpdateCommand.Execute().FirstAsync();
+        await vm.CheckForUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
-        await vm.BeginUpdateCommand.Execute().FirstAsync();
+        await vm.BeginUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.UpdateBarVisible.Should().BeTrue();
     }
@@ -322,10 +323,10 @@ public class MainWindowViewModel_UpdateTests
         updateService.DownloadUpdateAsync(Arg.Any<Action<int>>(), Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
         var vm = CreateVm(updateService);
-        await vm.CheckForUpdateCommand.Execute().FirstAsync();
-        await vm.BeginUpdateCommand.Execute().FirstAsync();
+        await vm.CheckForUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
+        await vm.BeginUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
-        await vm.DismissRestartCommand.Execute().FirstAsync();
+        await vm.DismissRestartCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.CurrentUpdateState.Should().Be(UpdateState.Idle);
     }
@@ -337,10 +338,10 @@ public class MainWindowViewModel_UpdateTests
         updateService.DownloadUpdateAsync(Arg.Any<Action<int>>(), Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
         var vm = CreateVm(updateService);
-        await vm.CheckForUpdateCommand.Execute().FirstAsync();
-        await vm.BeginUpdateCommand.Execute().FirstAsync();
+        await vm.CheckForUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
+        await vm.BeginUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
-        await vm.DismissRestartCommand.Execute().FirstAsync();
+        await vm.DismissRestartCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         updateService.Received(1).ScheduleUpdateOnExit();
     }
@@ -353,7 +354,7 @@ public class MainWindowViewModel_UpdateTests
         var updateService = BuildUpdateService(new UpdateCheckResult(true, "2.5.1"));
         var vm = CreateVm(updateService);
 
-        await vm.CheckForUpdateCommand.Execute().FirstAsync();
+        await vm.CheckForUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.UpdateAvailableText.Should().Contain("2.5.1");
     }
@@ -364,7 +365,7 @@ public class MainWindowViewModel_UpdateTests
         var updateService = BuildUpdateService(new UpdateCheckResult(true, "3.0.0"));
         var vm = CreateVm(updateService);
 
-        await vm.CheckForUpdateCommand.Execute().FirstAsync();
+        await vm.CheckForUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.UpdateAvailableText.Should().Be("Update v3.0.0 available");
     }
@@ -381,9 +382,9 @@ public class MainWindowViewModel_UpdateTests
                 return Task.CompletedTask;
             });
         var vm = CreateVm(updateService);
-        await vm.CheckForUpdateCommand.Execute().FirstAsync();
+        await vm.CheckForUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
-        await vm.BeginUpdateCommand.Execute().FirstAsync();
+        await vm.BeginUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         // DownloadingText is computed from DownloadProgress; after completion progress may be any value.
         // Assert the format template is applied.
@@ -397,9 +398,9 @@ public class MainWindowViewModel_UpdateTests
         updateService.DownloadUpdateAsync(Arg.Any<Action<int>>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromException(new InvalidOperationException("Network error")));
         var vm = CreateVm(updateService);
-        await vm.CheckForUpdateCommand.Execute().FirstAsync();
+        await vm.CheckForUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
-        await vm.BeginUpdateCommand.Execute().FirstAsync();
+        await vm.BeginUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.UpdateFailedText.Should().Contain("Network error");
     }
@@ -411,9 +412,9 @@ public class MainWindowViewModel_UpdateTests
         updateService.DownloadUpdateAsync(Arg.Any<Action<int>>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromException(new InvalidOperationException("Timeout")));
         var vm = CreateVm(updateService);
-        await vm.CheckForUpdateCommand.Execute().FirstAsync();
+        await vm.CheckForUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
-        await vm.BeginUpdateCommand.Execute().FirstAsync();
+        await vm.BeginUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.UpdateFailedText.Should().Be("Update failed: Timeout");
     }

@@ -1,6 +1,6 @@
 using System.Collections;
-using System.Reactive;
-using System.Reactive.Concurrency;
+using ReactiveUI.Primitives;
+using ReactiveUI.Primitives.Concurrency;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
@@ -505,7 +505,7 @@ public class FilingsViewHeadlessTests
         chipBorder!.IsVisible.Should().BeTrue();
 
         // Act — execute the command directly (simulates ✕ button click)
-        vm.ClearReportFilterCommand.Execute(Unit.Default).Subscribe();
+        vm.ClearReportFilterCommand.Execute(RxVoid.Default).Subscribe();
         window.UpdateLayout();
         Dispatcher.UIThread.RunJobs();
 
@@ -662,7 +662,7 @@ public class FilingsViewHeadlessTests
             confirmDelete: _ => Task.FromResult(false),
             saveFile: _ => Task.CompletedTask,
             navigateToManualFiling: () => { },
-            scheduler: ImmediateScheduler.Instance);
+            scheduler: ImmediateSequencer.Instance);
     }
 
     /// <summary>Creates a sample <see cref="FilingRowDto"/> for test data.</summary>

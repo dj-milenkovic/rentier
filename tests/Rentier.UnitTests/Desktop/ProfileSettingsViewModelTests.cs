@@ -1,3 +1,4 @@
+using ReactiveUI.Primitives;
 using FluentAssertions;
 using NSubstitute;
 using Rentier.Application.Commands;
