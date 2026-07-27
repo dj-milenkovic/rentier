@@ -66,12 +66,13 @@ public class FilingsViewModelTests
         Func<ExportFilingResult, Task>? saveFile = null)
     {
         return new FilingsViewModel(
-            getFilings ?? MockGetFilings(),
-            updateStatus ?? MockUpdateStatus(),
-            updateRef ?? MockUpdateRef(),
-            deleteFiling ?? MockDelete(),
-            exportFiling ?? MockExport(),
-            MockBulkDeleteFilings(),
+            new FilingsHandlers(
+                getFilings ?? MockGetFilings(),
+                updateStatus ?? MockUpdateStatus(),
+                updateRef ?? MockUpdateRef(),
+                deleteFiling ?? MockDelete(),
+                exportFiling ?? MockExport(),
+                MockBulkDeleteFilings()),
             confirmDelete ?? (_ => Task.FromResult(false)),
             saveFile ?? (_ => Task.CompletedTask),
             () => { },

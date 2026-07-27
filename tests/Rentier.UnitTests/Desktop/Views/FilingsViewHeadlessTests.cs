@@ -652,12 +652,13 @@ public class FilingsViewHeadlessTests
         var bulkDelete = Substitute.For<ICommandHandler<BulkDeleteFilingsCommand, Result<VoidResult, Error>>>();
 
         return new FilingsViewModel(
-            getFilings,
-            updateStatus,
-            updateRef,
-            deleteFiling,
-            exportFiling,
-            bulkDelete,
+            new FilingsHandlers(
+                getFilings,
+                updateStatus,
+                updateRef,
+                deleteFiling,
+                exportFiling,
+                bulkDelete),
             confirmDelete: _ => Task.FromResult(false),
             saveFile: _ => Task.CompletedTask,
             navigateToManualFiling: () => { },

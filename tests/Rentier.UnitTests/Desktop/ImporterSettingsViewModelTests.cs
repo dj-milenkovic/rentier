@@ -64,10 +64,11 @@ public sealed class ImporterSettingsViewModelTests
         }
 
         return new ImporterSettingsViewModel(
-            getImporters, getProfile, getMailboxes,
-            add ?? MockAdd(),
-            update ?? MockUpdate(),
-            delete ?? MockDelete(),
+            new ImporterSettingsHandlers(
+                getImporters, getProfile, getMailboxes,
+                add ?? MockAdd(),
+                update ?? MockUpdate(),
+                delete ?? MockDelete()),
             ImmediateScheduler.Instance,
             confirmAction: (_, _, _, _) => Task.FromResult(true));
     }

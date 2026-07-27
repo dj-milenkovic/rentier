@@ -37,12 +37,13 @@ public class MainWindowViewModelSmokeTests
 
     private static ImporterSettingsViewModel CreateImporterVm() =>
         new(
-            Substitute.For<IQueryHandler<GetImportersQuery, Result<IReadOnlyList<ImporterDto>, Error>>>(),
-            Substitute.For<IQueryHandler<GetTaxpayerProfileQuery, Result<TaxpayerProfileDto?, Error>>>(),
-            Substitute.For<IQueryHandler<GetMailboxesQuery, Result<IReadOnlyList<MailboxDto>, Error>>>(),
-            Substitute.For<ICommandHandler<AddImporterCommand, Result<Guid, Error>>>(),
-            Substitute.For<ICommandHandler<UpdateImporterCommand, Result<VoidResult, Error>>>(),
-            Substitute.For<ICommandHandler<DeleteImporterCommand, Result<VoidResult, Error>>>());
+            new ImporterSettingsHandlers(
+                Substitute.For<IQueryHandler<GetImportersQuery, Result<IReadOnlyList<ImporterDto>, Error>>>(),
+                Substitute.For<IQueryHandler<GetTaxpayerProfileQuery, Result<TaxpayerProfileDto?, Error>>>(),
+                Substitute.For<IQueryHandler<GetMailboxesQuery, Result<IReadOnlyList<MailboxDto>, Error>>>(),
+                Substitute.For<ICommandHandler<AddImporterCommand, Result<Guid, Error>>>(),
+                Substitute.For<ICommandHandler<UpdateImporterCommand, Result<VoidResult, Error>>>(),
+                Substitute.For<ICommandHandler<DeleteImporterCommand, Result<VoidResult, Error>>>()));
 
     private static AppearanceSettingsViewModel CreateAppearanceVm()
     {
@@ -83,6 +84,7 @@ public class MainWindowViewModelSmokeTests
         services.AddSingleton(Substitute.For<ICommandHandler<BulkDeleteFilingsCommand, Result<VoidResult, Error>>>());
         services.AddSingleton<Func<string, Task<bool>>>(_ => Task.FromResult(false));
         services.AddSingleton<Func<ExportFilingResult, Task>>(_ => Task.CompletedTask);
+        services.AddTransient<FilingsHandlers>();
 
         // ManualFilingViewModel deps
         services.AddSingleton(Substitute.For<ICommandHandler<CalculateManualFilingCommand, Result<ManualFilingPreviewDto, Error>>>());

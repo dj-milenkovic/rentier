@@ -46,12 +46,13 @@ public class FilingsViewModelBulkDeleteTests
         Func<string, Task<bool>>? confirmDelete = null)
     {
         return new FilingsViewModel(
-            getFilings ?? MockGetFilings(),
-            Substitute.For<ICommandHandler<UpdateFilingStatusCommand, Result<VoidResult, Error>>>(),
-            Substitute.For<ICommandHandler<UpdatePaymentReferenceCommand, Result<VoidResult, Error>>>(),
-            Substitute.For<ICommandHandler<DeleteFilingCommand, Result<VoidResult, Error>>>(),
-            Substitute.For<ICommandHandler<ExportFilingCommand, Result<ExportFilingResult, Error>>>(),
-            bulkDelete ?? MockBulkDelete(),
+            new FilingsHandlers(
+                getFilings ?? MockGetFilings(),
+                Substitute.For<ICommandHandler<UpdateFilingStatusCommand, Result<VoidResult, Error>>>(),
+                Substitute.For<ICommandHandler<UpdatePaymentReferenceCommand, Result<VoidResult, Error>>>(),
+                Substitute.For<ICommandHandler<DeleteFilingCommand, Result<VoidResult, Error>>>(),
+                Substitute.For<ICommandHandler<ExportFilingCommand, Result<ExportFilingResult, Error>>>(),
+                bulkDelete ?? MockBulkDelete()),
             confirmDelete ?? (_ => Task.FromResult(false)),
             _ => Task.CompletedTask,
             () => { },

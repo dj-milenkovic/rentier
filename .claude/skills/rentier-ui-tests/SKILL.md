@@ -34,8 +34,10 @@ ReactiveUI executes commands asynchronously by default. In tests, inject
 
 ```csharp
 var vm = new FilingsViewModel(
-    queryHandler,
-    commandHandler,
+    new FilingsHandlers(getFilings, updateStatus, updateRef, deleteFiling, exportFiling, bulkDelete),
+    confirmDelete,
+    saveFile,
+    navigateToManualFiling,
     ImmediateScheduler.Instance);   // ← makes ReactiveCommand synchronous
 ```
 
