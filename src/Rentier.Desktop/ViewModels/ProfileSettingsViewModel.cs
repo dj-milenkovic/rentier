@@ -1,4 +1,5 @@
-using System.Reactive.Linq;
+using ReactiveUI.Primitives;
+using ReactiveUI.Primitives.Signals;
 using ReactiveUI.Primitives.Disposables;
 using Rentier.Desktop.Extensions;
 using ReactiveUI;
@@ -87,7 +88,7 @@ public sealed class ProfileSettingsViewModel : ReactiveObject, IActivatableViewM
             ? Strings.Profile_JmbgValidation_Error
             : null;
 
-    public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> SaveCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> SaveCommand { get; }
 
     public ProfileSettingsViewModel(
         ICommandHandler<SaveTaxpayerProfileCommand, Result<VoidResult, Error>> saveHandler,
@@ -124,7 +125,7 @@ public sealed class ProfileSettingsViewModel : ReactiveObject, IActivatableViewM
 
         this.WhenActivated((MultipleDisposable disposables) =>
         {
-            Observable.FromAsync(ct => LoadAsync(ct))
+            Signal.FromAsync(async ct => { await LoadAsync(ct); return RxVoid.Default; })
                 .ObserveOn(RxSchedulers.MainThreadScheduler)
                 .Subscribe()
                 .DisposeWith(disposables);
