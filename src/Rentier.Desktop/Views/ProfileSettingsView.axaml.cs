@@ -12,3 +12,4 @@ public partial class ProfileSettingsView : ReactiveUserControl<ProfileSettingsVi
         this.ActivateViewModelOnLoad();
     }
 }
+

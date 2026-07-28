@@ -14,3 +14,4 @@ public partial class HolidaySettingsView : ReactiveUserControl<HolidaySettingsVi
         this.ActivateViewModelOnLoad();
     }
 }
+

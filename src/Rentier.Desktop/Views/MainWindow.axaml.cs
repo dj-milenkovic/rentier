@@ -19,3 +19,4 @@ public partial class MainWindow : ReactiveWindow<MainWindowViewModel>
         DataContext = vm;
     }
 }
+

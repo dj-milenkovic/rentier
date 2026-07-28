@@ -1,6 +1,5 @@
 using Avalonia.Controls;
 using ReactiveUI;
-using ReactiveUI.Reactive;
 
 namespace Rentier.Desktop.Extensions;
 

@@ -12,6 +12,7 @@ using Rentier.Desktop.Services;
 using Rentier.Desktop.ViewModels;
 using Rentier.Desktop.Views;
 using Xunit;
+using ReactiveUI.Primitives.Signals;
 
 namespace Rentier.UnitTests;
 
@@ -136,7 +137,7 @@ public class MainWindowViewHeadlessTests
         themeService.GetPreference().Returns(ThemePreference.System);
         var locService = Substitute.For<ILocalizationService>();
         locService.CurrentCultureCode.Returns("sr-Latn");
-        locService.CultureChanged.Returns(System.Reactive.Linq.Observable.Never<string>());
+        locService.CultureChanged.Returns(Signal.Never<string>());
         var setPreferenceCmd = Substitute.For<ICommandHandler<SetUserPreferenceCommand, Result<VoidResult, Error>>>();
         setPreferenceCmd.HandleAsync(Arg.Any<SetUserPreferenceCommand>(), Arg.Any<CancellationToken>())
             .Returns(Result<VoidResult, Error>.Success(VoidResult.Value));
@@ -146,7 +147,7 @@ public class MainWindowViewHeadlessTests
     private static ILocalizationService BuildLocalizationService()
     {
         var locService = Substitute.For<ILocalizationService>();
-        locService.CultureChanged.Returns(System.Reactive.Linq.Observable.Never<string>());
+        locService.CultureChanged.Returns(Signal.Never<string>());
         locService["Nav_Dashboard"].Returns("Dashboard");
         locService["Nav_Filings"].Returns("Filings");
         locService["Nav_Reports"].Returns("Reports");

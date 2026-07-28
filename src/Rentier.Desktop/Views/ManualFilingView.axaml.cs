@@ -16,3 +16,4 @@ public partial class ManualFilingView : ReactiveUserControl<ManualFilingViewMode
         this.ActivateViewModelOnLoad();
     }
 }
+

@@ -12,3 +12,4 @@ public partial class DashboardView : ReactiveUserControl<DashboardViewModel>
         this.ActivateViewModelOnLoad();
     }
 }
+
