@@ -1,7 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using ReactiveUI.Avalonia.Reactive;
-using ReactiveUI.Primitives.Disposables;
-using ReactiveUI.Reactive;
+using Rentier.Desktop.Extensions;
 using Rentier.Desktop.ViewModels;
 
 namespace Rentier.Desktop.Views;
@@ -12,6 +11,6 @@ public partial class ImporterSettingsView : ReactiveUserControl<ImporterSettings
     public ImporterSettingsView()
     {
         InitializeComponent();
-        this.WhenActivated((MultipleDisposable disposables) => { });
+        this.ActivateViewModelOnLoad();
     }
 }

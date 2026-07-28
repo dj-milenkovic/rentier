@@ -18,7 +18,11 @@ public partial class FilingsView : ReactiveUserControl<FilingsViewModel>
 {
     private readonly MultipleDisposable _disposables = new();
 
-    public FilingsView() => InitializeComponent();
+    public FilingsView()
+    {
+        InitializeComponent();
+        this.ActivateViewModelOnLoad();
+    }
 
     protected override void OnDetachedFromLogicalTree(LogicalTreeAttachmentEventArgs e)
     {
