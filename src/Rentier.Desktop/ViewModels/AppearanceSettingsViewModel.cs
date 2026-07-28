@@ -1,5 +1,5 @@
-using System.Reactive.Linq;
-using ReactiveUI.Reactive;
+using ReactiveUI.Primitives;
+using ReactiveUI;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.Interfaces;

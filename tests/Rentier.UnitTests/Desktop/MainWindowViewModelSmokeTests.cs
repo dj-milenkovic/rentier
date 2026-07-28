@@ -1,3 +1,5 @@
+using ReactiveUI.Primitives;
+using ReactiveUI.Primitives.Signals;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
@@ -9,7 +11,7 @@ using Rentier.Application.Queries;
 using Rentier.Application.Repositories;
 using Rentier.Desktop.Services;
 using Rentier.Desktop.ViewModels;
-using System.Reactive.Concurrency;
+using ReactiveUI.Primitives.Concurrency;
 using Xunit;
 
 namespace Rentier.UnitTests;
@@ -51,7 +53,7 @@ public class MainWindowViewModelSmokeTests
         themeService.GetPreference().Returns(ThemePreference.System);
         var locService = Substitute.For<ILocalizationService>();
         locService.CurrentCultureCode.Returns("sr-Latn");
-        locService.CultureChanged.Returns(System.Reactive.Linq.Observable.Never<string>());
+        locService.CultureChanged.Returns(Signal.Never<string>());
         var setCmd = Substitute.For<ICommandHandler<SetUserPreferenceCommand, Result<VoidResult, Error>>>();
         setCmd.HandleAsync(Arg.Any<SetUserPreferenceCommand>(), Arg.Any<CancellationToken>())
             .Returns(Result<VoidResult, Error>.Success(VoidResult.Value));
@@ -118,7 +120,7 @@ public class MainWindowViewModelSmokeTests
     {
         var provider = CreateProvider();
         var locService = Substitute.For<ILocalizationService>();
-        locService.CultureChanged.Returns(System.Reactive.Linq.Observable.Never<string>());
+        locService.CultureChanged.Returns(Signal.Never<string>());
         var updateService = provider.GetRequiredService<IUpdateService>();
         return new MainWindowViewModel(provider, locService, updateService);
     }

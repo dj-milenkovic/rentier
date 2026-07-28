@@ -1,5 +1,5 @@
-using System.Reactive.Concurrency;
-using System.Reactive.Linq;
+using ReactiveUI.Primitives.Concurrency;
+using ReactiveUI.Primitives;
 using FluentAssertions;
 using NSubstitute;
 using Rentier.Application.Commands;
@@ -38,7 +38,7 @@ public class MailboxSettingsViewModelTests
             add ?? MockAdd(),
             update ?? MockUpdate(),
             delete ?? MockDelete(),
-            ImmediateScheduler.Instance,
+            ImmediateSequencer.Instance,
             confirmAction: (_, _, _, _) => Task.FromResult(true));
 
     private static MailboxDto MakeDto(string host = "imap.example.com", int port = 993, string username = "user@example.com")
@@ -142,7 +142,7 @@ public class MailboxSettingsViewModelTests
         vm.Host = "imap.new.com";
         vm.Username = "new@example.com";
 
-        await vm.SaveCommand.Execute().FirstAsync();
+        await vm.SaveCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         await add.Received(1).HandleAsync(Arg.Any<AddMailboxCommand>(), Arg.Any<CancellationToken>());
         await query.Received(2).HandleAsync(Arg.Any<GetMailboxesQuery>(), Arg.Any<CancellationToken>());
@@ -167,7 +167,7 @@ public class MailboxSettingsViewModelTests
         vm.SelectedMailbox = vm.Mailboxes[0];
         vm.IsEditMode = true;
 
-        await vm.SaveCommand.Execute().FirstAsync();
+        await vm.SaveCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         await update.Received(1).HandleAsync(Arg.Any<UpdateMailboxCommand>(), Arg.Any<CancellationToken>());
         await add.DidNotReceive().HandleAsync(Arg.Any<AddMailboxCommand>(), Arg.Any<CancellationToken>());
@@ -186,11 +186,11 @@ public class MailboxSettingsViewModelTests
         bool canExecuteWhenNull = false;
         bool canExecuteWhenSet = false;
 
-        vm.DeleteCommand.CanExecute.FirstAsync().Subscribe(v => canExecuteWhenNull = v);
+        vm.DeleteCommand.CanExecute.Take(1).Subscribe(v => canExecuteWhenNull = v);
         canExecuteWhenNull.Should().BeFalse();
 
         vm.SelectedMailbox = vm.Mailboxes[0];
-        vm.DeleteCommand.CanExecute.FirstAsync().Subscribe(v => canExecuteWhenSet = v);
+        vm.DeleteCommand.CanExecute.Take(1).Subscribe(v => canExecuteWhenSet = v);
         canExecuteWhenSet.Should().BeTrue();
     }
 
@@ -210,7 +210,7 @@ public class MailboxSettingsViewModelTests
         using var _ = vm.Activator.Activate();
         vm.SelectedMailbox = vm.Mailboxes[0];
 
-        await vm.DeleteCommand.Execute().FirstAsync();
+        await vm.DeleteCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.Mailboxes.Count.Should().Be(0);
     }
@@ -231,7 +231,7 @@ public class MailboxSettingsViewModelTests
         using var _ = vm.Activator.Activate();
         vm.SelectedMailbox = vm.Mailboxes[0];
 
-        await vm.SaveCommand.Execute().FirstAsync();
+        await vm.SaveCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.ErrorMessage.Should().Be("Save failed");
     }
@@ -252,7 +252,7 @@ public class MailboxSettingsViewModelTests
         var vm = CreateVm(query: query, add: add);
         using var _ = vm.Activator.Activate();
 
-        await vm.SaveCommand.Execute().FirstAsync();
+        await vm.SaveCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.ErrorMessage.Should().Be("Add failed");
     }
@@ -273,7 +273,7 @@ public class MailboxSettingsViewModelTests
         using var _ = vm.Activator.Activate();
         vm.SelectedMailbox = vm.Mailboxes[0];
 
-        await vm.DeleteCommand.Execute().FirstAsync();
+        await vm.DeleteCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.ErrorMessage.Should().Be("Delete failed");
     }

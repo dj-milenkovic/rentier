@@ -1,10 +1,11 @@
 using Avalonia.Media;
 using Microsoft.Extensions.DependencyInjection;
-using System.Reactive.Concurrency;
-using System.Reactive.Linq;
+using ReactiveUI.Primitives;
+using ReactiveUI.Primitives.Concurrency;
+using ReactiveUI.Primitives.Signals;
 using ReactiveUI.Primitives.Disposables;
 using Rentier.Desktop.Extensions;
-using ReactiveUI.Reactive;
+using ReactiveUI;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Desktop.Services;
@@ -108,22 +109,22 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
 
     // ── Update commands ───────────────────────────────────────────────────────
 
-    public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> CheckForUpdateCommand { get; }
-    public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> DismissUpdateCommand { get; }
-    public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> BeginUpdateCommand { get; }
-    public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> RestartNowCommand { get; }
-    public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> DismissRestartCommand { get; }
-    public ReactiveCommand<System.Reactive.Unit, System.Reactive.Unit> RetryDownloadCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> CheckForUpdateCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> DismissUpdateCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> BeginUpdateCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> RestartNowCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> DismissRestartCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> RetryDownloadCommand { get; }
 
     private readonly IUpdateService _updateService;
     private readonly ILocalizationService _localizationService;
-    private readonly IScheduler _outputScheduler;
+    private readonly ISequencer _outputScheduler;
 
     public MainWindowViewModel(
         IServiceProvider provider,
         ILocalizationService localizationService,
         IUpdateService updateService,
-        IScheduler? outputScheduler = null)
+        ISequencer? outputScheduler = null)
     {
         _updateService = updateService;
         _localizationService = localizationService;
@@ -310,8 +311,9 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
             .DisposeWith(disposables);
 
         // Auto-check for updates in background on activation
-        Observable.StartAsync(() => RunCheckForUpdateAsync(), RxSchedulers.TaskpoolScheduler)
-            .Subscribe()
+        RxSchedulers.TaskpoolScheduler.Schedule(() =>
+                Signal.FromAsync(async ct => { await RunCheckForUpdateAsync(); return RxVoid.Default; })
+                    .Subscribe())
             .DisposeWith(disposables);
     }
 

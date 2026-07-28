@@ -1,7 +1,6 @@
-using System.Reactive;
-using System.Reactive.Linq;
-using System.Reactive.Subjects;
-using ReactiveUI.Reactive;
+using ReactiveUI.Primitives;
+using ReactiveUI.Primitives.Signals;
+using ReactiveUI;
 
 namespace Rentier.Desktop.ViewModels;
 
@@ -14,14 +13,14 @@ namespace Rentier.Desktop.ViewModels;
 /// </summary>
 public sealed class TextFilterFlyoutViewModel : ReactiveObject
 {
-    private readonly Subject<Unit> _applied = new();
+    private readonly Signal<RxVoid> _applied = new();
     private bool _isOpen;
     private bool _isActive;
     private string? _committed;
     private string? _workingText;
 
     /// <summary>Fires each time the user clicks Apply.</summary>
-    public IObservable<Unit> Applied => _applied.AsObservable();
+    public IObservable<RxVoid> Applied => _applied.AsObservable();
 
     /// <summary>Whether the flyout popup is currently open.</summary>
     public bool IsOpen
@@ -50,8 +49,8 @@ public sealed class TextFilterFlyoutViewModel : ReactiveObject
         set => this.RaiseAndSetIfChanged(ref _workingText, value);
     }
 
-    public ReactiveCommand<Unit, Unit> ToggleOpenCommand { get; }
-    public ReactiveCommand<Unit, Unit> ApplyCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> ToggleOpenCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> ApplyCommand { get; }
 
     public TextFilterFlyoutViewModel()
     {
@@ -62,7 +61,7 @@ public sealed class TextFilterFlyoutViewModel : ReactiveObject
             _committed = string.IsNullOrEmpty(_workingText) ? null : _workingText;
             IsActive = _committed is not null;
             IsOpen = false;
-            _applied.OnNext(Unit.Default);
+            _applied.OnNext(RxVoid.Default);
         });
     }
 

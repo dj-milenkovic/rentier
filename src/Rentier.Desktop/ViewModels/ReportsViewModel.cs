@@ -1,10 +1,8 @@
-using System.Reactive;
-using System.Reactive.Concurrency;
-using System.Reactive.Disposables;
-using System.Reactive.Linq;
+using ReactiveUI.Primitives;
+using ReactiveUI.Primitives.Concurrency;
 using ReactiveUI.Primitives.Disposables;
 using Rentier.Desktop.Extensions;
-using ReactiveUI.Reactive;
+using ReactiveUI;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
@@ -106,18 +104,18 @@ public sealed class ReportsViewModel : PagedSelectionViewModelBase<ReportRowView
         }
     }
 
-    public ReactiveCommand<Unit, Unit> LoadPageCommand { get; }
-    public ReactiveCommand<Unit, Unit> PreviousPageCommand { get; }
-    public ReactiveCommand<Unit, Unit> NextPageCommand { get; }
-    public ReactiveCommand<Unit, Unit> ImportCommand { get; }
-    public ReactiveCommand<Guid, Unit> DeleteCommand { get; }
-    public ReactiveCommand<Guid, Unit> ViewFilingsCommand { get; }
-    public ReactiveCommand<Unit, Unit> ClearErrorCommand { get; }
-    public ReactiveCommand<Unit, Unit> BulkDeleteCommand { get; }
-    public ReactiveCommand<Unit, Unit> ClearFiltersCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> LoadPageCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> PreviousPageCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> NextPageCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> ImportCommand { get; }
+    public ReactiveCommand<Guid, RxVoid> DeleteCommand { get; }
+    public ReactiveCommand<Guid, RxVoid> ViewFilingsCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> ClearErrorCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> BulkDeleteCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> ClearFiltersCommand { get; }
 
     // Keep LoadReportsCommand as an alias for backward compat with existing AXAML / tests
-    public ReactiveCommand<Unit, Unit> LoadReportsCommand => LoadPageCommand;
+    public ReactiveCommand<RxVoid, RxVoid> LoadReportsCommand => LoadPageCommand;
 
     public ReportsViewModel(
         IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>> getReports,
@@ -127,7 +125,7 @@ public sealed class ReportsViewModel : PagedSelectionViewModelBase<ReportRowView
         Func<string, string, Task<bool>> confirmDelete,
         Func<Task<(Guid ImporterId, string FileName, byte[] Content)?>> showImportDialog,
         Action<Guid> navigateToFilings,
-        IScheduler? scheduler = null) : base(scheduler ?? RxSchedulers.MainThreadScheduler)
+        ISequencer? scheduler = null) : base(scheduler ?? RxSchedulers.MainThreadScheduler)
     {
         _getReports = getReports;
         _importReport = importReport;
@@ -150,14 +148,14 @@ public sealed class ReportsViewModel : PagedSelectionViewModelBase<ReportRowView
             new CheckableItem<ReportStatus>("Partial Error", ReportStatus.PartialError),
         });
 
-        _hasActiveFilters = Observable.CombineLatest(
-            this.WhenAnyValue(x => x.NameFilter.IsActive),
-            this.WhenAnyValue(x => x.ImporterFilter.IsActive),
-            this.WhenAnyValue(x => x.ImportDateFilter.IsActive),
-            this.WhenAnyValue(x => x.EmailDateFilter.IsActive),
-            this.WhenAnyValue(x => x.FilingCountFilter.IsActive),
-            this.WhenAnyValue(x => x.StatusFilter.IsActive),
-            (a, b, c, d, e, f) => a || b || c || d || e || f)
+        _hasActiveFilters = this.WhenAnyValue(x => x.NameFilter.IsActive)
+            .CombineLatest(
+                this.WhenAnyValue(x => x.ImporterFilter.IsActive),
+                this.WhenAnyValue(x => x.ImportDateFilter.IsActive),
+                this.WhenAnyValue(x => x.EmailDateFilter.IsActive),
+                this.WhenAnyValue(x => x.FilingCountFilter.IsActive),
+                this.WhenAnyValue(x => x.StatusFilter.IsActive),
+                (a, b, c, d, e, f) => a || b || c || d || e || f)
             .ToProperty(this, x => x.HasActiveFilters, scheduler: _scheduler);
 
         var canGoToPreviousPage = this.WhenAnyValue(
@@ -231,24 +229,27 @@ public sealed class ReportsViewModel : PagedSelectionViewModelBase<ReportRowView
             // Sort descending change triggers reload
             this.WhenAnyValue(x => x.SortDescending)
                 .Skip(1)
-                .Select(_ => Unit.Default)
+                .Select(_ => RxVoid.Default)
                 .InvokeCommand(LoadPageCommand)
                 .DisposeWith(disposables);
 
             // All flyouts: applied → reset page + reload
-            Observable.Merge(
-                NameFilter.Applied,
-                ImporterFilter.Applied,
-                ImportDateFilter.Applied,
-                EmailDateFilter.Applied,
-                FilingCountFilter.Applied,
-                StatusFilter.Applied)
+            new[]
+                {
+                    NameFilter.Applied,
+                    ImporterFilter.Applied,
+                    ImportDateFilter.Applied,
+                    EmailDateFilter.Applied,
+                    FilingCountFilter.Applied,
+                    StatusFilter.Applied
+                }
+                .Merge()
                 .Do(_ => CurrentPage = 1)
                 .InvokeCommand(LoadPageCommand)
                 .DisposeWith(disposables);
 
             // Dispose row subscriptions on deactivation
-            Disposable.Create(() => _rowSubscriptions.Clear())
+            new ActionDisposable(() => _rowSubscriptions.Clear())
                 .DisposeWith(disposables);
 
             LoadPageCommand.ThrownExceptions

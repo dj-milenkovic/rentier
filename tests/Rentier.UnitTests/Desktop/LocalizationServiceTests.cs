@@ -1,3 +1,4 @@
+using ReactiveUI.Primitives;
 using FluentAssertions;
 using Rentier.Desktop.Resources;
 using Rentier.Desktop.Services;

@@ -1,4 +1,5 @@
-using System.Reactive.Concurrency;
+using ReactiveUI.Primitives;
+using ReactiveUI.Primitives.Concurrency;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;

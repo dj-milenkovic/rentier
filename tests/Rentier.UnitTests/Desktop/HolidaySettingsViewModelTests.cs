@@ -1,5 +1,5 @@
-using System.Reactive.Concurrency;
-using System.Reactive.Linq;
+using ReactiveUI.Primitives.Concurrency;
+using ReactiveUI.Primitives;
 using System.Reflection;
 using FluentAssertions;
 using NSubstitute;
@@ -26,7 +26,7 @@ public class HolidaySettingsViewModelTests
         IQueryHandler<GetHolidayConfQuery, Result<HolidayConfDto, Error>>? query = null,
         ICommandHandler<SaveHolidayConfCommand, Result<VoidResult, Error>>? save = null,
         ICommandHandler<FetchHolidaysFromWebCommand, Result<IReadOnlyList<HolidayEntryDto>, Error>>? fetch = null)
-        => new(query ?? MockQueryHandler(), save ?? MockSaveHandler(), fetch ?? MockFetchHandler(), ImmediateScheduler.Instance);
+        => new(query ?? MockQueryHandler(), save ?? MockSaveHandler(), fetch ?? MockFetchHandler(), ImmediateSequencer.Instance);
 
     [Fact]
     public void OnActivate_LoadsHolidays()
@@ -80,7 +80,7 @@ public class HolidaySettingsViewModelTests
         var vm = CreateVm(query: queryHandler, save: saveHandler);
         using var _ = vm.Activator.Activate();
         vm.Entries.Add(new HolidayEntryViewModel { Date = new DateOnly(2025, 1, 1), Name = "Nova godina" });
-        await vm.SaveCommand.Execute().FirstAsync();
+        await vm.SaveCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
         await saveHandler.Received(1).HandleAsync(
             Arg.Is<SaveHolidayConfCommand>(c => c!.Holidays.Any(h => h.Name == "Nova godina")),
             Arg.Any<CancellationToken>());

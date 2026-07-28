@@ -1,5 +1,6 @@
 using System.Collections;
-using System.Reactive.Concurrency;
+using ReactiveUI.Primitives;
+using ReactiveUI.Primitives.Concurrency;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
@@ -200,7 +201,7 @@ public class DashboardViewHeadlessTests
         return new DashboardViewModel(
             handler,
             navigateToFilings: () => { },
-            scheduler: ImmediateScheduler.Instance);
+            scheduler: ImmediateSequencer.Instance);
     }
 
     private static DashboardDto EmptyDashboard() => new([], [], 0, 0, 0, 0m, null);

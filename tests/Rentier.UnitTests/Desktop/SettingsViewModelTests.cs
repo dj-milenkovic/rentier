@@ -5,7 +5,7 @@ using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
-using System.Reactive.Linq;
+using ReactiveUI.Primitives;
 using Xunit;
 
 namespace Rentier.UnitTests;
@@ -86,7 +86,7 @@ public class SettingsViewModelTests
         vm.Address = "Knez 1";
         vm.OpstinaCode = "049";
 
-        await vm.SaveCommand.Execute().FirstAsync();
+        await vm.SaveCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.SuccessMessage.Should().NotBeEmpty();
         vm.ErrorMessage.Should().BeEmpty();
@@ -106,7 +106,7 @@ public class SettingsViewModelTests
         vm.Address = "Knez 1";
         vm.OpstinaCode = "049";
 
-        await vm.SaveCommand.Execute().FirstAsync();
+        await vm.SaveCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.ErrorMessage.Should().NotBeEmpty();
         vm.SuccessMessage.Should().BeEmpty();

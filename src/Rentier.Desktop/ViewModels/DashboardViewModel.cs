@@ -1,10 +1,10 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
-using System.Reactive;
-using System.Reactive.Concurrency;
+using ReactiveUI.Primitives;
+using ReactiveUI.Primitives.Concurrency;
 using ReactiveUI.Primitives.Disposables;
 using Rentier.Desktop.Extensions;
-using ReactiveUI.Reactive;
+using ReactiveUI;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
@@ -100,13 +100,13 @@ public sealed class DashboardViewModel : ReactiveObject, IActivatableViewModel
 
     public bool HasOverdueFilings => _overdueFilings.Count > 0;
 
-    public ReactiveCommand<Unit, Unit> LoadCommand { get; }
-    public ReactiveCommand<Unit, Unit> NavigateToFilingsCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> LoadCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> NavigateToFilingsCommand { get; }
 
     public DashboardViewModel(
         IQueryHandler<GetDashboardQuery, Result<DashboardDto, Error>> handler,
         Action navigateToFilings,
-        IScheduler? scheduler = null)
+        ISequencer? scheduler = null)
     {
         _handler = handler;
         _navigateToFilings = navigateToFilings;

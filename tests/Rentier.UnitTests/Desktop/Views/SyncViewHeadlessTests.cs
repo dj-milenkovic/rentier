@@ -1,4 +1,4 @@
-using System.Reactive.Concurrency;
+using ReactiveUI.Primitives.Concurrency;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
@@ -208,6 +208,6 @@ public class SyncViewHeadlessTests
 
         return new SyncViewModel(
             handler,
-            scheduler: ImmediateScheduler.Instance);
+            scheduler: ImmediateSequencer.Instance);
     }
 }

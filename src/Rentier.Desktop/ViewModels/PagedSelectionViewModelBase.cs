@@ -1,10 +1,9 @@
 using System.Collections.ObjectModel;
-using System.Reactive;
-using System.Reactive.Concurrency;
-using System.Reactive.Linq;
+using ReactiveUI.Primitives;
+using ReactiveUI.Primitives.Concurrency;
 using ReactiveUI.Primitives.Disposables;
 using Rentier.Desktop.Extensions;
-using ReactiveUI.Reactive;
+using ReactiveUI;
 using Rentier.Desktop.Resources;
 
 namespace Rentier.Desktop.ViewModels;
@@ -14,7 +13,7 @@ public abstract class PagedSelectionViewModelBase<TRow> : ReactiveObject, IActiv
 {
     public ViewModelActivator Activator { get; } = new();
 
-    protected readonly IScheduler _scheduler;
+    protected readonly ISequencer _scheduler;
     private int _selectedCount;
     private bool _isUpdatingSelection;
     protected readonly MultipleDisposable _rowSubscriptions = new();
@@ -34,8 +33,8 @@ public abstract class PagedSelectionViewModelBase<TRow> : ReactiveObject, IActiv
     public string DeleteSelectedLabel => _deleteSelectedLabel.Value;
     public bool HasItems => Rows.Count > 0;
 
-    public ReactiveCommand<Unit, Unit> SelectAllCommand { get; }
-    public ReactiveCommand<Unit, Unit> ClearSelectionCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> SelectAllCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> ClearSelectionCommand { get; }
 
     public bool? IsAllSelected
     {
@@ -64,7 +63,7 @@ public abstract class PagedSelectionViewModelBase<TRow> : ReactiveObject, IActiv
         }
     }
 
-    protected PagedSelectionViewModelBase(IScheduler scheduler)
+    protected PagedSelectionViewModelBase(ISequencer scheduler)
     {
         _scheduler = scheduler;
 

@@ -1,5 +1,5 @@
-using System.Reactive.Concurrency;
-using System.Reactive.Linq;
+using ReactiveUI.Primitives.Concurrency;
+using ReactiveUI.Primitives;
 using FluentAssertions;
 using NSubstitute;
 using Rentier.Application.Commands;
@@ -74,7 +74,7 @@ public class ReportsViewModelTests
             confirmDelete ?? ((_, _) => Task.FromResult(false)),
             showImportDialog ?? (() => Task.FromResult<(Guid, string, byte[])?>(null)),
             navigateToFilings ?? (_ => { }),
-            ImmediateScheduler.Instance);
+            ImmediateSequencer.Instance);
     }
 
     // ── US1: Browse reports list ─────────────────────────────────────────────
@@ -140,7 +140,7 @@ public class ReportsViewModelTests
             importHandler: importHandler,
             showImportDialog: () => Task.FromResult<(Guid, string, byte[])?>(null));
 
-        await vm.ImportCommand.Execute().FirstAsync();
+        await vm.ImportCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         await importHandler.DidNotReceive().HandleAsync(
             Arg.Any<ImportReportCommand>(), Arg.Any<CancellationToken>());
@@ -157,7 +157,7 @@ public class ReportsViewModelTests
             showImportDialog: () => Task.FromResult<(Guid, string, byte[])?>(
                 (importerId, "test.csv", [1, 2, 3])));
 
-        await vm.ImportCommand.Execute().FirstAsync();
+        await vm.ImportCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         // HandleAsync called twice: once on activation (zero) and once after import
         await getReports.Received().HandleAsync(
@@ -173,7 +173,7 @@ public class ReportsViewModelTests
             showImportDialog: () => Task.FromResult<(Guid, string, byte[])?>(
                 (importerId, "bad.csv", [1, 2, 3])));
 
-        await vm.ImportCommand.Execute().FirstAsync();
+        await vm.ImportCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.ErrorMessage.Should().Be("Import error");
     }
@@ -188,7 +188,7 @@ public class ReportsViewModelTests
             deleteHandler: deleteHandler,
             confirmDelete: (_, _) => Task.FromResult(false));
 
-        await vm.DeleteCommand.Execute(Guid.NewGuid()).FirstAsync();
+        await vm.DeleteCommand.Execute(Guid.NewGuid()).FirstAsync(TestContext.Current.CancellationToken);
 
         await deleteHandler.DidNotReceive().HandleAsync(
             Arg.Any<DeleteReportCommand>(), Arg.Any<CancellationToken>());
@@ -205,7 +205,7 @@ public class ReportsViewModelTests
             getReports: getReports,
             confirmDelete: (_, _) => Task.FromResult(true));
 
-        await vm.DeleteCommand.Execute(reportId).FirstAsync();
+        await vm.DeleteCommand.Execute(reportId).FirstAsync(TestContext.Current.CancellationToken);
 
         await deleteHandler.Received(1).HandleAsync(
             Arg.Is<DeleteReportCommand>(c => c!.ReportId == reportId),
@@ -219,7 +219,7 @@ public class ReportsViewModelTests
             deleteHandler: MakeDeleteHandler(success: false),
             confirmDelete: (_, _) => Task.FromResult(true));
 
-        await vm.DeleteCommand.Execute(Guid.NewGuid()).FirstAsync();
+        await vm.DeleteCommand.Execute(Guid.NewGuid()).FirstAsync(TestContext.Current.CancellationToken);
 
         vm.ErrorMessage.Should().Be("Delete error");
     }
@@ -233,7 +233,7 @@ public class ReportsViewModelTests
         Guid? navigatedId = null;
         var vm = CreateVm(navigateToFilings: id => navigatedId = id);
 
-        await vm.ViewFilingsCommand.Execute(reportId).FirstAsync();
+        await vm.ViewFilingsCommand.Execute(reportId).FirstAsync(TestContext.Current.CancellationToken);
 
         navigatedId.Should().Be(reportId);
     }
@@ -291,7 +291,7 @@ public class ReportsViewModelTests
         var vm = CreateVm(getReports: getReports);
         using var _activation = vm.Activator.Activate();
 
-        await vm.NextPageCommand.Execute().FirstAsync();
+        await vm.NextPageCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.CurrentPage.Should().Be(2);
         // LoadPage: 1 activation + 1 next
@@ -319,11 +319,11 @@ public class ReportsViewModelTests
         using var _activation = vm.Activator.Activate();
 
         // Navigate to page 2 first
-        await vm.NextPageCommand.Execute().FirstAsync();
+        await vm.NextPageCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
         vm.CurrentPage.Should().Be(2);
 
         // Now go back
-        await vm.PreviousPageCommand.Execute().FirstAsync();
+        await vm.PreviousPageCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.CurrentPage.Should().Be(1);
     }
@@ -337,7 +337,7 @@ public class ReportsViewModelTests
         bool? canExecute = null;
         using var subscription = vm.PreviousPageCommand.CanExecute.Subscribe(value => canExecute = value);
 
-        await vm.NextPageCommand.Execute().FirstAsync();
+        await vm.NextPageCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         canExecute.Should().BeTrue();
     }
@@ -382,7 +382,7 @@ public class ReportsViewModelTests
         using var _activation = vm.Activator.Activate();
 
         // Manually put ViewModel on page 2
-        await vm.NextPageCommand.Execute().FirstAsync();
+        await vm.NextPageCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
         vm.CurrentPage.Should().Be(2);
 
         // Now the handler returns an empty page 1 result after delete
@@ -390,7 +390,7 @@ public class ReportsViewModelTests
         getReports.HandleAsync(Arg.Any<GetReportsQuery>(), Arg.Any<CancellationToken>())
             .Returns(Result<ReportsPageResult, Error>.Success(emptyPage));
 
-        await vm.DeleteCommand.Execute(Guid.NewGuid()).FirstAsync();
+        await vm.DeleteCommand.Execute(Guid.NewGuid()).FirstAsync(TestContext.Current.CancellationToken);
 
         vm.TotalPages.Should().Be(1);
     }
@@ -421,12 +421,12 @@ public class ReportsViewModelTests
             (_, _) => Task.FromResult(true),
             () => Task.FromResult<(Guid, string, byte[])?>(null),
             _ => { },
-            ImmediateScheduler.Instance);
+            ImmediateSequencer.Instance);
 
         using var activation = vm2.Activator.Activate();
 
         // Navigate to page 2
-        await vm2.NextPageCommand.Execute().FirstAsync();
+        await vm2.NextPageCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
         vm2.CurrentPage.Should().Be(2);
 
         // Select the row and bulk-delete
@@ -436,7 +436,7 @@ public class ReportsViewModelTests
         getReports.HandleAsync(Arg.Any<GetReportsQuery>(), Arg.Any<CancellationToken>())
             .Returns(Result<ReportsPageResult, Error>.Success(emptyPage));
 
-        await vm2.BulkDeleteCommand.Execute().FirstAsync();
+        await vm2.BulkDeleteCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm2.TotalPages.Should().Be(1);
     }
@@ -451,7 +451,7 @@ public class ReportsViewModelTests
         using var _activation = vm.Activator.Activate();
 
         // Navigate to page 2
-        await vm.NextPageCommand.Execute().FirstAsync();
+        await vm.NextPageCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
         vm.CurrentPage.Should().Be(2);
 
         // Change sort — should reset to page 1

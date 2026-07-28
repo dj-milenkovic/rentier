@@ -1,10 +1,10 @@
 using System.Collections.ObjectModel;
-using System.Reactive;
-using System.Reactive.Concurrency;
-using System.Reactive.Linq;
+using ReactiveUI.Primitives;
+using ReactiveUI.Primitives.Concurrency;
+using ReactiveUI.Primitives.Signals;
 using ReactiveUI.Primitives.Disposables;
 using Rentier.Desktop.Extensions;
-using ReactiveUI.Reactive;
+using ReactiveUI;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
@@ -24,7 +24,7 @@ public sealed class ImporterSettingsViewModel : ReactiveObject, IActivatableView
     private readonly ICommandHandler<AddImporterCommand, Result<Guid, Error>> _addImporter;
     private readonly ICommandHandler<UpdateImporterCommand, Result<VoidResult, Error>> _updateImporter;
     private readonly ICommandHandler<DeleteImporterCommand, Result<VoidResult, Error>> _deleteImporter;
-    private readonly IScheduler _scheduler;
+    private readonly ISequencer _scheduler;
     private readonly Func<string, string, string, string, Task<bool>> _confirmAction;
 
     // Form fields
@@ -134,15 +134,15 @@ public sealed class ImporterSettingsViewModel : ReactiveObject, IActivatableView
     public ObservableCollection<MailboxDto> AvailableMailboxes { get; } = new();
     public IEnumerable<ReportType> AvailableReportTypes { get; } = Enum.GetValues<ReportType>();
 
-    public ReactiveCommand<Unit, Unit> AddNewCommand { get; }
-    public ReactiveCommand<Unit, Unit> SaveCommand { get; }
-    public ReactiveCommand<Unit, Unit> DeleteCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> AddNewCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> SaveCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> DeleteCommand { get; }
 
     public ViewModelActivator Activator { get; } = new();
 
     public ImporterSettingsViewModel(
         ImporterSettingsHandlers handlers,
-        IScheduler? scheduler = null,
+        ISequencer? scheduler = null,
         Func<string, string, string, string, Task<bool>>? confirmAction = null)
     {
         _getImporters = handlers.GetImporters;
@@ -163,7 +163,7 @@ public sealed class ImporterSettingsViewModel : ReactiveObject, IActivatableView
 
         this.WhenActivated((MultipleDisposable disposables) =>
         {
-            Observable.FromAsync(ct => LoadAsync(ct))
+            Signal.FromAsync(async ct => { await LoadAsync(ct); return RxVoid.Default; })
                 .ObserveOn(_scheduler)
                 .Subscribe()
                 .DisposeWith(disposables);

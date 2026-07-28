@@ -1,5 +1,5 @@
 using Avalonia.Controls;
-using ReactiveUI.Avalonia.Reactive;
+using ReactiveUI.Avalonia;
 using Rentier.Desktop.Extensions;
 using Rentier.Desktop.ViewModels;
 
@@ -29,3 +29,4 @@ public partial class SyncView : ReactiveUserControl<SyncViewModel>
         }
     }
 }
+

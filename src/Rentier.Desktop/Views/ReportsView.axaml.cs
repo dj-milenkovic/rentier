@@ -1,4 +1,4 @@
-using ReactiveUI.Avalonia.Reactive;
+using ReactiveUI.Avalonia;
 using Rentier.Desktop.Extensions;
 using Rentier.Desktop.ViewModels;
 

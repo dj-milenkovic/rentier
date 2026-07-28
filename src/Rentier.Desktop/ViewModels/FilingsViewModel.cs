@@ -1,10 +1,8 @@
-using System.Reactive;
-using System.Reactive.Concurrency;
-using System.Reactive.Disposables;
-using System.Reactive.Linq;
+using ReactiveUI.Primitives;
+using ReactiveUI.Primitives.Concurrency;
 using ReactiveUI.Primitives.Disposables;
 using Rentier.Desktop.Extensions;
-using ReactiveUI.Reactive;
+using ReactiveUI;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
@@ -156,26 +154,26 @@ public sealed class FilingsViewModel : PagedSelectionViewModelBase<FilingRowView
     /// <summary>Filter flyout for the Deadline column (text search on formatted date string).</summary>
     public TextFilterFlyoutViewModel DeadlineFilter { get; }
 
-    public ReactiveCommand<Unit, Unit> ClearReportFilterCommand { get; }
-    public ReactiveCommand<Unit, Unit> LoadPageCommand { get; }
-    public ReactiveCommand<Unit, Unit> PreviousPageCommand { get; }
-    public ReactiveCommand<Unit, Unit> NextPageCommand { get; }
-    public ReactiveCommand<Unit, Unit> ClearErrorCommand { get; }
-    public ReactiveCommand<Unit, Unit> NewFilingCommand { get; }
-    public ReactiveCommand<(Guid Id, FilingStatus NewStatus), Unit> AdvanceStatusCommand { get; }
-    public ReactiveCommand<(Guid Id, string? Reference), Unit> SavePaymentRefCommand { get; }
-    public ReactiveCommand<Guid, Unit> DeleteCommand { get; }
-    public ReactiveCommand<Guid, Unit> ExportCommand { get; }
-    public ReactiveCommand<Unit, Unit> BulkDeleteCommand { get; }
-    public ReactiveCommand<(string ColumnTag, bool? CurrentDirection), Unit> ApplySortCommand { get; }
-    public ReactiveCommand<Unit, Unit> ClearFiltersCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> ClearReportFilterCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> LoadPageCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> PreviousPageCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> NextPageCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> ClearErrorCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> NewFilingCommand { get; }
+    public ReactiveCommand<(Guid Id, FilingStatus NewStatus), RxVoid> AdvanceStatusCommand { get; }
+    public ReactiveCommand<(Guid Id, string? Reference), RxVoid> SavePaymentRefCommand { get; }
+    public ReactiveCommand<Guid, RxVoid> DeleteCommand { get; }
+    public ReactiveCommand<Guid, RxVoid> ExportCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> BulkDeleteCommand { get; }
+    public ReactiveCommand<(string ColumnTag, bool? CurrentDirection), RxVoid> ApplySortCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> ClearFiltersCommand { get; }
 
     public FilingsViewModel(
         FilingsHandlers handlers,
         Func<string, Task<bool>> confirmDelete,
         Func<ExportFilingResult, Task> saveFile,
         Action navigateToManualFiling,
-        IScheduler? scheduler = null) : base(scheduler ?? RxSchedulers.MainThreadScheduler)
+        ISequencer? scheduler = null) : base(scheduler ?? RxSchedulers.MainThreadScheduler)
     {
         _getFilings = handlers.GetFilings;
         _updateStatus = handlers.UpdateStatus;
@@ -416,32 +414,35 @@ public sealed class FilingsViewModel : PagedSelectionViewModelBase<FilingRowView
         // M2: InvokeCommand pattern prevents undisposed Subscribe() calls in property setters
         this.WhenAnyValue(x => x.ShowAll)
             .Skip(1)
-            .Select(_ => Unit.Default)
+            .Select(_ => RxVoid.Default)
             .InvokeCommand(LoadPageCommand)
             .DisposeWith(disposables);
 
         this.WhenAnyValue(x => x.ReportIdFilter)
             .Skip(1)
-            .Select(_ => Unit.Default)
+            .Select(_ => RxVoid.Default)
             .InvokeCommand(LoadPageCommand)
             .DisposeWith(disposables);
 
         // Feature 050: when any flyout applies a filter → reset page + reload
-        Observable.Merge(
+        new[]
+            {
                 StatusFilter.Applied,
                 IncomeTypeFilter.Applied,
                 PayingEntityFilter.Applied,
                 PaymentReferenceFilter.Applied,
-                DeadlineFilter.Applied)
+                DeadlineFilter.Applied
+            }
+            .Merge()
             .ObserveOn(_scheduler)
             .Do(_ => { _currentPage = 1; this.RaisePropertyChanged(nameof(CurrentPage)); })
-            .Select(_ => Unit.Default)
+            .Select(_ => RxVoid.Default)
             .InvokeCommand(LoadPageCommand)
             .DisposeWith(disposables);
 
         // Feature 050: update HasActiveFilters whenever any flyout's IsActive changes
-        Observable.CombineLatest(
-                this.WhenAnyValue(x => x.StatusFilter.IsActive),
+        this.WhenAnyValue(x => x.StatusFilter.IsActive)
+            .CombineLatest(
                 this.WhenAnyValue(x => x.IncomeTypeFilter.IsActive),
                 this.WhenAnyValue(x => x.PayingEntityFilter.IsActive),
                 this.WhenAnyValue(x => x.PaymentReferenceFilter.IsActive),
@@ -451,7 +452,7 @@ public sealed class FilingsViewModel : PagedSelectionViewModelBase<FilingRowView
             .DisposeWith(disposables);
 
         // C2: dispose row subscriptions on every deactivation cycle
-        Disposable.Create(() => _rowSubscriptions.Clear())
+        new ActionDisposable(() => _rowSubscriptions.Clear())
             .DisposeWith(disposables);
 
         LoadPageCommand.ThrownExceptions

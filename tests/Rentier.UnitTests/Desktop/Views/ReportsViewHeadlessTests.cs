@@ -1,5 +1,6 @@
 using System.Collections;
-using System.Reactive.Concurrency;
+using ReactiveUI.Primitives;
+using ReactiveUI.Primitives.Concurrency;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
@@ -298,7 +299,7 @@ public class ReportsViewHeadlessTests
             confirmDelete: (_, _) => Task.FromResult(false),
             showImportDialog: () => Task.FromResult<(Guid ImporterId, string FileName, byte[] Content)?>(null),
             navigateToFilings: _ => { },
-            scheduler: ImmediateScheduler.Instance);
+            scheduler: ImmediateSequencer.Instance);
     }
 
     private static IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>> CreateEmptyReportsHandler()

@@ -1,10 +1,10 @@
 using System.Collections.ObjectModel;
-using System.Reactive;
-using System.Reactive.Concurrency;
-using System.Reactive.Linq;
+using ReactiveUI.Primitives;
+using ReactiveUI.Primitives.Concurrency;
+using ReactiveUI.Primitives.Signals;
 using ReactiveUI.Primitives.Disposables;
 using Rentier.Desktop.Extensions;
-using ReactiveUI.Reactive;
+using ReactiveUI;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
@@ -21,7 +21,7 @@ public sealed class MailboxSettingsViewModel : ReactiveObject, IActivatableViewM
     private readonly ICommandHandler<AddMailboxCommand, Result<Guid, Error>> _addHandler;
     private readonly ICommandHandler<UpdateMailboxCommand, Result<VoidResult, Error>> _updateHandler;
     private readonly ICommandHandler<DeleteMailboxCommand, Result<VoidResult, Error>> _deleteHandler;
-    private readonly IScheduler _scheduler;
+    private readonly ISequencer _scheduler;
     private readonly Func<string, string, string, string, Task<bool>> _confirmAction;
 
     private string _host = "imap.gmail.com";
@@ -43,7 +43,7 @@ public sealed class MailboxSettingsViewModel : ReactiveObject, IActivatableViewM
     public int Port
     {
         get => _port;
-        set => this.RaiseAndSetIfChanged(ref _port, value);
+        private set => this.RaiseAndSetIfChanged(ref _port, value);
     }
 
     public string Username
@@ -55,7 +55,7 @@ public sealed class MailboxSettingsViewModel : ReactiveObject, IActivatableViewM
     public string Password
     {
         get => _password;
-        set => this.RaiseAndSetIfChanged(ref _password, value);
+        private set => this.RaiseAndSetIfChanged(ref _password, value);
     }
 
     public MailboxItemViewModel? SelectedMailbox
@@ -90,9 +90,9 @@ public sealed class MailboxSettingsViewModel : ReactiveObject, IActivatableViewM
 
     public ObservableCollection<MailboxItemViewModel> Mailboxes { get; } = new();
 
-    public ReactiveCommand<Unit, Unit> AddNewCommand { get; }
-    public ReactiveCommand<Unit, Unit> SaveCommand { get; }
-    public ReactiveCommand<Unit, Unit> DeleteCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> AddNewCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> SaveCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> DeleteCommand { get; }
 
     public ViewModelActivator Activator { get; } = new();
 
@@ -101,7 +101,7 @@ public sealed class MailboxSettingsViewModel : ReactiveObject, IActivatableViewM
         ICommandHandler<AddMailboxCommand, Result<Guid, Error>> addHandler,
         ICommandHandler<UpdateMailboxCommand, Result<VoidResult, Error>> updateHandler,
         ICommandHandler<DeleteMailboxCommand, Result<VoidResult, Error>> deleteHandler,
-        IScheduler? scheduler = null,
+        ISequencer? scheduler = null,
         Func<string, string, string, string, Task<bool>>? confirmAction = null)
     {
         _queryHandler = queryHandler;
@@ -138,7 +138,7 @@ public sealed class MailboxSettingsViewModel : ReactiveObject, IActivatableViewM
 
         this.WhenActivated((MultipleDisposable disposables) =>
         {
-            Observable.FromAsync(ct => LoadAsync(ct))
+            Signal.FromAsync(async ct => { await LoadAsync(ct); return RxVoid.Default; })
                 .ObserveOn(_scheduler)
                 .Subscribe()
                 .DisposeWith(disposables);

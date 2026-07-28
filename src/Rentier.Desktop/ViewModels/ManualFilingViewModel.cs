@@ -1,9 +1,9 @@
-using System.Reactive;
-using System.Reactive.Concurrency;
-using System.Reactive.Linq;
+using ReactiveUI.Primitives;
+using ReactiveUI.Primitives.Concurrency;
+using ReactiveUI.Primitives.Signals;
 using ReactiveUI.Primitives.Disposables;
 using Rentier.Desktop.Extensions;
-using ReactiveUI.Reactive;
+using ReactiveUI;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
@@ -177,10 +177,10 @@ public sealed class ManualFilingViewModel : ReactiveObject, IActivatableViewMode
 
     // ── Commands ─────────────────────────────────────────────────────────────
 
-    public ReactiveCommand<Unit, Unit> CalculateCommand { get; }
-    public ReactiveCommand<Unit, Unit> SaveCommand { get; }
-    public ReactiveCommand<Unit, Unit> CancelCommand { get; }
-    public ReactiveCommand<Unit, Unit> ClearErrorCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> CalculateCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> SaveCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> CancelCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> ClearErrorCommand { get; }
 
     // ── Constructor ──────────────────────────────────────────────────────────
 
@@ -189,7 +189,7 @@ public sealed class ManualFilingViewModel : ReactiveObject, IActivatableViewMode
         ICommandHandler<CreateManualFilingCommand, Result<Guid, Error>> createHandler,
         IQueryHandler<GetTaxpayerProfileQuery, Result<TaxpayerProfileDto?, Error>> profileQueryHandler,
         Action navigateBackToFilings,
-        IScheduler? scheduler = null)
+        ISequencer? scheduler = null)
     {
         _calculateHandler = calculateHandler;
         _createHandler = createHandler;
@@ -247,7 +247,7 @@ public sealed class ManualFilingViewModel : ReactiveObject, IActivatableViewMode
         this.WhenActivated((MultipleDisposable disposables) =>
         {
             // C3: profile load moved out of constructor to avoid fire-and-forget task
-            Observable.FromAsync(ct => LoadProfileAsync(ct))
+            Signal.FromAsync(async ct => { await LoadProfileAsync(ct); return RxVoid.Default; })
                 .ObserveOn(RxSchedulers.MainThreadScheduler)
                 .Subscribe()
                 .DisposeWith(disposables);

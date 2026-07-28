@@ -1,5 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
-using ReactiveUI.Avalonia.Reactive;
+using ReactiveUI.Avalonia;
+using ReactiveUI.Primitives.Disposables;
+using ReactiveUI;
 using Rentier.Desktop.Extensions;
 using Rentier.Desktop.ViewModels;
 
@@ -14,3 +16,4 @@ public partial class ManualFilingView : ReactiveUserControl<ManualFilingViewMode
         this.ActivateViewModelOnLoad();
     }
 }
+

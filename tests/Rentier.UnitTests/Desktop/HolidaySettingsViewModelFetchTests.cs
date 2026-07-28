@@ -1,5 +1,5 @@
-using System.Reactive.Concurrency;
-using System.Reactive.Linq;
+using ReactiveUI.Primitives.Concurrency;
+using ReactiveUI.Primitives;
 using FluentAssertions;
 using NSubstitute;
 using Rentier.Application.Commands;
@@ -35,7 +35,7 @@ public class HolidaySettingsViewModelFetchTests
     private static HolidaySettingsViewModel CreateVm(
         IQueryHandler<GetHolidayConfQuery, Result<HolidayConfDto, Error>>? query = null,
         ICommandHandler<FetchHolidaysFromWebCommand, Result<IReadOnlyList<HolidayEntryDto>, Error>>? fetch = null)
-        => new(query ?? LoadedQueryHandler(), MockSaveHandler(), fetch ?? MockFetchHandler(), ImmediateScheduler.Instance);
+        => new(query ?? LoadedQueryHandler(), MockSaveHandler(), fetch ?? MockFetchHandler(), ImmediateSequencer.Instance);
 
     [Fact]
     public async Task FetchFromWebCommand_OnSuccess_MergesNewEntriesOnly()
@@ -54,7 +54,7 @@ public class HolidaySettingsViewModelFetchTests
         var vm = CreateVm(query: LoadedQueryHandler(existing), fetch: fetchHandler);
         using var _ = vm.Activator.Activate();
 
-        await vm.FetchFromWebCommand.Execute().FirstAsync();
+        await vm.FetchFromWebCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.Entries.Should().HaveCount(2);
         vm.Entries.Should().Contain(e => e.Name == "Nova godina");
@@ -76,7 +76,7 @@ public class HolidaySettingsViewModelFetchTests
         var vm = CreateVm(fetch: fetchHandler);
         using var _ = vm.Activator.Activate();
 
-        await vm.FetchFromWebCommand.Execute().FirstAsync();
+        await vm.FetchFromWebCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.HasUnsavedChanges.Should().BeTrue();
     }
@@ -97,7 +97,7 @@ public class HolidaySettingsViewModelFetchTests
         var vm = CreateVm(fetch: fetchHandler);
         using var _ = vm.Activator.Activate();
 
-        await vm.FetchFromWebCommand.Execute().FirstAsync();
+        await vm.FetchFromWebCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.SuccessMessage.Should().NotBeNullOrEmpty();
         vm.SuccessMessage.Should().Contain("2");  // 2 holidays added
@@ -116,7 +116,7 @@ public class HolidaySettingsViewModelFetchTests
         using var _ = vm.Activator.Activate();
         var initialCount = vm.Entries.Count;
 
-        await vm.FetchFromWebCommand.Execute().FirstAsync();
+        await vm.FetchFromWebCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         vm.ErrorMessage.Should().NotBeNullOrEmpty();
         vm.SuccessMessage.Should().BeNull();
@@ -141,7 +141,7 @@ public class HolidaySettingsViewModelFetchTests
         var vm = CreateVm(query: LoadedQueryHandler(existing), fetch: fetchHandler);
         using var _ = vm.Activator.Activate();
 
-        await vm.FetchFromWebCommand.Execute().FirstAsync();
+        await vm.FetchFromWebCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
         var entriesWithExistingDate = vm.Entries.Where(e => e.Date == existingDate).ToList();
         entriesWithExistingDate.Should().HaveCount(1, "duplicate dates must not be added");
