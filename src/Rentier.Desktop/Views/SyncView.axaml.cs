@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using ReactiveUI.Avalonia;
+using Rentier.Desktop.Extensions;
 using Rentier.Desktop.ViewModels;
 
 namespace Rentier.Desktop.Views;
@@ -9,6 +10,7 @@ public partial class SyncView : ReactiveUserControl<SyncViewModel>
     public SyncView()
     {
         InitializeComponent();
+        this.ActivateViewModelOnLoad();
 
         // Accepted code-behind: Avalonia does not provide a built-in attached behavior for
         // conditional auto-scroll without significantly more infrastructure. The lambda

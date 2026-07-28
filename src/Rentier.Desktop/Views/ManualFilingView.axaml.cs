@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using ReactiveUI.Avalonia;
 using ReactiveUI.Primitives.Disposables;
 using ReactiveUI;
+using Rentier.Desktop.Extensions;
 using Rentier.Desktop.ViewModels;
 
 namespace Rentier.Desktop.Views;
@@ -12,6 +13,6 @@ public partial class ManualFilingView : ReactiveUserControl<ManualFilingViewMode
     public ManualFilingView()
     {
         InitializeComponent();
-        this.WhenActivated((MultipleDisposable _) => { });
+        this.ActivateViewModelOnLoad();
     }
 }
