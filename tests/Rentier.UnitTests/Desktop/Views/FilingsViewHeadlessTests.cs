@@ -667,6 +667,39 @@ public class FilingsViewHeadlessTests
         window.Close();
     }
 
+    /// <summary>
+    /// Issue #65: pressing Enter on a Paid row sends the typed reference to the
+    /// Application layer, so a reference missed during Filed can still be recorded.
+    /// </summary>
+    [AvaloniaFact]
+    public void PaymentReferenceCell_WhenPaidAndEnterPressed_SendsTypedReferenceToHandler()
+    {
+        // Arrange
+        var updateRef = Substitute.For<ICommandHandler<UpdatePaymentReferenceCommand, Result<VoidResult, Error>>>();
+        updateRef.HandleAsync(Arg.Any<UpdatePaymentReferenceCommand>(), Arg.Any<CancellationToken>())
+            .Returns(Result<VoidResult, Error>.Success(VoidResult.Value));
+
+        var window = ShowFilingsRowWithUpdateHandler(FilingStatus.Paid, "REF-1", updateRef);
+        var box = FindPaymentRefTextBox(window, "REF-1");
+        box.Should().NotBeNull("a Paid row must render an editable payment-reference TextBox");
+        box!.Focus();
+        Dispatcher.UIThread.RunJobs();
+
+        window.KeyTextInput("X");
+        Dispatcher.UIThread.RunJobs();
+
+        // Act
+        window.KeyPress(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, null);
+        Dispatcher.UIThread.RunJobs();
+
+        // Assert — note `c!`: nullable warnings are errors in this solution
+        updateRef.Received(1).HandleAsync(
+            Arg.Is<UpdatePaymentReferenceCommand>(c => c!.PaymentReference == "XREF-1"),
+            Arg.Any<CancellationToken>());
+
+        window.Close();
+    }
+
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
@@ -717,6 +750,47 @@ public class FilingsViewHeadlessTests
         window.GetVisualDescendants()
             .OfType<TextBox>()
             .FirstOrDefault(t => t.IsVisible && t.Text == text);
+
+    /// <summary>
+    /// Shows a single-row FilingsView wired to a caller-supplied update-reference handler,
+    /// so a test can assert what the save path actually sends. Caller must Close() the window.
+    /// </summary>
+    private static Window ShowFilingsRowWithUpdateHandler(
+        FilingStatus status,
+        string? reference,
+        ICommandHandler<UpdatePaymentReferenceCommand, Result<VoidResult, Error>> updateRef)
+    {
+        var dto = new FilingRowDto(
+            Guid.NewGuid(), status, IncomeType.Dividend, "ACME Corp",
+            new DateOnly(2025, 4, 30), 100.00m, reference);
+
+        var getFilings = Substitute.For<IQueryHandler<GetFilingsQuery, Result<FilingsPageResult, Error>>>();
+        getFilings.HandleAsync(Arg.Any<GetFilingsQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<FilingsPageResult, Error>.Success(new FilingsPageResult([dto], 1, 1)));
+
+        var vm = new FilingsViewModel(
+            new FilingsHandlers(
+                getFilings,
+                Substitute.For<ICommandHandler<UpdateFilingStatusCommand, Result<VoidResult, Error>>>(),
+                updateRef,
+                Substitute.For<ICommandHandler<DeleteFilingCommand, Result<VoidResult, Error>>>(),
+                Substitute.For<ICommandHandler<ExportFilingCommand, Result<ExportFilingResult, Error>>>(),
+                Substitute.For<ICommandHandler<BulkDeleteFilingsCommand, Result<VoidResult, Error>>>()),
+            confirmDelete: _ => Task.FromResult(false),
+            saveFile: _ => Task.CompletedTask,
+            navigateToManualFiling: () => { },
+            scheduler: ImmediateSequencer.Instance);
+
+        var view = new FilingsView { DataContext = vm };
+        var window = new Window { Content = view, Width = 1200, Height = 600 };
+        window.Show();
+
+        vm.Activator.Activate();
+        window.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
+
+        return window;
+    }
 
     /// <summary>
     /// Creates a minimal FilingsViewModel with all dependencies mocked.
