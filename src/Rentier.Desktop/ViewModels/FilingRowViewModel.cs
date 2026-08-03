@@ -43,8 +43,12 @@ public sealed class FilingRowViewModel : ReactiveObject, ISelectableRow
     /// <summary>Localised display label for the current status (used by the read-only badge).</summary>
     public string StatusDisplayText => Status.ToDisplayString();
 
-    /// <summary>Payment reference is only editable when the filing has been Filed.</summary>
-    public bool IsPaymentReferenceEditable => Status == FilingStatus.Filed;
+    /// <summary>
+    /// Payment reference is editable once the filing is Filed, and stays editable in Paid so a
+    /// reference forgotten during Filed can still be recorded (issue #65). Init is not editable:
+    /// nothing has been submitted, so no payment slip exists yet.
+    /// </summary>
+    public bool IsPaymentReferenceEditable => Status is FilingStatus.Filed or FilingStatus.Paid;
 
     /// <summary>Valid status options a user can advance to from the current status.</summary>
     public IReadOnlyList<FilingStatus> AvailableNextStatuses => Status switch
