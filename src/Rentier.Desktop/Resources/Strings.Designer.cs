@@ -194,6 +194,7 @@ public static class Strings
     public static string BulkDelete_Error_Failed => "Bulk delete failed. Please try again.";
     public static string Filings_Tooltip_AdvanceStatus => "Mark as {0}";
     public static string Filings_Tooltip_AdvanceStatus_None => "No further transitions";
+    public static string Filings_Tooltip_PaymentRefLocked => "Payment reference can be entered once the filing is marked as Filed.";
     public static string Filings_Tooltip_Export => "Export PP-OPO XML";
     public static string Filings_Tooltip_Delete => "Delete filing";
     public static string Filings_Col_Actions => "Actions";

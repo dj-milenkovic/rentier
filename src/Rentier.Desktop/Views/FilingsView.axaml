@@ -441,12 +441,22 @@
             </DataGridTemplateColumn.Header>
             <DataGridTemplateColumn.CellTemplate>
               <DataTemplate>
-                <TextBox Text="{Binding PaymentReference}"
-                         IsReadOnly="{Binding IsPaymentReferenceEditable, Converter={x:Static local:InvertBoolConverter.Instance}}"
-                         KeyDown="PaymentRef_KeyDown"
-                         BorderThickness="0"
-                         Background="Transparent"
-                         Margin="4,0" />
+                <!-- Issue #65: a read-only TextBox looks editable and silently swallows
+                     keystrokes, so editable and locked rows get different controls. -->
+                <Panel Margin="4,0">
+                  <TextBox Text="{Binding PaymentReference}"
+                           IsVisible="{Binding IsPaymentReferenceEditable}"
+                           KeyDown="PaymentRef_KeyDown"
+                           BorderThickness="0"
+                           Background="Transparent"
+                           VerticalAlignment="Center" />
+                  <TextBlock Text="{Binding PaymentReference}"
+                             IsVisible="{Binding IsPaymentReferenceEditable, Converter={x:Static local:InvertBoolConverter.Instance}}"
+                             Foreground="{DynamicResource RentierTextSecondaryBrush}"
+                             VerticalAlignment="Center"
+                             TextTrimming="CharacterEllipsis"
+                             ToolTip.Tip="{Binding [Filings_Tooltip_PaymentRefLocked], Source={StaticResource Localizer}}" />
+                </Panel>
               </DataTemplate>
             </DataGridTemplateColumn.CellTemplate>
           </DataGridTemplateColumn>

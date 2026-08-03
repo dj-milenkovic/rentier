@@ -2,7 +2,9 @@ using System.Collections;
 using ReactiveUI.Primitives;
 using ReactiveUI.Primitives.Concurrency;
 using Avalonia.Controls;
+using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
+using Avalonia.Input;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using FluentAssertions;
@@ -607,6 +609,64 @@ public class FilingsViewHeadlessTests
         window.Close();
     }
 
+    // ── Issue #65: Payment Reference cell editability ────────────────────────
+
+    /// <summary>Filed and Paid rows must expose a TextBox that actually accepts keystrokes.</summary>
+    [AvaloniaTheory]
+    [InlineData(FilingStatus.Filed)]
+    [InlineData(FilingStatus.Paid)]
+    public void PaymentReferenceCell_WhenFiledOrPaid_AcceptsTypedInput(FilingStatus status)
+    {
+        // Arrange
+        var window = ShowFilingsRow(status, "REF-1", out _);
+        var box = FindPaymentRefTextBox(window, "REF-1");
+        box.Should().NotBeNull($"a {status} row must render an editable payment-reference TextBox");
+        box!.Focus();
+        Dispatcher.UIThread.RunJobs();
+
+        // Act — caret sits at position 0 after Focus(), so the character prepends
+        window.KeyTextInput("X");
+        Dispatcher.UIThread.RunJobs();
+
+        // Assert
+        box.Text.Should().Be("XREF-1");
+
+        window.Close();
+    }
+
+    /// <summary>
+    /// Issue #65 regression: an Init row must NOT render a focusable TextBox, because a
+    /// read-only TextBox looks editable and silently discards everything the user types.
+    /// </summary>
+    [AvaloniaFact]
+    public void PaymentReferenceCell_WhenInit_DoesNotRenderAnEditableTextBox()
+    {
+        // Arrange + Act
+        var window = ShowFilingsRow(FilingStatus.Init, "REF-1", out _);
+
+        // Assert
+        FindPaymentRefTextBox(window, "REF-1").Should().BeNull(
+            "an Init row must not present a TextBox that accepts focus but discards input");
+
+        window.Close();
+    }
+
+    /// <summary>The locked Init cell still shows the stored reference as static text.</summary>
+    [AvaloniaFact]
+    public void PaymentReferenceCell_WhenInit_ShowsReferenceAsStaticText()
+    {
+        // Arrange + Act
+        var window = ShowFilingsRow(FilingStatus.Init, "REF-1", out _);
+
+        // Assert
+        window.GetVisualDescendants()
+            .OfType<TextBlock>()
+            .Any(t => t.IsVisible && t.Text == "REF-1")
+            .Should().BeTrue("a locked cell must still display the stored reference");
+
+        window.Close();
+    }
+
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
@@ -625,6 +685,38 @@ public class FilingsViewHeadlessTests
                 sp.Children.OfType<Button>().Any(btn =>
                     btn.Content is TextBlock tb && tb.Text == "✕"));
     }
+
+    /// <summary>
+    /// Shows a FilingsView containing exactly one row with the given status and payment
+    /// reference, activated and laid out. Caller must Close() the returned window.
+    /// </summary>
+    private static Window ShowFilingsRow(FilingStatus status, string? reference, out FilingsViewModel vm)
+    {
+        var dto = new FilingRowDto(
+            Guid.NewGuid(), status, IncomeType.Dividend, "ACME Corp",
+            new DateOnly(2025, 4, 30), 100.00m, reference);
+
+        var getFilings = Substitute.For<IQueryHandler<GetFilingsQuery, Result<FilingsPageResult, Error>>>();
+        getFilings.HandleAsync(Arg.Any<GetFilingsQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<FilingsPageResult, Error>.Success(new FilingsPageResult([dto], 1, 1)));
+
+        vm = CreateFilingsViewModelWith(getFilings);
+        var view = new FilingsView { DataContext = vm };
+        var window = new Window { Content = view, Width = 1200, Height = 600 };
+        window.Show();
+
+        vm.Activator.Activate();
+        window.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
+
+        return window;
+    }
+
+    /// <summary>Finds the visible payment-reference TextBox by its text, or null when absent.</summary>
+    private static TextBox? FindPaymentRefTextBox(Window window, string text) =>
+        window.GetVisualDescendants()
+            .OfType<TextBox>()
+            .FirstOrDefault(t => t.IsVisible && t.Text == text);
 
     /// <summary>
     /// Creates a minimal FilingsViewModel with all dependencies mocked.
