@@ -1,4 +1,9 @@
 using Avalonia.Threading;
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Headless;
+using Avalonia.Input;
+using Avalonia.VisualTree;
 using FluentAssertions;
 using Avalonia.Headless.XUnit;
 using Microsoft.Extensions.DependencyInjection;
@@ -189,5 +194,52 @@ public class MainWindowViewHeadlessTests
         vm.CurrentViewModel.Should().BeOfType<FilingsViewModel>();
 
         window.Close();
+    }
+
+    [AvaloniaFact]
+    public void MainWindow_WhenSettingsClickedTwiceInARow_TogglesExpandedBothTimes()
+    {
+        // Arrange — real MainWindow + real MainWindowViewModel, real ListBox click simulation.
+        // Regression test for https://github.com/dj-milenkovic/rentier/issues/67: the second
+        // consecutive click on the same sidebar group header used to be silently swallowed
+        // because of a ListBox selection-model reentrancy bug (see MainWindowViewModel.cs).
+        var vm = CreateVm();
+        var window = new MainWindow(vm);
+
+        window.Show();
+        window.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
+
+        var settingsEntry = vm.NavigationEntries.First(e => e.IsGroup);
+        var initiallyExpanded = settingsEntry.IsExpanded;
+
+        ListBoxItem FindSettingsContainer() =>
+            window.GetVisualDescendants().OfType<ListBoxItem>()
+                .First(i => ReferenceEquals(i.DataContext, settingsEntry));
+
+        void ClickSettings()
+        {
+            var container = FindSettingsContainer();
+            var topLeft = container.TranslatePoint(new Point(0, 0), window)!.Value;
+            var center = new Point(topLeft.X + container.Bounds.Width / 2, topLeft.Y + container.Bounds.Height / 2);
+            window.MouseDown(center, MouseButton.Left);
+            window.MouseUp(center, MouseButton.Left);
+            Dispatcher.UIThread.RunJobs();
+        }
+
+        // Act
+        ClickSettings();
+        var afterFirstClick = settingsEntry.IsExpanded;
+
+        ClickSettings();
+        var afterSecondClick = settingsEntry.IsExpanded;
+
+        window.Close();
+
+        // Assert — each click must toggle the state; the bug manifests as the second
+        // click leaving IsExpanded unchanged from afterFirstClick.
+        afterFirstClick.Should().Be(!initiallyExpanded, "the first click should toggle the group");
+        afterSecondClick.Should().Be(initiallyExpanded,
+            "the second consecutive click must toggle it back — this is the bug from issue #67");
     }
 }
