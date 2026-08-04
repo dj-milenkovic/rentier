@@ -668,6 +668,21 @@ public class FilingsViewHeadlessTests
     }
 
     /// <summary>
+    /// Issue #65 regression: in production an Init row's payment reference is almost
+    /// always null (the field only becomes editable at Filed+), so this is the realistic
+    /// case the other Init tests (which use "REF-1") don't cover.
+    /// </summary>
+    [AvaloniaFact]
+    public void PaymentReferenceCell_WhenInitWithNoReference_DoesNotRenderAnEditableTextBox()
+    {
+        var window = ShowFilingsRow(FilingStatus.Init, null, out _);
+        window.GetVisualDescendants().OfType<TextBox>()
+            .Any(t => t.IsVisible && t.DataContext is FilingRowViewModel)
+            .Should().BeFalse("an Init row must never render a focusable payment-reference TextBox");
+        window.Close();
+    }
+
+    /// <summary>
     /// Issue #65: pressing Enter on a Paid row sends the typed reference to the
     /// Application layer, so a reference missed during Filed can still be recorded.
     /// </summary>
