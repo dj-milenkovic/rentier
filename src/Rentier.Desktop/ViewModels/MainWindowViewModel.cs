@@ -1,4 +1,5 @@
 using Avalonia.Media;
+using Avalonia.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using ReactiveUI.Primitives;
 using ReactiveUI.Primitives.Concurrency;
@@ -295,7 +296,7 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
                     CurrentViewModel = entry.ViewModel;
                 }
 
-                SelectedEntry = null;
+                Dispatcher.UIThread.Post(() => SelectedEntry = null);
             })
             .DisposeWith(disposables);
 
