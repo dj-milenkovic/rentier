@@ -715,6 +715,40 @@ public class FilingsViewHeadlessTests
         window.Close();
     }
 
+    /// <summary>
+    /// Issue #65: clicking away from the payment-reference TextBox without pressing Enter
+    /// (the natural way to finish editing a grid cell) must still persist the typed value —
+    /// previously only KeyDown(Enter) saved, so a click-away edit was silently discarded.
+    /// </summary>
+    [AvaloniaFact]
+    public void PaymentReferenceCell_WhenFocusLostAfterEdit_SendsTypedReferenceToHandler()
+    {
+        // Arrange
+        var updateRef = Substitute.For<ICommandHandler<UpdatePaymentReferenceCommand, Result<VoidResult, Error>>>();
+        updateRef.HandleAsync(Arg.Any<UpdatePaymentReferenceCommand>(), Arg.Any<CancellationToken>())
+            .Returns(Result<VoidResult, Error>.Success(VoidResult.Value));
+
+        var window = ShowFilingsRowWithUpdateHandler(FilingStatus.Paid, "REF-1", updateRef);
+        var box = FindPaymentRefTextBox(window, "REF-1");
+        box.Should().NotBeNull("a Paid row must render an editable payment-reference TextBox");
+        box!.Focus();
+        Dispatcher.UIThread.RunJobs();
+
+        window.KeyTextInput("X");
+        Dispatcher.UIThread.RunJobs();
+
+        // Act — user clicks away instead of pressing Enter
+        TopLevel.GetTopLevel(box)!.FocusManager!.Focus(null, NavigationMethod.Unspecified, KeyModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+
+        // Assert
+        updateRef.Received(1).HandleAsync(
+            Arg.Is<UpdatePaymentReferenceCommand>(c => c!.PaymentReference == "XREF-1"),
+            Arg.Any<CancellationToken>());
+
+        window.Close();
+    }
+
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------

@@ -447,6 +447,7 @@
                   <TextBox Text="{Binding PaymentReference}"
                            IsVisible="{Binding IsPaymentReferenceEditable}"
                            KeyDown="PaymentRef_KeyDown"
+                           LostFocus="PaymentRef_LostFocus"
                            BorderThickness="0"
                            Background="Transparent"
                            VerticalAlignment="Center" />
