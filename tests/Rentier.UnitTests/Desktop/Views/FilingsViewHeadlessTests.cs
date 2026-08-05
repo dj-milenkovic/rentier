@@ -2,7 +2,9 @@ using System.Collections;
 using ReactiveUI.Primitives;
 using ReactiveUI.Primitives.Concurrency;
 using Avalonia.Controls;
+using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
+using Avalonia.Input;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using FluentAssertions;
@@ -607,6 +609,146 @@ public class FilingsViewHeadlessTests
         window.Close();
     }
 
+    // ── Issue #65: Payment Reference cell editability ────────────────────────
+
+    /// <summary>Filed and Paid rows must expose a TextBox that actually accepts keystrokes.</summary>
+    [AvaloniaTheory]
+    [InlineData(FilingStatus.Filed)]
+    [InlineData(FilingStatus.Paid)]
+    public void PaymentReferenceCell_WhenFiledOrPaid_AcceptsTypedInput(FilingStatus status)
+    {
+        // Arrange
+        var window = ShowFilingsRow(status, "REF-1", out _);
+        var box = FindPaymentRefTextBox(window, "REF-1");
+        box.Should().NotBeNull($"a {status} row must render an editable payment-reference TextBox");
+        box!.Focus();
+        Dispatcher.UIThread.RunJobs();
+
+        // Act — caret sits at position 0 after Focus(), so the character prepends
+        window.KeyTextInput("X");
+        Dispatcher.UIThread.RunJobs();
+
+        // Assert
+        box.Text.Should().Be("XREF-1");
+
+        window.Close();
+    }
+
+    /// <summary>
+    /// Issue #65 regression: an Init row must NOT render a focusable TextBox, because a
+    /// read-only TextBox looks editable and silently discards everything the user types.
+    /// </summary>
+    [AvaloniaFact]
+    public void PaymentReferenceCell_WhenInit_DoesNotRenderAnEditableTextBox()
+    {
+        // Arrange + Act
+        var window = ShowFilingsRow(FilingStatus.Init, "REF-1", out _);
+
+        // Assert
+        FindPaymentRefTextBox(window, "REF-1").Should().BeNull(
+            "an Init row must not present a TextBox that accepts focus but discards input");
+
+        window.Close();
+    }
+
+    /// <summary>The locked Init cell still shows the stored reference as static text.</summary>
+    [AvaloniaFact]
+    public void PaymentReferenceCell_WhenInit_ShowsReferenceAsStaticText()
+    {
+        // Arrange + Act
+        var window = ShowFilingsRow(FilingStatus.Init, "REF-1", out _);
+
+        // Assert
+        window.GetVisualDescendants()
+            .OfType<TextBlock>()
+            .Any(t => t.IsVisible && t.Text == "REF-1")
+            .Should().BeTrue("a locked cell must still display the stored reference");
+
+        window.Close();
+    }
+
+    /// <summary>
+    /// Issue #65 regression: in production an Init row's payment reference is almost
+    /// always null (the field only becomes editable at Filed+), so this is the realistic
+    /// case the other Init tests (which use "REF-1") don't cover.
+    /// </summary>
+    [AvaloniaFact]
+    public void PaymentReferenceCell_WhenInitWithNoReference_DoesNotRenderAnEditableTextBox()
+    {
+        var window = ShowFilingsRow(FilingStatus.Init, null, out _);
+        window.GetVisualDescendants().OfType<TextBox>()
+            .Any(t => t.IsVisible && t.DataContext is FilingRowViewModel)
+            .Should().BeFalse("an Init row must never render a focusable payment-reference TextBox");
+        window.Close();
+    }
+
+    /// <summary>
+    /// Issue #65: pressing Enter on a Paid row sends the typed reference to the
+    /// Application layer, so a reference missed during Filed can still be recorded.
+    /// </summary>
+    [AvaloniaFact]
+    public void PaymentReferenceCell_WhenPaidAndEnterPressed_SendsTypedReferenceToHandler()
+    {
+        // Arrange
+        var updateRef = Substitute.For<ICommandHandler<UpdatePaymentReferenceCommand, Result<VoidResult, Error>>>();
+        updateRef.HandleAsync(Arg.Any<UpdatePaymentReferenceCommand>(), Arg.Any<CancellationToken>())
+            .Returns(Result<VoidResult, Error>.Success(VoidResult.Value));
+
+        var window = ShowFilingsRowWithUpdateHandler(FilingStatus.Paid, "REF-1", updateRef);
+        var box = FindPaymentRefTextBox(window, "REF-1");
+        box.Should().NotBeNull("a Paid row must render an editable payment-reference TextBox");
+        box!.Focus();
+        Dispatcher.UIThread.RunJobs();
+
+        window.KeyTextInput("X");
+        Dispatcher.UIThread.RunJobs();
+
+        // Act
+        window.KeyPress(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, null);
+        Dispatcher.UIThread.RunJobs();
+
+        // Assert — note `c!`: nullable warnings are errors in this solution
+        updateRef.Received(1).HandleAsync(
+            Arg.Is<UpdatePaymentReferenceCommand>(c => c!.PaymentReference == "XREF-1"),
+            Arg.Any<CancellationToken>());
+
+        window.Close();
+    }
+
+    /// <summary>
+    /// Issue #65: clicking away from the payment-reference TextBox without pressing Enter
+    /// (the natural way to finish editing a grid cell) must still persist the typed value —
+    /// previously only KeyDown(Enter) saved, so a click-away edit was silently discarded.
+    /// </summary>
+    [AvaloniaFact]
+    public void PaymentReferenceCell_WhenFocusLostAfterEdit_SendsTypedReferenceToHandler()
+    {
+        // Arrange
+        var updateRef = Substitute.For<ICommandHandler<UpdatePaymentReferenceCommand, Result<VoidResult, Error>>>();
+        updateRef.HandleAsync(Arg.Any<UpdatePaymentReferenceCommand>(), Arg.Any<CancellationToken>())
+            .Returns(Result<VoidResult, Error>.Success(VoidResult.Value));
+
+        var window = ShowFilingsRowWithUpdateHandler(FilingStatus.Paid, "REF-1", updateRef);
+        var box = FindPaymentRefTextBox(window, "REF-1");
+        box.Should().NotBeNull("a Paid row must render an editable payment-reference TextBox");
+        box!.Focus();
+        Dispatcher.UIThread.RunJobs();
+
+        window.KeyTextInput("X");
+        Dispatcher.UIThread.RunJobs();
+
+        // Act — user clicks away instead of pressing Enter
+        TopLevel.GetTopLevel(box)!.FocusManager!.Focus(null, NavigationMethod.Unspecified, KeyModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+
+        // Assert
+        updateRef.Received(1).HandleAsync(
+            Arg.Is<UpdatePaymentReferenceCommand>(c => c!.PaymentReference == "XREF-1"),
+            Arg.Any<CancellationToken>());
+
+        window.Close();
+    }
+
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
@@ -624,6 +766,79 @@ public class FilingsViewHeadlessTests
                 sp.Children.OfType<TextBlock>().Any() &&
                 sp.Children.OfType<Button>().Any(btn =>
                     btn.Content is TextBlock tb && tb.Text == "✕"));
+    }
+
+    /// <summary>
+    /// Shows a FilingsView containing exactly one row with the given status and payment
+    /// reference, activated and laid out. Caller must Close() the returned window.
+    /// </summary>
+    private static Window ShowFilingsRow(FilingStatus status, string? reference, out FilingsViewModel vm)
+    {
+        var dto = new FilingRowDto(
+            Guid.NewGuid(), status, IncomeType.Dividend, "ACME Corp",
+            new DateOnly(2025, 4, 30), 100.00m, reference);
+
+        var getFilings = Substitute.For<IQueryHandler<GetFilingsQuery, Result<FilingsPageResult, Error>>>();
+        getFilings.HandleAsync(Arg.Any<GetFilingsQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<FilingsPageResult, Error>.Success(new FilingsPageResult([dto], 1, 1)));
+
+        vm = CreateFilingsViewModelWith(getFilings);
+        var view = new FilingsView { DataContext = vm };
+        var window = new Window { Content = view, Width = 1200, Height = 600 };
+        window.Show();
+
+        vm.Activator.Activate();
+        window.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
+
+        return window;
+    }
+
+    /// <summary>Finds the visible payment-reference TextBox by its text, or null when absent.</summary>
+    private static TextBox? FindPaymentRefTextBox(Window window, string text) =>
+        window.GetVisualDescendants()
+            .OfType<TextBox>()
+            .FirstOrDefault(t => t.IsVisible && t.Text == text);
+
+    /// <summary>
+    /// Shows a single-row FilingsView wired to a caller-supplied update-reference handler,
+    /// so a test can assert what the save path actually sends. Caller must Close() the window.
+    /// </summary>
+    private static Window ShowFilingsRowWithUpdateHandler(
+        FilingStatus status,
+        string? reference,
+        ICommandHandler<UpdatePaymentReferenceCommand, Result<VoidResult, Error>> updateRef)
+    {
+        var dto = new FilingRowDto(
+            Guid.NewGuid(), status, IncomeType.Dividend, "ACME Corp",
+            new DateOnly(2025, 4, 30), 100.00m, reference);
+
+        var getFilings = Substitute.For<IQueryHandler<GetFilingsQuery, Result<FilingsPageResult, Error>>>();
+        getFilings.HandleAsync(Arg.Any<GetFilingsQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<FilingsPageResult, Error>.Success(new FilingsPageResult([dto], 1, 1)));
+
+        var vm = new FilingsViewModel(
+            new FilingsHandlers(
+                getFilings,
+                Substitute.For<ICommandHandler<UpdateFilingStatusCommand, Result<VoidResult, Error>>>(),
+                updateRef,
+                Substitute.For<ICommandHandler<DeleteFilingCommand, Result<VoidResult, Error>>>(),
+                Substitute.For<ICommandHandler<ExportFilingCommand, Result<ExportFilingResult, Error>>>(),
+                Substitute.For<ICommandHandler<BulkDeleteFilingsCommand, Result<VoidResult, Error>>>()),
+            confirmDelete: _ => Task.FromResult(false),
+            saveFile: _ => Task.CompletedTask,
+            navigateToManualFiling: () => { },
+            scheduler: ImmediateSequencer.Instance);
+
+        var view = new FilingsView { DataContext = vm };
+        var window = new Window { Content = view, Width = 1200, Height = 600 };
+        window.Show();
+
+        vm.Activator.Activate();
+        window.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
+
+        return window;
     }
 
     /// <summary>

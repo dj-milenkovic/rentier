@@ -604,6 +604,9 @@
   <data name="Filings_Tooltip_AdvanceStatus_None" xml:space="preserve">
     <value>No further transitions</value>
   </data>
+  <data name="Filings_Tooltip_PaymentRefLocked" xml:space="preserve">
+    <value>Payment reference can be entered once the filing is marked as Filed.</value>
+  </data>
   <data name="Filings_Tooltip_Export" xml:space="preserve">
     <value>Export PP-OPO XML</value>
   </data>

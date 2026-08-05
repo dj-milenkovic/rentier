@@ -58,16 +58,18 @@ public class FilingRowViewModelTests
         vm.StatusDisplayText.Should().NotBeNullOrEmpty();
     }
 
-    [Fact]
-    public void IsPaymentReferenceEditable_TrueOnlyWhenFiled()
+    // Issue #65: Paid stays editable so a reference forgotten while Filed can still be
+    // recorded. Init is locked — nothing is submitted yet, so no payment slip exists.
+    [Theory]
+    [InlineData(FilingStatus.Init, false)]
+    [InlineData(FilingStatus.Filed, true)]
+    [InlineData(FilingStatus.Paid, true)]
+    public void IsPaymentReferenceEditable_ByStatus_IsTrueForFiledAndPaid(
+        FilingStatus status, bool expected)
     {
-        var filedVm = MakeRowVm(FilingStatus.Filed);
-        var initVm = MakeRowVm(FilingStatus.Init);
-        var paidVm = MakeRowVm(FilingStatus.Paid);
+        var vm = MakeRowVm(status);
 
-        filedVm.IsPaymentReferenceEditable.Should().BeTrue();
-        initVm.IsPaymentReferenceEditable.Should().BeFalse();
-        paidVm.IsPaymentReferenceEditable.Should().BeFalse();
+        vm.IsPaymentReferenceEditable.Should().Be(expected);
     }
 
     [Fact]

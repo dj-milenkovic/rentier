@@ -34,12 +34,28 @@ public partial class FilingsView : ReactiveUserControl<FilingsViewModel>
     private void PaymentRef_KeyDown(object? sender, KeyEventArgs e)
     {
         if (e.Key != Key.Enter) return;
+        SavePaymentRefIfChanged(sender);
+    }
+
+    // Clicking away (or tabbing off) is the natural way to finish editing a grid cell, so it
+    // must save too -- relying on Enter alone silently discards the edit (issue #65).
+    private void PaymentRef_LostFocus(object? sender, RoutedEventArgs e) => SavePaymentRefIfChanged(sender);
+
+    private void SavePaymentRefIfChanged(object? sender)
+    {
         if (sender is not TextBox tb) return;
         if (tb.DataContext is not FilingRowViewModel row) return;
 
-        // Skip the DB write when the text hasn't actually changed since the row was loaded.
-        if (tb.Text == row.PaymentReference) return;
+        // The Tag remembers the last value actually sent for this exact row, so Enter followed
+        // by LostFocus (e.g. tabbing away right after saving, before the page reload refreshes
+        // the row) doesn't submit the same edit twice. A virtualized cell reused for a different
+        // row won't match on Id, so it falls back to comparing against the freshly loaded row.
+        var lastSaved = tb.Tag is (Guid savedRowId, string savedText) && savedRowId == row.Id
+            ? savedText
+            : row.PaymentReference;
+        if (tb.Text == lastSaved) return;
 
+        tb.Tag = (row.Id, tb.Text);
         ViewModel?.SavePaymentRefCommand.Execute((row.Id, tb.Text)).Subscribe().DisposeWith(_disposables);
     }
 

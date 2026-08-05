@@ -190,6 +190,7 @@ public static class SrLatnStrings
         ["BulkDelete_Error_Failed"] = "Grupno brisanje nije uspelo. Pokušajte ponovo.",
         ["Filings_Tooltip_AdvanceStatus"] = "Označi kao {0}",
         ["Filings_Tooltip_AdvanceStatus_None"] = "Nema daljih prelaza",
+        ["Filings_Tooltip_PaymentRefLocked"] = "Referenca plaćanja može se uneti kada prijava bude označena kao Podneto.",
         ["Filings_Tooltip_Export"] = "Izvezi PP-OPO XML",
         ["Filings_Tooltip_Delete"] = "Obriši prijavu",
         ["Filings_Col_Actions"] = "Akcije",
