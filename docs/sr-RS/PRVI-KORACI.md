@@ -1,158 +1,154 @@
 # Prvi koraci sa Rentier-om
 
-Ovaj vodič vas vodi kroz instalaciju Rentier-a, konfiguraciju profila poreskog obveznika i uvoz prve IBKR izjave o aktivnosti.
+Ovaj vodič vas provodi kroz instalaciju Rentier-a, podešavanje profila poreskog obveznika i uvoz prve IBKR izjave o aktivnosti.
 
 ---
 
-## Preduslov
+## Preduslovi
 
 | Zahtev | Detalji |
 |---|---|
-| Operativni sistem | Windows 10 ili noviji |
-| .NET Runtime | [.NET 8.0+](https://dotnet.microsoft.com/download) |
-| IBKR račun | Sa delatnostima od dividendi ili kamata za prijavu |
-| Srpski JMBG | Vaš 13-cifreni broj lične identifikacije |
+| Operativni sistem | Windows 10, Ubuntu 20.04 ili macOS 12 (ili noviji) |
+| .NET Runtime | [.NET 10.0](https://dotnet.microsoft.com/download) |
+| IBKR nalog | Sa dividendama ili kamatama koje treba prijaviti |
+| Srpski JMBG | Vaš 13-cifreni jedinstveni matični broj građana |
 
 ---
 
-## Korak 1 — Kompajliranje i pokretanje
+## Korak 1 — Preuzimanje i instalacija
 
-Dok pakovani instalater nije dostupan, pokrenite Rentier iz izvornog koda:
+Rentier se preuzima sa [GitHub Releases](https://github.com/dj-milenkovic/rentier/releases) stranice projekta, gde su dostupne i instalacione i portabilne verzije za Windows, macOS i Linux.
 
-```bash
-git clone https://github.com/djordje.milenkovic96/rentier.git
-cd rentier
-dotnet restore
-dotnet run --project src/Rentier.Desktop/Rentier.Desktop.csproj
-```
+1. Otvorite Releases stranicu i preuzmite paket za svoj operativni sistem.
+2. Za instalacionu verziju, pokrenite instaler i pratite uputstva.
+3. Za portabilnu verziju, raspakujte arhivu na željenu lokaciju i pokrenite izvršni fajl direktno — instalacija nije potrebna.
 
 ---
 
-## Korak 2 — Kreirajte profil poreskog obveznika
+## Korak 2 — Kreiranje profila poreskog obveznika
 
-Pri prvom pokretanju, otvorite **Settings → Taxpayer Profile** i popunite:
+Pri prvom pokretanju otvorite **Podešavanja → Profil** i popunite sledeća polja:
 
 | Polje | Opis | Primer |
 |---|---|---|
-| JMBG | 13-cifreni jedinstveni broj meštana | `0101990710125` |
-| Puno ime | Kako se pojavljuje na vašoj ID kartici za poreze | `Petar Petrović` |
+| JMBG | 13-cifreni jedinstveni matični broj | `0101990710125` |
+| Puno ime | Kako se pojavljuje na vašoj poreskoj identifikaciji | `Petar Petrović` |
 | Adresa | Ulica i broj | `Knez Mihailova 1` |
-| Šifra opštine | Vaša Opština šifra sa zvanične liste | `70092` |
+| Šifra opštine | Šifra vaše opštine sa zvaničnog šifrarnika | `70092` |
 | Telefon (opciono) | Kontakt broj za poresku prijavu | `+381 11 1234567` |
 | Email (opciono) | Kontakt email za poresku prijavu | `petar@example.com` |
 
-> **Šifre opština** se objavljuju od strane Poreske uprave Republike Srbije. Pretražite "šifrarnik opština" da pronađete šifru vaše opštine.
+> **Šifre opština** objavljuje Poreska uprava Republike Srbije. Pretražite "šifrarnik opština" da pronađete šifru svoje opštine.
 
 ---
 
-## Korak 3 — Konfigurajte Importer
+## Korak 3 — Podešavanje Importer-a
 
-**Importer** povezuje izvor izjave sa vašim profilom poreskog obveznika. Idite na **Importers → New Importer**:
+**Uvoznici** povezuje izvor izjave sa vašim profilom poreskog obveznika. Idite na **Uvoznici → Dodaj Novi**:
 
 | Polje | Opis |
 |---|---|
-| Prikazni naziv | Lak labela, na primer `IBKR – Dividende 2024` |
+| Prikazni naziv | Prepoznatljiva labela, npr. `IBKR – Dividende 2024` |
 | Tip izveštaja | Izaberite **IBKR CSV** |
-| Profil poreskog obveznika | Izaberite profil koji ste kreirali u Koraku 2 |
-| Poštanski sandučić (opciono) | Povežite IMAP sandučić za automatsku obradu e-pošte (videti Korak 5) |
+| Profil poreskog obveznika | Izaberite profil kreiran u Koraku 2 |
+| Poštansko sanduče (opciono) | Povežite IMAP sanduče za automatsku obradu e-pošte (videti Korak 5) |
 
-### Polja filtera e-pošte (opciono — potrebna samo za automatsku obradu e-pošte)
+### Polja filtera e-pošte (opciono — potrebna samo za automatsku obradu)
 
-| Polje | Kako radi | Primer |
+| Polje | Kako funkcioniše | Primer |
 |---|---|---|
-| Filter pošiljaoca | Podudaranje podstringa na adresi pošiljaoca | `interactivebrokers.com` |
-| Filter predmeta | Podudaranje podstringa na predmetu e-pošte | `Activity Statement` |
-| Regex privitka | Regularni izraz upoređen sa nazivom datoteke privitka | `.*\.csv` |
+| Filter pošiljaoca | Podudaranje podniza u adresi pošiljaoca | `interactivebrokers.com` |
+| Filter predmeta | Podudaranje podniza u predmetu e-pošte | `Activity Statement` |
+| Regex za prilog | Regularni izraz koji se poredi sa nazivom fajla priloga email-a | `.*\.csv` |
 
-> **Važno:** Ako omogućite automatsku obradu e-pošte, polje **Attachment regex** ne sme biti prazno. Bez njega, nijedan privitак neće biti uvezen. Bezbedan podrazumevani je `.*\.csv` da prihvatite bilo koju CSV datoteku.
-
----
-
-## Korak 4 — Ručno uvezte izjavu
-
-Ako ne želite automatsku obradu e-pošte, možete direktno otpremiti izjavu:
-
-1. Izvezite **Activity Statement CSV** iz IBKR-a — vidite [IBKR Activity Statement Setup](IBKR-SETUP.md) za tačne korake.
-2. U Rentier-u, idite na **Importers → [vaš importer] → Upload Statement**.
-3. Izaberite CSV datoteku koju ste preuzeli.
-4. Kliknite **Process** — Rentier će parsirati datoteku, preuzeti NBS vrednosti za svaki datum dohodka i kreirajti pojedinačne **Filings**.
+> **Važno:** Ako uključite automatsku obradu e-pošte, polje **Regex za prilog** ne sme ostati prazno — bez njega se nijedan privitak neće uvesti. Bezbedna podrazumevana vrednost je `.*\.csv`, koja prihvata bilo koji CSV fajl.
 
 ---
 
-## Korak 5 — Konfigurajte automatsku obradu e-pošte (Opciono)
+## Korak 4 — Ručni uvoz izjave
 
-Rentier može pratiti IMAP sandučić i automatski uveći nove IBKR izjave.
+Ako ne želite automatsku obradu e-pošte, izjavu možete otpremiti direktno:
 
-### 5a — Dodajte sandučić
+1. Izvezite **Activity Statement CSV** iz IBKR-a — tačna uputstva potražite u [IBKR vodiču za podešavanje](IBKR-SETUP.md).
+2. U Rentier-u otvorite **Izveštaji → [vaš izveštaj] → Uvezi...**.
+3. Izaberite preuzeti CSV fajl.
+4. Rentier će parsirati fajl, preuzeti NBS kurseve za svaki datum dohotka i kreirati pojedinačne **Prijave**.
 
-Idite na **Settings → Mailboxes → New Mailbox** i unesite:
+---
+
+## Korak 5 — Podešavanje automatske obrade e-pošte (opciono)
+
+Rentier može pratiti IMAP sanduče i automatski uvoziti nove IBKR izjave.
+
+### 5a — Dodavanje sandučeta
+
+Idite na **Podršavanja → Poštanski sandučići → Dodaj novi** i unesite:
 
 | Polje | Opis | Tipična IMAP vrednost |
 |---|---|---|
-| Host | IMAP adresa servera | `imap.gmail.com` |
+| Host | Adresa IMAP servera | `imap.gmail.com` |
 | Port | IMAP SSL port | `993` |
-| Korisničko ime | Vaša email adresa | `vi@gmail.com` |
+| Korisničko ime / Email | Vaša email adresa | `vi@gmail.com` |
+| Lozinka | Vaša aplikacijska lozinka | xxxxxxxx |
 
-Nakon čuvanja, Rentier će vas tražiti da unesete **lozinku** ili **aplikacijsku lozinku**. Akreditivu se čuvaju u Upravniku kredencijala Windows-a — nikada u bazi podataka.
+Kredencijali se čuvaju isključivo u Credential Manager-u operativnog sistema, nikada u bazi podataka aplikacije.
 
-> **Aplikacijske lozinke:** Ako vaš email pružaoc koristi dvofaktorsku autentifikaciju (Gmail, Outlook, itd.), morate generisati **aplikacijsku lozinku** umesto da koristite lozinku svog računa. Proverite dokumentaciju vašeg pružaoca servisa za uputstva.
+> **Aplikacijske lozinke:** Ako vaš email provajder koristi dvofaktorsku autentifikaciju (Gmail, Outlook itd.), potrebno je da generišete **aplikacijsku lozinku** umesto lozinke za nalog. Uputstva potražite u dokumentaciji svog provajdera.
 
-### 5b — Povežite sandučić sa vašim Importer-om
+### 5b — Povezivanje sandučeta sa Uvoznikom
 
-Uređujte vaš Importer i postavite polje **Mailbox** na sandučić koji ste upravo kreirali. Pazite da su sva tri polja filtera (From, Subject, Attachment regex) konfigurirana.
+Izmenite svoj Uvoznik i postavite polje **Poštansko sanduče** na sanduče koje ste upravo kreirali. Proverite da su sva tri polja filtera popunjena.
 
-### 5c — Pokrenite sinhronizaciju
+### 5c — Pokretanje sinhronizacije
 
-Idite na **Sync → Run Now**. Rentier se povezuje sa sandučićem, traži e-poštu koja se poklapa sa vašim filterima, preuzima odgovarajuće CSV privitke i stavlja ih u red čekanja kao Izveštaje za obradu.
+Idite na **Sinhronizacija → Pokreni sinhronizaciju**. Rentier se povezuje sa sandučetom, pretražuje e-poštu koja odgovara vašim filterima, preuzima odgovarajuće CSV privitke i stavlja ih u red za obradu kao izveštaje.
 
-Kursor sinhronizacije se pomiče nakon svake uspešne obrade, tako da kasnije sinhronizacije razmatraju samo nove e-poruke.
+Kursor sinhronizacije se pomera nakon svake uspešne obrade, tako da naredne sinhronizacije razmatraju samo nove poruke.
 
 ---
 
-## Korak 6 — Pregledajte Filings
+## Korak 6 — Pregled Prijava
 
-Nakon obrade izjave, Rentier kreira jedan **Filing** po događaju dohodka. Idite na **Filings** da ih vidite:
+Nakon obrade izveštaja, Rentier kreira po jednu **Prijavu** za svaki događaj dohotka. Idite na **Prijave** da ih pregledate:
 
 | Kolona | Značenje |
 |---|---|
-| Datum dohodka | Kada je dividenda/kamata isplaćena |
-| Plaćajući subjekt | Simbol akcije ili naziv institucije |
-| Vrsta dohodka | Dividenda ili Kamata |
-| Bruto dohodak (RSD) | Inostrani dohodak pretvoren po NBS kursu |
-| Odbijeni porez (RSD) | Inostrani porez na izvor već odbijen |
-| Porez na plaćanje (RSD) | Srpski porez obaveza nakon kreditiranja poreza na izvor |
-| Rok prijave | 30 kalendarski dana nakon dohodka, pomeren na sledeći radni dan |
 | Status | Init / Filed / Paid |
+| Tip prihoda | Dividenda ili kamata |
+| Isplatilac | Simbol akcije ili naziv institucije |
+| Rok za podnošenje | 30 kalendarskih dana od datuma dohotka, pomeren na naredni radni dan ako pada na neradni |
+| Porez za uplatu (RSD) | Srpska poreska obaveza nakon kreditiranja poreza po odbitku |
+| Referenca plaćanja | Identifikacioni broj prijave sa portala ePorezi  |
 
 ---
 
-## Korak 7 — Izvezi i podnesi
+## Korak 7 — Izvoz i podnošenje
 
 Za svaki filing:
 
-1. Kliknite **Export PP-OPO XML** da generišete datoteku za podnošenje.
-2. Prijavite se na portal [ePorezi](https://www.purs.gov.rs/e-porezi.html) (Poreska uprava Srbije).
-3. Otpremite XML datoteku u **PP-OPO → Nova prijava**.
-4. Nakon podnošenja, vratite se u Rentier i kliknite **Mark as Filed** na filing-u.
-5. Kada ste platili porez, kliknite **Mark as Paid**.
+1. Kliknite **Izvezi PP-OPO XML** da generišete fajl za podnošenje.
+2. Prijavite se na portal [ePorezi](https://www.purs.gov.rs/e-porezi.html) Poreske uprave Srbije.
+3. Otpremite XML fajl u **PP-OPO → Nova prijava**.
+4. Nakon podnošenja, vratite se u Rentier i kliknite **Označi kao podneto** na odgovarajućoj prijavi.
+5. Kada porez bude plaćen, kliknite **Označi kao plaćeno**.
 
-> Filings prolaze kroz jedne po jedne korake: **Init → Filed → Paid**. Ne možete preskakati korake.
+> Prijavi prolazi kroz strogo definisan redosled statusa: **Init → Filed → Paid**. Preskakanje koraka nije moguće.
 
 ---
 
-## Česti problemi
+## Rešavanje čestih problema
 
-| Simptom | Verovatni uzrok | Ispravka |
+| Simptom | Verovatan uzrok | Rešenje |
 |---|---|---|
-| Nema kreiranih filing-a nakon obrade | CSV ne sadrži `Dividends` ili `Interest` sekcije | Proverite [IBKR vodič za instalaciju](IBKR-SETUP.md) — pazite da su te sekcije omogućene |
-| Iznos WHT pokazuje 0 čak i kada je porez odbijen | Sekcija `Withholding Tax` nedostaje iz vašeg CSV-a | Ponovno izvezite sa tom sekcijom omogućenom |
-| Kurs nije pronađen | NBS nije objavio kurs za taj datum (praznik/vikend) | Rentier se vraća na poslednji prethodni radni dan; ako i dalje ne uspe, proverite vašu internet konekciju |
-| Mailbox sinhronizacija uvezi 0 izveštaja | Attachment regex je prazan ili su filteri previše stroogi | Proverite sva tri polja filtera importer-a; testirajte sa `.*\.csv` kao attachment regex |
-| "IMAP sync failed" greška | Pogrešne akreditive, pogrešan port, ili je potrebna aplikacijska lozinka | Ponovno unesite akreditive; koristite port 993 sa SSL |
+| Nijedna pijava nije kreiran nakon obrade | CSV ne sadrži sekcije `Dividends` ili `Interest` | Proverite [IBKR vodič za podešavanje](IBKR-INSTALACIJA.md) i uverite se da su te sekcije uključene |
+| Iznos poreza po odbitku prikazuje 0 iako je porez naplaćen | Sekcija `Withholding Tax` nedostaje u CSV-u | Ponovo izvezite izveštaj sa uključenom tom sekcijom |
+| Kurs nije pronađen | NBS nije objavio kurs za taj datum (praznik/vikend) | Rentier automatski koristi poslednji prethodni radni dan; ako problem ostane, proverite internet konekciju |
+| Sinhronizacija sandučeta uvozi 0 izveštaja | Attachment regex je prazan ili su filteri previše strogi | Proverite sva tri polja filtera na importer-u; testirajte sa `.*\.csv` kao attachment regex |
+| Greška "IMAP sync failed" | Pogrešni kredencijali, pogrešan port ili je potrebna aplikacijska lozinka | Ponovo unesite kredencijale i koristite port 993 sa SSL-om |
 
 ---
 
 ## Sledeći koraci
 
-- [IBKR Activity Statement Setup](IBKR-SETUP.md) — detaljne uputstvo za generisanje ispravnog CSV-a
-- [Pregled srpskog PP-OPO poreza](TAX-OVERVIEW.md) — razumevanje šta Rentier izračunava i zašto
+- [IBKR Activity Statement Setup](IBKR-SETUP.md) — detaljno uputstvo za generisanje ispravnog CSV-a
+- [Pregled srpskog PP-OPO poreza](TAX-OVERVIEW.md) — objašnjenje šta Rentier izračunava i zašto
