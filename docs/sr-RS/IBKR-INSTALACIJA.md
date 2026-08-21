@@ -1,10 +1,10 @@
-# IBKR Activity Statement instalacija
+# IBKR Activity Statement podešavanja
 
 Ovaj vodič objašnjava kako generisati ispravan CSV izvoz iz Interactive Brokers-a (IBKR) i kako ga povezati sa Rentier-om — bilo kroz ručno otpremanje ili dozvoljavanjem Rentier-u da ga automatski preuzme iz vašeg inbox-a.
 
 ---
 
-## Šta Rentier potrebuje
+## Šta Rentier zahteva
 
 Rentier parsira **Activity Statement** CSV format izvezen iz IBKR-a. Traži četiri specifične sekcije:
 
@@ -15,7 +15,7 @@ Rentier parsira **Activity Statement** CSV format izvezen iz IBKR-a. Traži čet
 | `Interest` | Pripisana kamata (zarađena) i odbitna kamata (naplaćena) | Da (ako imate prihod od kamate) |
 | `Base Currency Exchange Rate` | IBKR-ove sopstvene FX stope za period | Preporučeno kao rezerva |
 
-> **Samo ove sekcije se čitaju.** Sve ostale sekcije u Activity Statement-u (trgovine, akcije, stanja gotovine, itd.) su bezbedno ignorirane.
+> **Samo ove sekcije se čitaju.** Sve ostale sekcije u Activity Statement-u (trgovine, akcije, stanja gotovine, itd.) su bezbedno ignorisne.
 
 ---
 
@@ -41,7 +41,7 @@ U meniju, idite na **Performance & Reports → Statements**.
    - Base Currency Exchange Rate (preporučeno)
 5. Kliknite **Run** ili **Create Statement**.
 
-> Dugme za preuzimanje se pojavljuje nakon što je izjava generisana. IBKR može da pravi do minut.
+> Dugme za preuzimanje se pojavljuje nakon što je izjava generisana. Može potrajati i do minut.
 
 ### Korak 4 — Otpremite u Rentier
 
@@ -49,9 +49,9 @@ U Rentier-u, idite na **Importers → [vaš importer] → Upload Statement**, iz
 
 ---
 
-## Opcija B — Automatska obradi e-pošte preko IBKR Flex Queries
+## Opcija B — Automatska obrada e-pošte preko IBKR Flex Queries
 
-IBKR može automatski da vam pošalje izjavu po rasporedu (dnevno, sedmično, mesečno). Rentier prati vašu inbox i automatski uvozi privitke.
+IBKR može automatski da vam pošalje izjavu po rasporedu (dnevno, sedmično, mesečno). Rentier prati vašu inbox i automatski uvozi izveštaje.
 
 ### Korak 1 — Kreirajte Flex Query u IBKR
 
@@ -68,27 +68,27 @@ IBKR može automatski da vam pošalje izjavu po rasporedu (dnevno, sedmično, me
 7. Postavite željeni **raspored** (na primer mesečno prvog dana meseca, pokrivajući prethodni mesec).
 8. Sačuvajte Flex Query.
 
-> IBKR šalje izjavu sa `@interactivebrokers.com` adrese. Predmet obično sadrži "Flex Statement" ili "Activity Statement" a privitак je `.csv` datoteka.
+> IBKR šalje izjavu sa `@interactivebrokers.com` adrese. Predmet obično sadrži "Flex Statement" ili "Activity Statement" a izveštaj je `.csv` datoteka.
 
-### Korak 2 — Konfigurajte sandučić u Rentier
+### Korak 2 — Konfigurišite sanduče u Rentier
 
-Videti [Prvi koraci — Korak 5](PRVI-KORACI.md#korak-5--konfigurajte-automatsku-obradu-e-pošte-opciono) za potpune uputstvo za instalaciju sandučića.
+Videti [Prvi koraci — Korak 5](PRVI-KORACI.md#korak-5--konfigurajte-automatsku-obradu-e-pošte-opciono) za potpune uputstvo za podešavanje sandučića.
 
-### Korak 3 — Konfigurajte filtera Importer-a
+### Korak 3 — Konfigurišite filter Importer-a
 
 Uređujte vaš Importer i postavite sledeća polja filtera da se poklapaju sa e-poštom koju IBKR šalje:
 
 | Polje filtera | Preporučena vrednost | Napomene |
 |---|---|---|
-| From filter | `interactivebrokers.com` | Podudaranje podstringa na pošiljaocu; suzuje rezultate na IBKR e-poruke |
-| Subject filter | `Flex Statement` ili `Activity Statement` | Podudaranje podstringa na predmetu; prilagodite ako vaša Flex Query koristi prilagođeni predmet |
-| Attachment regex | `.*\.csv` | Regex upoređen sa nazivom privitka; **ne sme biti prazan** |
+| Filter pošiljaoca | `interactivebrokers.com` | Podudaranje podstringa na pošiljaocu; suzuje rezultate na IBKR e-poruke |
+| Filter predmeta | `Flex Statement` ili `Activity Statement` | Podudaranje podstringa na predmetu; prilagodite ako vaša Flex Query koristi prilagođeni predmet |
+| Regex za prilog | `.*\.csv` | Regex upoređen sa nazivom priloga; **ne sme biti prazan** |
 
-> **Regex privitka je obavezan.** Ako je ostavljen prazan, nijedan privitак neće biti uvezen, čak i ako se pronađe odgovarajuća e-pošta.
+> **Regex za prilog je obavezan.** Ako je ostavljen prazan, nijedan izveštaj neće biti uvezen, čak i ako se pronađe odgovarajuća e-pošta.
 
 ### Korak 4 — Pokrenite sinhronizaciju
 
-U Rentier-u, idite na **Sync → Run Now**. Nakon prve uspešne sinhronizacije, kasnije sinhronizacije obrađuju samo e-poruke novije od poslednje uveiene poruke.
+U Rentier-u, idite na **Sinhronizacija → Pokreni sinhronizaciju**. Nakon prve uspešne sinhronizacije, kasnije sinhronizacije obrađuju samo e-poruke novije od poslednje uveiene poruke.
 
 ---
 
@@ -110,7 +110,7 @@ Withholding Tax,Header,Currency,Date,Description,Amount,...
 Withholding Tax,Data,USD,2024-03-15,"AAPL(US0378331005) Cash Dividend",-7.28,...
 ```
 
-> **Napomena:** Iznosi poreza na izvor su **negativni** u IBKR-ovom CSV-u (predstavljaju odbijene novce). Rentier to automatski obrađuje.
+> **Napomena:** U IBKR-ovom CSV-u iznosi poreza po odbitku prikazani su kao **negativne vrednosti**, jer predstavljaju sredstva koja su već zadržana. Rentier ih prepoznaje i automatski pravilno obrađuje.
 
 ### Interest
 ```
@@ -129,15 +129,15 @@ Base Currency Exchange Rate,Data,USD,2024-03-15,...,EUR,0.91723,...
 
 ---
 
-## Šta Rentier kreira nasuprot ignorišu
+## Šta Rentier kreira a šta ignoriše
 
 | Ulaz | Šta Rentier kreira |
 |---|---|
-| Red `Dividends,Data` | Mogući filing sa vrstom dohodka **Dividend** |
-| Upoređeni red `Withholding Tax,Data` | WHT kredit primenjuje se na odgovarajući filing dividende |
-| Red `Interest,Data` sa "Credit Interest" | Mogući filing sa vrstom dohodka **Interest** |
-| Red `Interest,Data` sa "Debit Interest" | Uvezeno ali nije korišćeno za poreske filings (debit kamate nisu oporezivi dohodak u Srbiji — proverite sa savetnikom) |
-| Neupoređeni WHT red (nema odgovarajuće dividende) | Logirano kao parse upozorenje; nije kreiran filing |
+| Red `Dividends,Data` | Moguća prijava sa vrstom dohodka **Dividend** |
+| Upoređeni red `Withholding Tax,Data` | WHT kredit primenjuje se na odgovarajuću prijavu dividende |
+| Red `Interest,Data` sa "Credit Interest" | Moguća prijava sa vrstom dohodka **Interest** |
+| Red `Interest,Data` sa "Debit Interest" | Uvezeno ali nije korišćeno za poreske prijave (debit kamate nisu oporezivi dohodak u Srbiji — proverite sa savetnikom) |
+| Neupoređeni WHT red (nema odgovarajuće dividende) | Logovano kao parse upozorenje; nije kreirana prijava |
 | Bilo koja druga sekcija | Sasvim ignoriše |
 
 ---
@@ -150,18 +150,18 @@ Vaša datoteka ne sadrži nijedan od četiri očekivana naziva sekcije. To obič
 - Datoteka je XML izvoz umesto CSV — ponovno izvezite i izaberite **CSV format**
 
 ### "WHT_UNMATCHED — No dividend found for WHT entry"
-Red poreza na izvor se odnosi na akciju i datum za koji nije pronađena dividenda u istoj datoteci. Mogući uzroci:
+Red poreza po odbiku se odnosi na akciju i datum za koji nije pronađena dividenda u istoj datoteci. Mogući uzroci:
 - Sekcija `Dividends` nije uključena u izvoz — ponovno izvezite sa omogućenom opcijom
 - Raspon datuma je previše uzan i propušta odgovarajuću dividendu
 
 ### "WHT_CURRENCY_MISMATCH"
-Porez na izvor je odbijen u drugoj valuti od dividende. Ovo je neuobičajeno ali može se desiti sa viševalutnim računima. Pregledajte raw CSV i konsultujte se sa savetником.
+Porez po odbitku je odbijen u drugoj valuti od dividende. Ovo je neuobičajeno ali može se desiti sa viševalutnim računima. Pregledajte raw CSV i konsultujte se sa savetnikom.
 
 ### Prazan uvoz nakon sinhronizacije e-pošte
 Proverite sledeće redom:
-1. **Attachment regex** nije prazan na Importer-u
-2. **From filter** i **Subject filter** se poklapaju sa stvarnom e-poštom koju IBKR šalje
-3. Akreditive sandučića su ispravne (prvo pokušajte da se povežete sa standardnim IMAP klijentom)
+1. **Regex za prilog** nije prazan na Uvozniku
+2. **Filter pošiljaoca** i **Filter predmeta** se poklapaju sa stvarnom e-poštom koju IBKR šalje
+3. Pristupni podaci za sandučića su ispravni (prvo pokušajte da se povežete sa standardnim IMAP klijentom)
 4. IBKR je zaista poslao izjavu — proverite direktno inbox
 
 ---
