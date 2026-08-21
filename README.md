@@ -14,11 +14,19 @@ It reads your IBKR Activity Statement, fetches NBS exchange rates for each incom
 
 ## Documentation
 
+### English
 | Guide | Description |
 |---|---|
 | [Getting Started](GETTING-STARTED.md) | Install the app, create your taxpayer profile, and import your first statement |
 | [IBKR Activity Statement Setup](IBKR-SETUP.md) | How to generate the right CSV from IBKR and connect it to Rentier |
 | [Serbian PP-OPO Tax Overview](TAX-OVERVIEW.md) | How the Serbian passive income tax works and what Rentier calculates |
+
+### Srpski (Serbian)
+| Vodič | Opis |
+|---|---|
+| [Prvi koraci](docs/sr-RS/PRVI-KORACI.md) | Instalirajte aplikaciju, kreirajte svoj profil poreskog obveznika i uvezite svoju prvu IBKR izjavu |
+| [IBKR Activity Statement instalacija](docs/sr-RS/IBKR-INSTALACIJA.md) | Kako da generišete ispravan CSV iz IBKR-a i da ga povežete sa Rentier-om |
+| [Pregled srpskog PP-OPO poreza](docs/sr-RS/PREGLED-POREZA.md) | Kako funkcioniše srpski porez na pasivni dohodak i šta Rentier izračunava |
 
 ---
 
