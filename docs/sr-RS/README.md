@@ -1,9 +1,5 @@
 # Rentier — Srpska dokumentacija
 
-Dobrodošli! Ova fascikla sadrži kompletan vodič kroz Rentier na srpskom jeziku.
-
----
-
 ## Dokumentacija
 
 | Vodič | Opis |
@@ -22,7 +18,7 @@ Snimci ekrana aplikacije dostupni su u `/screenshots` fascikli.
 
 ## Odricanje od odgovornosti
 
-Rentier je alat za povećanje produktivnosti, ne licencirana poreska savetodavna služba. Uvek proverite svoje prijave kod certificiranog srpskog poreskog savetnika.
+Rentier je alat za povećanje produktivnosti, ne licencirana poreska savetodavna služba. Uvek proverite svoje prijave kod sertifikovanog poreskog savetnika.
 
 ---
 
