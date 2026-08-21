@@ -391,13 +391,16 @@ jobs:
         shell: bash
         run: |
           COV_PATHS=$(find ./coverage-raw -name 'coverage.opencover.xml' | paste -sd ',' -)
-      
-          # Skip analysis if no coverage files found
+
+          # Skip analysis if no coverage files found (no code changess)
           if [ -z "$COV_PATHS" ]; then
-            echo "⚠️ No coverage files found. Skipping SonarCloud analysis (workflow-only PR)."
+            echo "⚠️ No coverage files found. Skipping SonarCloud analysis (no code changes)."
+            echo "SONAR_ANALYSIS_SKIPPED=true" >> "$GITHUB_ENV"
             exit 0
           fi
-      
+
+          echo "SONAR_ANALYSIS_SKIPPED=false" >> "$GITHUB_ENV"
+
           dotnet sonarscanner begin \
             /k:"${SONAR_PROJECT_KEY}" \
             /o:"${SONAR_ORGANIZATION}" \
@@ -409,7 +412,7 @@ jobs:
             /d:sonar.coverage.exclusions="**/*.Tests/**,**/Migrations/**,**/Program.cs,**/*.axaml.cs,**/Properties/**" \
             /d:sonar.cpd.exclusions="**/*.Tests/**,**/*.g.cs" \
             /d:sonar.test.inclusions="**/*.Tests/**,**/*Tests.cs"
-      
+
           for proj in \
             src/Rentier.Domain/Rentier.Domain.csproj \
             src/Rentier.Application/Rentier.Application.csproj \
@@ -417,11 +420,12 @@ jobs:
             src/Rentier.Desktop/Rentier.Desktop.csproj; do
             dotnet build "$proj" -c Release --no-incremental
           done
-      
+
           dotnet sonarscanner end /d:sonar.token="${SONAR_TOKEN}"
 
       - name: Check Quality Gate
-        uses: sonarsource/sonarqube-quality-gate-action@7a5fffe8e523c40e0c740b6bc2712ab503e52efa # v1.2.1
+        if: env.SONAR_ANALYSIS_SKIPPED != 'true'
+        uses: sonarsource/sonarqube-quality-gate-action@cf038b0e0cdecfa9e56c198bbb7d21d751d62c3b # v1.2.1        
         timeout-minutes: 5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
