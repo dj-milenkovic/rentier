@@ -24,4 +24,4 @@ Rentier je alat za povećanje produktivnosti, ne licencirana poreska savetodavna
 
 ## Povratak na englesku dokumentaciju
 
-Za englesku dokumentaciju, vidite glavnu [README.md](../../README.md) datoteku.
+Za englesku dokumentaciju, vidite [docs/en-US/](../en-US/) fasciklu ili glavnu [README.md](../../README.md) datoteku.
