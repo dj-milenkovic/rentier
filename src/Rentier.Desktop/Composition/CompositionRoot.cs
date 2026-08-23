@@ -28,6 +28,9 @@ public static class CompositionRoot
         // T030: Localization service (singleton — same instance used by AXAML Localizer resource)
         services.AddSingleton<ILocalizationService, LocalizationService>();
 
+        // App version service (Desktop-only UI concern — reads the entry assembly's version)
+        services.AddSingleton<IAppVersionService, AppVersionService>();
+
         // T030: UserPreference CQRS handlers
         services.AddTransient<
             IQueryHandler<GetUserPreferenceQuery, Result<string?, Error>>,
