@@ -50,6 +50,17 @@
           </StackPanel>
         </Border>
 
+        <!-- App version footer — pinned to the bottom of the sidebar. The nav
+             ListBox below remains the DockPanel's last child, so it still fills
+             all remaining vertical space regardless of this element's Dock. -->
+        <SelectableTextBlock DockPanel.Dock="Bottom"
+                              Text="{Binding AppVersionText}"
+                              FontSize="11"
+                              Foreground="{DynamicResource RentierTextSecondaryBrush}"
+                              HorizontalAlignment="Center"
+                              Margin="0,4,0,10"
+                              AutomationProperties.Name="App Version" />
+
         <!-- Navigation list -->
         <ListBox DockPanel.Dock="Top"
                  Classes="sidebar-nav"

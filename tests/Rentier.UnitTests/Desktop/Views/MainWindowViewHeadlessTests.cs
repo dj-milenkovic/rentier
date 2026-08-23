@@ -204,6 +204,27 @@ public class MainWindowViewHeadlessTests
     }
 
     [AvaloniaFact]
+    public void MainWindow_SidebarFooter_DisplaysAppVersionText()
+    {
+        // Arrange
+        var vm = CreateVm();
+        var window = new MainWindow(vm);
+
+        // Act
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        // Assert
+        var versionLabel = window.GetVisualDescendants()
+            .OfType<SelectableTextBlock>()
+            .FirstOrDefault(t => t.Text == vm.AppVersionText);
+
+        versionLabel.Should().NotBeNull();
+
+        window.Close();
+    }
+
+    [AvaloniaFact]
     public void MainWindow_WhenSettingsClickedTwiceInARow_TogglesExpandedBothTimes()
     {
         // Arrange — real MainWindow + real MainWindowViewModel, real ListBox click simulation.
