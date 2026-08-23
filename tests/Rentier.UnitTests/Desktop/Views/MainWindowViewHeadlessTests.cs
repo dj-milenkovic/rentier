@@ -166,11 +166,18 @@ public class MainWindowViewHeadlessTests
         return locService;
     }
 
+    private static IAppVersionService BuildAppVersionService(string displayVersion = "v1.2.3")
+    {
+        var svc = Substitute.For<IAppVersionService>();
+        svc.DisplayVersion.Returns(displayVersion);
+        return svc;
+    }
+
     private static MainWindowViewModel CreateVm()
     {
         var provider = BuildProvider();
         var updateService = provider.GetRequiredService<IUpdateService>();
-        return new(provider, BuildLocalizationService(), updateService);
+        return new(provider, BuildLocalizationService(), updateService, BuildAppVersionService());
     }
 
     [AvaloniaFact]

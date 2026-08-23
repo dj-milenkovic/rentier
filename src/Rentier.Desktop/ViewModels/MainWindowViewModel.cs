@@ -35,6 +35,9 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
         set => this.RaiseAndSetIfChanged(ref _selectedEntry, value);
     }
 
+    /// <summary>Fixed for the process lifetime — set once from <see cref="IAppVersionService"/>.</summary>
+    public string AppVersionText { get; }
+
     // ── Update state ──────────────────────────────────────────────────────────
 
     private UpdateState _currentUpdateState = UpdateState.Idle;
@@ -125,11 +128,13 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
         IServiceProvider provider,
         ILocalizationService localizationService,
         IUpdateService updateService,
+        IAppVersionService appVersionService,
         ISequencer? outputScheduler = null)
     {
         _updateService = updateService;
         _localizationService = localizationService;
         _outputScheduler = outputScheduler ?? RxSchedulers.MainThreadScheduler;
+        AppVersionText = appVersionService.DisplayVersion;
 
         // ── Update commands setup ─────────────────────────────────────────────
         var canCheck = this.WhenAnyValue(x => x.CurrentUpdateState)

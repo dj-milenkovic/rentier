@@ -160,11 +160,18 @@ public class MainWindowViewModelTests
         return locService;
     }
 
+    private static IAppVersionService BuildAppVersionService(string displayVersion = "v1.2.3")
+    {
+        var svc = Substitute.For<IAppVersionService>();
+        svc.DisplayVersion.Returns(displayVersion);
+        return svc;
+    }
+
     private static MainWindowViewModel CreateVm()
     {
         var provider = BuildProvider();
         var updateService = provider.GetRequiredService<IUpdateService>();
-        return new(provider, BuildLocalizationService(), updateService);
+        return new(provider, BuildLocalizationService(), updateService, BuildAppVersionService());
     }
 
     // ── Constructor tests ─────────────────────────────────────────────────────
@@ -192,6 +199,19 @@ public class MainWindowViewModelTests
 
         // 4 top-level + 1 Settings group header + 5 children
         vm.NavigationEntries.Should().HaveCount(10);
+    }
+
+    [Fact]
+    public void Constructor_SetsAppVersionText_FromAppVersionServiceDisplayVersion()
+    {
+        var provider = BuildProvider();
+        var updateService = provider.GetRequiredService<IUpdateService>();
+        var appVersionService = BuildAppVersionService("v9.9.9");
+
+        var vm = new MainWindowViewModel(
+            provider, BuildLocalizationService(), updateService, appVersionService);
+
+        vm.AppVersionText.Should().Be("v9.9.9");
     }
 
     // ── Navigation tests ──────────────────────────────────────────────────────
