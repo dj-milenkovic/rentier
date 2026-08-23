@@ -21,7 +21,7 @@ This skill states the tax rules **as the code implements them**, so you can chan
 tax-adjacent code without re-deriving the rules — and so you notice when a change
 would silently alter a filed amount. If code and this skill disagree, the code is the
 source of truth: figure out which one is wrong, fix it, and keep them in sync.
-User-facing documentation lives in `TAX-OVERVIEW.md`; update it whenever observable
+User-facing documentation lives in `docs/en-US/TAX-OVERVIEW.md`; update it whenever observable
 behavior changes.
 
 ## Key files
@@ -36,7 +36,7 @@ behavior changes.
 | NBS exchange rates | `src/Rentier.Infrastructure/ExchangeRates/NbsExchangeRateFetcher.cs`, `NbsWebScraper.cs` |
 | IBKR CSV parsing | `src/Rentier.Infrastructure/Parsing/IbkrCsvParser.cs` |
 | PP-OPO XML export | `src/Rentier.Infrastructure/Serialization/PpOpoXmlSerializer.cs` |
-| User documentation | `TAX-OVERVIEW.md` |
+| User documentation | `docs/en-US/TAX-OVERVIEW.md` |
 
 ## The computation (order and rounding are load-bearing)
 
@@ -127,6 +127,6 @@ Before merging any change in these areas:
    Monday holiday → Tuesday).
 2. **Never change the rounding mode, precision, the 15% rate, or the 30-day period
    without explicit user sign-off** — these are legal parameters, not tunables.
-3. Keep `TAX-OVERVIEW.md` (user docs) and this skill consistent with the code.
+3. Keep `docs/en-US/TAX-OVERVIEW.md` (user docs) and this skill consistent with the code.
 4. Follow `.claude/skills/rentier-unit-tests` for test structure; tax and deadline
    tests are pure Domain tests — no mocks, no I/O.
