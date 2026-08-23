@@ -18,7 +18,7 @@ Važno je naglasiti da se za svaku pojedinačnu isplatu — bilo dividende, bilo
 
 ---
 
-# Vrste dohotka koje Rentier obrađuje
+## Vrste dohotka koje Rentier obrađuje
 
 | Vrsta dohotka       | IBKR CSV sekcija                  | Tretman u srpskom porezu |
 |---------------------|-----------------------------------|--------------------------|
@@ -103,7 +103,7 @@ Rentier koristi konfigurisan kalendar (`HolidayConf`). Standardni praznici:
 | 1–2. maj     | Praznik rada        |
 | 11. novembar | Dan primirja        |
 
-> Pravoslavni Uskrs je pokretni praznik i mora se ažurirati svake godine prema zvaničnom kalendaru.
+> Pravoslavni Uskrs je pokretni praznik i mora se ažurirati svake godine prema zvaničnom kalendaru. Proverite zvanični kalendar na [www.gov.rs](https://www.gov.rs).
 
 ---
 
@@ -164,7 +164,7 @@ Svaka isplata zahteva zasebnu prijavu.
 
 - [Poreska uprava Srbije — PP-OPO obrazac](https://www.purs.gov.rs) (pretražite "PP-OPO")
 - [ePorezi portal](https://www.purs.gov.rs/e-porezi.html)
-- [NBS kurсni listovi](https://www.nbs.rs/kurs-liste/kursna-lista)
+- [NBS kursni listovi](https://www.nbs.rs/kurs-liste/kursna-lista)
 - [Ugovor Srbije i SAD o izbegavanju dvostrukog oporezivanja](https://www.mfin.gov.rs) — pretražite bilateralne ugovore
 
 ---
@@ -172,4 +172,4 @@ Svaka isplata zahteva zasebnu prijavu.
 ## Videti i
 
 - [Prvi koraci](PRVI-KORACI.md) — instalirajte Rentier i pokrenite prvi uvoz
-- [IBKR Activity Statement Setup](IBKR-INSTALACIJA.md) — generišite ispravan CSV iz Interactive Brokers-a
+- [IBKR Activity Statement instalacija](IBKR-INSTALACIJA.md) — generišite ispravan CSV iz Interactive Brokers-a

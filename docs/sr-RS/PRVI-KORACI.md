@@ -69,7 +69,7 @@ Pri prvom pokretanju otvorite **Podešavanja → Profil** i popunite sledeća po
 
 Ako ne želite automatsku obradu e-pošte, izjavu možete otpremiti direktno:
 
-1. Izvezite **Activity Statement CSV** iz IBKR-a — tačna uputstva potražite u [IBKR vodiču za podešavanje](IBKR-SETUP.md).
+1. Izvezite **Activity Statement CSV** iz IBKR-a — tačna uputstva potražite u [IBKR vodiču za podešavanje](IBKR-INSTALACIJA.md).
 2. U Rentier-u otvorite **Izveštaji → [vaš izveštaj] → Uvezi...**.
 3. Izaberite preuzeti CSV fajl.
 4. Rentier će parsirati fajl, preuzeti NBS kurseve za svaki datum dohotka i kreirati pojedinačne **Prijave**.
@@ -82,7 +82,7 @@ Rentier može pratiti IMAP sanduče i automatski uvoziti nove IBKR izjave.
 
 ### 5a — Dodavanje sandučeta
 
-Idite na **Podršavanja → Poštanski sandučići → Dodaj novi** i unesite:
+Idite na **Podešavanja → Poštanski sandučići → Dodaj novi** i unesite:
 
 | Polje | Opis | Tipična IMAP vrednost |
 |---|---|---|
@@ -150,5 +150,5 @@ Za svaki filing:
 
 ## Sledeći koraci
 
-- [IBKR Activity Statement Setup](IBKR-SETUP.md) — detaljno uputstvo za generisanje ispravnog CSV-a
-- [Pregled srpskog PP-OPO poreza](TAX-OVERVIEW.md) — objašnjenje šta Rentier izračunava i zašto
+- [IBKR Activity Statement instalacija](IBKR-INSTALACIJA.md) — detaljno uputstvo za generisanje ispravnog CSV-a
+- [Pregled srpskog PP-OPO poreza](PREGLED-POREZA.md) — objašnjenje šta Rentier izračunava i zašto

@@ -1,4 +1,4 @@
-# IBKR Activity Statement podešavanja
+# IBKR Activity Statement instalacija
 
 Ovaj vodič objašnjava kako generisati ispravan CSV izvoz iz Interactive Brokers-a (IBKR) i kako ga povezati sa Rentier-om — bilo kroz ručno otpremanje ili dozvoljavanjem Rentier-u da ga automatski preuzme iz vašeg inbox-a.
 
@@ -15,7 +15,7 @@ Rentier parsira **Activity Statement** CSV format izvezen iz IBKR-a. Traži čet
 | `Interest` | Pripisana kamata (zarađena) i odbitna kamata (naplaćena) | Da (ako imate prihod od kamate) |
 | `Base Currency Exchange Rate` | IBKR-ove sopstvene FX stope za period | Preporučeno kao rezerva |
 
-> **Samo ove sekcije se čitaju.** Sve ostale sekcije u Activity Statement-u (trgovine, akcije, stanja gotovine, itd.) su bezbedno ignorisne.
+> **Samo ove sekcije se čitaju.** Sve ostale sekcije u Activity Statement-u (trgovine, akcije, stanja gotovine, itd.) su bezbedno ignorisane.
 
 ---
 
@@ -72,7 +72,7 @@ IBKR može automatski da vam pošalje izjavu po rasporedu (dnevno, sedmično, me
 
 ### Korak 2 — Konfigurišite sanduče u Rentier
 
-Videti [Prvi koraci — Korak 5](PRVI-KORACI.md#korak-5--konfigurajte-automatsku-obradu-e-pošte-opciono) za potpune uputstvo za podešavanje sandučića.
+Videti [Prvi koraci — Korak 5](PRVI-KORACI.md#korak-5--podešavanje-automatske-obrade-e-pošte-opciono) za potpune uputstvo za podešavanje sandučića.
 
 ### Korak 3 — Konfigurišite filter Importer-a
 
@@ -88,7 +88,7 @@ Uređujte vaš Importer i postavite sledeća polja filtera da se poklapaju sa e-
 
 ### Korak 4 — Pokrenite sinhronizaciju
 
-U Rentier-u, idite na **Sinhronizacija → Pokreni sinhronizaciju**. Nakon prve uspešne sinhronizacije, kasnije sinhronizacije obrađuju samo e-poruke novije od poslednje uveiene poruke.
+U Rentier-u, idite na **Sinhronizacija → Pokreni sinhronizaciju**. Nakon prve uspešne sinhronizacije, kasnije sinhronizacije obrađuju samo e-poruke novije od poslednje uvezene poruke.
 
 ---
 

@@ -28,6 +28,12 @@ It reads your IBKR Activity Statement, fetches NBS exchange rates for each incom
 | [IBKR Activity Statement instalacija](docs/sr-RS/IBKR-INSTALACIJA.md) | Kako da generišete ispravan CSV iz IBKR-a i da ga povežete sa Rentier-om |
 | [Pregled srpskog PP-OPO poreza](docs/sr-RS/PREGLED-POREZA.md) | Kako funkcioniše srpski porez na pasivni dohodak i šta Rentier izračunava |
 
+### Screenshots
+
+| Dashboard | Filings | Reports |
+|---|---|---|
+| ![Dashboard](docs/en-US/screenshots/Dashboard.png) | ![Filings](docs/en-US/screenshots/Filings.png) | ![Reports](docs/en-US/screenshots/Reports.png) |
+
 ---
 
 ## How It Works
@@ -83,7 +89,7 @@ IBKR Activity Statement (CSV)
 
 ## Quick Start
 
-1. **Build and run** the application (see [Getting Started](docs/getting-started.md))
+1. **Build and run** the application (see [Getting Started](GETTING-STARTED.md))
 2. **Create your taxpayer profile** — enter your JMBG, full name, address, and municipality code
 3. **Configure an Importer** — link it to your profile and choose how statements arrive (manual upload or email)
 4. **Import a statement** — upload an IBKR CSV or trigger a mailbox sync
