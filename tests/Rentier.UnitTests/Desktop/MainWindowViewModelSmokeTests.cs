@@ -116,13 +116,20 @@ public class MainWindowViewModelSmokeTests
         return services.BuildServiceProvider();
     }
 
+    private static IAppVersionService BuildAppVersionService(string displayVersion = "v1.2.3")
+    {
+        var svc = Substitute.For<IAppVersionService>();
+        svc.DisplayVersion.Returns(displayVersion);
+        return svc;
+    }
+
     private static MainWindowViewModel CreateVm()
     {
         var provider = CreateProvider();
         var locService = Substitute.For<ILocalizationService>();
         locService.CultureChanged.Returns(Signal.Never<string>());
         var updateService = provider.GetRequiredService<IUpdateService>();
-        return new MainWindowViewModel(provider, locService, updateService);
+        return new MainWindowViewModel(provider, locService, updateService, BuildAppVersionService());
     }
 
     [Fact]

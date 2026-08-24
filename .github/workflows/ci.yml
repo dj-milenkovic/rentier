@@ -390,12 +390,25 @@ jobs:
           SONAR_ORGANIZATION: ${{ secrets.SONAR_ORGANIZATION }}
         shell: bash
         run: |
+          # Validate required secrets are present. Dependabot PRs (and PRs from forks)
+          # don't get repo secrets, so without this check the scanner falls through to
+          # `dotnet sonarscanner begin` with an empty token and fails with a cryptic
+          # "The format of the analysis property sonar.token= is invalid" error instead
+          # of explaining what's actually missing.
+          if [ -z "$SONAR_TOKEN" ] || [ -z "$SONAR_PROJECT_KEY" ] || [ -z "$SONAR_ORGANIZATION" ]; then
+            echo "⚠️ SonarCloud secrets not configured (SONAR_TOKEN/SONAR_PROJECT_KEY/SONAR_ORGANIZATION missing — expected on Dependabot/fork PRs). Skipping analysis."
+            echo "SONAR_ANALYSIS_SKIPPED=true" >> "$GITHUB_ENV"
+            echo "SONAR_SKIP_REASON=secrets" >> "$GITHUB_ENV"
+            exit 0
+          fi
+
           COV_PATHS=$(find ./coverage-raw -name 'coverage.opencover.xml' | paste -sd ',' -)
 
-          # Skip analysis if no coverage files found (no code changess)
+          # Skip analysis if no coverage files found (no code changes)
           if [ -z "$COV_PATHS" ]; then
             echo "⚠️ No coverage files found. Skipping SonarCloud analysis (no code changes)."
             echo "SONAR_ANALYSIS_SKIPPED=true" >> "$GITHUB_ENV"
+            echo "SONAR_SKIP_REASON=no-coverage" >> "$GITHUB_ENV"
             exit 0
           fi
 
@@ -437,5 +450,19 @@ jobs:
         run: |
           echo "## 🔍 SonarCloud Analysis" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "Analysis submitted to [SonarCloud](https://sonarcloud.io)." >> "$GITHUB_STEP_SUMMARY"
-          echo "Check the quality gate status in the PR checks." >> "$GITHUB_STEP_SUMMARY"
+          if [ "$SONAR_ANALYSIS_SKIPPED" = "true" ]; then
+            case "$SONAR_SKIP_REASON" in
+              secrets)
+                echo "⚠️ Skipped — SonarCloud secrets are not configured for this workflow run (expected on Dependabot/fork PRs, which don't receive repo secrets)." >> "$GITHUB_STEP_SUMMARY"
+                ;;
+              no-coverage)
+                echo "⚠️ Skipped — no coverage files were found (no code changes to analyze)." >> "$GITHUB_STEP_SUMMARY"
+                ;;
+              *)
+                echo "⚠️ Skipped." >> "$GITHUB_STEP_SUMMARY"
+                ;;
+            esac
+          else
+            echo "Analysis submitted to [SonarCloud](https://sonarcloud.io)." >> "$GITHUB_STEP_SUMMARY"
+            echo "Check the quality gate status in the PR checks." >> "$GITHUB_STEP_SUMMARY"
+          fi

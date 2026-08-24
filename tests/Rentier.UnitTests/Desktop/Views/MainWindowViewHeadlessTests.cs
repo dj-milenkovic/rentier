@@ -166,11 +166,18 @@ public class MainWindowViewHeadlessTests
         return locService;
     }
 
+    private static IAppVersionService BuildAppVersionService(string displayVersion = "v1.2.3")
+    {
+        var svc = Substitute.For<IAppVersionService>();
+        svc.DisplayVersion.Returns(displayVersion);
+        return svc;
+    }
+
     private static MainWindowViewModel CreateVm()
     {
         var provider = BuildProvider();
         var updateService = provider.GetRequiredService<IUpdateService>();
-        return new(provider, BuildLocalizationService(), updateService);
+        return new(provider, BuildLocalizationService(), updateService, BuildAppVersionService());
     }
 
     [AvaloniaFact]
@@ -192,6 +199,27 @@ public class MainWindowViewHeadlessTests
 
         // Assert
         vm.CurrentViewModel.Should().BeOfType<FilingsViewModel>();
+
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void MainWindow_SidebarFooter_DisplaysAppVersionText()
+    {
+        // Arrange
+        var vm = CreateVm();
+        var window = new MainWindow(vm);
+
+        // Act
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        // Assert
+        var versionLabel = window.GetVisualDescendants()
+            .OfType<SelectableTextBlock>()
+            .FirstOrDefault(t => t.Text == vm.AppVersionText);
+
+        versionLabel.Should().NotBeNull();
 
         window.Close();
     }

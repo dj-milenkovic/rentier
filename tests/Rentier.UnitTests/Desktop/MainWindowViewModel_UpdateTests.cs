@@ -151,10 +151,18 @@ public class MainWindowViewModel_UpdateTests
         return locService;
     }
 
+    private static IAppVersionService BuildAppVersionService(string displayVersion = "v1.2.3")
+    {
+        var svc = Substitute.For<IAppVersionService>();
+        svc.DisplayVersion.Returns(displayVersion);
+        return svc;
+    }
+
     private static MainWindowViewModel CreateVm(IUpdateService? updateService = null)
     {
         var svc = updateService ?? BuildUpdateService();
-        return new MainWindowViewModel(BuildProvider(svc), BuildLocalizationService(), svc, ImmediateSequencer.Instance);
+        return new MainWindowViewModel(
+            BuildProvider(svc), BuildLocalizationService(), svc, BuildAppVersionService(), ImmediateSequencer.Instance);
     }
 
     [Fact]
