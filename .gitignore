@@ -114,6 +114,10 @@ publish/
 *.sql.bak
 efpt.config.json
 
+# SonarScanner for .NET (used by CI) rejects a sonar-project.properties file at
+# the repo root -- project key/org are passed via /k: and /o: in ci.yml instead.
+sonar-project.properties
+
 # Documentation
 docs/_build/
 site/
