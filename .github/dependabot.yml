@@ -35,10 +35,6 @@ updates:
       xunit:
         patterns:
           - "xunit*"
-          # FsCheck.Xunit.v3 pins an exact xunit.v3 major version as a package
-          # dependency, so bumping it alone forces a correlated xunit.v3 bump.
-          # Group it here so that forced bump stays isolated instead of leaking
-          # into nuget-minor-patch (see PR #89).
           - "FsCheck.Xunit*"
 
       # Minor and patch updates ship together in a single PR — less noise.
