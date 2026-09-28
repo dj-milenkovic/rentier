@@ -16,8 +16,8 @@
 
     <!-- Reactive / MVVM -->
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
-    <PackageVersion Include="FsCheck.Xunit.v3" Version="3.4.0" />
-    <PackageVersion Include="ReactiveUI" Version="25.0.1" />
+    <PackageVersion Include="FsCheck.Xunit.v3" Version="3.3.4" />
+    <PackageVersion Include="ReactiveUI" Version="24.2.0" />
 
     <!-- Microsoft Extensions -->
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />
