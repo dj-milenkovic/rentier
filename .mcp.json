@@ -5,7 +5,7 @@
       "url": "https://mcp.context7.com/mcp"
     },
     "sonarqube": {
-      "command": "sonar.exe",
+      "command": "sonar",
       "args": [
         "run",
         "mcp",

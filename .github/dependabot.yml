@@ -35,6 +35,7 @@ updates:
       xunit:
         patterns:
           - "xunit*"
+          - "FsCheck.Xunit*"
 
       # Minor and patch updates ship together in a single PR — less noise.
       # Major updates outside the families above still get their own PRs.

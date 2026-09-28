@@ -24,8 +24,7 @@
       "mcp__claude-flow__*"
     ],
     "deny": [
-      "Edit(src/Rentier.Infrastructure/Persistence/Migrations/**)",
-      "Write(src/Rentier.Infrastructure/Persistence/Migrations/**)"
+      "Edit(src/Rentier.Infrastructure/Persistence/Migrations/**)"
     ]
   },
   "hooks": {

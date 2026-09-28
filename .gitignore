@@ -114,6 +114,8 @@ publish/
 *.sql.bak
 efpt.config.json
 
+sonar-project.properties
+
 # Documentation
 docs/_build/
 site/
