@@ -29,9 +29,24 @@ updates:
         patterns:
           - "Avalonia*"
           - "ReactiveUI*"
+          
       entity-framework-core:
         patterns:
           - "Microsoft.EntityFrameworkCore*"
+          
+      xunit:
+        patterns:
+          - "xunit*"
+          - "FsCheck.Xunit*"
+
+      microsoft-extensions:
+        patterns:
+          - "Microsoft.Extensions*"
+
+      reactive-ui:
+        patterns:
+          - "ReactiveUI*"
+
       xunit:
         patterns:
           - "xunit*"
