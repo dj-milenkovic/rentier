@@ -25,6 +25,7 @@
     <PackageReference Include="MailKit" />
     <PackageReference Include="Meziantou.Framework.Win32.CredentialManager" />
     <PackageReference Include="AngleSharp" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="Microsoft.Extensions.Http" />
     <PackageReference Include="CsvHelper" />
     <PackageReference Include="Velopack" />
