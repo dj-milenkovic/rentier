@@ -350,7 +350,7 @@ public sealed class ProcessReportsCommandHandler
     /// Shared tail for both the dividend and interest processing loops; the caller
     /// supplies the already-matched WHT record (the matching rule differs per income type).
     /// </summary>
-    private async Task<IncomeEventOutcome> ProcessIncomeEventAsync(
+    private static async Task<IncomeEventOutcome> ProcessIncomeEventAsync(
         IncomeEventRequest request,
         Func<DateOnly, string, Task<Result<RateResolution, Error>>> rateProvider,
         IFilingRepository filings,
