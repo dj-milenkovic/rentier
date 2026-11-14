@@ -10,11 +10,28 @@ namespace Rentier.Infrastructure.Repositories;
 public sealed class ReportRepository : IReportRepository
 {
     private readonly AppDbContext _db;
+    private readonly bool _autoSave;
 
-    public ReportRepository(AppDbContext db)
+    /// <summary>
+    /// Standalone repository (the DI registration): it owns its context, so every write
+    /// method is a complete single-statement operation and commits immediately.
+    /// </summary>
+    public ReportRepository(AppDbContext db) : this(db, autoSave: true)
+    {
+    }
+
+    /// <summary>
+    /// With <paramref name="autoSave"/> false the repository only stages changes on the
+    /// shared context; the owning <see cref="IUnitOfWork"/> commits them atomically.
+    /// </summary>
+    internal ReportRepository(AppDbContext db, bool autoSave)
     {
         _db = db;
+        _autoSave = autoSave;
     }
+
+    private Task CommitIfStandaloneAsync(CancellationToken ct)
+        => _autoSave ? _db.SaveChangesAsync(ct) : Task.CompletedTask;
 
     public async Task<Report?> GetByIdAsync(Guid id, CancellationToken ct = default)
         => await _db.Reports.FindAsync([id], ct);
@@ -63,7 +80,7 @@ public sealed class ReportRepository : IReportRepository
     public async Task AddAsync(Report report, CancellationToken ct = default)
     {
         _db.Reports.Add(report);
-        await _db.SaveChangesAsync(ct);
+        await CommitIfStandaloneAsync(ct);
     }
 
     public async Task UpdateAsync(Report report, CancellationToken ct = default)
@@ -74,7 +91,7 @@ public sealed class ReportRepository : IReportRepository
             stale.State = EntityState.Detached;
 
         _db.Reports.Update(report);
-        await _db.SaveChangesAsync(ct);
+        await CommitIfStandaloneAsync(ct);
     }
 
     public async Task DeleteAsync(Guid id, CancellationToken ct = default)
@@ -83,7 +100,7 @@ public sealed class ReportRepository : IReportRepository
         if (entity is not null)
         {
             _db.Reports.Remove(entity);
-            await _db.SaveChangesAsync(ct);
+            await CommitIfStandaloneAsync(ct);
         }
     }
 
@@ -95,7 +112,7 @@ public sealed class ReportRepository : IReportRepository
             .ToListAsync(ct);
         if (reports.Count == 0) return;
         _db.Reports.RemoveRange(reports);
-        await _db.SaveChangesAsync(ct);
+        await CommitIfStandaloneAsync(ct);
     }
 
     public async Task<(IReadOnlyList<Report> Items, int TotalCount)> GetPagedAsync(

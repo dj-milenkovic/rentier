@@ -4,6 +4,7 @@ using NSubstitute.ExceptionExtensions;
 using Rentier.Application.Commands;
 using Rentier.Application.Handlers;
 using Rentier.Application.Repositories;
+using Rentier.Tests.Common.Fakes;
 using Xunit;
 
 namespace Rentier.UnitTests.Application;
@@ -12,10 +13,14 @@ public class BulkDeleteReportsCommandHandlerTests
 {
     private readonly IReportRepository _reportRepo = Substitute.For<IReportRepository>();
     private readonly IFilingRepository _filingRepo = Substitute.For<IFilingRepository>();
+    private readonly FakeUnitOfWorkFactory _unitOfWorkFactory;
     private readonly BulkDeleteReportsCommandHandler _sut;
 
     public BulkDeleteReportsCommandHandlerTests()
-        => _sut = new BulkDeleteReportsCommandHandler(_reportRepo, _filingRepo);
+    {
+        _unitOfWorkFactory = new FakeUnitOfWorkFactory(_reportRepo, _filingRepo);
+        _sut = new BulkDeleteReportsCommandHandler(_unitOfWorkFactory);
+    }
 
     [Fact]
     public async Task HandleAsync_NullReportIds_ReturnsDomainError()
@@ -73,6 +78,27 @@ public class BulkDeleteReportsCommandHandlerTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("REPORT_BULK_DELETE_FAILED");
+    }
+
+    [Fact]
+    public async Task HandleAsync_MultipleReports_CommitsExactlyOnce()
+    {
+        var ids = new[] { Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid() };
+
+        await _sut.HandleAsync(new BulkDeleteReportsCommand(ids), TestContext.Current.CancellationToken);
+
+        _unitOfWorkFactory.CommittedCount.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenDeleteManyThrows_DoesNotCommitStagedFilingDeletes()
+    {
+        _reportRepo.DeleteManyAsync(Arg.Any<IReadOnlyList<Guid>>(), Arg.Any<CancellationToken>())
+            .Throws(new InvalidOperationException("DB error"));
+
+        await _sut.HandleAsync(new BulkDeleteReportsCommand(new[] { Guid.NewGuid() }), TestContext.Current.CancellationToken);
+
+        _unitOfWorkFactory.CommittedCount.Should().Be(0);
     }
 
     [Fact]

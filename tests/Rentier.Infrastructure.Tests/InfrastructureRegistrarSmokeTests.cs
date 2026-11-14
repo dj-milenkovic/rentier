@@ -39,6 +39,7 @@ public sealed class InfrastructureRegistrarSmokeTests : IAsyncLifetime
     [InlineData(typeof(IMailboxSyncService))]
     [InlineData(typeof(IUpdateService))]
     [InlineData(typeof(IUserPreferenceRepository))]
+    [InlineData(typeof(IUnitOfWorkFactory))]
     public void RegisterServicesAsync_AllRequiredInterfaces_AreRegistered(Type serviceType)
     {
         _services.Should().Contain(

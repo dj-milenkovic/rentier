@@ -21,7 +21,8 @@ public static class InfrastructureServiceExtensions
         this IServiceCollection services, string dbPath)
     {
         // Transient lifetime is intentional: this is a desktop (Avalonia) app with no DI request scope.
-        // Each service gets its own DbContext; callers that need unit-of-work must manage scope explicitly.
+        // Each service gets its own DbContext, so a repository resolved from DI commits each write on its own.
+        // Operations that must commit several writes atomically go through IUnitOfWorkFactory instead.
         services.AddDbContext<AppDbContext>(
             opt => opt.UseSqlite($"Data Source={dbPath}"),
             ServiceLifetime.Transient);
@@ -56,6 +57,7 @@ public static class InfrastructureServiceExtensions
         services.AddTransient<IStatementParser, IbkrCsvParser>();
         services.AddTransient<IReportRepository, ReportRepository>();
         services.AddTransient<IFilingRepository, FilingRepository>();
+        services.AddTransient<IUnitOfWorkFactory, EfUnitOfWorkFactory>();
         services.AddTransient<IUserPreferenceRepository, UserPreferenceRepository>();
         services.AddTransient<IXmlFilingSerializer, PpOpoXmlSerializer>();
         services.AddTransient<IMailboxSyncService, ImapMailboxSyncService>();

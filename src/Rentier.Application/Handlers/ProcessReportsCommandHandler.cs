@@ -17,7 +17,7 @@ public sealed class ProcessReportsCommandHandler
 {
     private readonly IReportRepository _reportRepository;
     private readonly IImporterRepository _importerRepository;
-    private readonly IFilingRepository _filingRepository;
+    private readonly IUnitOfWorkFactory _unitOfWorkFactory;
     private readonly IExchangeRateResolver _exchangeRateResolver;
     private readonly IHolidayRepository _holidayRepository;
     private readonly IStatementParser _statementParser;
@@ -26,7 +26,7 @@ public sealed class ProcessReportsCommandHandler
     public ProcessReportsCommandHandler(
         IReportRepository reportRepository,
         IImporterRepository importerRepository,
-        IFilingRepository filingRepository,
+        IUnitOfWorkFactory unitOfWorkFactory,
         IExchangeRateResolver exchangeRateResolver,
         IHolidayRepository holidayRepository,
         IStatementParser statementParser,
@@ -34,7 +34,7 @@ public sealed class ProcessReportsCommandHandler
     {
         _reportRepository = reportRepository;
         _importerRepository = importerRepository;
-        _filingRepository = filingRepository;
+        _unitOfWorkFactory = unitOfWorkFactory;
         _exchangeRateResolver = exchangeRateResolver;
         _holidayRepository = holidayRepository;
         _statementParser = statementParser;
@@ -61,13 +61,19 @@ public sealed class ProcessReportsCommandHandler
             ct.ThrowIfCancellationRequested();
             try
             {
-                var processResult = await ProcessReportAsync(report, holidays, ct);
+                // One unit of work per report: the report's filings and its status change are
+                // staged together and committed by a single SaveChangesAsync, so a failure or
+                // cancellation part-way through leaves the report at Init with no filings.
+                await using var unitOfWork = _unitOfWorkFactory.Create();
+
+                var processResult = await ProcessReportAsync(report, holidays, unitOfWork.Filings, ct);
 
                 if (!processResult.IsSuccess)
                 {
                     // Data integrity failure (no attachment, missing importer, parse error) — not an unexpected exception
                     report.SetStatus(ReportStatus.Error);
-                    await _reportRepository.UpdateAsync(report, ct);
+                    await unitOfWork.Reports.UpdateAsync(report, ct);
+                    await unitOfWork.SaveChangesAsync(ct);
                     reportsErrored++;
                     _logger.LogWarning(
                         "Report {ReportId} rejected: [{Code}] {Message}",
@@ -83,28 +89,33 @@ public sealed class ProcessReportsCommandHandler
 
                 var (created, succeeded, failed, eventErrors) = processResult.Value;
 
-                filingsCreated += created;
-                allEventErrors.AddRange(eventErrors);
-
                 ReportStatus status;
                 if (failed == 0)
-                {
                     status = ReportStatus.Processed;
-                    reportsProcessed++;
-                }
                 else if (succeeded > 0)
-                {
                     status = ReportStatus.PartialError;
-                    reportsPartialError++;
-                }
                 else
-                {
                     status = ReportStatus.Error;
-                    reportsErrored++;
-                }
 
                 report.SetStatus(status);
-                await _reportRepository.UpdateAsync(report, ct);
+                await unitOfWork.Reports.UpdateAsync(report, ct);
+                await unitOfWork.SaveChangesAsync(ct);
+
+                // Tallies are updated only after the commit: until then no filing exists.
+                filingsCreated += created;
+                allEventErrors.AddRange(eventErrors);
+                switch (status)
+                {
+                    case ReportStatus.Processed:
+                        reportsProcessed++;
+                        break;
+                    case ReportStatus.PartialError:
+                        reportsPartialError++;
+                        break;
+                    default:
+                        reportsErrored++;
+                        break;
+                }
 
                 if (_logger.IsEnabled(LogLevel.Information))
                 {
@@ -124,9 +135,10 @@ public sealed class ProcessReportsCommandHandler
             }
             catch (Exception ex)
             {
-                // Truly unexpected failures (network, DB) — log as error
-                report.SetStatus(ReportStatus.Error);
-                await _reportRepository.UpdateAsync(report, ct);
+                // Truly unexpected failures (network, DB) — log as error.
+                // The report's unit of work is already disposed here, so anything it staged
+                // (filings, status) was discarded; the Error status is its own commit.
+                await MarkReportErroredAsync(report.Id, ct);
                 reportsErrored++;
                 _logger.LogError(ex, "Report {ReportId} failed unexpectedly: {Message}", report.Id, ex.Message);
                 command.Progress?.Report(new SyncProgressEntry(
@@ -141,8 +153,22 @@ public sealed class ProcessReportsCommandHandler
             new ProcessReportsResult(filingsCreated, reportsProcessed, reportsErrored, allEventErrors, reportsPartialError, reportDetails));
     }
 
+    private async Task MarkReportErroredAsync(Guid reportId, CancellationToken ct)
+    {
+        // Re-read the report: the in-memory instance may already carry the status that the
+        // discarded unit of work failed to commit, which would make Init → Error invalid.
+        await using var unitOfWork = _unitOfWorkFactory.Create();
+        var persisted = await unitOfWork.Reports.GetByIdAsync(reportId, ct);
+        if (persisted is null)
+            return;
+
+        persisted.SetStatus(ReportStatus.Error);
+        await unitOfWork.Reports.UpdateAsync(persisted, ct);
+        await unitOfWork.SaveChangesAsync(ct);
+    }
+
     private async Task<Result<(int created, int succeeded, int failed, List<FilingCreationError> errors), Error>>
-        ProcessReportAsync(Report report, HolidayConf holidays, CancellationToken ct)
+        ProcessReportAsync(Report report, HolidayConf holidays, IFilingRepository filings, CancellationToken ct)
     {
         if (report.AttachmentContent == null || report.AttachmentContent.Length == 0)
             return Result<(int, int, int, List<FilingCreationError>), Error>.Failure(
@@ -172,6 +198,7 @@ public sealed class ProcessReportsCommandHandler
         var succeeded = 0;
         var failed = 0;
         var errors = new List<FilingCreationError>();
+        var staging = new FilingStaging(filings, []);
 
         // Dividends first, then credit-side interest — same order as before the merge,
         // preserving error-list ordering.
@@ -180,7 +207,7 @@ public sealed class ProcessReportsCommandHandler
             ct.ThrowIfCancellationRequested();
             try
             {
-                var outcome = await ProcessIncomeEventAsync(ev, rateProvider, errors, ct);
+                var outcome = await ProcessIncomeEventAsync(ev, rateProvider, staging, errors, ct);
                 ApplyOutcome(outcome, ref created, ref succeeded, ref failed);
             }
             catch (OperationCanceledException)
@@ -264,6 +291,7 @@ public sealed class ProcessReportsCommandHandler
     private async Task<IncomeEventOutcome> ProcessIncomeEventAsync(
         IncomeEventRequest request,
         Func<DateOnly, string, Task<Result<RateResolution, Error>>> rateProvider,
+        FilingStaging staging,
         List<FilingCreationError> errors,
         CancellationToken ct)
     {
@@ -281,8 +309,17 @@ public sealed class ProcessReportsCommandHandler
                 request.Wht?.Amount ?? 0m, request.Wht?.Currency ?? request.Currency),
             (_, _) => Task.FromResult(resolution.Rate), ct);
 
-        var existingFilings = await _filingRepository.GetByIncomeEventAsync(
+        // Filings staged earlier in this report are not in the database yet, so the query
+        // alone would miss them; include them so a repeated or corrected event inside the
+        // same statement is still detected.
+        var persistedFilings = await staging.Repository.GetByIncomeEventAsync(
             request.TaxpayerProfileId, request.EntityName, request.Date, ct);
+        var existingFilings = persistedFilings
+            .Concat(staging.Staged.Where(f =>
+                f.TaxpayerProfileId == request.TaxpayerProfileId &&
+                f.PayingEntity == request.EntityName &&
+                f.IncomeDate == request.Date))
+            .ToList();
 
         if (existingFilings.Count == 0)
         {
@@ -295,7 +332,8 @@ public sealed class ProcessReportsCommandHandler
                     ExchangeRateSourceType: resolution.SourceType,
                     Ticker: request.EntityName));
 
-            await _filingRepository.AddAsync(filing, ct);
+            await staging.Repository.AddAsync(filing, ct);
+            staging.Staged.Add(filing);
             return IncomeEventOutcome.Created;
         }
 
@@ -315,6 +353,12 @@ public sealed class ProcessReportsCommandHandler
             $"yields {info.GrossIncomeRsd} RSD. Review and adjust the filing manually."));
         return IncomeEventOutcome.Failed;
     }
+
+    /// <summary>
+    /// The current report's staging repository plus the filings staged so far (staged
+    /// filings are invisible to repository queries until the unit of work commits).
+    /// </summary>
+    private sealed record FilingStaging(IFilingRepository Repository, List<Filing> Staged);
 
     private enum IncomeEventOutcome
     {

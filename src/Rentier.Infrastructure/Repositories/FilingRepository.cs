@@ -11,11 +11,28 @@ namespace Rentier.Infrastructure.Repositories;
 public sealed class FilingRepository : IFilingRepository
 {
     private readonly AppDbContext _db;
+    private readonly bool _autoSave;
 
-    public FilingRepository(AppDbContext db)
+    /// <summary>
+    /// Standalone repository (the DI registration): it owns its context, so every write
+    /// method is a complete single-statement operation and commits immediately.
+    /// </summary>
+    public FilingRepository(AppDbContext db) : this(db, autoSave: true)
+    {
+    }
+
+    /// <summary>
+    /// With <paramref name="autoSave"/> false the repository only stages changes on the
+    /// shared context; the owning <see cref="IUnitOfWork"/> commits them atomically.
+    /// </summary>
+    internal FilingRepository(AppDbContext db, bool autoSave)
     {
         _db = db;
+        _autoSave = autoSave;
     }
+
+    private Task CommitIfStandaloneAsync(CancellationToken ct)
+        => _autoSave ? _db.SaveChangesAsync(ct) : Task.CompletedTask;
 
     public async Task<Filing?> GetByIdAsync(Guid id, CancellationToken ct = default)
         => await _db.Filings.FindAsync([id], ct);
@@ -75,7 +92,7 @@ public sealed class FilingRepository : IFilingRepository
     public async Task AddAsync(Filing filing, CancellationToken ct = default)
     {
         _db.Filings.Add(filing);
-        await _db.SaveChangesAsync(ct);
+        await CommitIfStandaloneAsync(ct);
     }
 
     public async Task UpdateAsync(Filing filing, CancellationToken ct = default)
@@ -86,7 +103,7 @@ public sealed class FilingRepository : IFilingRepository
             stale.State = EntityState.Detached;
 
         _db.Filings.Update(filing);
-        await _db.SaveChangesAsync(ct);
+        await CommitIfStandaloneAsync(ct);
     }
 
     public async Task DeleteAsync(Guid id, CancellationToken ct = default)
@@ -95,7 +112,7 @@ public sealed class FilingRepository : IFilingRepository
         if (entity is not null)
         {
             _db.Filings.Remove(entity);
-            await _db.SaveChangesAsync(ct);
+            await CommitIfStandaloneAsync(ct);
         }
     }
 
@@ -187,7 +204,7 @@ public sealed class FilingRepository : IFilingRepository
         if (filings.Count == 0)
             return;
         _db.Filings.RemoveRange(filings);
-        await _db.SaveChangesAsync(ct);
+        await CommitIfStandaloneAsync(ct);
     }
 
     public async Task<IReadOnlyList<Filing>> GetUpcomingAsync(DateOnly today, int days, CancellationToken ct = default)
@@ -266,6 +283,6 @@ public sealed class FilingRepository : IFilingRepository
             .ToListAsync(ct);
         if (filings.Count == 0) return;
         _db.Filings.RemoveRange(filings);
-        await _db.SaveChangesAsync(ct);
+        await CommitIfStandaloneAsync(ct);
     }
 }

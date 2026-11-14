@@ -12,6 +12,7 @@ using Rentier.Application.Services;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 using Rentier.Domain.ValueObjects;
+using Rentier.Tests.Common.Fakes;
 using Xunit;
 
 namespace Rentier.UnitTests.Application;
@@ -49,7 +50,7 @@ public class CrossRateSynthesisTests
         var resolver = new ExchangeRateResolver(rateFetcher, NullLogger<ExchangeRateResolver>.Instance);
 
         return new ProcessReportsCommandHandler(
-            reportRepo, importerRepo, filingRepo, resolver,
+            reportRepo, importerRepo, new FakeUnitOfWorkFactory(reportRepo, filingRepo), resolver,
             holidayRepo, parser,
             NullLogger<ProcessReportsCommandHandler>.Instance);
     }

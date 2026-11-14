@@ -12,6 +12,7 @@ using Rentier.Application.Services;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 using Rentier.Domain.ValueObjects;
+using Rentier.Tests.Common.Fakes;
 using Xunit;
 
 namespace Rentier.UnitTests.Application.Handlers;
@@ -48,7 +49,7 @@ public class ProcessReportsCommandHandlerPartialSuccessTests
         holidayRepo.GetHolidayConfAsync(Arg.Any<CancellationToken>()).Returns(MakeHolidayDto());
 
         return new ProcessReportsCommandHandler(
-            reportRepo, importerRepo, filingRepo, resolver, holidayRepo, parser,
+            reportRepo, importerRepo, new FakeUnitOfWorkFactory(reportRepo, filingRepo), resolver, holidayRepo, parser,
             NullLogger<ProcessReportsCommandHandler>.Instance);
     }
 

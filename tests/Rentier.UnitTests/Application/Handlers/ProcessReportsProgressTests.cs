@@ -12,6 +12,7 @@ using Rentier.Application.Services;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 using Rentier.Domain.ValueObjects;
+using Rentier.Tests.Common.Fakes;
 using Xunit;
 
 namespace Rentier.UnitTests.Application.Handlers;
@@ -57,8 +58,10 @@ public class ProcessReportsProgressTests
         IFilingRepository? filingRepo = null,
         IExchangeRateFetcher? rateFetcher = null,
         IHolidayRepository? holidayRepo = null,
-        IStatementParser? parser = null)
+        IStatementParser? parser = null,
+        IUnitOfWorkFactory? unitOfWorkFactory = null)
     {
+        reportRepo ??= Substitute.For<IReportRepository>();
         if (holidayRepo == null)
         {
             var hr = Substitute.For<IHolidayRepository>();
@@ -75,9 +78,9 @@ public class ProcessReportsProgressTests
         }
 
         return new ProcessReportsCommandHandler(
-            reportRepo ?? Substitute.For<IReportRepository>(),
+            reportRepo,
             importerRepo ?? Substitute.For<IImporterRepository>(),
-            filingRepo ?? Substitute.For<IFilingRepository>(),
+            unitOfWorkFactory ?? new FakeUnitOfWorkFactory(reportRepo, filingRepo ?? Substitute.For<IFilingRepository>()),
             MakeResolver(rateFetcher ?? Substitute.For<IExchangeRateFetcher>()),
             holidayRepo,
             parser,
