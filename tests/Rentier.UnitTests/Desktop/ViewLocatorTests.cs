@@ -1,5 +1,5 @@
 using FluentAssertions;
-using ReactiveUI;
+using ViewLocator = Rentier.Desktop.ViewLocator;
 using Rentier.Desktop;
 using Xunit;
 
@@ -35,7 +35,7 @@ public class ViewLocatorTests
             .Where(t => t is { IsClass: true, IsAbstract: false, IsGenericTypeDefinition: false }
                         && t.Namespace == "Rentier.Desktop.ViewModels"
                         && t.Name.EndsWith("ViewModel", StringComparison.Ordinal)
-                        && typeof(ReactiveObject).IsAssignableFrom(t)
+                        && typeof(ReactiveUI.ReactiveObject).IsAssignableFrom(t)
                         && DESKTOP_ASSEMBLY.GetType(ViewNameFor(t)) is not null
                         && t.Name != "MainWindowViewModel") // hosted by MainWindow, not resolved via ViewLocator
             .Where(t => !registered.Contains(t))
