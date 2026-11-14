@@ -3,9 +3,12 @@ using Avalonia.Headless;
 using ReactiveUI.Avalonia;
 using Rentier.UnitTests.Desktop;
 using Xunit;
+using Xunit.Sdk;
+using Xunit.v3;
 
 [assembly: AvaloniaTestApplication(typeof(TestAppBuilder))]
-[assembly: CollectionBehavior(DisableTestParallelization = true)]
+// Avalonia headless runs on a single dispatcher thread, so tests in this assembly run serially.
+[assembly: Parallelization(Mode = ParallelMode.None)]
 namespace Rentier.UnitTests.Desktop;
 
 /// <summary>

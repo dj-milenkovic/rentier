@@ -67,18 +67,20 @@ public abstract class PagedSelectionViewModelBase<TRow> : ReactiveObject, IActiv
     {
         _scheduler = scheduler;
 
-        _hasSelection = this.WhenAnyValue(x => x.SelectedCount)
+        // Unsafe (reflection) overloads throughout this type: it is generic in TRow, which the
+        // ReactiveUI.Binding source generator cannot intercept (RXUIBIND016).
+        _hasSelection = this.WhenAnyValueUnsafe(x => x.SelectedCount)
             .Select(c => c > 0)
-            .ToProperty(this, x => x.HasSelection, scheduler: _scheduler);
+            .ToPropertyUnsafe(this, x => x.HasSelection, scheduler: _scheduler);
 
-        _deleteSelectedLabel = this.WhenAnyValue(x => x.SelectedCount)
+        _deleteSelectedLabel = this.WhenAnyValueUnsafe(x => x.SelectedCount)
             .Select(c => string.Format(Strings.BulkDelete_Button_Template, c))
-            .ToProperty(this, x => x.DeleteSelectedLabel,
+            .ToPropertyUnsafe(this, x => x.DeleteSelectedLabel,
                 initialValue: string.Format(Strings.BulkDelete_Button_Template, 0),
                 scheduler: _scheduler);
 
-        var hasItemsObservable = this.WhenAnyValue(x => x.HasItems);
-        var hasSelectionObservable = this.WhenAnyValue(x => x.HasSelection);
+        var hasItemsObservable = this.WhenAnyValueUnsafe(x => x.HasItems);
+        var hasSelectionObservable = this.WhenAnyValueUnsafe(x => x.HasSelection);
 
         SelectAllCommand = ReactiveCommand.Create(
             () =>
@@ -104,7 +106,10 @@ public abstract class PagedSelectionViewModelBase<TRow> : ReactiveObject, IActiv
         _rowSubscriptions.Clear();
         foreach (var row in Rows)
         {
-            row.WhenAnyValue(r => r.IsSelected)
+            // Reflection-based overload: ReactiveUI.Binding 9.1's source generator emits an
+            // invalid `class, ReactiveObject` constraint (CS0450) when the sender is the
+            // generic TRow, so the generated WhenAnyValue can't be used here.
+            row.WhenAnyValueUnsafe(r => r.IsSelected)
                 .Skip(1)
                 .Subscribe(isNowSelected =>
                 {

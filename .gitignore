@@ -128,7 +128,6 @@ dump/
 
 # Package managers
 /.dotnet/
-/global.json
 
 # Local CI/CD artifacts
 /.github/workflows/local/
