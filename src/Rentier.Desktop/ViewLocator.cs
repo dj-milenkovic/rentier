@@ -32,7 +32,7 @@ public sealed class ViewLocator : IDataTemplate
         };
 
     /// <summary>ViewModel types that have a registered View.</summary>
-    public static IReadOnlyCollection<Type> RegisteredViewModelTypes => FACTORIES.Keys.ToArray();
+    public static IEnumerable<Type> RegisteredViewModelTypes => FACTORIES.Keys;
 
     public Control Build(object? param)
     {
