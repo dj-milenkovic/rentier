@@ -151,7 +151,6 @@ Thumbs.db
 .ruflo/
 .rvf/
 .cache/
-.codegraph/
 .swarm/
 .claude/worktrees/
 .claude/.proven-config-version
