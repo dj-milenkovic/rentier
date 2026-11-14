@@ -178,6 +178,5 @@ Thumbs.db
 .claude/skills/v3-*/
 .claude/skills/verification-quality/
 
-# Graphify (keep GRAPH_REPORT.md, graph.html, graph.json, manifest.json committed)
-graphify-out/cache/
-graphify-out/.graphify_*
+# Graphify output is a local build artifact (regenerate with `python -m graphify update .`)
+graphify-out/
