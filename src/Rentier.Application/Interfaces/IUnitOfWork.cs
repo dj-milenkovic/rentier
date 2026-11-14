@@ -11,7 +11,9 @@ namespace Rentier.Application.Interfaces;
 /// </summary>
 /// <remarks>
 /// Reads through these repositories query the database and therefore do <b>not</b> see
-/// changes that are staged but not yet saved.
+/// changes that are staged but not yet saved — with one deliberate exception:
+/// <see cref="IFilingRepository.GetByIncomeEventAsync"/> includes staged filings, because
+/// duplicate detection must hold within a single operation as well as across operations.
 /// </remarks>
 public interface IUnitOfWork : IAsyncDisposable
 {

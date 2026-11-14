@@ -13,6 +13,13 @@ public interface IReportRepository
     Task<bool> ExistsByImporterAndNameAsync(Guid importerId, string reportName, CancellationToken ct = default);
     Task AddAsync(Report report, CancellationToken ct = default);
     Task UpdateAsync(Report report, CancellationToken ct = default);
+
+    /// <summary>
+    /// Persists only <see cref="Report.Status"/> of an existing report — the other columns
+    /// (notably the attachment BLOB) are not rewritten. The transition itself must already
+    /// have been applied through <see cref="Report.SetStatus"/>, which enforces the rules.
+    /// </summary>
+    Task UpdateStatusAsync(Report report, CancellationToken ct = default);
     Task DeleteAsync(Guid id, CancellationToken ct = default);
 
     /// <summary>

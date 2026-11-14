@@ -91,7 +91,7 @@ public class ProcessReportsCommandHandlerPartialSuccessTests
         result.Value.ReportsProcessed.Should().Be(1);
         result.Value.ReportsPartialError.Should().Be(0);
         result.Value.EventErrors.Should().BeEmpty();
-        await reportRepo.Received(1).UpdateAsync(
+        await reportRepo.Received(1).UpdateStatusAsync(
             Arg.Is<Report>(r => r!.Status == ReportStatus.Processed), Arg.Any<CancellationToken>());
     }
 
@@ -138,7 +138,7 @@ public class ProcessReportsCommandHandlerPartialSuccessTests
         result.Value.EventErrors[0].EntityName.Should().Be("Swiss Co");
         result.Value.EventErrors[0].Currency.Should().Be("CHF");
         result.Value.EventErrors[0].ErrorCode.Should().Be("UNSUPPORTED_CURRENCY");
-        await reportRepo.Received(1).UpdateAsync(
+        await reportRepo.Received(1).UpdateStatusAsync(
             Arg.Is<Report>(r => r!.Status == ReportStatus.PartialError), Arg.Any<CancellationToken>());
     }
 
@@ -176,7 +176,7 @@ public class ProcessReportsCommandHandlerPartialSuccessTests
         result.Value.FilingsCreated.Should().Be(0);
         result.Value.ReportsErrored.Should().Be(1);
         result.Value.EventErrors.Should().HaveCount(2);
-        await reportRepo.Received(1).UpdateAsync(
+        await reportRepo.Received(1).UpdateStatusAsync(
             Arg.Is<Report>(r => r!.Status == ReportStatus.Error), Arg.Any<CancellationToken>());
     }
 

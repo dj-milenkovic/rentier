@@ -16,8 +16,8 @@ internal sealed class EfUnitOfWork : IUnitOfWork
     public EfUnitOfWork(AppDbContext db)
     {
         _db = db;
-        Reports = new ReportRepository(db, autoSave: false);
-        Filings = new FilingRepository(db, autoSave: false);
+        Reports = new ReportRepository(db, isStaging: true);
+        Filings = new FilingRepository(db, isStaging: true);
     }
 
     public IReportRepository Reports { get; }

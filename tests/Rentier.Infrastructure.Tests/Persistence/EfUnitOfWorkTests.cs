@@ -224,4 +224,150 @@ public sealed class EfUnitOfWorkTests : IAsyncLifetime
 
         (await CountFilingsAsync()).Should().Be(2);
     }
+
+    // ── Duplicate detection sees changes staged in the same unit of work ──
+
+    private static readonly DateOnly INCOME_DATE = new(2024, 6, 15);
+
+    [Fact]
+    public async Task GetByIncomeEventAsync_FilingStagedInSameUnitOfWork_ReturnsIt()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var unitOfWork = _factory.Create();
+        await unitOfWork.Filings.AddAsync(MakeFiling("ACME"), ct);
+
+        var found = await unitOfWork.Filings.GetByIncomeEventAsync(_profile.Id, "ACME", INCOME_DATE, ct);
+
+        found.Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task GetByIncomeEventAsync_StagedFilingForOtherEntity_IsNotReturned()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var unitOfWork = _factory.Create();
+        await unitOfWork.Filings.AddAsync(MakeFiling("Globex"), ct);
+
+        var found = await unitOfWork.Filings.GetByIncomeEventAsync(_profile.Id, "ACME", INCOME_DATE, ct);
+
+        found.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetByIncomeEventAsync_CommittedFilingStagedForDeletion_IsNotReturned()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await SeedCommittedFilingsAsync();
+        await using var unitOfWork = _factory.Create();
+        await unitOfWork.Filings.DeleteByReportIdAsync(_report.Id, ct);
+
+        var found = await unitOfWork.Filings.GetByIncomeEventAsync(_profile.Id, "ACME", INCOME_DATE, ct);
+
+        found.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetByIncomeEventAsync_CommittedFiling_IsReturnedOnce()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await SeedCommittedFilingsAsync();
+        await using var unitOfWork = _factory.Create();
+
+        var found = await unitOfWork.Filings.GetByIncomeEventAsync(_profile.Id, "ACME", INCOME_DATE, ct);
+
+        found.Should().ContainSingle();
+    }
+
+    // ── Updates must not clobber a change already staged for the same entity ──
+
+    [Fact]
+    public async Task UpdateAsync_FilingStagedAsInsert_CommitsAsSingleInsert()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var unitOfWork = _factory.Create();
+        var filing = MakeFiling("ACME");
+        await unitOfWork.Filings.AddAsync(filing, ct);
+        await unitOfWork.Filings.UpdateAsync(filing, ct);
+
+        await unitOfWork.SaveChangesAsync(ct);
+
+        (await CountFilingsAsync()).Should().Be(1);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_FilingStagedForDeletion_Throws()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await SeedCommittedFilingsAsync();
+        await using var unitOfWork = _factory.Create();
+        var filing = (await unitOfWork.Filings.GetByReportIdAsync(_report.Id, ct))[0];
+        await unitOfWork.Filings.DeleteAsync(filing.Id, ct);
+
+        var act = () => unitOfWork.Filings.UpdateAsync(filing, ct);
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ReportStagedForDeletion_Throws()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var unitOfWork = _factory.Create();
+        var report = await unitOfWork.Reports.GetByIdAsync(_report.Id, ct);
+        await unitOfWork.Reports.DeleteAsync(_report.Id, ct);
+
+        var act = () => unitOfWork.Reports.UpdateAsync(report!, ct);
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
+    }
+
+    // ── Status-only update: the attachment BLOB is not rewritten ──
+
+    private async Task<Report> LoadDetachedReportAsync()
+    {
+        await using var read = new AppDbContext(_options);
+        return await read.Reports.AsNoTracking().SingleAsync(r => r.Id == _report.Id, TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task UpdateStatusAsync_DetachedReport_PersistsStatus()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var report = await LoadDetachedReportAsync();
+        report.SetStatus(ReportStatus.Processed);
+        await using var unitOfWork = _factory.Create();
+
+        await unitOfWork.Reports.UpdateStatusAsync(report, ct);
+        await unitOfWork.SaveChangesAsync(ct);
+
+        (await ReadReportStatusAsync()).Should().Be(ReportStatus.Processed);
+    }
+
+    [Fact]
+    public async Task UpdateStatusAsync_DetachedReport_MarksOnlyStatusModified()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var report = await LoadDetachedReportAsync();
+        report.SetStatus(ReportStatus.Processed);
+        await using var db = new AppDbContext(_options);
+        var repository = new Rentier.Infrastructure.Repositories.ReportRepository(db, isStaging: true);
+
+        await repository.UpdateStatusAsync(report, ct);
+
+        db.Entry(report).Properties.Where(p => p.IsModified).Select(p => p.Metadata.Name)
+            .Should().Equal(nameof(Report.Status));
+    }
+
+    [Fact]
+    public async Task UpdateStatusAsync_ReportStagedForDeletion_Throws()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var detached = await LoadDetachedReportAsync();
+        await using var unitOfWork = _factory.Create();
+        await unitOfWork.Reports.DeleteAsync(_report.Id, ct);
+
+        var act = () => unitOfWork.Reports.UpdateStatusAsync(detached, ct);
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
+    }
 }

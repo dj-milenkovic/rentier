@@ -145,7 +145,7 @@ public class ProcessReportsUnitOfWorkTests
 
         await ActAsync();
 
-        await _reportRepo.Received(1).UpdateAsync(
+        await _reportRepo.Received(1).UpdateStatusAsync(
             Arg.Is<Report>(r => ReferenceEquals(r, persisted) && r.Status == ReportStatus.Error),
             Arg.Any<CancellationToken>());
     }
@@ -177,11 +177,28 @@ public class ProcessReportsUnitOfWorkTests
         _unitOfWorkFactory.CommittedCount.Should().Be(0);
     }
 
+    /// <summary>
+    /// Makes the substitute honour the unit-of-work repository contract that
+    /// <see cref="IFilingRepository.GetByIncomeEventAsync"/> includes filings staged earlier in
+    /// the same unit of work (verified against EF Core in <c>EfUnitOfWorkTests</c>).
+    /// </summary>
+    private void ArrangeFilingRepositoryReturnsStagedFilings()
+    {
+        var staged = new List<Filing>();
+        _filingRepo.AddAsync(Arg.Do<Filing>(staged.Add), Arg.Any<CancellationToken>());
+        _filingRepo.GetByIncomeEventAsync(
+                Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(call => staged
+                .Where(f => f.TaxpayerProfileId == call.ArgAt<Guid>(0)
+                            && f.PayingEntity == call.ArgAt<string>(1)
+                            && f.IncomeDate == call.ArgAt<DateOnly>(2))
+                .ToList());
+    }
+
     [Fact]
     public async Task HandleAsync_SameIncomeEventTwiceInOneReport_StagesSingleFiling()
     {
-        // The first filing is only staged, so the repository query cannot see it yet;
-        // the handler must still treat the repeat as an idempotent skip.
+        ArrangeFilingRepositoryReturnsStagedFilings();
         ArrangeReports(1, Dividend("ACME Corp"), Dividend("ACME Corp"));
 
         await ActAsync();
@@ -192,10 +209,130 @@ public class ProcessReportsUnitOfWorkTests
     [Fact]
     public async Task HandleAsync_CorrectedIncomeEventInSameReport_FlagsCorrection()
     {
+        ArrangeFilingRepositoryReturnsStagedFilings();
         ArrangeReports(1, Dividend("ACME Corp", 100m), Dividend("ACME Corp", 120m));
 
         var result = await ActAsync();
 
         result.Value.EventErrors.Should().ContainSingle(e => e.ErrorCode == ErrorCodes.FILING_CORRECTION_DETECTED);
+    }
+
+    [Fact]
+    public async Task HandleAsync_CommitFailsAfterSeveralEventsStaged_FailsWholeReportNotPartially()
+    {
+        // A storage failure surfaces at the single commit, so the report is all-or-nothing:
+        // Error with no filings — never PartialError with some of its filings persisted.
+        ArrangeReports(1, Dividend("ACME Corp"), Dividend("Globex"));
+        _unitOfWorkFactory.SaveFailure = ordinal => ordinal == 1 ? new InvalidOperationException("FK violation") : null;
+
+        var result = await ActAsync();
+
+        (result.Value.ReportsPartialError, result.Value.ReportsErrored, result.Value.FilingsCreated)
+            .Should().Be((0, 1, 0));
+    }
+
+    [Fact]
+    public async Task HandleAsync_FailureBeforeStatusApplied_MarksInMemoryReportErroredWithoutReread()
+    {
+        var report = ArrangeReports(1, Dividend("ACME Corp"))[0];
+        _parser.ParseAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
+            .Returns<Task<Result<StatementParseResult, Error>>>(_ => throw new InvalidOperationException("boom"));
+
+        await ActAsync();
+
+        await _reportRepo.Received(1).UpdateStatusAsync(
+            Arg.Is<Report>(r => ReferenceEquals(r, report) && r.Status == ReportStatus.Error),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_FailureBeforeStatusApplied_DoesNotRereadReport()
+    {
+        ArrangeReports(1, Dividend("ACME Corp"));
+        _parser.ParseAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
+            .Returns<Task<Result<StatementParseResult, Error>>>(_ => throw new InvalidOperationException("boom"));
+
+        await ActAsync();
+
+        await _reportRepo.DidNotReceive().GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_CommitFailsAndPersistedReportNoLongerInit_DoesNotThrow()
+    {
+        var report = ArrangeReports(1, Dividend("ACME Corp"))[0];
+        var persisted = Report.Create(report.ImporterId, report.ReportName, [1, 2, 3], null);
+        persisted.SetStatus(ReportStatus.Processed);
+        _reportRepo.GetByIdAsync(report.Id, Arg.Any<CancellationToken>()).Returns(persisted);
+        _unitOfWorkFactory.SaveFailure = ordinal => ordinal == 1 ? new InvalidOperationException("disk full") : null;
+
+        var act = ActAsync;
+
+        await act.Should().NotThrowAsync();
+    }
+
+    [Fact]
+    public async Task HandleAsync_CommitFailsAndReportMissing_StillProcessesNextReport()
+    {
+        ArrangeReports(2, Dividend("ACME Corp"));
+        _reportRepo.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((Report?)null);
+        _unitOfWorkFactory.SaveFailure = ordinal => ordinal == 1 ? new InvalidOperationException("disk full") : null;
+
+        var result = await ActAsync();
+
+        result.Value.ReportsProcessed.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task HandleAsync_MarkingReportErroredAlsoFails_StillProcessesNextReport()
+    {
+        // Unit of work #1 = report 1 (commit fails), #2 = its Error mark (also fails),
+        // #3 = report 2, which must still be processed and committed.
+        var reports = ArrangeReports(2, Dividend("ACME Corp"));
+        var persisted = Report.Create(reports[0].ImporterId, reports[0].ReportName, [1, 2, 3], null);
+        _reportRepo.GetByIdAsync(reports[0].Id, Arg.Any<CancellationToken>()).Returns(persisted);
+        _unitOfWorkFactory.SaveFailure = ordinal => ordinal <= 2 ? new InvalidOperationException("database locked") : null;
+
+        var result = await ActAsync();
+
+        result.Value.ReportsProcessed.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task HandleAsync_ProgressCallbackThrowsAfterCommit_DoesNotMarkCommittedReportErrored()
+    {
+        ArrangeReports(1, Dividend("ACME Corp"));
+        var progress = new ThrowingProgress();
+
+        try
+        {
+            await _sut.HandleAsync(new ProcessReportsCommand(progress), TestContext.Current.CancellationToken);
+        }
+        catch (InvalidOperationException)
+        {
+            // The callback's own exception is allowed to surface; what matters is below.
+        }
+
+        await _reportRepo.DidNotReceive().UpdateStatusAsync(
+            Arg.Is<Report>(r => r.Status == ReportStatus.Error), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_ProgressCallbackThrowsAfterCommit_SurfacesCallbackExceptionNotDomainException()
+    {
+        ArrangeReports(1, Dividend("ACME Corp"));
+
+        var act = () => _sut.HandleAsync(
+            new ProcessReportsCommand(new ThrowingProgress()), TestContext.Current.CancellationToken);
+
+        await act.Should().ThrowExactlyAsync<InvalidOperationException>().WithMessage(ThrowingProgress.MESSAGE);
+    }
+
+    /// <summary>Synchronous progress sink that fails on every report — a faulty UI callback.</summary>
+    private sealed class ThrowingProgress : IProgress<SyncProgressEntry>
+    {
+        public const string MESSAGE = "progress sink failed";
+
+        public void Report(SyncProgressEntry value) => throw new InvalidOperationException(MESSAGE);
     }
 }

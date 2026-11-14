@@ -8,38 +8,27 @@ using Rentier.Infrastructure.Persistence;
 
 namespace Rentier.Infrastructure.Repositories;
 
-public sealed class ReportRepository : IReportRepository
+public sealed class ReportRepository : UnitOfWorkAwareRepository, IReportRepository
 {
-    private readonly AppDbContext _db;
-    private readonly bool _autoSave;
-
-    /// <summary>
-    /// Standalone repository (the DI registration): it owns its context, so every write
-    /// method is a complete single-statement operation and commits immediately.
-    /// </summary>
-    public ReportRepository(AppDbContext db) : this(db, autoSave: true)
+    /// <summary>Standalone repository (the DI registration): every write commits immediately.</summary>
+    public ReportRepository(AppDbContext db) : base(db, isStaging: false)
     {
     }
 
     /// <summary>
-    /// With <paramref name="autoSave"/> false the repository only stages changes on the
+    /// With <paramref name="isStaging"/> true the repository only stages changes on the
     /// shared context; the owning <see cref="IUnitOfWork"/> commits them atomically.
     /// </summary>
-    internal ReportRepository(AppDbContext db, bool autoSave)
+    internal ReportRepository(AppDbContext db, bool isStaging) : base(db, isStaging)
     {
-        _db = db;
-        _autoSave = autoSave;
     }
 
-    private Task CommitIfStandaloneAsync(CancellationToken ct)
-        => _autoSave ? _db.SaveChangesAsync(ct) : Task.CompletedTask;
-
     public async Task<Report?> GetByIdAsync(Guid id, CancellationToken ct = default)
-        => await _db.Reports.FindAsync([id], ct);
+        => await Db.Reports.FindAsync([id], ct);
 
     public async Task<IReadOnlyList<Report>> GetAllAsync(bool sortDescending = true, CancellationToken ct = default)
     {
-        var query = _db.Reports.AsNoTracking();
+        var query = Db.Reports.AsNoTracking();
         var list = sortDescending
             ? await query
                 .OrderByDescending(r => r.EmailDate ?? r.ImportDate)
@@ -57,7 +46,7 @@ public sealed class ReportRepository : IReportRepository
 
     public async Task<IReadOnlyList<Report>> GetByImporterAsync(Guid importerId, CancellationToken ct = default)
     {
-        var list = await _db.Reports
+        var list = await Db.Reports
             .AsNoTracking()
             .Where(r => r.ImporterId == importerId)
             .ToListAsync(ct);
@@ -66,7 +55,7 @@ public sealed class ReportRepository : IReportRepository
 
     public async Task<IReadOnlyList<Report>> GetByStatusAsync(ReportStatus status, CancellationToken ct = default)
     {
-        var list = await _db.Reports
+        var list = await Db.Reports
             .AsNoTracking()
             .Where(r => r.Status == status)
             .ToListAsync(ct);
@@ -74,33 +63,34 @@ public sealed class ReportRepository : IReportRepository
     }
 
     public async Task<bool> ExistsByImporterAndNameAsync(Guid importerId, string reportName, CancellationToken ct = default)
-        => await _db.Reports
+        => await Db.Reports
             .AsNoTracking()
             .AnyAsync(r => r.ImporterId == importerId && r.ReportName == reportName, ct);
 
     public async Task AddAsync(Report report, CancellationToken ct = default)
     {
-        _db.Reports.Add(report);
+        Db.Reports.Add(report);
         await CommitIfStandaloneAsync(ct);
     }
 
     public async Task UpdateAsync(Report report, CancellationToken ct = default)
     {
-        var stale = _db.ChangeTracker.Entries<Report>()
-            .FirstOrDefault(e => e.Entity.Id == report.Id);
-        if (stale != null)
-            stale.State = EntityState.Detached;
+        StageUpdate(Db.Reports, report, tracked => tracked.Id == report.Id);
+        await CommitIfStandaloneAsync(ct);
+    }
 
-        _db.Reports.Update(report);
+    public async Task UpdateStatusAsync(Report report, CancellationToken ct = default)
+    {
+        StagePropertyUpdate(report, tracked => tracked.Id == report.Id, r => r.Status);
         await CommitIfStandaloneAsync(ct);
     }
 
     public async Task DeleteAsync(Guid id, CancellationToken ct = default)
     {
-        var entity = await _db.Reports.FindAsync([id], ct);
+        var entity = await Db.Reports.FindAsync([id], ct);
         if (entity is not null)
         {
-            _db.Reports.Remove(entity);
+            Db.Reports.Remove(entity);
             await CommitIfStandaloneAsync(ct);
         }
     }
@@ -108,11 +98,11 @@ public sealed class ReportRepository : IReportRepository
     public async Task DeleteManyAsync(IReadOnlyList<Guid> ids, CancellationToken ct = default)
     {
         if (ids.Count == 0) return;
-        var reports = await _db.Reports
+        var reports = await Db.Reports
             .Where(r => ids.Contains(r.Id))
             .ToListAsync(ct);
         if (reports.Count == 0) return;
-        _db.Reports.RemoveRange(reports);
+        Db.Reports.RemoveRange(reports);
         await CommitIfStandaloneAsync(ct);
     }
 
@@ -123,7 +113,7 @@ public sealed class ReportRepository : IReportRepository
         bool sortDescending,
         CancellationToken ct = default)
     {
-        var query = _db.Reports.AsNoTracking().AsQueryable();
+        var query = Db.Reports.AsNoTracking().AsQueryable();
 
         if (filter is not null)
         {

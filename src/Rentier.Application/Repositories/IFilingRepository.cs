@@ -15,6 +15,9 @@ public interface IFilingRepository
     /// Returns all filings for the same income event identified by (taxpayer, paying entity, income date),
     /// regardless of amount. Used by report processing to distinguish an exact duplicate (same gross —
     /// skip) from a broker correction (different gross — flag for manual review).
+    /// When obtained from an <see cref="Rentier.Application.Interfaces.IUnitOfWork"/>, the result also reflects changes
+    /// staged in that unit of work (staged inserts included, staged deletes excluded), so
+    /// duplicates within one operation are detected before it commits.
     /// </summary>
     Task<IReadOnlyList<Filing>> GetByIncomeEventAsync(Guid taxpayerProfileId, string payingEntity, DateOnly incomeDate, CancellationToken ct = default);
 

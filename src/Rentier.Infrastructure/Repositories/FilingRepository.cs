@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using Rentier.Application.Enums;
 using Rentier.Application.Interfaces;
@@ -9,43 +10,32 @@ using Rentier.Infrastructure.Persistence;
 
 namespace Rentier.Infrastructure.Repositories;
 
-public sealed class FilingRepository : IFilingRepository
+public sealed class FilingRepository : UnitOfWorkAwareRepository, IFilingRepository
 {
-    private readonly AppDbContext _db;
-    private readonly bool _autoSave;
-
-    /// <summary>
-    /// Standalone repository (the DI registration): it owns its context, so every write
-    /// method is a complete single-statement operation and commits immediately.
-    /// </summary>
-    public FilingRepository(AppDbContext db) : this(db, autoSave: true)
+    /// <summary>Standalone repository (the DI registration): every write commits immediately.</summary>
+    public FilingRepository(AppDbContext db) : base(db, isStaging: false)
     {
     }
 
     /// <summary>
-    /// With <paramref name="autoSave"/> false the repository only stages changes on the
+    /// With <paramref name="isStaging"/> true the repository only stages changes on the
     /// shared context; the owning <see cref="IUnitOfWork"/> commits them atomically.
     /// </summary>
-    internal FilingRepository(AppDbContext db, bool autoSave)
+    internal FilingRepository(AppDbContext db, bool isStaging) : base(db, isStaging)
     {
-        _db = db;
-        _autoSave = autoSave;
     }
 
-    private Task CommitIfStandaloneAsync(CancellationToken ct)
-        => _autoSave ? _db.SaveChangesAsync(ct) : Task.CompletedTask;
-
     public async Task<Filing?> GetByIdAsync(Guid id, CancellationToken ct = default)
-        => await _db.Filings.FindAsync([id], ct);
+        => await Db.Filings.FindAsync([id], ct);
 
     public async Task<IReadOnlyList<Filing>> GetAllAsync(CancellationToken ct = default)
     {
-        var list = await _db.Filings.AsNoTracking().ToListAsync(ct);
+        var list = await Db.Filings.AsNoTracking().ToListAsync(ct);
         return list.AsReadOnly();
     }
 
     public async Task<Filing?> GetByTaxPeriodAsync(Guid taxpayerProfileId, DateOnly taxPeriod, CancellationToken ct = default)
-        => await _db.Filings
+        => await Db.Filings
             .AsNoTracking()
             .FirstOrDefaultAsync(f =>
                 f.TaxpayerProfileId == taxpayerProfileId &&
@@ -57,7 +47,7 @@ public sealed class FilingRepository : IFilingRepository
         DateOnly incomeDate,
         decimal grossIncomeRsd,
         CancellationToken ct = default)
-        => await _db.Filings
+        => await Db.Filings
             .AsNoTracking()
             .AnyAsync(f =>
                 f.TaxpayerProfileId == taxpayerProfileId &&
@@ -71,19 +61,45 @@ public sealed class FilingRepository : IFilingRepository
         DateOnly incomeDate,
         CancellationToken ct = default)
     {
-        var list = await _db.Filings
+        // One predicate for both the database query and the staged-change lookup, so
+        // duplicate detection within a unit of work can never drift from detection across
+        // statements. SQLite's default BINARY collation matches ordinal C# string equality.
+        Expression<Func<Filing, bool>> sameIncomeEvent = f =>
+            f.TaxpayerProfileId == taxpayerProfileId &&
+            f.PayingEntity == payingEntity &&
+            f.IncomeDate == incomeDate;
+
+        var persisted = await Db.Filings
             .AsNoTracking()
-            .Where(f =>
-                f.TaxpayerProfileId == taxpayerProfileId &&
-                f.PayingEntity == payingEntity &&
-                f.IncomeDate == incomeDate)
+            .Where(sameIncomeEvent)
             .ToListAsync(ct);
-        return list.AsReadOnly();
+
+        if (!IsStaging)
+            return persisted.AsReadOnly();
+
+        // Inside a unit of work, changes staged earlier in the same operation must count:
+        // include filings staged for insert and drop those staged for deletion.
+        var matches = sameIncomeEvent.Compile();
+        var stagedEntries = Db.ChangeTracker.Entries<Filing>().ToList();
+        var stagedDeletes = stagedEntries
+            .Where(e => e.State == EntityState.Deleted)
+            .Select(e => e.Entity.Id)
+            .ToHashSet();
+        var stagedInserts = stagedEntries
+            .Where(e => e.State == EntityState.Added)
+            .Select(e => e.Entity)
+            .Where(matches);
+
+        return persisted
+            .Where(f => !stagedDeletes.Contains(f.Id))
+            .Concat(stagedInserts)
+            .ToList()
+            .AsReadOnly();
     }
 
     public async Task<IReadOnlyList<Filing>> GetByReportIdAsync(Guid reportId, CancellationToken ct = default)
     {
-        var list = await _db.Filings
+        var list = await Db.Filings
             .AsNoTracking()
             .Where(f => f.ReportId == reportId)
             .ToListAsync(ct);
@@ -92,27 +108,22 @@ public sealed class FilingRepository : IFilingRepository
 
     public async Task AddAsync(Filing filing, CancellationToken ct = default)
     {
-        _db.Filings.Add(filing);
+        Db.Filings.Add(filing);
         await CommitIfStandaloneAsync(ct);
     }
 
     public async Task UpdateAsync(Filing filing, CancellationToken ct = default)
     {
-        var stale = _db.ChangeTracker.Entries<Filing>()
-            .FirstOrDefault(e => e.Entity.Id == filing.Id);
-        if (stale != null)
-            stale.State = EntityState.Detached;
-
-        _db.Filings.Update(filing);
+        StageUpdate(Db.Filings, filing, tracked => tracked.Id == filing.Id);
         await CommitIfStandaloneAsync(ct);
     }
 
     public async Task DeleteAsync(Guid id, CancellationToken ct = default)
     {
-        var entity = await _db.Filings.FindAsync([id], ct);
+        var entity = await Db.Filings.FindAsync([id], ct);
         if (entity is not null)
         {
-            _db.Filings.Remove(entity);
+            Db.Filings.Remove(entity);
             await CommitIfStandaloneAsync(ct);
         }
     }
@@ -124,7 +135,7 @@ public sealed class FilingRepository : IFilingRepository
         FilingColumnFilter? columnFilter = null,
         CancellationToken ct = default)
     {
-        var query = _db.Filings.AsNoTracking();
+        var query = Db.Filings.AsNoTracking();
 
         if (filter == FilingFilterMode.Unpaid)
             query = query.Where(f =>
@@ -195,23 +206,23 @@ public sealed class FilingRepository : IFilingRepository
         };
 
     public async Task<int> GetFilingCountByReportIdAsync(Guid reportId, CancellationToken ct = default)
-        => await _db.Filings.AsNoTracking().CountAsync(f => f.ReportId == reportId, ct);
+        => await Db.Filings.AsNoTracking().CountAsync(f => f.ReportId == reportId, ct);
 
     public async Task DeleteByReportIdAsync(Guid reportId, CancellationToken ct = default)
     {
-        var filings = await _db.Filings
+        var filings = await Db.Filings
             .Where(f => f.ReportId == reportId)
             .ToListAsync(ct);
         if (filings.Count == 0)
             return;
-        _db.Filings.RemoveRange(filings);
+        Db.Filings.RemoveRange(filings);
         await CommitIfStandaloneAsync(ct);
     }
 
     public async Task<IReadOnlyList<Filing>> GetUpcomingAsync(DateOnly today, int days, CancellationToken ct = default)
     {
         var limit = today.AddDays(days);
-        var list = await _db.Filings.AsNoTracking()
+        var list = await Db.Filings.AsNoTracking()
             .Where(f => (f.Status == FilingStatus.Init || f.Status == FilingStatus.Filed)
                      && f.FilingDeadline >= today
                      && f.FilingDeadline <= limit)
@@ -222,7 +233,7 @@ public sealed class FilingRepository : IFilingRepository
 
     public async Task<IReadOnlyList<Filing>> GetOverdueAsync(DateOnly today, CancellationToken ct = default)
     {
-        var list = await _db.Filings.AsNoTracking()
+        var list = await Db.Filings.AsNoTracking()
             .Where(f => f.Status != FilingStatus.Paid && f.FilingDeadline < today)
             .OrderBy(f => f.FilingDeadline)
             .ToListAsync(ct);
@@ -231,14 +242,14 @@ public sealed class FilingRepository : IFilingRepository
 
     public async Task<(int InitCount, int FiledCount, int PaidCount, decimal TotalUnpaidRsd)> GetFilingStatsAsync(CancellationToken ct = default)
     {
-        var counts = await _db.Filings.AsNoTracking()
+        var counts = await Db.Filings.AsNoTracking()
             .GroupBy(f => f.Status)
             .Select(g => new { Status = g.Key, Count = g.Count() })
             .ToListAsync(ct);
 
         // SQLite cannot SUM decimal columns server-side; fetch only the relevant
         // values and aggregate in memory.
-        var unpaidAmounts = await _db.Filings.AsNoTracking()
+        var unpaidAmounts = await Db.Filings.AsNoTracking()
             .Where(f => f.Status != FilingStatus.Paid)
             .Select(f => f.TaxPayableRsd)
             .ToListAsync(ct);
@@ -251,7 +262,7 @@ public sealed class FilingRepository : IFilingRepository
     }
 
     public async Task<DateOnly?> GetEarliestIncomeDateByReportIdAsync(Guid reportId, CancellationToken ct = default)
-        => await _db.Filings.AsNoTracking()
+        => await Db.Filings.AsNoTracking()
             .Where(f => f.ReportId == reportId)
             .Select(f => (DateOnly?)f.IncomeDate)
             .MinAsync(ct);
@@ -262,7 +273,7 @@ public sealed class FilingRepository : IFilingRepository
         if (reportIds.Count == 0)
             return new Dictionary<Guid, (int, DateOnly?)>();
 
-        var rows = await _db.Filings.AsNoTracking()
+        var rows = await Db.Filings.AsNoTracking()
             .Where(f => f.ReportId.HasValue && reportIds.Contains(f.ReportId.Value))
             .GroupBy(f => f.ReportId!.Value)
             .Select(g => new
@@ -279,11 +290,11 @@ public sealed class FilingRepository : IFilingRepository
     public async Task DeleteManyAsync(IReadOnlyList<Guid> ids, CancellationToken ct = default)
     {
         if (ids.Count == 0) return;
-        var filings = await _db.Filings
+        var filings = await Db.Filings
             .Where(f => ids.Contains(f.Id))
             .ToListAsync(ct);
         if (filings.Count == 0) return;
-        _db.Filings.RemoveRange(filings);
+        Db.Filings.RemoveRange(filings);
         await CommitIfStandaloneAsync(ct);
     }
 }

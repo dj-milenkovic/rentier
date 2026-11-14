@@ -357,8 +357,8 @@ public class ProcessReportsProgressTests
         var reportRepo = Substitute.For<IReportRepository>();
         reportRepo.GetByStatusAsync(ReportStatus.Init, Arg.Any<CancellationToken>())
             .Returns(new[] { report });
-        // UpdateAsync succeeds (called in the outer catch path)
-        reportRepo.UpdateAsync(Arg.Any<Report>(), Arg.Any<CancellationToken>())
+        // UpdateStatusAsync succeeds (called in the outer catch path)
+        reportRepo.UpdateStatusAsync(Arg.Any<Report>(), Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
 
         var importerRepo = Substitute.For<IImporterRepository>();

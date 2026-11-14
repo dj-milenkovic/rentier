@@ -9,6 +9,15 @@ namespace Rentier.Tests.Common.Fakes;
 /// <c>Received()</c> assertions keep working, while the factory records how many units of
 /// work were created, committed and disposed.
 /// </summary>
+/// <remarks>
+/// The fake does <b>not</b> simulate staging: every unit of work shares the same
+/// repositories, so writes are "visible" immediately and nothing is rolled back when a
+/// commit fails. Tests must therefore configure reads explicitly (e.g. the
+/// <c>GetByIdAsync</c> re-read on the error path, or staged filings being returned by
+/// <c>GetByIncomeEventAsync</c>) rather than rely on substitute defaults. Real staging,
+/// commit and rollback semantics are covered by <c>EfUnitOfWorkTests</c> and
+/// <c>ReportProcessingAtomicityScenario</c> against SQLite.
+/// </remarks>
 public sealed class FakeUnitOfWorkFactory : IUnitOfWorkFactory
 {
     private readonly IReportRepository _reports;
