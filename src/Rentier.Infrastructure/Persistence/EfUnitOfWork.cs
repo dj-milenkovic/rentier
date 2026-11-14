@@ -1,3 +1,4 @@
+using Rentier.Application.Interfaces;
 using Rentier.Application.Repositories;
 using Rentier.Infrastructure.Repositories;
 

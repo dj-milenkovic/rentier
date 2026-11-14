@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using Rentier.Application.Repositories;
+using Rentier.Application.Interfaces;
 
 namespace Rentier.Infrastructure.Persistence;
 

@@ -1,3 +1,4 @@
+using Rentier.Application.Interfaces;
 using Rentier.Application.Repositories;
 
 namespace Rentier.Tests.Common.Fakes;

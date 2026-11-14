@@ -1,4 +1,6 @@
-namespace Rentier.Application.Repositories;
+using Rentier.Application.Repositories;
+
+namespace Rentier.Application.Interfaces;
 
 /// <summary>
 /// A single logical write operation spanning more than one repository call.

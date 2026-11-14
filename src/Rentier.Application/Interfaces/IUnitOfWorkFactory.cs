@@ -1,4 +1,4 @@
-namespace Rentier.Application.Repositories;
+namespace Rentier.Application.Interfaces;
 
 /// <summary>
 /// Creates a fresh <see cref="IUnitOfWork"/> per logical operation. Handlers that write

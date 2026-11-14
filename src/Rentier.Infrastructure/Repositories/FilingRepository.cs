@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Rentier.Application.Enums;
+using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
 using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
