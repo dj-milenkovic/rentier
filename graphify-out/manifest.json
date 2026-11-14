@@ -1,3338 +1,3290 @@
 {
   ".claude/hooks/format-on-edit.ps1": {
-    "mtime": 1787783205.0454786,
-    "seen": 1787783389.745637,
-    "ast_hash": "4931c35b283966201019608b5d9cec4a",
+    "mtime": 1794694012.320889,
+    "seen": 1794694144.4242437,
+    "ast_hash": "ad26c4b7886502ca89cf68a8b0e8ff3e",
     "semantic_hash": ""
   },
   ".claude/hooks/sonar-secrets/build-scripts/pretool-secrets.ps1": {
-    "mtime": 1787783205.0464094,
-    "seen": 1787783389.7456417,
-    "ast_hash": "92d1442c10fd554d8aeb8d91d32ff264",
+    "mtime": 1794694012.3214555,
+    "seen": 1794694144.4242547,
+    "ast_hash": "39b63485b52628bc1147232a0d1f1bca",
     "semantic_hash": ""
   },
   ".claude/hooks/sonar-secrets/build-scripts/prompt-secrets.ps1": {
-    "mtime": 1787783205.047063,
-    "seen": 1787783389.7456448,
-    "ast_hash": "63f5085c835b2dc3c281efe6c9e9c0eb",
+    "mtime": 1794694012.3214555,
+    "seen": 1794694144.4242601,
+    "ast_hash": "7229addd2440b088ee0853e0421fbebd",
     "semantic_hash": ""
   },
   ".claude/settings.json": {
-    "mtime": 1787783205.0475338,
-    "seen": 1787783389.7456474,
-    "ast_hash": "d1b2b16e61c115792e6531f11e18c56f",
+    "mtime": 1794694012.3371825,
+    "seen": 1794694144.424263,
+    "ast_hash": "6fe24c7b4484cfe9108c68247502876f",
     "semantic_hash": ""
   },
   ".mcp.json": {
-    "mtime": 1787783205.0555246,
-    "seen": 1787783389.7456493,
-    "ast_hash": "886079827d0b94bc7cd5536e65369be9",
+    "mtime": 1794694012.4186099,
+    "seen": 1794694144.4242795,
+    "ast_hash": "b0796b36d5265a8965512ef4376fa0ef",
     "semantic_hash": ""
   },
   "Rentier.slnx": {
-    "mtime": 1787783205.088111,
-    "seen": 1787783389.7456517,
-    "ast_hash": "0c80bbbef90426f15a9b79de34b8173d",
+    "mtime": 1794694012.504658,
+    "seen": 1794694144.4242818,
+    "ast_hash": "f7d910147920ae61698ea508bc8c59a1",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Commands/AddImporterCommand.cs": {
-    "mtime": 1787783205.099688,
-    "seen": 1787783389.7456543,
+    "mtime": 1794694012.6705124,
+    "seen": 1794694144.4242845,
     "ast_hash": "6b26d1a2a8acfea17ac68c1d82d4ad90",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Commands/AddMailboxCommand.cs": {
-    "mtime": 1787783205.1003451,
-    "seen": 1787783389.7456665,
+    "mtime": 1794694012.67204,
+    "seen": 1794694144.424287,
     "ast_hash": "5d94bc6bcf44e7faca72c34106d0ba34",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Commands/BulkDeleteFilingsCommand.cs": {
-    "mtime": 1787783205.1003451,
-    "seen": 1787783389.7456694,
+    "mtime": 1794694012.674071,
+    "seen": 1794694144.4242892,
     "ast_hash": "99abfb39578a5b85f8ef5a96ba6635c3",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Commands/BulkDeleteReportsCommand.cs": {
-    "mtime": 1787783205.1003451,
-    "seen": 1787783389.7456713,
+    "mtime": 1794694012.6765823,
+    "seen": 1794694144.4242914,
     "ast_hash": "d568e95822e2324c1b17be1507803c0a",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Commands/CalculateManualFilingCommand.cs": {
-    "mtime": 1787783205.1003451,
-    "seen": 1787783389.745673,
+    "mtime": 1794694012.6786146,
+    "seen": 1794694144.4242933,
     "ast_hash": "004cf6ba1909e39cd40edb209b71e228",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Commands/CreateManualFilingCommand.cs": {
-    "mtime": 1787783205.1003451,
-    "seen": 1787783389.7456753,
+    "mtime": 1794694012.6806269,
+    "seen": 1794694144.4242957,
     "ast_hash": "0567414ace7a9b5d115ce0229e77f498",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Commands/DeleteFilingCommand.cs": {
-    "mtime": 1787783205.1003451,
-    "seen": 1787783389.7456772,
+    "mtime": 1794694012.6821387,
+    "seen": 1794694144.4242976,
     "ast_hash": "16556e5d413f0f88378f80c4440a9ec4",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Commands/DeleteImporterCommand.cs": {
-    "mtime": 1787783205.1003451,
-    "seen": 1787783389.7456794,
+    "mtime": 1794694012.6821387,
+    "seen": 1794694144.4242997,
     "ast_hash": "0eaf66358a9c505b18a298439fa02648",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Commands/DeleteMailboxCommand.cs": {
-    "mtime": 1787783205.1003451,
-    "seen": 1787783389.7456815,
+    "mtime": 1794694012.6847467,
+    "seen": 1794694144.424302,
     "ast_hash": "0ad6ec031ca7d8336ca5c00fed0e98e1",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Commands/DeleteReportCommand.cs": {
-    "mtime": 1787783205.1003451,
-    "seen": 1787783389.7456837,
+    "mtime": 1794694012.6869276,
+    "seen": 1794694144.4243042,
     "ast_hash": "a60d2a4d925284f63509f1eff06c97dc",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Commands/EnsureHolidaysSeededCommand.cs": {
-    "mtime": 1787783205.1003451,
-    "seen": 1787783389.7456856,
+    "mtime": 1794694012.688941,
+    "seen": 1794694144.4243064,
     "ast_hash": "870bc18c16bfcefa38c6c625feda39be",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Commands/ExportFilingCommand.cs": {
-    "mtime": 1787783205.1003451,
-    "seen": 1787783389.7456875,
+    "mtime": 1794694012.688941,
+    "seen": 1794694144.4243085,
     "ast_hash": "ea2eebad1363ea8d8aa8a0b3b22f9bbc",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Commands/FetchHolidaysFromWebCommand.cs": {
-    "mtime": 1787783205.1003451,
-    "seen": 1787783389.7456896,
+    "mtime": 1794694012.6909568,
+    "seen": 1794694144.4243102,
     "ast_hash": "288f10c3de02e5abab034327e569ea86",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Commands/ImportHolidaysFromWebCommand.cs": {
-    "mtime": 1787783205.1003451,
-    "seen": 1787783389.7456913,
+    "mtime": 1794694012.6929746,
+    "seen": 1794694144.4243124,
     "ast_hash": "8cb4c377f7a80f2e8858420485c84a1b",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Commands/ImportReportCommand.cs": {
-    "mtime": 1787783205.1003451,
-    "seen": 1787783389.7456932,
+    "mtime": 1794694012.6929746,
+    "seen": 1794694144.4243147,
     "ast_hash": "05e8c3b880eddcd45369a16eb73d4612",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Commands/ProcessReportsCommand.cs": {
-    "mtime": 1787783205.1003451,
-    "seen": 1787783389.7456946,
+    "mtime": 1794694012.694988,
+    "seen": 1794694144.4243166,
     "ast_hash": "3ea22faf54168cc019a7936525624120",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Commands/SaveHolidayConfCommand.cs": {
-    "mtime": 1787783205.1003451,
-    "seen": 1787783389.7456973,
+    "mtime": 1794694012.6974769,
+    "seen": 1794694144.4243188,
     "ast_hash": "9475123c2809f5d744a22a7f9958c409",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Commands/SaveTaxpayerProfileCommand.cs": {
-    "mtime": 1787783205.1003451,
-    "seen": 1787783389.745699,
+    "mtime": 1794694012.6994872,
+    "seen": 1794694144.424321,
     "ast_hash": "f6b9ddd59ab5361644ef1c02fa5a18d2",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Commands/SetUserPreferenceCommand.cs": {
-    "mtime": 1787783205.1003451,
-    "seen": 1787783389.7457006,
+    "mtime": 1794694012.6994872,
+    "seen": 1794694144.424323,
     "ast_hash": "d3c4d6dc8196d790e6a4aec36f91ab9b",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Commands/SyncAllCommand.cs": {
-    "mtime": 1787783205.1003451,
-    "seen": 1787783389.7457027,
+    "mtime": 1794694012.702003,
+    "seen": 1794694144.4243255,
     "ast_hash": "1a98ab7c5538053cc98e5b2d02600be1",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Commands/SyncMailboxCommand.cs": {
-    "mtime": 1787783205.1003451,
-    "seen": 1787783389.7457042,
+    "mtime": 1794694012.704034,
+    "seen": 1794694144.4243274,
     "ast_hash": "ad60ae5c3307cfbcf3c49586cd42b120",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Commands/UpdateFilingStatusCommand.cs": {
-    "mtime": 1787783205.1003451,
-    "seen": 1787783389.745706,
+    "mtime": 1794694012.705546,
+    "seen": 1794694144.4243298,
     "ast_hash": "85059987ec59e72565b64a8db7bb2309",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Commands/UpdateImporterCommand.cs": {
-    "mtime": 1787783205.1003451,
-    "seen": 1787783389.7457073,
+    "mtime": 1794694012.7069314,
+    "seen": 1794694144.4243314,
     "ast_hash": "c06fbb33bd9c7d20b19abdcb9d591656",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Commands/UpdateMailboxCommand.cs": {
-    "mtime": 1787783205.1003451,
-    "seen": 1787783389.7457085,
+    "mtime": 1794694012.7089448,
+    "seen": 1794694144.4243336,
     "ast_hash": "174be1a1b6d69ff2b8e1e6b376815e47",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Commands/UpdatePaymentReferenceCommand.cs": {
-    "mtime": 1787783205.1003451,
-    "seen": 1787783389.7457104,
+    "mtime": 1794694012.710957,
+    "seen": 1794694144.4243357,
     "ast_hash": "9f3ce7cff578c1caad56b2716857af2f",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Common/CredentialKeys.cs": {
-    "mtime": 1787783205.1003451,
-    "seen": 1787783389.7457118,
+    "mtime": 1794694012.7129717,
+    "seen": 1794694144.4243374,
     "ast_hash": "5ad23660758d019a24ebcf4f68eedf01",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Common/Error.cs": {
-    "mtime": 1787783205.1040623,
-    "seen": 1787783389.745714,
+    "mtime": 1794694012.714986,
+    "seen": 1794694144.4243398,
     "ast_hash": "6ed74fc4999c8669fd07a4ca4510dc5a",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Common/ErrorCodes.cs": {
-    "mtime": 1787783205.1040623,
-    "seen": 1787783389.7457156,
+    "mtime": 1794694012.7180305,
+    "seen": 1794694144.4243417,
     "ast_hash": "99713d9df0a4d2f46d8e18e011d83138",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Common/HandlerHelper.cs": {
-    "mtime": 1787783205.1040623,
-    "seen": 1787783389.745718,
+    "mtime": 1794694012.7197623,
+    "seen": 1794694144.4243438,
     "ast_hash": "25ab6067e5fc43cdef1209bdd09f3d6b",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Common/PaginationValidator.cs": {
-    "mtime": 1787783205.1040623,
-    "seen": 1787783389.7457194,
+    "mtime": 1794694012.7221675,
+    "seen": 1794694144.424346,
     "ast_hash": "941ef6593784db05cb5d4f2467b8c2dc",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Common/Result.cs": {
-    "mtime": 1787783205.1040623,
-    "seen": 1787783389.7457209,
+    "mtime": 1794694012.723177,
+    "seen": 1794694144.424348,
     "ast_hash": "773ecd88e6cc23dca46229d703abf0bd",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Common/VoidResult.cs": {
-    "mtime": 1787783205.1040623,
-    "seen": 1787783389.7457223,
+    "mtime": 1794694012.7247045,
+    "seen": 1794694144.4243505,
     "ast_hash": "e96337fec79a3e880b4f1cc0a5e0537b",
     "semantic_hash": ""
   },
   "src/Rentier.Application/DTOs/DashboardDto.cs": {
-    "mtime": 1787783205.1040623,
-    "seen": 1787783389.7457242,
+    "mtime": 1794694012.7267327,
+    "seen": 1794694144.4243524,
     "ast_hash": "6767c3b9ab92a7ca1d052a75d754198a",
     "semantic_hash": ""
   },
   "src/Rentier.Application/DTOs/DownloadProgressInfo.cs": {
-    "mtime": 1787783205.1054802,
-    "seen": 1787783389.7457254,
+    "mtime": 1794694012.7287786,
+    "seen": 1794694144.4243543,
     "ast_hash": "805762f5c0670ea6035ae27fc8e4e078",
     "semantic_hash": ""
   },
   "src/Rentier.Application/DTOs/ExportFilingResult.cs": {
-    "mtime": 1787783205.1054802,
-    "seen": 1787783389.7457268,
+    "mtime": 1794694012.7287786,
+    "seen": 1794694144.4243565,
     "ast_hash": "92caf10ad508c00ab2830091cdc981fd",
     "semantic_hash": ""
   },
   "src/Rentier.Application/DTOs/FilingCreationError.cs": {
-    "mtime": 1787783205.1054802,
-    "seen": 1787783389.745728,
+    "mtime": 1794694012.730794,
+    "seen": 1794694144.4243584,
     "ast_hash": "c7ef3064405df462536b08e3a476e7d1",
     "semantic_hash": ""
   },
   "src/Rentier.Application/DTOs/FilingRowDto.cs": {
-    "mtime": 1787783205.1054802,
-    "seen": 1787783389.7457297,
+    "mtime": 1794694012.732807,
+    "seen": 1794694144.4243603,
     "ast_hash": "d7a4efd1373577d8cac8b1d983980c83",
     "semantic_hash": ""
   },
   "src/Rentier.Application/DTOs/FilingsPageResult.cs": {
-    "mtime": 1787783205.1054802,
-    "seen": 1787783389.7457488,
+    "mtime": 1794694012.732807,
+    "seen": 1794694144.4243624,
     "ast_hash": "9d4f6df7a24cbc5d0c80356f9b9d0e62",
     "semantic_hash": ""
   },
   "src/Rentier.Application/DTOs/HolidayConfDto.cs": {
-    "mtime": 1787783205.1054802,
-    "seen": 1787783389.7457502,
+    "mtime": 1794694012.7348187,
+    "seen": 1794694144.4243646,
     "ast_hash": "c61a840b33af79c47356f0bdb52592a3",
     "semantic_hash": ""
   },
   "src/Rentier.Application/DTOs/HolidayEntryDto.cs": {
-    "mtime": 1787783205.1054802,
-    "seen": 1787783389.7457519,
+    "mtime": 1794694012.7348187,
+    "seen": 1794694144.4243665,
     "ast_hash": "949dbabefe7d90523ff94c526df7f468",
     "semantic_hash": ""
   },
   "src/Rentier.Application/DTOs/ImporterDto.cs": {
-    "mtime": 1787783205.1054802,
-    "seen": 1787783389.7457538,
+    "mtime": 1794694012.7382994,
+    "seen": 1794694144.4243686,
     "ast_hash": "5b1c1dcc6cc82e06018c6e98015ee55a",
     "semantic_hash": ""
   },
   "src/Rentier.Application/DTOs/MailboxDto.cs": {
-    "mtime": 1787783205.1054802,
-    "seen": 1787783389.7457552,
+    "mtime": 1794694012.7393346,
+    "seen": 1794694144.4243708,
     "ast_hash": "a7f1854f3fc6711d0c53eb839ae43ade",
     "semantic_hash": ""
   },
   "src/Rentier.Application/DTOs/ManualFilingPreviewDto.cs": {
-    "mtime": 1787783205.1054802,
-    "seen": 1787783389.7457569,
+    "mtime": 1794694012.7393346,
+    "seen": 1794694144.4243724,
     "ast_hash": "c64ff505d8cdd2ef70c32a761649707b",
     "semantic_hash": ""
   },
   "src/Rentier.Application/DTOs/OverdueFilingDto.cs": {
-    "mtime": 1787783205.1054802,
-    "seen": 1787783389.7457588,
+    "mtime": 1794694012.7413673,
+    "seen": 1794694144.4243746,
     "ast_hash": "d9b0c8e23e205419c4ac8fa23a13d1bc",
     "semantic_hash": ""
   },
   "src/Rentier.Application/DTOs/ProcessReportsResult.cs": {
-    "mtime": 1787783205.1054802,
-    "seen": 1787783389.7457604,
+    "mtime": 1794694012.7433796,
+    "seen": 1794694144.4243765,
     "ast_hash": "999e5ece7424b8294fd7e49fb50894e3",
     "semantic_hash": ""
   },
   "src/Rentier.Application/DTOs/RateResolution.cs": {
-    "mtime": 1787783205.1054802,
-    "seen": 1787783389.7457619,
+    "mtime": 1794694012.7449105,
+    "seen": 1794694144.4243786,
     "ast_hash": "50218c78a417392cce8370a77bea9465",
     "semantic_hash": ""
   },
   "src/Rentier.Application/DTOs/ReportColumnFilter.cs": {
-    "mtime": 1787783205.1054802,
-    "seen": 1787783389.7457633,
+    "mtime": 1794694012.7469268,
+    "seen": 1794694144.4243808,
     "ast_hash": "4989228e29f715224a9b122fed655022",
     "semantic_hash": ""
   },
   "src/Rentier.Application/DTOs/ReportProcessingDetail.cs": {
-    "mtime": 1787783205.1054802,
-    "seen": 1787783389.745765,
+    "mtime": 1794694012.7509825,
+    "seen": 1794694144.424383,
     "ast_hash": "147873890af5d85e2a1677c82bc004a9",
     "semantic_hash": ""
   },
   "src/Rentier.Application/DTOs/ReportRowDto.cs": {
-    "mtime": 1787783205.1054802,
-    "seen": 1787783389.7457664,
+    "mtime": 1794694012.7540557,
+    "seen": 1794694144.424385,
     "ast_hash": "54fcf863007c27d1e5318b273837ca03",
     "semantic_hash": ""
   },
   "src/Rentier.Application/DTOs/ReportsPageResult.cs": {
-    "mtime": 1787783205.1054802,
-    "seen": 1787783389.7457678,
+    "mtime": 1794694012.7545855,
+    "seen": 1794694144.4243867,
     "ast_hash": "408adc4501550671875b83ab356fd0ab",
     "semantic_hash": ""
   },
   "src/Rentier.Application/DTOs/SyncAllResult.cs": {
-    "mtime": 1787783205.1054802,
-    "seen": 1787783389.7457697,
+    "mtime": 1794694012.7567506,
+    "seen": 1794694144.424389,
     "ast_hash": "5b86f37fc5d330bf080047a3cdde38be",
     "semantic_hash": ""
   },
   "src/Rentier.Application/DTOs/SyncProgressEntry.cs": {
-    "mtime": 1787783205.1054802,
-    "seen": 1787783389.745771,
+    "mtime": 1794694012.7598238,
+    "seen": 1794694144.4243908,
     "ast_hash": "67b2ec766fdc511fe0e05ee73dd37223",
     "semantic_hash": ""
   },
   "src/Rentier.Application/DTOs/SyncResult.cs": {
-    "mtime": 1787783205.1054802,
-    "seen": 1787783389.7457728,
+    "mtime": 1794694012.7614632,
+    "seen": 1794694144.424393,
     "ast_hash": "5dd1186ad2e2d29f05f96a87e7d61557",
     "semantic_hash": ""
   },
   "src/Rentier.Application/DTOs/TaxpayerProfileDto.cs": {
-    "mtime": 1787783205.1054802,
-    "seen": 1787783389.7457743,
+    "mtime": 1794694012.7614632,
+    "seen": 1794694144.424395,
     "ast_hash": "6608413cf34ddec11b669c28921843b4",
     "semantic_hash": ""
   },
   "src/Rentier.Application/DTOs/UpcomingDeadlineDto.cs": {
-    "mtime": 1787783205.1054802,
-    "seen": 1787783389.7457755,
+    "mtime": 1794694012.7614632,
+    "seen": 1794694144.4243968,
     "ast_hash": "27bc63b7db4822951bfce36ab3c372ba",
     "semantic_hash": ""
   },
   "src/Rentier.Application/DTOs/UpdateCheckResult.cs": {
-    "mtime": 1787783205.1054802,
-    "seen": 1787783389.7457771,
+    "mtime": 1794694012.7614632,
+    "seen": 1794694144.424399,
     "ast_hash": "3267ad3fcd5ae46be446feba42db1ca3",
     "semantic_hash": ""
   },
   "src/Rentier.Application/DTOs/UpdateState.cs": {
-    "mtime": 1787783205.1054802,
-    "seen": 1787783389.7457783,
+    "mtime": 1794694012.7669637,
+    "seen": 1794694144.4244008,
     "ast_hash": "1d4e89953b9b290bd394c4eca2dd5d0b",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Enums/ComparisonOperator.cs": {
-    "mtime": 1787783205.1054802,
-    "seen": 1787783389.7457802,
+    "mtime": 1794694012.7689774,
+    "seen": 1794694144.424403,
     "ast_hash": "817f4c8c3b6b1e7afc65b5bc8914e224",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Enums/FilingFilterMode.cs": {
-    "mtime": 1787783205.10916,
-    "seen": 1787783389.7457817,
+    "mtime": 1794694012.7720222,
+    "seen": 1794694144.4244046,
     "ast_hash": "af796939968276c276305be62ffb868f",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Enums/FilingSortColumn.cs": {
-    "mtime": 1787783205.10916,
-    "seen": 1787783389.7457836,
+    "mtime": 1794694012.7723393,
+    "seen": 1794694144.4244068,
     "ast_hash": "7b03a93456415a347cc6db8ed1060430",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Handlers/AddImporterCommandHandler.cs": {
-    "mtime": 1787783205.10916,
-    "seen": 1787783389.745785,
+    "mtime": 1794694012.776862,
+    "seen": 1794694144.4244087,
     "ast_hash": "14cac34079357752963aec04d340efd0",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Handlers/AddMailboxCommandHandler.cs": {
-    "mtime": 1787783205.1097257,
-    "seen": 1787783389.7457867,
+    "mtime": 1794694012.778883,
+    "seen": 1794694144.4244106,
     "ast_hash": "aaf94fab8968d4f11d67e8b5f7dc0dee",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Handlers/BulkDeleteFilingsCommandHandler.cs": {
-    "mtime": 1787783205.1097257,
-    "seen": 1787783389.7457879,
+    "mtime": 1794694012.778883,
+    "seen": 1794694144.4244127,
     "ast_hash": "e057b038afb7b0791490430c487148b5",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Handlers/BulkDeleteReportsCommandHandler.cs": {
-    "mtime": 1787783205.1097257,
-    "seen": 1787783389.7457895,
+    "mtime": 1794694012.7825837,
+    "seen": 1794694144.4244146,
     "ast_hash": "14b3fde85bb4dcadff10e4ea8868ccbd",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Handlers/CalculateManualFilingCommandHandler.cs": {
-    "mtime": 1787783205.1097257,
-    "seen": 1787783389.745791,
+    "mtime": 1794694012.784482,
+    "seen": 1794694144.4244165,
     "ast_hash": "f8e061b32a8b29ae1b4365ded53aa911",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Handlers/CreateManualFilingCommandHandler.cs": {
-    "mtime": 1787783205.1097257,
-    "seen": 1787783389.7457926,
+    "mtime": 1794694012.7878017,
+    "seen": 1794694144.424419,
     "ast_hash": "21389c60525429c0699bafb750ab0419",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Handlers/DeleteFilingCommandHandler.cs": {
-    "mtime": 1787783205.1097257,
-    "seen": 1787783389.7457938,
+    "mtime": 1794694012.789394,
+    "seen": 1794694144.4244206,
     "ast_hash": "03517b70c90d049b8f353311ace22e86",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Handlers/DeleteImporterCommandHandler.cs": {
-    "mtime": 1787783205.1097257,
-    "seen": 1787783389.7457952,
+    "mtime": 1794694012.7909815,
+    "seen": 1794694144.4244235,
     "ast_hash": "85e3c40cb55de80651e604fcb4dadc22",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Handlers/DeleteMailboxCommandHandler.cs": {
-    "mtime": 1787783205.1097257,
-    "seen": 1787783389.7457967,
+    "mtime": 1794694012.7929614,
+    "seen": 1794694144.4244254,
     "ast_hash": "94258f5b2fe3e05a41788b2c2218e5aa",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Handlers/DeleteReportCommandHandler.cs": {
-    "mtime": 1787783205.1097257,
-    "seen": 1787783389.7457988,
+    "mtime": 1794694012.7945395,
+    "seen": 1794694144.4244277,
     "ast_hash": "04e5b866f5d6b7475013bb724a20aea6",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Handlers/EnsureHolidaysSeededCommandHandler.cs": {
-    "mtime": 1787783205.1097257,
-    "seen": 1787783389.7458003,
+    "mtime": 1794694012.7963028,
+    "seen": 1794694144.42443,
     "ast_hash": "5a4ea4e4cc1d2ef9ed15141c135ce1d7",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Handlers/ExportFilingCommandHandler.cs": {
-    "mtime": 1787783205.1097257,
-    "seen": 1787783389.7458022,
+    "mtime": 1794694012.7982814,
+    "seen": 1794694144.4244318,
     "ast_hash": "1e69f8a020b899028d97495c1b0f9135",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Handlers/FetchHolidaysFromWebCommandHandler.cs": {
-    "mtime": 1787783205.1097257,
-    "seen": 1787783389.7458036,
+    "mtime": 1794694012.8006306,
+    "seen": 1794694144.424434,
     "ast_hash": "319921f9a8aac5cbe5558ed749019b7c",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Handlers/GetDashboardQueryHandler.cs": {
-    "mtime": 1787783205.1097257,
-    "seen": 1787783389.7458062,
+    "mtime": 1794694012.804188,
+    "seen": 1794694144.4244359,
     "ast_hash": "609e4de1f1793d32354b27472648045c",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Handlers/GetFilingsQueryHandler.cs": {
-    "mtime": 1787783205.1097257,
-    "seen": 1787783389.7458081,
+    "mtime": 1794694012.8072221,
+    "seen": 1794694144.424438,
     "ast_hash": "be664e245fe847d6d75b603c9c82d0a2",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Handlers/GetHolidayConfQueryHandler.cs": {
-    "mtime": 1787783205.1097257,
-    "seen": 1787783389.74581,
+    "mtime": 1794694012.808772,
+    "seen": 1794694144.42444,
     "ast_hash": "574ee178e5492a526d10a98fa49b1467",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Handlers/GetImportersQueryHandler.cs": {
-    "mtime": 1787783205.1097257,
-    "seen": 1787783389.7458117,
+    "mtime": 1794694012.8106515,
+    "seen": 1794694144.4244418,
     "ast_hash": "1eb5112520883f0c0ad33650bc5cb8ac",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Handlers/GetMailboxesQueryHandler.cs": {
-    "mtime": 1787783205.1097257,
-    "seen": 1787783389.7458131,
+    "mtime": 1794694012.8125672,
+    "seen": 1794694144.424444,
     "ast_hash": "50fa53d1492ec3bc470cb7c0a8331eb3",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Handlers/GetReportsQueryHandler.cs": {
-    "mtime": 1787783205.1097257,
-    "seen": 1787783389.7458153,
+    "mtime": 1794694012.8143213,
+    "seen": 1794694144.4244459,
     "ast_hash": "b3093cfb6d2166566c1f806f04f79723",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Handlers/GetTaxpayerProfileQueryHandler.cs": {
-    "mtime": 1787783205.1097257,
-    "seen": 1787783389.745817,
+    "mtime": 1794694012.817477,
+    "seen": 1794694144.424448,
     "ast_hash": "1023c4fc0d4f1bbbbc8a3c491c44f49f",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Handlers/GetUserPreferenceQueryHandler.cs": {
-    "mtime": 1787783205.1097257,
-    "seen": 1787783389.74582,
+    "mtime": 1794694012.8202293,
+    "seen": 1794694144.4244502,
     "ast_hash": "3d444c1d55a20d46f2ff7b2bd55dc86d",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Handlers/ImportHolidaysFromWebCommandHandler.cs": {
-    "mtime": 1787783205.1097257,
-    "seen": 1787783389.7458215,
+    "mtime": 1794694012.823176,
+    "seen": 1794694144.424452,
     "ast_hash": "00c50ece6522732edea5a2c6c13a349a",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Handlers/ImportReportCommandHandler.cs": {
-    "mtime": 1787783205.1097257,
-    "seen": 1787783389.745823,
+    "mtime": 1794694012.8245137,
+    "seen": 1794694144.4244542,
     "ast_hash": "f67d402f8545894e2f7d8e2bdbcc1a1a",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Handlers/ProcessReportsCommandHandler.cs": {
-    "mtime": 1787783205.1097257,
-    "seen": 1787783389.7458243,
+    "mtime": 1794694012.8260386,
+    "seen": 1794694144.4244561,
     "ast_hash": "e6bff719212869fca63f1b8fdc1bf4e3",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Handlers/SaveHolidayConfCommandHandler.cs": {
-    "mtime": 1787783205.1097257,
-    "seen": 1787783389.7458255,
+    "mtime": 1794694012.829537,
+    "seen": 1794694144.424458,
     "ast_hash": "f9b7cc359be0a5b6b0a03118cc6085d9",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Handlers/SaveTaxpayerProfileCommandHandler.cs": {
-    "mtime": 1787783205.1097257,
-    "seen": 1787783389.745827,
+    "mtime": 1794694012.8310528,
+    "seen": 1794694144.42446,
     "ast_hash": "cb0131b4372d91ae54767137d9fbb2f6",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Handlers/SetUserPreferenceCommandHandler.cs": {
-    "mtime": 1787783205.1097257,
-    "seen": 1787783389.7458289,
+    "mtime": 1794694012.8331733,
+    "seen": 1794694144.424462,
     "ast_hash": "8062247a8ce9cc334f9ba6a5d15929f9",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Handlers/SyncAllCommandHandler.cs": {
-    "mtime": 1787783205.1097257,
-    "seen": 1787783389.74583,
+    "mtime": 1794694012.8348098,
+    "seen": 1794694144.4244642,
     "ast_hash": "b0b686e11e3bbf33a732d755a2a489ea",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Handlers/SyncMailboxCommandHandler.cs": {
-    "mtime": 1787783205.1097257,
-    "seen": 1787783389.7458317,
+    "mtime": 1794694012.8358788,
+    "seen": 1794694144.4244661,
     "ast_hash": "e076ee6a770d972c28686849070b7b99",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Handlers/UpdateFilingStatusCommandHandler.cs": {
-    "mtime": 1787783205.1097257,
-    "seen": 1787783389.745833,
+    "mtime": 1794694012.8374076,
+    "seen": 1794694144.4244683,
     "ast_hash": "8a4f3eb86ece262fc689b2fbcb2d2151",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Handlers/UpdateImporterCommandHandler.cs": {
-    "mtime": 1787783205.1121109,
-    "seen": 1787783389.7458346,
+    "mtime": 1794694012.840277,
+    "seen": 1794694144.4244702,
     "ast_hash": "be394f50921bee326ab199382542ab5a",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Handlers/UpdateMailboxCommandHandler.cs": {
-    "mtime": 1787783205.1121109,
-    "seen": 1787783389.7458358,
+    "mtime": 1794694012.840277,
+    "seen": 1794694144.4244723,
     "ast_hash": "e58cd072460e7d1228c15fd603bc9051",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Handlers/UpdatePaymentReferenceCommandHandler.cs": {
-    "mtime": 1787783205.1121109,
-    "seen": 1787783389.7458372,
+    "mtime": 1794694012.843979,
+    "seen": 1794694144.4244745,
     "ast_hash": "0dac7e5374bddd7c25d5d677cf00b666",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Interfaces/ICommandHandler.cs": {
-    "mtime": 1787783205.1121109,
-    "seen": 1787783389.7458389,
+    "mtime": 1794694012.846636,
+    "seen": 1794694144.4244764,
     "ast_hash": "4cc60fe2335e3bc0583e55918d5bffca",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Interfaces/ICredentialStore.cs": {
-    "mtime": 1787783205.114869,
-    "seen": 1787783389.7458403,
+    "mtime": 1794694012.8482025,
+    "seen": 1794694144.4244785,
     "ast_hash": "3919ac72efcfab401975c74a7c0460df",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Interfaces/IDatabaseInitializer.cs": {
-    "mtime": 1787783205.114869,
-    "seen": 1787783389.7458422,
+    "mtime": 1794694012.850509,
+    "seen": 1794694144.4244804,
     "ast_hash": "5014591af7cb6c43c2b904dfd3a8034e",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Interfaces/IExchangeRateFetcher.cs": {
-    "mtime": 1787783205.114869,
-    "seen": 1787783389.7458434,
+    "mtime": 1794694012.8521202,
+    "seen": 1794694144.4244823,
     "ast_hash": "f99218732141478a79d4a48b275d8c4f",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Interfaces/IExchangeRateResolver.cs": {
-    "mtime": 1787783205.114869,
-    "seen": 1787783389.745845,
+    "mtime": 1794694012.8537993,
+    "seen": 1794694144.4244843,
     "ast_hash": "565ce01a6835958d0f0d510d234e7309",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Interfaces/IHolidayImporter.cs": {
-    "mtime": 1787783205.114869,
-    "seen": 1787783389.7458467,
+    "mtime": 1794694012.8554914,
+    "seen": 1794694144.4244864,
     "ast_hash": "c6a41b29b4a90b142b40850a6d937503",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Interfaces/IInfrastructureRegistrar.cs": {
-    "mtime": 1787783205.114869,
-    "seen": 1787783389.7458482,
+    "mtime": 1794694012.8572536,
+    "seen": 1794694144.4244883,
     "ast_hash": "fad4a91216c4e9dca02c6fddbc59fe65",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Interfaces/IMailboxSyncService.cs": {
-    "mtime": 1787783205.114869,
-    "seen": 1787783389.7458498,
+    "mtime": 1794694012.8587973,
+    "seen": 1794694144.4244902,
     "ast_hash": "a503591356dfc410f88ca235b3bb2bbf",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Interfaces/IQueryHandler.cs": {
-    "mtime": 1787783205.114869,
-    "seen": 1787783389.7458518,
+    "mtime": 1794694012.8604884,
+    "seen": 1794694144.4244926,
     "ast_hash": "9ae9f8e731ca97b0c0b539cb7082fc87",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Interfaces/IStatementParser.cs": {
-    "mtime": 1787783205.114869,
-    "seen": 1787783389.7458537,
+    "mtime": 1794694012.862136,
+    "seen": 1794694144.4244945,
     "ast_hash": "b77ef409464751641ac6623cbbbf532d",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Interfaces/ISyncAllCommandHandler.cs": {
-    "mtime": 1787783205.114869,
-    "seen": 1787783389.745855,
+    "mtime": 1794694012.862136,
+    "seen": 1794694144.4244964,
     "ast_hash": "fa129a904199a090fd83786b5c4e1546",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Interfaces/ISyncMailboxCommandHandler.cs": {
-    "mtime": 1787783205.114869,
-    "seen": 1787783389.7458568,
+    "mtime": 1794694012.8641658,
+    "seen": 1794694144.4244983,
     "ast_hash": "15c5dec8656d56f1ce4fbe7cfc352bd2",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Interfaces/IUpdateService.cs": {
-    "mtime": 1787783205.114869,
-    "seen": 1787783389.7458582,
+    "mtime": 1794694012.8661766,
+    "seen": 1794694144.4245005,
     "ast_hash": "8ea45f416872cdc0fd5d393ce20f2003",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Interfaces/IXmlFilingSerializer.cs": {
-    "mtime": 1787783205.114869,
-    "seen": 1787783389.7458603,
+    "mtime": 1794694012.8681884,
+    "seen": 1794694144.4245026,
     "ast_hash": "00a6eb6097465118f727dbb9594f819f",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Parsing/DividendRecord.cs": {
-    "mtime": 1787783205.114869,
-    "seen": 1787783389.7458625,
+    "mtime": 1794694012.8692086,
+    "seen": 1794694144.4245045,
     "ast_hash": "fb7d265e93c8cd7bee658556632340cf",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Parsing/IbkrExchangeRate.cs": {
-    "mtime": 1787783205.1169972,
-    "seen": 1787783389.7458642,
+    "mtime": 1794694012.8722932,
+    "seen": 1794694144.4245067,
     "ast_hash": "2e45407b01191beabe447c8f4225a368",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Parsing/InterestRecord.cs": {
-    "mtime": 1787783205.1169972,
-    "seen": 1787783389.745866,
+    "mtime": 1794694012.87387,
+    "seen": 1794694144.4245083,
     "ast_hash": "2bbab2510ab5fd96f25b2c8d05ccd2e7",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Parsing/InterestType.cs": {
-    "mtime": 1787783205.1169972,
-    "seen": 1787783389.7458675,
+    "mtime": 1794694012.87387,
+    "seen": 1794694144.4245105,
     "ast_hash": "0af1b819817b13441ad738acbed69331",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Parsing/ParseError.cs": {
-    "mtime": 1787783205.1169972,
-    "seen": 1787783389.7458694,
+    "mtime": 1794694012.8771427,
+    "seen": 1794694144.4245126,
     "ast_hash": "90ee088370ecb0f654f2caad5dd6884d",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Parsing/StatementParseResult.cs": {
-    "mtime": 1787783205.1169972,
-    "seen": 1787783389.7458713,
+    "mtime": 1794694012.8781824,
+    "seen": 1794694144.4245148,
     "ast_hash": "237cdba7fde061bc0faa7330a74247e1",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Parsing/WithholdingTaxRecord.cs": {
-    "mtime": 1787783205.1169972,
-    "seen": 1787783389.745873,
+    "mtime": 1794694012.8797088,
+    "seen": 1794694144.424517,
     "ast_hash": "0172b55e8f9496e144011e977aac6a08",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Queries/FilingColumnFilter.cs": {
-    "mtime": 1787783205.1169972,
-    "seen": 1787783389.7458742,
+    "mtime": 1794694012.8823004,
+    "seen": 1794694144.4245188,
     "ast_hash": "a7e9f5724fd7d169e7981e9906882285",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Queries/GetDashboardQuery.cs": {
-    "mtime": 1787783205.1183424,
-    "seen": 1787783389.7458756,
+    "mtime": 1794694012.8840547,
+    "seen": 1794694144.4245207,
     "ast_hash": "bfb9312cc5f806a75324a0908b82846c",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Queries/GetFilingsQuery.cs": {
-    "mtime": 1787783205.1183424,
-    "seen": 1787783389.7458773,
+    "mtime": 1794694012.8859248,
+    "seen": 1794694144.424523,
     "ast_hash": "20709c85f4c02111e4933c9ec6245ab7",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Queries/GetHolidayConfQuery.cs": {
-    "mtime": 1787783205.1183424,
-    "seen": 1787783389.7458794,
+    "mtime": 1794694012.8876605,
+    "seen": 1794694144.4245248,
     "ast_hash": "4aa6f9dd1c9dd2fc8d8e180fdd3bac41",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Queries/GetImportersQuery.cs": {
-    "mtime": 1787783205.1183424,
-    "seen": 1787783389.7458808,
+    "mtime": 1794694012.8887658,
+    "seen": 1794694144.4245267,
     "ast_hash": "91fd924b361849867207ab7325ca6e82",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Queries/GetMailboxesQuery.cs": {
-    "mtime": 1787783205.1183424,
-    "seen": 1787783389.7458825,
+    "mtime": 1794694012.89043,
+    "seen": 1794694144.4245286,
     "ast_hash": "a05c57885644c48ee20c353a1d2c55dd",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Queries/GetReportsQuery.cs": {
-    "mtime": 1787783205.1183424,
-    "seen": 1787783389.7458842,
+    "mtime": 1794694012.891549,
+    "seen": 1794694144.4245307,
     "ast_hash": "8bb2ceb2a53b9ff0ac4a319b1954b450",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Queries/GetTaxpayerProfileQuery.cs": {
-    "mtime": 1787783205.1183424,
-    "seen": 1787783389.7458856,
+    "mtime": 1794694012.8926842,
+    "seen": 1794694144.4245327,
     "ast_hash": "6c7148698185c0398b6f5c3d9aef2656",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Queries/GetUserPreferenceQuery.cs": {
-    "mtime": 1787783205.1183424,
-    "seen": 1787783389.7458875,
+    "mtime": 1794694012.8938642,
+    "seen": 1794694144.4245348,
     "ast_hash": "8bc548936909b82f52681935ddeb8fda",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Queries/IPaginatedQuery.cs": {
-    "mtime": 1787783205.1183424,
-    "seen": 1787783389.745889,
+    "mtime": 1794694012.8957195,
+    "seen": 1794694144.424537,
     "ast_hash": "f662f63228b36e0d3c286814c7464d3a",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Rentier.Application.csproj": {
-    "mtime": 1787783205.1183424,
-    "seen": 1787783389.7458906,
-    "ast_hash": "86d932295cc2aa9c29701aaf076bd0dd",
+    "mtime": 1794694012.8968298,
+    "seen": 1794694144.4245386,
+    "ast_hash": "abc6218dbe7060350791c9785cf2c07f",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Repositories/IExchangeRateCacheRepository.cs": {
-    "mtime": 1787783205.1183424,
-    "seen": 1787783389.745892,
+    "mtime": 1794694012.8995304,
+    "seen": 1794694144.4245408,
     "ast_hash": "4991ab61389bc78ff119fe7f8ca11f0d",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Repositories/IFilingRepository.cs": {
-    "mtime": 1787783205.1197581,
-    "seen": 1787783389.7458942,
+    "mtime": 1794694012.9022965,
+    "seen": 1794694144.4245427,
     "ast_hash": "33049a7a39afafb82e84f16fdecabd74",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Repositories/IHolidayRepository.cs": {
-    "mtime": 1787783205.1197581,
-    "seen": 1787783389.7458954,
+    "mtime": 1794694012.9029782,
+    "seen": 1794694144.4245448,
     "ast_hash": "a84f3e8ff202982574ec129120f40f6d",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Repositories/IImporterRepository.cs": {
-    "mtime": 1787783205.1197581,
-    "seen": 1787783389.7458975,
+    "mtime": 1794694012.9050024,
+    "seen": 1794694144.4245465,
     "ast_hash": "d04723a6c891d8fd6d2044f2c55acc12",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Repositories/IMailboxRepository.cs": {
-    "mtime": 1787783205.1197581,
-    "seen": 1787783389.745899,
+    "mtime": 1794694012.9070146,
+    "seen": 1794694144.4245486,
     "ast_hash": "7ff9feb6c76b028498d9753d23eff1a2",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Repositories/IReportRepository.cs": {
-    "mtime": 1787783205.1197581,
-    "seen": 1787783389.7459004,
+    "mtime": 1794694012.9090273,
+    "seen": 1794694144.4245508,
     "ast_hash": "282b04d11b958f5147e158d6403556f4",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Repositories/ITaxpayerProfileRepository.cs": {
-    "mtime": 1787783205.1197581,
-    "seen": 1787783389.7459018,
+    "mtime": 1794694012.9113922,
+    "seen": 1794694144.4245524,
     "ast_hash": "b46462e0423dfaa477dec00350c51aa9",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Repositories/IUserPreferenceRepository.cs": {
-    "mtime": 1787783205.1197581,
-    "seen": 1787783389.7459033,
+    "mtime": 1794694012.9124026,
+    "seen": 1794694144.4245546,
     "ast_hash": "82bf17489e1208db3e985833be705ad1",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Services/ExchangeRateResolver.cs": {
-    "mtime": 1787783205.1197581,
-    "seen": 1787783389.7459047,
+    "mtime": 1794694012.9165323,
+    "seen": 1794694144.4245567,
     "ast_hash": "aeb6ab9635af58d867b10028a26ce24b",
     "semantic_hash": ""
   },
   "src/Rentier.Application/Services/ManualFilingCalculator.cs": {
-    "mtime": 1787783205.1211824,
-    "seen": 1787783389.745906,
+    "mtime": 1794694012.919075,
+    "seen": 1794694144.4245586,
     "ast_hash": "72e4d20a6856009173fb85bfdd04473a",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/App.axaml.cs": {
-    "mtime": 1787783205.1218832,
-    "seen": 1787783389.745908,
+    "mtime": 1794694012.9241686,
+    "seen": 1794694144.4245746,
     "ast_hash": "e5a826c304563ac4869da1467c69d2dc",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Composition/CompositionRoot.cs": {
-    "mtime": 1787783205.132619,
-    "seen": 1787783389.74591,
+    "mtime": 1794694012.9504218,
+    "seen": 1794694144.4245822,
     "ast_hash": "604017b7c475f42caa9d87516eb05ac0",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Converters/BoolToDoubleConverter.cs": {
-    "mtime": 1787783205.132619,
-    "seen": 1787783389.7459116,
+    "mtime": 1794694012.9524376,
+    "seen": 1794694144.4245882,
     "ast_hash": "2b359c24e4677b6b5fdfe9e4d8c51278",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Converters/ComparisonOperatorIndexConverter.cs": {
-    "mtime": 1787783205.1337202,
-    "seen": 1787783389.7459133,
+    "mtime": 1794694012.9544497,
+    "seen": 1794694144.4245925,
     "ast_hash": "b93930355edb2c02357d42403f258944",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Converters/DateOnlyToStringConverter.cs": {
-    "mtime": 1787783205.1337202,
-    "seen": 1787783389.745915,
+    "mtime": 1794694012.9580019,
+    "seen": 1794694144.424596,
     "ast_hash": "0093affcd631bfcfaaf70ccb72c95eff",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Converters/DuplicateStrategyDisplayConverter.cs": {
-    "mtime": 1787783205.1337202,
-    "seen": 1787783389.7459264,
+    "mtime": 1794694012.9600163,
+    "seen": 1794694144.424602,
     "ast_hash": "9c1904448088cb8061974f6df03de366",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Converters/FilingStatusBrushConverter.cs": {
-    "mtime": 1787783205.1337202,
-    "seen": 1787783389.7459288,
+    "mtime": 1794694012.9620302,
+    "seen": 1794694144.4246068,
     "ast_hash": "ad74819d253f32c9368e67d947855efe",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Converters/FilingStatusDisplayConverter.cs": {
-    "mtime": 1787783205.1337202,
-    "seen": 1787783389.74593,
+    "mtime": 1794694012.9643893,
+    "seen": 1794694144.4246123,
     "ast_hash": "f258fc47fa88d18fa349d208556a7bc2",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Converters/FilterActiveConverter.cs": {
-    "mtime": 1787783205.1337202,
-    "seen": 1787783389.7459316,
+    "mtime": 1794694012.9659324,
+    "seen": 1794694144.424616,
     "ast_hash": "f414f79e52c05917375e124d6f6c90d2",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Converters/IncomeTypeDisplayConverter.cs": {
-    "mtime": 1787783205.1337202,
-    "seen": 1787783389.7459328,
+    "mtime": 1794694012.967964,
+    "seen": 1794694144.4246197,
     "ast_hash": "1339735b13eac30a8b47c784887d7a5c",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Converters/IndentToMarginConverter.cs": {
-    "mtime": 1787783205.1337202,
-    "seen": 1787783389.7459345,
+    "mtime": 1794694012.9699788,
+    "seen": 1794694144.4246233,
     "ast_hash": "74175cf4b03f7ee222073e4670c418e8",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Converters/InvertBoolConverter.cs": {
-    "mtime": 1787783205.1337202,
-    "seen": 1787783389.7459362,
+    "mtime": 1794694012.9709918,
+    "seen": 1794694144.4246266,
     "ast_hash": "670d60ed2b2d278b4b9c2d474363d229",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Converters/NullableDateOnlyConverter.cs": {
-    "mtime": 1787783205.1337202,
-    "seen": 1787783389.7459376,
+    "mtime": 1794694012.9735234,
+    "seen": 1794694144.4246306,
     "ast_hash": "74bf63acb359b0a316f21962730f74b4",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Converters/NullableIntConverter.cs": {
-    "mtime": 1787783205.1337202,
-    "seen": 1787783389.7459395,
+    "mtime": 1794694012.975574,
+    "seen": 1794694144.4246364,
     "ast_hash": "2fa84d37171237f3beafee8dcaf048ba",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Converters/NullableReportStatusConverter.cs": {
-    "mtime": 1787783205.1337202,
-    "seen": 1787783389.745941,
+    "mtime": 1794694012.975574,
+    "seen": 1794694144.4246447,
     "ast_hash": "2692215d6bdf56016aa0b713d58e821d",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Converters/ReportStatusDisplayConverter.cs": {
-    "mtime": 1787783205.1337202,
-    "seen": 1787783389.7459426,
+    "mtime": 1794694012.977587,
+    "seen": 1794694144.424652,
     "ast_hash": "6caf2273ff19922765a0cd69903631c8",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Converters/ReportTypeDisplayConverter.cs": {
-    "mtime": 1787783205.1337202,
-    "seen": 1787783389.7459438,
+    "mtime": 1794694012.980172,
+    "seen": 1794694144.4246576,
     "ast_hash": "c97f0885f2f6e2a3f6f64a9e64f8534a",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Converters/SortArrowConverter.cs": {
-    "mtime": 1787783205.1337202,
-    "seen": 1787783389.7459457,
+    "mtime": 1794694012.982213,
+    "seen": 1794694144.4246607,
     "ast_hash": "bf28e01416a6f83b2b7987dad7bc9012",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Converters/SyncModeDisplayConverter.cs": {
-    "mtime": 1787783205.1337202,
-    "seen": 1787783389.7459471,
+    "mtime": 1794694012.9837277,
+    "seen": 1794694144.424663,
     "ast_hash": "618350b54a680ef0d7cfb718a16ce272",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Converters/SyncSeverityBrushConverter.cs": {
-    "mtime": 1787783205.1337202,
-    "seen": 1787783389.745949,
+    "mtime": 1794694012.985684,
+    "seen": 1794694144.4246657,
     "ast_hash": "b9392e70fb9581e99a5c882c76e40bb9",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Dialogs/ConfirmDialogHelper.cs": {
-    "mtime": 1787783205.1337202,
-    "seen": 1787783389.7459507,
+    "mtime": 1794694012.989711,
+    "seen": 1794694144.4246678,
     "ast_hash": "ce4882392312a5d851371f623b5c344e",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Dialogs/ImportDialogHelper.cs": {
-    "mtime": 1787783205.1370857,
-    "seen": 1787783389.7459526,
+    "mtime": 1794694012.991725,
+    "seen": 1794694144.42467,
     "ast_hash": "e9e6a1ab70dd681cab75fda0df18699d",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Extensions/FilingStatusExtensions.cs": {
-    "mtime": 1787783205.1370857,
-    "seen": 1787783389.745954,
+    "mtime": 1794694012.9958632,
+    "seen": 1794694144.4246724,
     "ast_hash": "b6e2842097dc7074e522ee466160ef1b",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Extensions/IncomeTypeExtensions.cs": {
-    "mtime": 1787783205.1376352,
-    "seen": 1787783389.7459555,
+    "mtime": 1794694012.9974067,
+    "seen": 1794694144.4246743,
     "ast_hash": "9cce5c242bdac4e9e530e2405683c04b",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Extensions/ReportTypeExtensions.cs": {
-    "mtime": 1787783205.1376352,
-    "seen": 1787783389.7459571,
+    "mtime": 1794694012.998432,
+    "seen": 1794694144.4246764,
     "ast_hash": "55d90c396695c644b164f5b9468e3db0",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Extensions/ViewActivationExtensions.cs": {
-    "mtime": 1787783205.1376352,
-    "seen": 1787783389.7459583,
+    "mtime": 1794694013.000461,
+    "seen": 1794694144.4246786,
     "ast_hash": "115f69bea56e3fd8acc47db560611016",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Models/CheckableItem.cs": {
-    "mtime": 1787783205.1376352,
-    "seen": 1787783389.7459598,
+    "mtime": 1794694013.0044875,
+    "seen": 1794694144.4246807,
     "ast_hash": "aa9e38de1785203347200e65412c1eae",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Models/FilterOption.cs": {
-    "mtime": 1787783205.1385705,
-    "seen": 1787783389.745961,
+    "mtime": 1794694013.0055015,
+    "seen": 1794694144.4246829,
     "ast_hash": "f889a6ed4059dde11cb908a42b0a853f",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Program.cs": {
-    "mtime": 1787783205.1385705,
-    "seen": 1787783389.7459624,
+    "mtime": 1794694013.0085688,
+    "seen": 1794694144.4246848,
     "ast_hash": "0488a2f96be3caa40e6444fe9e5b3ea2",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Rentier.Desktop.csproj": {
-    "mtime": 1787783205.1385705,
-    "seen": 1787783389.7459645,
-    "ast_hash": "9786bcecc15bbd6475902859c3cfc9ac",
+    "mtime": 1794694013.0113053,
+    "seen": 1794694144.424687,
+    "ast_hash": "01a4c4c86f4b09fe291215023be3a797",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Resources/SrLatnStrings.cs": {
-    "mtime": 1787783205.1385705,
-    "seen": 1787783389.746018,
+    "mtime": 1794694013.0153458,
+    "seen": 1794694144.4246888,
     "ast_hash": "bb2a61a54a05a0d274b091796cced383",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Resources/Strings.Designer.cs": {
-    "mtime": 1787783205.1395981,
-    "seen": 1787783389.7460198,
+    "mtime": 1794694013.0182815,
+    "seen": 1794694144.4246912,
     "ast_hash": "721672fc1f63b5dc94b757bbbd4873c5",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Services/AppVersionService.cs": {
-    "mtime": 1787783205.1395981,
-    "seen": 1787783389.7460213,
+    "mtime": 1794694013.028953,
+    "seen": 1794694144.4246933,
     "ast_hash": "5690259aeb9f5bf8c3c9be2b09cba742",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Services/IAppVersionService.cs": {
-    "mtime": 1787783205.1403816,
-    "seen": 1787783389.7460234,
+    "mtime": 1794694013.031564,
+    "seen": 1794694144.4246955,
     "ast_hash": "be3fdff03b8c86e5432649140dfdaf1d",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Services/ILocalizationService.cs": {
-    "mtime": 1787783205.1403816,
-    "seen": 1787783389.7460248,
+    "mtime": 1794694013.0335953,
+    "seen": 1794694144.4246979,
     "ast_hash": "4554aac87eb04642a0473cddc8bb43f7",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Services/IThemeService.cs": {
-    "mtime": 1787783205.1403816,
-    "seen": 1787783389.746027,
+    "mtime": 1794694013.035638,
+    "seen": 1794694144.4247,
     "ast_hash": "85d93b6ee670dc3d9bc6836168f06b36",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Services/LocalizationService.cs": {
-    "mtime": 1787783205.1403816,
-    "seen": 1787783389.7460287,
+    "mtime": 1794694013.0376525,
+    "seen": 1794694144.4247022,
     "ast_hash": "d48c667978be53a24f190a5cb02337bd",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Services/ThemeService.cs": {
-    "mtime": 1787783205.1403816,
-    "seen": 1787783389.7460306,
+    "mtime": 1794694013.0391698,
+    "seen": 1794694144.4247043,
     "ast_hash": "f58dc092ef8f1a0ecc483fc176283b69",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/ViewLocator.cs": {
-    "mtime": 1787783205.1403816,
-    "seen": 1787783389.7460327,
-    "ast_hash": "ade250be1f7ea5678a60243174d98235",
+    "mtime": 1794694051.947294,
+    "seen": 1794694144.4247062,
+    "ast_hash": "6a211a784d7ca323c938b8b18b5ecb2d",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/ViewModels/AppearanceSettingsViewModel.cs": {
-    "mtime": 1787783205.1403816,
-    "seen": 1787783389.7460344,
+    "mtime": 1794694013.0450542,
+    "seen": 1794694144.4247084,
     "ast_hash": "acf548ac8c8bbed90f7836c9bbff4e89",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/ViewModels/DashboardViewModel.cs": {
-    "mtime": 1787783205.1415527,
-    "seen": 1787783389.7460363,
+    "mtime": 1794694013.0495436,
+    "seen": 1794694144.4247105,
     "ast_hash": "7c1a99bb14acbb1392dabf5df110c549",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/ViewModels/EnumFilterFlyoutViewModel.cs": {
-    "mtime": 1787783205.1415527,
-    "seen": 1787783389.746038,
+    "mtime": 1794694013.052591,
+    "seen": 1794694144.4247122,
     "ast_hash": "0cda1be9356eab05fb47f75a1ca06f39",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/ViewModels/FilingRowViewModel.cs": {
-    "mtime": 1787783205.1415527,
-    "seen": 1787783389.7460403,
+    "mtime": 1794694013.0543723,
+    "seen": 1794694144.4247143,
     "ast_hash": "967387b9ccf6760326be14e027ab24d4",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/ViewModels/FilingsHandlers.cs": {
-    "mtime": 1787783205.1415527,
-    "seen": 1787783389.7460423,
+    "mtime": 1794694013.0600972,
+    "seen": 1794694144.4247162,
     "ast_hash": "e15200f8f50192af2a8d32f0b09af736",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/ViewModels/FilingsViewModel.cs": {
-    "mtime": 1787783205.1415527,
-    "seen": 1787783389.7460446,
+    "mtime": 1794694013.0633745,
+    "seen": 1794694144.4247186,
     "ast_hash": "8ad76873aff420a877d25cb838cd5f4d",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/ViewModels/HolidayEntryViewModel.cs": {
-    "mtime": 1787783205.1415527,
-    "seen": 1787783389.7460465,
+    "mtime": 1794694013.065225,
+    "seen": 1794694144.4247203,
     "ast_hash": "5d62b52aa0471a1119c4040fe4923c5a",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/ViewModels/HolidaySettingsViewModel.cs": {
-    "mtime": 1787783205.1415527,
-    "seen": 1787783389.7460487,
+    "mtime": 1794694013.0690396,
+    "seen": 1794694144.4247224,
     "ast_hash": "f74f4870d5737f572426ed472ba5a471",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/ViewModels/ISelectableRow.cs": {
-    "mtime": 1787783205.1415527,
-    "seen": 1787783389.7460506,
+    "mtime": 1794694013.0717976,
+    "seen": 1794694144.4247246,
     "ast_hash": "3e7b7e191323f427312b11eb7ebe3c40",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/ViewModels/ImporterItemViewModel.cs": {
-    "mtime": 1787783205.1415527,
-    "seen": 1787783389.7460525,
+    "mtime": 1794694013.0736055,
+    "seen": 1794694144.4247265,
     "ast_hash": "93aac6b51dd7bd23b46d7b5ff5956b01",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/ViewModels/ImporterSettingsHandlers.cs": {
-    "mtime": 1787783205.1415527,
-    "seen": 1787783389.7460546,
+    "mtime": 1794694013.075673,
+    "seen": 1794694144.4247286,
     "ast_hash": "fbdfb392414c6916f4df2a01e9105f7e",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/ViewModels/ImporterSettingsViewModel.cs": {
-    "mtime": 1787783205.1415527,
-    "seen": 1787783389.746057,
+    "mtime": 1794694013.0797012,
+    "seen": 1794694144.4247308,
     "ast_hash": "a1714e37ca439e450078e441286a9eef",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/ViewModels/MailboxItemViewModel.cs": {
-    "mtime": 1787783205.1415527,
-    "seen": 1787783389.746059,
+    "mtime": 1794694013.0822475,
+    "seen": 1794694144.4247332,
     "ast_hash": "6bacce23afad2521cc60bb5cd6e341e0",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/ViewModels/MailboxSettingsViewModel.cs": {
-    "mtime": 1787783205.1415527,
-    "seen": 1787783389.746061,
+    "mtime": 1794694013.0842812,
+    "seen": 1794694144.4247353,
     "ast_hash": "6420896e88ce5301bef82f756e0f0d18",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/ViewModels/MainWindowViewModel.cs": {
-    "mtime": 1787783205.1415527,
-    "seen": 1787783389.7460635,
+    "mtime": 1794694013.0883074,
+    "seen": 1794694144.4247372,
     "ast_hash": "70947de9f9bff45b5384915181e16bff",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/ViewModels/ManualFilingViewModel.cs": {
-    "mtime": 1787783205.1415527,
-    "seen": 1787783389.7460651,
+    "mtime": 1794694013.0928717,
+    "seen": 1794694144.4247391,
     "ast_hash": "acc8b577f5f6b7919af9032cb42b77c4",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/ViewModels/NavigationEntry.cs": {
-    "mtime": 1787783205.1415527,
-    "seen": 1787783389.7460666,
+    "mtime": 1794694013.0928717,
+    "seen": 1794694144.424741,
     "ast_hash": "2b76a3a9e4beebe246cc85e72cbb3434",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/ViewModels/PagedSelectionViewModelBase.cs": {
-    "mtime": 1787783205.1415527,
-    "seen": 1787783389.746069,
+    "mtime": 1794694013.1051059,
+    "seen": 1794694144.4247432,
     "ast_hash": "70928ae8dd8776cbdf56245572cb6162",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/ViewModels/ProfileSettingsViewModel.cs": {
-    "mtime": 1787783205.1415527,
-    "seen": 1787783389.7460709,
+    "mtime": 1794694013.1076217,
+    "seen": 1794694144.4247453,
     "ast_hash": "87ed73456bd8525e0aed9e93741ecadc",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/ViewModels/ReportRowViewModel.cs": {
-    "mtime": 1787783205.1415527,
-    "seen": 1787783389.746073,
+    "mtime": 1794694013.1106627,
+    "seen": 1794694144.4247472,
     "ast_hash": "23d7645eda35f93f0eb28b1aa1646eb0",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/ViewModels/ReportsViewModel.cs": {
-    "mtime": 1787783205.1415527,
-    "seen": 1787783389.746075,
+    "mtime": 1794694013.1143928,
+    "seen": 1794694144.4247494,
     "ast_hash": "549ac2e4459732e561d4c9abcfc4c079",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/ViewModels/SyncProgressEntryViewModel.cs": {
-    "mtime": 1787783205.144111,
-    "seen": 1787783389.7460768,
+    "mtime": 1794694013.1164055,
+    "seen": 1794694144.424751,
     "ast_hash": "7572936f53a975d8ccf24d5d23680701",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/ViewModels/SyncViewModel.cs": {
-    "mtime": 1787783205.144111,
-    "seen": 1787783389.7460794,
+    "mtime": 1794694013.1184175,
+    "seen": 1794694144.4247532,
     "ast_hash": "6875254b255131dabc1dc6f91ba06190",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/ViewModels/TextFilterFlyoutViewModel.cs": {
-    "mtime": 1787783205.144111,
-    "seen": 1787783389.7460814,
+    "mtime": 1794694013.1223526,
+    "seen": 1794694144.4247556,
     "ast_hash": "7394df83e9e7a242ccf6ca3d18d7a640",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Views/AppearanceSettingsView.axaml.cs": {
-    "mtime": 1787783205.1472912,
-    "seen": 1787783389.746083,
+    "mtime": 1794694013.1261685,
+    "seen": 1794694144.4247575,
     "ast_hash": "d4eb9cd30d4419b0375ae165dae71d32",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Views/DashboardView.axaml.cs": {
-    "mtime": 1787783205.1472912,
-    "seen": 1787783389.7460854,
+    "mtime": 1794694013.1319246,
+    "seen": 1794694144.4247596,
     "ast_hash": "d4895369d4eb009111ef46c61a2d5dc8",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Views/FilingsView.axaml.cs": {
-    "mtime": 1787783205.1472912,
-    "seen": 1787783389.746087,
+    "mtime": 1794694013.142278,
+    "seen": 1794694144.4247615,
     "ast_hash": "86d187f99085d9d1a4d8c997a2211a72",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Views/HolidaySettingsView.axaml.cs": {
-    "mtime": 1787783205.1472912,
-    "seen": 1787783389.746089,
+    "mtime": 1794694013.1453035,
+    "seen": 1794694144.4247634,
     "ast_hash": "07be280ef019f78fc504a15eba0edf8e",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Views/ImporterSettingsView.axaml.cs": {
-    "mtime": 1787783205.1472912,
-    "seen": 1787783389.7460904,
+    "mtime": 1794694013.149354,
+    "seen": 1794694144.4247656,
     "ast_hash": "e8c3edd0afb4753fd0226f7caf9ae9c3",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Views/MailboxSettingsView.axaml.cs": {
-    "mtime": 1787783205.1472912,
-    "seen": 1787783389.7460923,
+    "mtime": 1794694013.1547754,
+    "seen": 1794694144.4247677,
     "ast_hash": "5d73c2031f860a7b3124942a8e14a5db",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Views/MainWindow.axaml.cs": {
-    "mtime": 1787783205.1472912,
-    "seen": 1787783389.746094,
+    "mtime": 1794694013.159503,
+    "seen": 1794694144.4247699,
     "ast_hash": "b1008a40402d6fe78deccdf12e6ab37e",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Views/ManualFilingView.axaml.cs": {
-    "mtime": 1787783205.1481109,
-    "seen": 1787783389.746096,
+    "mtime": 1794694013.1662343,
+    "seen": 1794694144.4247718,
     "ast_hash": "8086f922d9d56c58a5bfbfad6d1583c1",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Views/ProfileSettingsView.axaml.cs": {
-    "mtime": 1787783205.1481109,
-    "seen": 1787783389.7460976,
+    "mtime": 1794694013.1713724,
+    "seen": 1794694144.424774,
     "ast_hash": "c3be1f314b46735d0a6dea87cec05ddf",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Views/ReportsView.axaml.cs": {
-    "mtime": 1787783205.1481109,
-    "seen": 1787783389.7460997,
+    "mtime": 1794694013.1759386,
+    "seen": 1794694144.4247756,
     "ast_hash": "cd5649aeb21e8cbfcd9ecb6182f6f4fe",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Views/SyncView.axaml.cs": {
-    "mtime": 1787783205.1481109,
-    "seen": 1787783389.746102,
+    "mtime": 1794694013.183643,
+    "seen": 1794694144.4247777,
     "ast_hash": "fb8dd276f5d74930966d22f9840fcc61",
     "semantic_hash": ""
   },
   "src/Rentier.Domain/Entities/Filing.cs": {
-    "mtime": 1787783205.1514723,
-    "seen": 1787783389.7461038,
+    "mtime": 1794694013.1881957,
+    "seen": 1794694144.4247801,
     "ast_hash": "16e9feb04ebd75abeec682363c043599",
     "semantic_hash": ""
   },
   "src/Rentier.Domain/Entities/HolidayYearRange.cs": {
-    "mtime": 1787783205.1517363,
-    "seen": 1787783389.7461057,
+    "mtime": 1794694013.1902363,
+    "seen": 1794694144.424782,
     "ast_hash": "011843cbdc1dbbb7130f5c54eb1a49df",
     "semantic_hash": ""
   },
   "src/Rentier.Domain/Entities/Importer.cs": {
-    "mtime": 1787783205.1517363,
-    "seen": 1787783389.7461073,
+    "mtime": 1794694013.192418,
+    "seen": 1794694144.4247844,
     "ast_hash": "239d6bc917e9e07524c959d180a0a334",
     "semantic_hash": ""
   },
   "src/Rentier.Domain/Entities/Mailbox.cs": {
-    "mtime": 1787783205.1517363,
-    "seen": 1787783389.7461092,
+    "mtime": 1794694013.19443,
+    "seen": 1794694144.4247868,
     "ast_hash": "7ce8e4e3bf247c93a2ecfadc7c771e11",
     "semantic_hash": ""
   },
   "src/Rentier.Domain/Entities/PublicHoliday.cs": {
-    "mtime": 1787783205.1517363,
-    "seen": 1787783389.7461112,
+    "mtime": 1794694013.1964438,
+    "seen": 1794694144.4247887,
     "ast_hash": "31fe31125c98f9d808be1024a153f504",
     "semantic_hash": ""
   },
   "src/Rentier.Domain/Entities/Report.cs": {
-    "mtime": 1787783205.1517363,
-    "seen": 1787783389.7461135,
+    "mtime": 1794694013.1984558,
+    "seen": 1794694144.4247909,
     "ast_hash": "b5d4e7af6047145bbb69c0766c8d5b71",
     "semantic_hash": ""
   },
   "src/Rentier.Domain/Entities/TaxpayerProfile.cs": {
-    "mtime": 1787783205.1517363,
-    "seen": 1787783389.746116,
+    "mtime": 1794694013.200552,
+    "seen": 1794694144.4247925,
     "ast_hash": "1678153655366020fbea9b2ed2374861",
     "semantic_hash": ""
   },
   "src/Rentier.Domain/Entities/UserPreference.cs": {
-    "mtime": 1787783205.1517363,
-    "seen": 1787783389.7461176,
+    "mtime": 1794694013.200552,
+    "seen": 1794694144.4247947,
     "ast_hash": "7c11251501f9f18b6b9a8b6af0834791",
     "semantic_hash": ""
   },
   "src/Rentier.Domain/Enums/DuplicateStrategy.cs": {
-    "mtime": 1787783205.1517363,
-    "seen": 1787783389.7461195,
+    "mtime": 1794694013.203802,
+    "seen": 1794694144.4247966,
     "ast_hash": "9fdd22b44d11b7f32558b2ac4adaf773",
     "semantic_hash": ""
   },
   "src/Rentier.Domain/Enums/ExchangeRateSourceType.cs": {
-    "mtime": 1787783205.1532676,
-    "seen": 1787783389.7461214,
+    "mtime": 1794694013.205833,
+    "seen": 1794694144.4247987,
     "ast_hash": "e88f8545f7419133f5e207bfcac20eaa",
     "semantic_hash": ""
   },
   "src/Rentier.Domain/Enums/FilingStatus.cs": {
-    "mtime": 1787783205.1532676,
-    "seen": 1787783389.7461233,
+    "mtime": 1794694013.207845,
+    "seen": 1794694144.4248009,
     "ast_hash": "dbbfe5a12833e14bd703ad625118c76b",
     "semantic_hash": ""
   },
   "src/Rentier.Domain/Enums/IncomeType.cs": {
-    "mtime": 1787783205.1532676,
-    "seen": 1787783389.7461252,
+    "mtime": 1794694013.2083557,
+    "seen": 1794694144.4248025,
     "ast_hash": "8578f513186a011ac7632644533f9169",
     "semantic_hash": ""
   },
   "src/Rentier.Domain/Enums/ReportStatus.cs": {
-    "mtime": 1787783205.1532676,
-    "seen": 1787783389.7461271,
+    "mtime": 1794694013.2103932,
+    "seen": 1794694144.4248047,
     "ast_hash": "b606e7e2d12d041d2b8b599e3dbc6da7",
     "semantic_hash": ""
   },
   "src/Rentier.Domain/Enums/ReportType.cs": {
-    "mtime": 1787783205.1532676,
-    "seen": 1787783389.746129,
+    "mtime": 1794694013.2103932,
+    "seen": 1794694144.4248064,
     "ast_hash": "8cdd80bb87fdcf2cde2ed3dd5751c2cd",
     "semantic_hash": ""
   },
   "src/Rentier.Domain/Enums/SyncMode.cs": {
-    "mtime": 1787783205.1532676,
-    "seen": 1787783389.7461312,
+    "mtime": 1794694013.2148457,
+    "seen": 1794694144.4248087,
     "ast_hash": "05744b827f4040eb40a8769c78f24a44",
     "semantic_hash": ""
   },
   "src/Rentier.Domain/Exceptions/DomainException.cs": {
-    "mtime": 1787783205.1532676,
-    "seen": 1787783389.746133,
+    "mtime": 1794694013.216959,
+    "seen": 1794694144.4248106,
     "ast_hash": "3389bec1ac9be5256622bfe23cee6da6",
     "semantic_hash": ""
   },
   "src/Rentier.Domain/Properties/AssemblyInfo.cs": {
-    "mtime": 1787783205.1532676,
-    "seen": 1787783389.746135,
+    "mtime": 1794694013.2210052,
+    "seen": 1794694144.4248126,
     "ast_hash": "5d529cca955d4c1c0114b3618897eecc",
     "semantic_hash": ""
   },
   "src/Rentier.Domain/Rentier.Domain.csproj": {
-    "mtime": 1787783205.1532676,
-    "seen": 1787783389.746137,
-    "ast_hash": "8fc7e10900d3e00abc15ebafa9b52616",
+    "mtime": 1794694013.223021,
+    "seen": 1794694144.4248147,
+    "ast_hash": "d27ae29343fe212bd5d754c3c68dcaf1",
     "semantic_hash": ""
   },
   "src/Rentier.Domain/Services/BusinessDayResolver.cs": {
-    "mtime": 1787783205.1532676,
-    "seen": 1787783389.7461388,
+    "mtime": 1794694013.226076,
+    "seen": 1794694144.4248166,
     "ast_hash": "1d980fcdefeb30552b3d5e3ee3050c01",
     "semantic_hash": ""
   },
   "src/Rentier.Domain/Services/FilingDeadlineCalculator.cs": {
-    "mtime": 1787783205.1550717,
-    "seen": 1787783389.746141,
+    "mtime": 1794694013.228111,
+    "seen": 1794694144.4248188,
     "ast_hash": "e18227263f16f12df6930a4a42d7d8d1",
     "semantic_hash": ""
   },
   "src/Rentier.Domain/Services/TaxCalculationService.cs": {
-    "mtime": 1787783205.1550717,
-    "seen": 1787783389.7461426,
+    "mtime": 1794694013.2325404,
+    "seen": 1794694144.4248207,
     "ast_hash": "9cea3f2240691683a98fe1c4178bccd9",
     "semantic_hash": ""
   },
   "src/Rentier.Domain/ValueObjects/ExchangeRate.cs": {
-    "mtime": 1787783205.1550717,
-    "seen": 1787783389.7461443,
+    "mtime": 1794694013.234569,
+    "seen": 1794694144.4248228,
     "ast_hash": "2f3f6043be971f2582367f5dc18f93b0",
     "semantic_hash": ""
   },
   "src/Rentier.Domain/ValueObjects/FilingInfo.cs": {
-    "mtime": 1787783205.1556401,
-    "seen": 1787783389.7461462,
+    "mtime": 1794694013.2364233,
+    "seen": 1794694144.4248245,
     "ast_hash": "1fc8b1026a766e4ac06659feba23e245",
     "semantic_hash": ""
   },
   "src/Rentier.Domain/ValueObjects/FilingProvenance.cs": {
-    "mtime": 1787783205.1556401,
-    "seen": 1787783389.746148,
+    "mtime": 1794694013.2381437,
+    "seen": 1794694144.4248266,
     "ast_hash": "073935be5fea51d71f171c299436f133",
     "semantic_hash": ""
   },
   "src/Rentier.Domain/ValueObjects/HolidayConf.cs": {
-    "mtime": 1787783205.1556401,
-    "seen": 1787783389.7461505,
+    "mtime": 1794694013.24019,
+    "seen": 1794694144.4248288,
     "ast_hash": "e21e2c18dfe436b65b3b9b3e5cfe9228",
     "semantic_hash": ""
   },
   "src/Rentier.Domain/ValueObjects/ImporterDetails.cs": {
-    "mtime": 1787783205.1556401,
-    "seen": 1787783389.7461524,
+    "mtime": 1794694013.2442174,
+    "seen": 1794694144.4248307,
     "ast_hash": "06c42d0972f2528a17115a97d1a6d075",
     "semantic_hash": ""
   },
   "src/Rentier.Domain/ValueObjects/IncomeTaxInput.cs": {
-    "mtime": 1787783205.1556401,
-    "seen": 1787783389.7461553,
+    "mtime": 1794694013.246482,
+    "seen": 1794694144.424833,
     "ast_hash": "3c0b1876edf7a148ec776aba47d9d359",
     "semantic_hash": ""
   },
   "src/Rentier.Domain/ValueObjects/MailboxCursor.cs": {
-    "mtime": 1787783205.1556401,
-    "seen": 1787783389.746158,
+    "mtime": 1794694013.2541206,
+    "seen": 1794694144.424835,
     "ast_hash": "855e32accce734cc2521d63a786bfc79",
     "semantic_hash": ""
   },
   "src/Rentier.Domain/ValueObjects/Money.cs": {
-    "mtime": 1787783205.1556401,
-    "seen": 1787783389.7461596,
+    "mtime": 1794694013.2541206,
+    "seen": 1794694144.424837,
     "ast_hash": "3c22267b63ed5925942bb4bc8fe829a0",
     "semantic_hash": ""
   },
   "src/Rentier.Domain/ValueObjects/SyncParameters.cs": {
-    "mtime": 1787783205.1556401,
-    "seen": 1787783389.7461617,
+    "mtime": 1794694013.2586665,
+    "seen": 1794694144.424839,
     "ast_hash": "abdcf45654604e13fe27ee8e028b3c71",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/DatabaseInitializer.cs": {
-    "mtime": 1787783205.1556401,
-    "seen": 1787783389.7461634,
+    "mtime": 1794694013.261882,
+    "seen": 1794694144.424841,
     "ast_hash": "343d21356ad4bdf321994d52ab847c70",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/ExchangeRates/CompositeExchangeRateFetcher.cs": {
-    "mtime": 1787783205.1574364,
-    "seen": 1787783389.7461653,
+    "mtime": 1794694013.263898,
+    "seen": 1794694144.424843,
     "ast_hash": "551e51fb74c57cb53edab670a28fa6bb",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/ExchangeRates/NbsExchangeRateFetcher.cs": {
-    "mtime": 1787783205.1579103,
-    "seen": 1787783389.746167,
+    "mtime": 1794694013.2679212,
+    "seen": 1794694144.424845,
     "ast_hash": "497151ed41ee7e26f70b1624e31215f1",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/ExchangeRates/NbsWebScraper.cs": {
-    "mtime": 1787783205.1579103,
-    "seen": 1787783389.7461689,
+    "mtime": 1794694013.2714992,
+    "seen": 1794694144.4248471,
     "ast_hash": "087d0a1b788ec6f9162338be45457205",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/InfrastructureRegistrar.cs": {
-    "mtime": 1787783205.1579103,
-    "seen": 1787783389.746171,
+    "mtime": 1794694013.2735345,
+    "seen": 1794694144.4248495,
     "ast_hash": "10470c86c1a24b43577dfc179c26e271",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/InfrastructureServiceExtensions.cs": {
-    "mtime": 1787783205.1579103,
-    "seen": 1787783389.7461724,
+    "mtime": 1794694013.2755494,
+    "seen": 1794694144.4248514,
     "ast_hash": "d1b30fed048dd7034272e4795888db77",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Parsing/IbkrCsvParser.cs": {
-    "mtime": 1787783205.1579103,
-    "seen": 1787783389.7461748,
+    "mtime": 1794694013.2795775,
+    "seen": 1794694144.4248533,
     "ast_hash": "109686ef021f69511016028e8c8bd825",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Persistence/AppDbContext.cs": {
-    "mtime": 1787783205.1579103,
-    "seen": 1787783389.7461765,
+    "mtime": 1794694013.2820945,
+    "seen": 1794694144.4248552,
     "ast_hash": "c662165300c9afe68cf874d089c910fe",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Persistence/AppDbContextDesignTimeFactory.cs": {
-    "mtime": 1787783205.1594768,
-    "seen": 1787783389.7461784,
+    "mtime": 1794694013.283935,
+    "seen": 1794694144.4248571,
     "ast_hash": "2d0a93ca82d7bc161724b47b7bdeda9a",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Persistence/Configurations/ExchangeRateCacheConfiguration.cs": {
-    "mtime": 1787783205.1594768,
-    "seen": 1787783389.7461803,
+    "mtime": 1794694013.2919886,
+    "seen": 1794694144.424859,
     "ast_hash": "f824841509b12e16d6fc1b00a4366b2a",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Persistence/Configurations/FilingConfiguration.cs": {
-    "mtime": 1787783205.159971,
-    "seen": 1787783389.7461824,
+    "mtime": 1794694013.2940118,
+    "seen": 1794694144.4248614,
     "ast_hash": "b7c12f330733d157bac621b053c2e32e",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Persistence/Configurations/HolidayYearRangeConfiguration.cs": {
-    "mtime": 1787783205.159971,
-    "seen": 1787783389.7461846,
+    "mtime": 1794694013.2970204,
+    "seen": 1794694144.4248636,
     "ast_hash": "4dea8e0d42a02e112f670eef8b268f21",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Persistence/Configurations/ImporterConfiguration.cs": {
-    "mtime": 1787783205.159971,
-    "seen": 1787783389.746187,
+    "mtime": 1794694013.2990334,
+    "seen": 1794694144.4248655,
     "ast_hash": "b1cf6ee41f316fda8df2b012d8c7f7ce",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Persistence/Configurations/MailboxConfiguration.cs": {
-    "mtime": 1787783205.159971,
-    "seen": 1787783389.746189,
+    "mtime": 1794694013.301054,
+    "seen": 1794694144.4248676,
     "ast_hash": "f7813a53a7c0ca2fae488a7a6a882639",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Persistence/Configurations/PublicHolidayConfiguration.cs": {
-    "mtime": 1787783205.159971,
-    "seen": 1787783389.7461908,
+    "mtime": 1794694013.3030698,
+    "seen": 1794694144.4248693,
     "ast_hash": "d9dc9652fcf7ba45de0f75b778ebe50f",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Persistence/Configurations/ReportConfiguration.cs": {
-    "mtime": 1787783205.159971,
-    "seen": 1787783389.7461932,
+    "mtime": 1794694013.3050826,
+    "seen": 1794694144.4248714,
     "ast_hash": "ceff6d80c8b124739c63b24a5a0e8d2d",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Persistence/Configurations/TaxpayerProfileConfiguration.cs": {
-    "mtime": 1787783205.159971,
-    "seen": 1787783389.7461953,
+    "mtime": 1794694013.3076336,
+    "seen": 1794694144.4248736,
     "ast_hash": "d755de95b088d1896feb2863cd1e7675",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Persistence/Configurations/UserPreferenceConfiguration.cs": {
-    "mtime": 1787783205.159971,
-    "seen": 1787783389.746197,
+    "mtime": 1794694013.3093884,
+    "seen": 1794694144.4248755,
     "ast_hash": "5775bbddf596e61d1f164b5d3b20a36c",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Persistence/Migrations/20260406120250_0001_InitialCreate.Designer.cs": {
-    "mtime": 1787783205.159971,
-    "seen": 1787783389.7461991,
+    "mtime": 1794694013.3114004,
+    "seen": 1794694144.424878,
     "ast_hash": "0838b6da51d515741bc431d48a21c85b",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Persistence/Migrations/20260406120250_0001_InitialCreate.cs": {
-    "mtime": 1787783205.1614974,
-    "seen": 1787783389.746201,
+    "mtime": 1794694013.312912,
+    "seen": 1794694144.4248796,
     "ast_hash": "e142187c18d2d78323f96a2362692fcf",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Persistence/Migrations/20260406130444_0002_TaxpayerProfile.Designer.cs": {
-    "mtime": 1787783205.1614974,
-    "seen": 1787783389.7462027,
+    "mtime": 1794694013.3149407,
+    "seen": 1794694144.424882,
     "ast_hash": "2481f406666db59266c6c32635e48cb4",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Persistence/Migrations/20260406130444_0002_TaxpayerProfile.cs": {
-    "mtime": 1787783205.1614974,
-    "seen": 1787783389.7462044,
+    "mtime": 1794694013.3169527,
+    "seen": 1794694144.424884,
     "ast_hash": "c66d8b0aba5bdb0ced5cf7675907ad6b",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Persistence/Migrations/20260406142730_0003_HolidayConfiguration.Designer.cs": {
-    "mtime": 1787783205.1614974,
-    "seen": 1787783389.7462063,
+    "mtime": 1794694013.3184664,
+    "seen": 1794694144.4248862,
     "ast_hash": "7386b91b363e1cc48d4a957ee77ceb40",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Persistence/Migrations/20260406142730_0003_HolidayConfiguration.cs": {
-    "mtime": 1787783205.1614974,
-    "seen": 1787783389.7462075,
+    "mtime": 1794694013.320503,
+    "seen": 1794694144.4248884,
     "ast_hash": "0e6fd26cde6b52d9019e8c481199f068",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Persistence/Migrations/20260406144325_0004_MailboxConfiguration.Designer.cs": {
-    "mtime": 1787783205.1614974,
-    "seen": 1787783389.746209,
+    "mtime": 1794694013.3225195,
+    "seen": 1794694144.4248946,
     "ast_hash": "7db432f095cbcc2633543a684915840d",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Persistence/Migrations/20260406144325_0004_MailboxConfiguration.cs": {
-    "mtime": 1787783205.1614974,
-    "seen": 1787783389.7462106,
+    "mtime": 1794694013.324533,
+    "seen": 1794694144.4248965,
     "ast_hash": "f9325369e5baf198def764f77916f151",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Persistence/Migrations/20260406151404_0005_ImporterConfiguration.Designer.cs": {
-    "mtime": 1787783205.1614974,
-    "seen": 1787783389.746212,
+    "mtime": 1794694013.3300922,
+    "seen": 1794694144.424899,
     "ast_hash": "f154ce718bfe15685379d41ff81c6b26",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Persistence/Migrations/20260406151404_0005_ImporterConfiguration.cs": {
-    "mtime": 1787783205.1614974,
-    "seen": 1787783389.746214,
+    "mtime": 1794694013.3328676,
+    "seen": 1794694144.424901,
     "ast_hash": "61f2b252917f0d3ca24eaaeeb5a5a8cb",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Persistence/Migrations/20260407092022_0006_ExchangeRateCache.Designer.cs": {
-    "mtime": 1787783205.1614974,
-    "seen": 1787783389.7462156,
+    "mtime": 1794694013.3348823,
+    "seen": 1794694144.4249032,
     "ast_hash": "7fc006375b096e93865ac8a341fa6f3e",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Persistence/Migrations/20260407092022_0006_ExchangeRateCache.cs": {
-    "mtime": 1787783205.1614974,
-    "seen": 1787783389.7462173,
+    "mtime": 1794694013.3368952,
+    "seen": 1794694144.4249055,
     "ast_hash": "b9717d6032ce782f627c10a0b716a561",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Persistence/Migrations/20260407123817_0007_ReportEnrichment.Designer.cs": {
-    "mtime": 1787783205.1614974,
-    "seen": 1787783389.7462187,
+    "mtime": 1794694013.338908,
+    "seen": 1794694144.4249077,
     "ast_hash": "5a261640f1b73bc3675278d16f6c304c",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Persistence/Migrations/20260407123817_0007_ReportEnrichment.cs": {
-    "mtime": 1787783205.1614974,
-    "seen": 1787783389.7462418,
+    "mtime": 1794694013.3404205,
+    "seen": 1794694144.4249098,
     "ast_hash": "6e077d9e5b40fa9cd9922dd5734a7fde",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Persistence/Migrations/20260407123841_0008_FilingsTable.Designer.cs": {
-    "mtime": 1787783205.1614974,
-    "seen": 1787783389.7462463,
+    "mtime": 1794694013.3426366,
+    "seen": 1794694144.424912,
     "ast_hash": "fc41542355317f7aee6e00798771d344",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Persistence/Migrations/20260407123841_0008_FilingsTable.cs": {
-    "mtime": 1787783205.1614974,
-    "seen": 1787783389.7462492,
+    "mtime": 1794694013.344653,
+    "seen": 1794694144.424914,
     "ast_hash": "56d49e17f2bb004185b9f69dfa3a7846",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Persistence/Migrations/20260407134151_0009_FilingPaymentReference.Designer.cs": {
-    "mtime": 1787783205.1614974,
-    "seen": 1787783389.7462518,
+    "mtime": 1794694013.3466656,
+    "seen": 1794694144.4249163,
     "ast_hash": "9c9d6b8d8921e155b8b488c77160d171",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Persistence/Migrations/20260407134151_0009_FilingPaymentReference.cs": {
-    "mtime": 1787783205.1614974,
-    "seen": 1787783389.7462544,
+    "mtime": 1794694013.3486817,
+    "seen": 1794694144.424918,
     "ast_hash": "87e2580e613f22ee4478c8db0403cc6b",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Persistence/Migrations/20260408180904_0010_SyncReplayControls.Designer.cs": {
-    "mtime": 1787783205.1614974,
-    "seen": 1787783389.7462564,
+    "mtime": 1794694013.3506942,
+    "seen": 1794694144.4249203,
     "ast_hash": "7e5c212ead8d510bac6f3a1bf2f184b3",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Persistence/Migrations/20260408180904_0010_SyncReplayControls.cs": {
-    "mtime": 1787783205.1614974,
-    "seen": 1787783389.7462587,
+    "mtime": 1794694013.3528385,
+    "seen": 1794694144.4249225,
     "ast_hash": "af152f6e2a820b063df4b80540684d8c",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Persistence/Migrations/20260414133946_0012_ReportEmailDate.Designer.cs": {
-    "mtime": 1787783205.1614974,
-    "seen": 1787783389.7462604,
+    "mtime": 1794694013.3548512,
+    "seen": 1794694144.4249244,
     "ast_hash": "ed73cff04b0aff3d9a129e1f9fb80051",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Persistence/Migrations/20260414133946_0012_ReportEmailDate.cs": {
-    "mtime": 1787783205.1614974,
-    "seen": 1787783389.7462628,
+    "mtime": 1794694013.3563643,
+    "seen": 1794694144.4249265,
     "ast_hash": "9c44e84c31a94ce16b2b7d799ebd9551",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Persistence/Migrations/20260421111054_0013_FilingTicker.Designer.cs": {
-    "mtime": 1787783205.1614974,
-    "seen": 1787783389.7462645,
+    "mtime": 1794694013.3583825,
+    "seen": 1794694144.4249284,
     "ast_hash": "9d5b5a384fb5291dab696cabcd1f45af",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Persistence/Migrations/20260421111054_0013_FilingTicker.cs": {
-    "mtime": 1787783205.1614974,
-    "seen": 1787783389.7462664,
+    "mtime": 1794694013.3614855,
+    "seen": 1794694144.4249303,
     "ast_hash": "cf34195c40e6446a49452f32b102c92c",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Persistence/Migrations/20260423112907_0014_UserPreferences.Designer.cs": {
-    "mtime": 1787783205.1614974,
-    "seen": 1787783389.7462685,
+    "mtime": 1794694013.3695612,
+    "seen": 1794694144.4249322,
     "ast_hash": "7fa83bfedfd53a10cbb669ae643b9443",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Persistence/Migrations/20260423112907_0014_UserPreferences.cs": {
-    "mtime": 1787783205.1614974,
-    "seen": 1787783389.7462704,
+    "mtime": 1794694013.3748136,
+    "seen": 1794694144.4249344,
     "ast_hash": "c11557b855981670f4c3300dc5a04ba1",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Persistence/Migrations/20260717000001_0011_FilingRateProvenance.Designer.cs": {
-    "mtime": 1787783205.164111,
-    "seen": 1787783389.7462726,
+    "mtime": 1794694013.3768442,
+    "seen": 1794694144.4249372,
     "ast_hash": "b3c6fc21708904eb4dace1b691578042",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Persistence/Migrations/20260717000001_0011_FilingRateProvenance.cs": {
-    "mtime": 1787783205.164111,
-    "seen": 1787783389.7462742,
+    "mtime": 1794694013.3788586,
+    "seen": 1794694144.4249392,
     "ast_hash": "f40dfe1b3bd8c3e981a5f9d0d5d4b58c",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Persistence/Migrations/20260717000002_0015_FilingPaymentNotes.Designer.cs": {
-    "mtime": 1787783205.164111,
-    "seen": 1787783389.746276,
+    "mtime": 1794694013.3813837,
+    "seen": 1794694144.4249413,
     "ast_hash": "f2423c64ed671f8d94d86a50d1598332",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Persistence/Migrations/20260717000002_0015_FilingPaymentNotes.cs": {
-    "mtime": 1787783205.164111,
-    "seen": 1787783389.7462776,
+    "mtime": 1794694013.3854558,
+    "seen": 1794694144.4249437,
     "ast_hash": "0fe7bef5dacbdfa044156ea7ba4ac2ce",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Persistence/Migrations/AppDbContextModelSnapshot.cs": {
-    "mtime": 1787783205.164111,
-    "seen": 1787783389.7462792,
+    "mtime": 1794694013.3884814,
+    "seen": 1794694144.4249456,
     "ast_hash": "d888d021106f8613bd9513c40116c979",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Rentier.Infrastructure.csproj": {
-    "mtime": 1787783205.164111,
-    "seen": 1787783389.746281,
-    "ast_hash": "a95a6b9ae936bc2b4cc1966d32b00fca",
+    "mtime": 1794694051.9492433,
+    "seen": 1794694144.4249475,
+    "ast_hash": "771a47195a30599a1a32fc7485dd0c24",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Repositories/ExchangeRateCacheRepository.cs": {
-    "mtime": 1787783205.164111,
-    "seen": 1787783389.7462826,
+    "mtime": 1794694013.3930829,
+    "seen": 1794694144.4249494,
     "ast_hash": "377f79f2620d70450e4616787d061362",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Repositories/FilingRepository.cs": {
-    "mtime": 1787783205.167684,
-    "seen": 1787783389.7462847,
+    "mtime": 1794694013.39615,
+    "seen": 1794694144.4249518,
     "ast_hash": "58eb619aa9b1612313c09607e23618dc",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Repositories/HolidayRepository.cs": {
-    "mtime": 1787783205.167684,
-    "seen": 1787783389.7462866,
+    "mtime": 1794694013.3981643,
+    "seen": 1794694144.424954,
     "ast_hash": "4666bcb7ed73a93c59facb7bbd161d68",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Repositories/ImporterRepository.cs": {
-    "mtime": 1787783205.167684,
-    "seen": 1787783389.746288,
+    "mtime": 1794694013.4001784,
+    "seen": 1794694144.4249558,
     "ast_hash": "9ac2463bf7aceacec037d088cc569b62",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Repositories/MailboxRepository.cs": {
-    "mtime": 1787783205.167684,
-    "seen": 1787783389.74629,
+    "mtime": 1794694013.4021943,
+    "seen": 1794694144.424958,
     "ast_hash": "5cea92c32102f8d79b41366dd3461ef8",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Repositories/ReportRepository.cs": {
-    "mtime": 1787783205.167684,
-    "seen": 1787783389.7462914,
+    "mtime": 1794694013.403707,
+    "seen": 1794694144.42496,
     "ast_hash": "e219d5e322147d614cdd07f1d7068213",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Repositories/TaxpayerProfileRepository.cs": {
-    "mtime": 1787783205.167684,
-    "seen": 1787783389.7462933,
+    "mtime": 1794694013.403707,
+    "seen": 1794694144.4249618,
     "ast_hash": "1c6ebe05c5289fa4a4b0ad8071273516",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Repositories/UserPreferenceRepository.cs": {
-    "mtime": 1787783205.167684,
-    "seen": 1787783389.7462947,
+    "mtime": 1794694013.4073367,
+    "seen": 1794694144.4249642,
     "ast_hash": "bee4303e4139efc604df824deb9c5a46",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Scraping/TimeAndDateHolidayScraper.cs": {
-    "mtime": 1787783205.167684,
-    "seen": 1787783389.7462962,
+    "mtime": 1794694013.411385,
+    "seen": 1794694144.424966,
     "ast_hash": "fa09204105c4208a7c9ee5bacf1317c4",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Security/CredentialStoreFactory.cs": {
-    "mtime": 1787783205.167684,
-    "seen": 1787783389.7462974,
+    "mtime": 1794694013.416439,
+    "seen": 1794694144.4249685,
     "ast_hash": "614e7fbdb0f301eb1c1d6a886b54ae35",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Security/LinuxCredentialStore.cs": {
-    "mtime": 1787783205.1691492,
-    "seen": 1787783389.7462988,
+    "mtime": 1794694013.4372926,
+    "seen": 1794694144.4249704,
     "ast_hash": "5c24f93c711f4a47d96b21f583d14a5f",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Security/MacOsCredentialStore.cs": {
-    "mtime": 1787783205.1691492,
-    "seen": 1787783389.7463005,
+    "mtime": 1794694013.4423025,
+    "seen": 1794694144.4249723,
     "ast_hash": "c45c577dd469b434a3041ec43ec3587d",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Security/NullCredentialStore.cs": {
-    "mtime": 1787783205.1691492,
-    "seen": 1787783389.7463021,
+    "mtime": 1794694013.4449465,
+    "seen": 1794694144.4249744,
     "ast_hash": "f604fa3b18f71f12d674383c9e3c1838",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Security/ProviderInfo.cs": {
-    "mtime": 1787783205.1691492,
-    "seen": 1787783389.7463038,
+    "mtime": 1794694013.4449465,
+    "seen": 1794694144.4249763,
     "ast_hash": "98b3cfe1d25480a8514d08e497695902",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Security/WindowsCredentialStore.cs": {
-    "mtime": 1787783205.1691492,
-    "seen": 1787783389.7463052,
+    "mtime": 1794694013.4495633,
+    "seen": 1794694144.4249787,
     "ast_hash": "874708d5bde823a81b3aa9d63b6649af",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Serialization/PpOpoXmlSerializer.cs": {
-    "mtime": 1787783205.1691492,
-    "seen": 1787783389.746307,
+    "mtime": 1794694013.4528165,
+    "seen": 1794694144.424983,
     "ast_hash": "29a84f10a74b68e083b6b161e765e5a7",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Sync/ImapMailboxSyncService.cs": {
-    "mtime": 1787783205.1691492,
-    "seen": 1787783389.7463083,
+    "mtime": 1794694013.4559186,
+    "seen": 1794694144.4249852,
     "ast_hash": "ebe7b5ef58a989bea00927a82c0f5ed8",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Updates/IVelopackManager.cs": {
-    "mtime": 1787783205.1691492,
-    "seen": 1787783389.7463102,
+    "mtime": 1794694013.4610035,
+    "seen": 1794694144.4249873,
     "ast_hash": "c73cfb3969c1344c2d7dc446669ffb9e",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Updates/VelopackManagerAdapter.cs": {
-    "mtime": 1787783205.17125,
-    "seen": 1787783389.746312,
+    "mtime": 1794694013.4630394,
+    "seen": 1794694144.4249897,
     "ast_hash": "af635637d20fd1359f164bd26bb182f8",
     "semantic_hash": ""
   },
   "src/Rentier.Infrastructure/Updates/VelopackUpdateService.cs": {
-    "mtime": 1787783205.17125,
-    "seen": 1787783389.7463138,
+    "mtime": 1794694013.4680834,
+    "seen": 1794694144.4249914,
     "ast_hash": "bf11fc86336bc0022d4a886346f83c63",
     "semantic_hash": ""
   },
   "stryker-config.json": {
-    "mtime": 1787783205.17125,
-    "seen": 1787783389.7463155,
-    "ast_hash": "d7c41e114f87d21122bf5d62fdb076a0",
+    "mtime": 1794694013.4701138,
+    "seen": 1794694144.4249938,
+    "ast_hash": "97411e801d183196a720a766b5c22559",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/AppDbContextSmokeTests.cs": {
-    "mtime": 1787783205.1717515,
-    "seen": 1787783389.7463176,
+    "mtime": 1794694013.4716253,
+    "seen": 1794694144.424996,
     "ast_hash": "c2e5462b76658127f07e208b23161c18",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/DatabaseInitializerTests.cs": {
-    "mtime": 1787783205.172298,
-    "seen": 1787783389.7463188,
+    "mtime": 1794694013.4763072,
+    "seen": 1794694144.4249976,
     "ast_hash": "97635c6827f5fb56a5ad715bf0d4c6d6",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/ExchangeRateCacheRepositoryTests.cs": {
-    "mtime": 1787783205.172298,
-    "seen": 1787783389.7463205,
+    "mtime": 1794694013.4802463,
+    "seen": 1794694144.4249997,
     "ast_hash": "fd86e88a14e745ef20182d18a87535eb",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/ExchangeRates/CompositeExchangeRateFetcherTests.cs": {
-    "mtime": 1787783205.172298,
-    "seen": 1787783389.7463217,
+    "mtime": 1794694013.4822571,
+    "seen": 1794694144.425002,
     "ast_hash": "43d6cb156cb27c5dd20fd3341d826390",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/ExchangeRates/NbsWebScraperTests.cs": {
-    "mtime": 1787783205.173095,
-    "seen": 1787783389.7463229,
+    "mtime": 1794694013.4842737,
+    "seen": 1794694144.425004,
     "ast_hash": "a84bdfc90e5ba5910cf131dbb5427a1b",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/FilingRepositoryTests.cs": {
-    "mtime": 1787783205.173095,
-    "seen": 1787783389.7463245,
+    "mtime": 1794694013.4887602,
+    "seen": 1794694144.4250062,
     "ast_hash": "0aa4b42ba7da7e43a968f78177929217",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/HolidayRepositoryTests.cs": {
-    "mtime": 1787783205.173095,
-    "seen": 1787783389.7463267,
+    "mtime": 1794694013.4887602,
+    "seen": 1794694144.425008,
     "ast_hash": "fcbbca889843963484f56d3026878ac8",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/ImapMailboxSyncServiceTests.cs": {
-    "mtime": 1787783205.173095,
-    "seen": 1787783389.7463286,
+    "mtime": 1794694013.493605,
+    "seen": 1794694144.4250102,
     "ast_hash": "a198071bccc78d114464c6d08d055c41",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/ImapSyncEdgeCaseTests.cs": {
-    "mtime": 1787783205.173095,
-    "seen": 1787783389.74633,
+    "mtime": 1794694013.4946196,
+    "seen": 1794694144.4250119,
     "ast_hash": "caecf5ffc994770ec04457b0ba1c6f20",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/ImapSyncIntegrationTests.cs": {
-    "mtime": 1787783205.173095,
-    "seen": 1787783389.7463322,
+    "mtime": 1794694013.4946196,
+    "seen": 1794694144.425014,
     "ast_hash": "11695065bfad6aba5682ebdca8157cea",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/ImporterRepositoryTests.cs": {
-    "mtime": 1787783205.173095,
-    "seen": 1787783389.7463336,
+    "mtime": 1794694013.4989343,
+    "seen": 1794694144.425016,
     "ast_hash": "372e8604a74d5e6a5376212b08f36223",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/InfrastructureRegistrarSmokeTests.cs": {
-    "mtime": 1787783205.173095,
-    "seen": 1787783389.7463353,
+    "mtime": 1794694013.4989343,
+    "seen": 1794694144.4250178,
     "ast_hash": "3f2ff9110905c4d7d1b39e63f14427f1",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/MailboxRepositoryTests.cs": {
-    "mtime": 1787783205.173095,
-    "seen": 1787783389.7463367,
+    "mtime": 1794694013.4989343,
+    "seen": 1794694144.42502,
     "ast_hash": "5655d6247b8497636951c32becfab0e0",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/Migrations/MigrationBaselineFactory.cs": {
-    "mtime": 1787783205.173095,
-    "seen": 1787783389.7463388,
+    "mtime": 1794694013.4989343,
+    "seen": 1794694144.425022,
     "ast_hash": "9dcb73d3bffeafc76b6b70242c2ab706",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/Migrations/MigrationChainTests.cs": {
-    "mtime": 1787783205.176188,
-    "seen": 1787783389.7463403,
+    "mtime": 1794694013.4989343,
+    "seen": 1794694144.425024,
     "ast_hash": "d4912ea583a66f1c6e7c778c78735332",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/Migrations/MigrationUpgradeTests.cs": {
-    "mtime": 1787783205.176188,
-    "seen": 1787783389.7463422,
+    "mtime": 1794694013.4989343,
+    "seen": 1794694144.4250264,
     "ast_hash": "23ee5fd2ea8aead8bd1d8405cdcaafa1",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/NbsExchangeRateFetcherTests.cs": {
-    "mtime": 1787783205.176188,
-    "seen": 1787783389.7463436,
+    "mtime": 1794694013.509799,
+    "seen": 1794694144.425028,
     "ast_hash": "a043926e6be041204c964086007e51c3",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/Parsers/IbkrCsvParserTests.cs": {
-    "mtime": 1787783205.17721,
-    "seen": 1787783389.7463453,
+    "mtime": 1794694013.5302994,
+    "seen": 1794694144.4250302,
     "ast_hash": "27e989d7cf85f7c965dedc6ecd6d8ab5",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/Parsers/TimeAndDateHolidayScraperTests.cs": {
-    "mtime": 1787783205.17721,
-    "seen": 1787783389.7463472,
+    "mtime": 1794694013.5323312,
+    "seen": 1794694144.4250321,
     "ast_hash": "3ed541202014246a86eaa31cdb876018",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/Persistence/FilingTickerPersistenceTests.cs": {
-    "mtime": 1787783205.17721,
-    "seen": 1787783389.7463489,
+    "mtime": 1794694013.5323312,
+    "seen": 1794694144.4250345,
     "ast_hash": "840299dc0f53e7cf3db5fc13eec88701",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/Rentier.Infrastructure.Tests.csproj": {
-    "mtime": 1787783205.17721,
-    "seen": 1787783389.7463505,
-    "ast_hash": "e8e3fb4832d3269316677a832663c995",
+    "mtime": 1794694013.5371027,
+    "seen": 1794694144.4250362,
+    "ast_hash": "898146c50f98857570b24c0d3e976beb",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/ReportRepositoryTests.cs": {
-    "mtime": 1787783205.17721,
-    "seen": 1787783389.7463522,
+    "mtime": 1794694013.5371027,
+    "seen": 1794694144.4250383,
     "ast_hash": "014d9be55df92d3bea6aca58dc1df2ad",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/Repositories/ExchangeRateCacheRepositoryEdgeCaseTests.cs": {
-    "mtime": 1787783205.17721,
-    "seen": 1787783389.7463536,
+    "mtime": 1794694013.5403607,
+    "seen": 1794694144.4250405,
     "ast_hash": "3d3f87ed862fbe4ac87d8a4bbc9f64e4",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/Repositories/FilingRepositoryColumnFilterTests.cs": {
-    "mtime": 1787783205.181131,
-    "seen": 1787783389.746356,
+    "mtime": 1794694013.5434015,
+    "seen": 1794694144.4250426,
     "ast_hash": "ce7157cfa6f8c5ad8170d1407bbf4adc",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/Repositories/FilingRepositoryDashboardTests.cs": {
-    "mtime": 1787783205.181131,
-    "seen": 1787783389.7463577,
+    "mtime": 1794694013.544989,
+    "seen": 1794694144.4250448,
     "ast_hash": "ac60a5c035aae6629a2047dde60fa4d9",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/Repositories/MailboxRepositoryCursorTests.cs": {
-    "mtime": 1787783205.181131,
-    "seen": 1787783389.746359,
+    "mtime": 1794694013.5470538,
+    "seen": 1794694144.4250467,
     "ast_hash": "234ec94949b60616d42bd1de4e2b2f20",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/Repositories/ReportRepositoryFilterTests.cs": {
-    "mtime": 1787783205.181131,
-    "seen": 1787783389.7463644,
+    "mtime": 1794694013.551128,
+    "seen": 1794694144.425049,
     "ast_hash": "0ad833a0b1a39f3c8ee55c77220022c8",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/Repositories/UserPreferenceRepositoryTests.cs": {
-    "mtime": 1787783205.181131,
-    "seen": 1787783389.7463658,
+    "mtime": 1794694013.5521395,
+    "seen": 1794694144.4250512,
     "ast_hash": "003cc1917279fc7f3d0816ac1c68468e",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/Security/CredentialStoreFactoryTests.cs": {
-    "mtime": 1787783205.181131,
-    "seen": 1787783389.7463667,
+    "mtime": 1794694013.5537405,
+    "seen": 1794694144.4250531,
     "ast_hash": "051d662773f6129e23ed2c1237dd0bc1",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/Security/LinuxCredentialStoreTests.cs": {
-    "mtime": 1787783205.1828523,
-    "seen": 1787783389.746368,
+    "mtime": 1794694013.5537405,
+    "seen": 1794694144.4250553,
     "ast_hash": "a07e4d3f388d7ab5298dd0a802c73eb4",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/Security/MacOsCredentialStoreTests.cs": {
-    "mtime": 1787783205.1828523,
-    "seen": 1787783389.7463691,
+    "mtime": 1794694013.5537405,
+    "seen": 1794694144.425057,
     "ast_hash": "c57e1ea9329ceee74e5eac2c5c64ee68",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/Security/NullCredentialStoreTests.cs": {
-    "mtime": 1787783205.1828523,
-    "seen": 1787783389.7463706,
+    "mtime": 1794694013.5537405,
+    "seen": 1794694144.4250593,
     "ast_hash": "8ab95aabbbb564577ed6c270ad3875e0",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/Security/WindowsCredentialStoreTests.cs": {
-    "mtime": 1787783205.1828523,
-    "seen": 1787783389.7463725,
+    "mtime": 1794694013.5537405,
+    "seen": 1794694144.4250612,
     "ast_hash": "c375819af3e826c77121e43870b0a5f6",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/Serialization/IbkrCsvParserSnapshotTests.cs": {
-    "mtime": 1787783205.1842165,
-    "seen": 1787783389.7463741,
+    "mtime": 1794694013.5634148,
+    "seen": 1794694144.4250631,
     "ast_hash": "36f7f9d960c8c6b9baefa998518c148e",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/Serialization/PpOpoXmlSerializerSnapshotTests.cs": {
-    "mtime": 1787783205.1842165,
-    "seen": 1787783389.746376,
+    "mtime": 1794694013.571884,
+    "seen": 1794694144.4250653,
     "ast_hash": "f033c0bc0623cd360f2595197bc2c7ba",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/Serialization/PpOpoXmlSerializerTests.cs": {
-    "mtime": 1787783205.1842165,
-    "seen": 1787783389.746378,
+    "mtime": 1794694013.577518,
+    "seen": 1794694144.4250672,
     "ast_hash": "99cc8c634524a439c54b3ddce835a679",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/Serialization/PpOpoXmlSerializerUnsupportedTypeTests.cs": {
-    "mtime": 1787783205.1842165,
-    "seen": 1787783389.74638,
+    "mtime": 1794694013.5790775,
+    "seen": 1794694144.4250693,
     "ast_hash": "19231e982831f95065e01b89d9ae3b4d",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/TaxpayerProfileRepositoryTests.cs": {
-    "mtime": 1787783205.1842165,
-    "seen": 1787783389.7463815,
+    "mtime": 1794694013.5816638,
+    "seen": 1794694144.4250715,
     "ast_hash": "8d55e56abc43ad6f4f9f173abc2f9230",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/Updates/UpdateFeedMetadataTests.cs": {
-    "mtime": 1787783205.1842165,
-    "seen": 1787783389.746383,
+    "mtime": 1794694013.5816638,
+    "seen": 1794694144.4250734,
     "ast_hash": "beadc70ca9e74959b362b0a1ec872386",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/Updates/VelopackUpdateServiceTests.cs": {
-    "mtime": 1787783205.1864896,
-    "seen": 1787783389.746384,
+    "mtime": 1794694013.5860977,
+    "seen": 1794694144.4250758,
     "ast_hash": "a7440e0ecf0e41b3cb6cd22cb577a14a",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/VelopackUpdateServiceTests.cs": {
-    "mtime": 1787783205.1864896,
-    "seen": 1787783389.7463853,
+    "mtime": 1794694013.5860977,
+    "seen": 1794694144.425078,
     "ast_hash": "b4a62002fb82820f939064d9c6969974",
     "semantic_hash": ""
   },
   "tests/Rentier.Scenarios.Tests/FilingLifecycleScenario.cs": {
-    "mtime": 1787783205.1864896,
-    "seen": 1787783389.746387,
+    "mtime": 1794694013.5860977,
+    "seen": 1794694144.42508,
     "ast_hash": "33f0ab3148ae73434163754984a065d9",
     "semantic_hash": ""
   },
   "tests/Rentier.Scenarios.Tests/ImportPipelineScenarios.cs": {
-    "mtime": 1787783205.186985,
-    "seen": 1787783389.746389,
+    "mtime": 1794694013.591868,
+    "seen": 1794694144.4250822,
     "ast_hash": "81c1ddafa7ba5bd40776710d28078967",
     "semantic_hash": ""
   },
   "tests/Rentier.Scenarios.Tests/Rentier.Scenarios.Tests.csproj": {
-    "mtime": 1787783205.186985,
-    "seen": 1787783389.7463908,
-    "ast_hash": "54bd8f3bd36d6d7283a947474ffaa445",
+    "mtime": 1794694013.5948257,
+    "seen": 1794694144.4250844,
+    "ast_hash": "e3d917d1fbbd7f5f69de2a8038f0de25",
     "semantic_hash": ""
   },
   "tests/Rentier.Scenarios.Tests/ScenarioFixture.cs": {
-    "mtime": 1787783205.186985,
-    "seen": 1787783389.7463923,
+    "mtime": 1794694013.595835,
+    "seen": 1794694144.4250865,
     "ast_hash": "d06b83cbad9c4a900cc6bf8a23300a26",
     "semantic_hash": ""
   },
   "tests/Rentier.Scenarios.Tests/TaxpayerProfileScenario.cs": {
-    "mtime": 1787783205.186985,
-    "seen": 1787783389.7463942,
+    "mtime": 1794694013.595835,
+    "seen": 1794694144.425089,
     "ast_hash": "0d66e93555d0333088b370b31dcf1e76",
     "semantic_hash": ""
   },
   "tests/Rentier.Tests.Common/Builders/SeedDataBuilder.cs": {
-    "mtime": 1787783205.1880996,
-    "seen": 1787783389.7463956,
+    "mtime": 1794694013.602345,
+    "seen": 1794694144.4250908,
     "ast_hash": "e1d7fe19f1b854afe24ef8b683effb6f",
     "semantic_hash": ""
   },
   "tests/Rentier.Tests.Common/Fakes/FakeCredentialStore.cs": {
-    "mtime": 1787783205.1880996,
-    "seen": 1787783389.746397,
+    "mtime": 1794694013.6041467,
+    "seen": 1794694144.4250932,
     "ast_hash": "6890f03e2ed8b1dc068f102e9294a340",
     "semantic_hash": ""
   },
   "tests/Rentier.Tests.Common/Rentier.Tests.Common.csproj": {
-    "mtime": 1787783205.1880996,
-    "seen": 1787783389.7463984,
-    "ast_hash": "291858b660e03497b6653f73ca0dc819",
+    "mtime": 1794694013.606157,
+    "seen": 1794694144.4250948,
+    "ast_hash": "274ac0b9d325f9cd624f155d67550d54",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/AddImporterCommandHandlerTests.cs": {
-    "mtime": 1787783205.1891673,
-    "seen": 1787783389.7463996,
+    "mtime": 1794694013.6079175,
+    "seen": 1794694144.425097,
     "ast_hash": "d1e3328b3e1d349322a3d9da5d1343f4",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/AddMailboxCommandHandlerTests.cs": {
-    "mtime": 1787783205.189684,
-    "seen": 1787783389.7464015,
+    "mtime": 1794694013.6079175,
+    "seen": 1794694144.425099,
     "ast_hash": "18b0c20e0ef8d46296eca1f17925ded0",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/BulkDeleteFilingsCommandHandlerTests.cs": {
-    "mtime": 1787783205.189684,
-    "seen": 1787783389.7464027,
+    "mtime": 1794694013.611058,
+    "seen": 1794694144.4251013,
     "ast_hash": "a04a625c6feacb0b9c8912cb600216f9",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/BulkDeleteReportsCommandHandlerTests.cs": {
-    "mtime": 1787783205.189684,
-    "seen": 1787783389.7464046,
+    "mtime": 1794694013.612596,
+    "seen": 1794694144.4251037,
     "ast_hash": "edc829f4b6abd0a4117119fe8ac210f0",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/CalculateManualFilingCommandHandlerTests.cs": {
-    "mtime": 1787783205.189684,
-    "seen": 1787783389.746406,
+    "mtime": 1794694013.612596,
+    "seen": 1794694144.4251058,
     "ast_hash": "799a6e5df764f541a486cf2f4dae75f4",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/Common/ErrorCodesTests.cs": {
-    "mtime": 1787783205.189684,
-    "seen": 1787783389.7464077,
+    "mtime": 1794694013.612596,
+    "seen": 1794694144.425108,
     "ast_hash": "d628e971f597139a87e150609eb7b47a",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/Common/HandlerHelperTests.cs": {
-    "mtime": 1787783205.1914907,
-    "seen": 1787783389.7464092,
+    "mtime": 1794694013.612596,
+    "seen": 1794694144.42511,
     "ast_hash": "a692fec58945505b8919d69d3d2c1ba7",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/Common/PaginationValidatorTests.cs": {
-    "mtime": 1787783205.1914907,
-    "seen": 1787783389.7464108,
+    "mtime": 1794694013.612596,
+    "seen": 1794694144.4251122,
     "ast_hash": "b7943c535663237aad441cd9c5268dce",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/Common/SynchronousProgress.cs": {
-    "mtime": 1787783205.1914907,
-    "seen": 1787783389.7464123,
+    "mtime": 1794694013.612596,
+    "seen": 1794694144.4251146,
     "ast_hash": "41700d384409fec03b564be22253e2ee",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/CreateManualFilingCommandHandlerTests.cs": {
-    "mtime": 1787783205.1914907,
-    "seen": 1787783389.7464142,
+    "mtime": 1794694013.612596,
+    "seen": 1794694144.4251168,
     "ast_hash": "c098c2764cd57f41e852691cc334e003",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/CrossRateSynthesisTests.cs": {
-    "mtime": 1787783205.1914907,
-    "seen": 1787783389.7464156,
+    "mtime": 1794694013.6250148,
+    "seen": 1794694144.425119,
     "ast_hash": "bb9628f85392ada1d9844c0d2f3e76d1",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/DTOs/ReportProcessingDetailTests.cs": {
-    "mtime": 1787783205.1914907,
-    "seen": 1787783389.7464168,
+    "mtime": 1794694013.6272044,
+    "seen": 1794694144.425121,
     "ast_hash": "4d0a14978e3cc36858c6a605f7d3fd08",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/DeleteFilingCommandHandlerTests.cs": {
-    "mtime": 1787783205.1914907,
-    "seen": 1787783389.7464185,
+    "mtime": 1794694013.6287947,
+    "seen": 1794694144.425123,
     "ast_hash": "40534775486d085898ba66c8a89d6c62",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/DeleteImporterCommandHandlerTests.cs": {
-    "mtime": 1787783205.1914907,
-    "seen": 1787783389.7464197,
+    "mtime": 1794694013.6298203,
+    "seen": 1794694144.425125,
     "ast_hash": "19ad99b32f230fe70dd58bee3d78c8a8",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/DeleteMailboxCommandHandlerTests.cs": {
-    "mtime": 1787783205.1914907,
-    "seen": 1787783389.7464213,
+    "mtime": 1794694013.6309376,
+    "seen": 1794694144.4251273,
     "ast_hash": "61670cd21cf4c7df2a56e2f92987270f",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/DeleteReportCommandHandlerTests.cs": {
-    "mtime": 1787783205.1921108,
-    "seen": 1787783389.7464228,
+    "mtime": 1794694013.6325884,
+    "seen": 1794694144.4251292,
     "ast_hash": "33ce9693503e85ce5aa9e9f34ede3494",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/DiRegistrationSmokeTests.cs": {
-    "mtime": 1787783205.1921108,
-    "seen": 1787783389.746424,
+    "mtime": 1794694013.634194,
+    "seen": 1794694144.4251313,
     "ast_hash": "c176276be4b4d57a96a0212c00743657",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/EnsureHolidaysSeededCommandHandlerTests.cs": {
-    "mtime": 1787783205.1921108,
-    "seen": 1787783389.7464256,
+    "mtime": 1794694013.6347232,
+    "seen": 1794694144.4251335,
     "ast_hash": "a6951cee2610e0af3a9487b712e3dc8d",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/ExportFilingCommandHandlerTests.cs": {
-    "mtime": 1787783205.1921108,
-    "seen": 1787783389.7464268,
+    "mtime": 1794694013.6374054,
+    "seen": 1794694144.4251356,
     "ast_hash": "24034a95e19b598c40fba2b7c57695f7",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/FetchHolidaysFromWebCommandHandlerTests.cs": {
-    "mtime": 1787783205.1921108,
-    "seen": 1787783389.7464283,
+    "mtime": 1794694013.6391423,
+    "seen": 1794694144.425138,
     "ast_hash": "f5db1ecf8e8f9255d8622cad5491d9d4",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/GetFilingsQueryHandlerTests.cs": {
-    "mtime": 1787783205.1921108,
-    "seen": 1787783389.7464297,
+    "mtime": 1794694013.6391423,
+    "seen": 1794694144.42514,
     "ast_hash": "ccd0a1838db8f8836754737266fd6450",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/GetHolidayConfQueryHandlerTests.cs": {
-    "mtime": 1787783205.1921108,
-    "seen": 1787783389.7464314,
+    "mtime": 1794694013.6391423,
+    "seen": 1794694144.425142,
     "ast_hash": "05d85d534bcc1ebc8d71fabb090db101",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/GetImportersQueryHandlerTests.cs": {
-    "mtime": 1787783205.1921108,
-    "seen": 1787783389.7464328,
+    "mtime": 1794694013.6449337,
+    "seen": 1794694144.4251437,
     "ast_hash": "851231abc3aacc84607fa86fdb80ea96",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/GetMailboxesQueryHandlerTests.cs": {
-    "mtime": 1787783205.1921108,
-    "seen": 1787783389.7464345,
+    "mtime": 1794694013.6449337,
+    "seen": 1794694144.4251459,
     "ast_hash": "a322bc2e4828c42c3fca7fe909f16d11",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/GetReportsQueryHandlerTests.cs": {
-    "mtime": 1787783205.1921108,
-    "seen": 1787783389.746436,
+    "mtime": 1794694013.6465192,
+    "seen": 1794694144.425148,
     "ast_hash": "562d47f55589ab87620a587ec4d6d22d",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/GetTaxpayerProfileQueryHandlerTests.cs": {
-    "mtime": 1787783205.1921108,
-    "seen": 1787783389.7464375,
+    "mtime": 1794694013.6497269,
+    "seen": 1794694144.4251497,
     "ast_hash": "300af9a81a6b2e4cc11183748637a02e",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/GetUserPreferenceQueryHandlerTests.cs": {
-    "mtime": 1787783205.1921108,
-    "seen": 1787783389.7464392,
+    "mtime": 1794694013.651232,
+    "seen": 1794694144.4251518,
     "ast_hash": "9332fd2d1be916a98f3ab115c67abb99",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/Handlers/GetDashboardQueryHandlerTests.cs": {
-    "mtime": 1787783205.1921108,
-    "seen": 1787783389.7464406,
+    "mtime": 1794694013.6538343,
+    "seen": 1794694144.4251537,
     "ast_hash": "24c7143e66e12d9228f794803e7312a0",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/Handlers/ProcessReportsCommandHandlerPartialSuccessTests.cs": {
-    "mtime": 1787783205.196946,
-    "seen": 1787783389.7464426,
+    "mtime": 1794694013.657147,
+    "seen": 1794694144.4251556,
     "ast_hash": "596c80ec06db2cb32fce64f6a1d51dcb",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/Handlers/ProcessReportsProgressTests.cs": {
-    "mtime": 1787783205.196946,
-    "seen": 1787783389.7464442,
+    "mtime": 1794694013.6593032,
+    "seen": 1794694144.4251578,
     "ast_hash": "29fddbad7fcc3871749897deb15cd4ce",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/ImportHolidaysFromWebCommandHandlerTests.cs": {
-    "mtime": 1787783205.196946,
-    "seen": 1787783389.746446,
+    "mtime": 1794694013.6593032,
+    "seen": 1794694144.4251602,
     "ast_hash": "7597745c46576d51ca8bc7252d106c62",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/ImportReportCommandHandlerTests.cs": {
-    "mtime": 1787783205.196946,
-    "seen": 1787783389.746447,
+    "mtime": 1794694013.6623702,
+    "seen": 1794694144.4251623,
     "ast_hash": "1b24af984041c6dc525785c294ab25d3",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/ManualFilingCalculatorTests.cs": {
-    "mtime": 1787783205.196946,
-    "seen": 1787783389.7464483,
+    "mtime": 1794694013.664042,
+    "seen": 1794694144.4251642,
     "ast_hash": "3c09bebd90fd96b25e0d1dc9d655008e",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/ProcessReportsCommandHandlerTests.cs": {
-    "mtime": 1787783205.196946,
-    "seen": 1787783389.7464497,
+    "mtime": 1794694013.6685953,
+    "seen": 1794694144.4251666,
     "ast_hash": "22d961b5c49d7468de8239bf560b6cbb",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/SaveHolidayConfCommandHandlerTests.cs": {
-    "mtime": 1787783205.196946,
-    "seen": 1787783389.746451,
+    "mtime": 1794694013.670607,
+    "seen": 1794694144.425169,
     "ast_hash": "ff433ffd9ca76abf9f111d9145979a42",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/SaveTaxpayerProfileCommandHandlerTests.cs": {
-    "mtime": 1787783205.196946,
-    "seen": 1787783389.7464526,
+    "mtime": 1794694013.674152,
+    "seen": 1794694144.4251711,
     "ast_hash": "6982ec107a5d7f97e4e39f041c4d64eb",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/Services/ExchangeRateResolverLoggingTests.cs": {
-    "mtime": 1787783205.196946,
-    "seen": 1787783389.7464535,
+    "mtime": 1794694013.676195,
+    "seen": 1794694144.4251733,
     "ast_hash": "64e5c71d14a6e0b89e45b17a928a910b",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/Services/ExchangeRateResolverTests.cs": {
-    "mtime": 1787783205.199063,
-    "seen": 1787783389.7464547,
+    "mtime": 1794694013.6794012,
+    "seen": 1794694144.4251752,
     "ast_hash": "41970e803e00cdfec6c91501caed67e3",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/SetUserPreferenceCommandHandlerTests.cs": {
-    "mtime": 1787783205.199063,
-    "seen": 1787783389.7464566,
+    "mtime": 1794694013.6794012,
+    "seen": 1794694144.4251773,
     "ast_hash": "65d3fa22f64064a7b0617237aacfcbd8",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/SyncAllCommandHandlerTests.cs": {
-    "mtime": 1787783205.199063,
-    "seen": 1787783389.7464583,
+    "mtime": 1794694013.6794012,
+    "seen": 1794694144.4251795,
     "ast_hash": "923e068bffcf96a46de3457591484805",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/SyncMailboxCommandHandlerTests.cs": {
-    "mtime": 1787783205.199063,
-    "seen": 1787783389.74646,
+    "mtime": 1794694013.6846838,
+    "seen": 1794694144.4251814,
     "ast_hash": "f8892b9ba2767854b3ab220b942c30d1",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/UpdateCheckResultTests.cs": {
-    "mtime": 1787783205.199063,
-    "seen": 1787783389.7464614,
+    "mtime": 1794694013.6864357,
+    "seen": 1794694144.425184,
     "ast_hash": "006bca70600c4c03c0abc5899ada1958",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/UpdateFilingStatusCommandHandlerTests.cs": {
-    "mtime": 1787783205.199063,
-    "seen": 1787783389.7464635,
+    "mtime": 1794694013.688948,
+    "seen": 1794694144.4251862,
     "ast_hash": "71b1f33162c99c141b665e58fed7e645",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/UpdateImporterCommandHandlerTests.cs": {
-    "mtime": 1787783205.199063,
-    "seen": 1787783389.746465,
+    "mtime": 1794694013.6913552,
+    "seen": 1794694144.4251883,
     "ast_hash": "55edf7f6bfe7efa843bbc29d2f6bcb58",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/UpdateMailboxCommandHandlerTests.cs": {
-    "mtime": 1787783205.199063,
-    "seen": 1787783389.7464669,
+    "mtime": 1794694013.6933668,
+    "seen": 1794694144.4251904,
     "ast_hash": "a7f1599ebfce7af2cae402c9b3a58f2a",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Application/UpdatePaymentReferenceCommandHandlerTests.cs": {
-    "mtime": 1787783205.199063,
-    "seen": 1787783389.7464685,
+    "mtime": 1794694013.6970072,
+    "seen": 1794694144.4251924,
     "ast_hash": "d3269caf616b48a403dca6faf2475702",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Architecture/LayerDependencyTests.cs": {
-    "mtime": 1787783205.199063,
-    "seen": 1787783389.7464707,
+    "mtime": 1794694013.7010329,
+    "seen": 1794694144.4251945,
     "ast_hash": "01c9c6cd89bef3eb454339affeaae85d",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Desktop/AppVersionServiceTests.cs": {
-    "mtime": 1787783205.199063,
-    "seen": 1787783389.7464721,
+    "mtime": 1794694013.7097042,
+    "seen": 1794694144.425197,
     "ast_hash": "56495ea5c835d139a7e8ea9802af5e8f",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Desktop/AppearanceSettingsViewModelTests.cs": {
-    "mtime": 1787783205.2011015,
-    "seen": 1787783389.7464743,
+    "mtime": 1794694013.7125795,
+    "seen": 1794694144.425199,
     "ast_hash": "82cfc5a9a6f803c18a6a90df2462221e",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Desktop/Converters/DateOnlyToStringConverterTests.cs": {
-    "mtime": 1787783205.2011015,
-    "seen": 1787783389.7464757,
+    "mtime": 1794694013.7157905,
+    "seen": 1794694144.425201,
     "ast_hash": "3c805559d8cd6b2dccb9d2519f826193",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Desktop/Converters/NullableDateOnlyConverterTests.cs": {
-    "mtime": 1787783205.2016394,
-    "seen": 1787783389.7464774,
+    "mtime": 1794694013.7179394,
+    "seen": 1794694144.425203,
     "ast_hash": "da805a13a247c3dc3f0d0adc9c0d9e2e",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Desktop/EnumFilterFlyoutViewModelTests.cs": {
-    "mtime": 1787783205.2016394,
-    "seen": 1787783389.7464788,
+    "mtime": 1794694013.7179394,
+    "seen": 1794694144.4252055,
     "ast_hash": "85d5452ebf344b38a83a36938f764bcb",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Desktop/FilingRowViewModelTests.cs": {
-    "mtime": 1787783205.2016394,
-    "seen": 1787783389.7464807,
+    "mtime": 1794694013.7179394,
+    "seen": 1794694144.4252079,
     "ast_hash": "f18c46884b9c9fa8a4e3e01bb776a020",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Desktop/FilingsViewModelBulkDeleteTests.cs": {
-    "mtime": 1787783205.2016394,
-    "seen": 1787783389.7464824,
+    "mtime": 1794694013.727061,
+    "seen": 1794694144.4252095,
     "ast_hash": "b8905a21df4bfa4120a8970a935acbdb",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Desktop/FilingsViewModelTests.cs": {
-    "mtime": 1787783205.2016394,
-    "seen": 1787783389.7464843,
+    "mtime": 1794694013.7286694,
+    "seen": 1794694144.4252117,
     "ast_hash": "f60b2147964fb056b75b3dfbfa7682ae",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Desktop/HolidaySettingsViewModelFetchTests.cs": {
-    "mtime": 1787783205.2016394,
-    "seen": 1787783389.746486,
+    "mtime": 1794694013.7286694,
+    "seen": 1794694144.4252138,
     "ast_hash": "098c5112e8dbff6208e7e32f896305ce",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Desktop/HolidaySettingsViewModelTests.cs": {
-    "mtime": 1787783205.2016394,
-    "seen": 1787783389.7464876,
+    "mtime": 1794694013.7336607,
+    "seen": 1794694144.425216,
     "ast_hash": "5382176bc24437b517c2e5044ea8acd6",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Desktop/ImporterSettingsViewModelTests.cs": {
-    "mtime": 1787783205.2016394,
-    "seen": 1787783389.746489,
+    "mtime": 1794694013.7361772,
+    "seen": 1794694144.4252179,
     "ast_hash": "126c41edcf4f2fa7292af58e00016343",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Desktop/LocalizationServiceTests.cs": {
-    "mtime": 1787783205.2016394,
-    "seen": 1787783389.7464907,
+    "mtime": 1794694013.737849,
+    "seen": 1794694144.4252198,
     "ast_hash": "fb0acad3d3e66c4ae6f28c186fbeb2fd",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Desktop/MailboxItemViewModelTests.cs": {
-    "mtime": 1787783205.2016394,
-    "seen": 1787783389.7464924,
+    "mtime": 1794694013.7400985,
+    "seen": 1794694144.425222,
     "ast_hash": "be181693a627d09f90441db5121cb09e",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Desktop/MailboxSettingsViewModelTests.cs": {
-    "mtime": 1787783205.2016394,
-    "seen": 1787783389.7464936,
+    "mtime": 1794694013.7442634,
+    "seen": 1794694144.4252238,
     "ast_hash": "cfa99aa4c25b0096f37bd498f6cad3d2",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Desktop/MainWindowViewModelSmokeTests.cs": {
-    "mtime": 1787783205.2016394,
-    "seen": 1787783389.7464955,
+    "mtime": 1794694013.746355,
+    "seen": 1794694144.425226,
     "ast_hash": "33dedc8b6d3ae631901907cd8dc00061",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Desktop/MainWindowViewModelTests.cs": {
-    "mtime": 1787783205.2016394,
-    "seen": 1787783389.7464974,
+    "mtime": 1794694013.749566,
+    "seen": 1794694144.425228,
     "ast_hash": "23a34a80f2ddfe457a7820ee25c1da17",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Desktop/MainWindowViewModel_UpdateTests.cs": {
-    "mtime": 1787783205.2016394,
-    "seen": 1787783389.746499,
+    "mtime": 1794694013.7510765,
+    "seen": 1794694144.42523,
     "ast_hash": "189cc9b69ad2c98e01df8a987dbfce6a",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Desktop/ManualFilingViewModelTests.cs": {
-    "mtime": 1787783205.2016394,
-    "seen": 1787783389.7465012,
+    "mtime": 1794694013.7510765,
+    "seen": 1794694144.4252324,
     "ast_hash": "c2e5f44276a1d1ca4f05a77607166cf2",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Desktop/NavigationEntryGroupTests.cs": {
-    "mtime": 1787783205.2041109,
-    "seen": 1787783389.7465029,
+    "mtime": 1794694013.756742,
+    "seen": 1794694144.4252343,
     "ast_hash": "e18f026e97127f42d87d4fa4864ca4bd",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Desktop/ProfileSettingsViewModelTests.cs": {
-    "mtime": 1787783205.2041109,
-    "seen": 1787783389.7465045,
+    "mtime": 1794694013.756742,
+    "seen": 1794694144.4252365,
     "ast_hash": "5d080f8dcd1b0f8a37552c013ddc5afb",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Desktop/ReactiveUITestInitializer.cs": {
-    "mtime": 1787783205.2041109,
-    "seen": 1787783389.7465062,
+    "mtime": 1794694013.7605615,
+    "seen": 1794694144.4252388,
     "ast_hash": "fb157e4ec64bd286453d4b34fdc3f4b8",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Desktop/ReportRowViewModelTests.cs": {
-    "mtime": 1787783205.2041109,
-    "seen": 1787783389.7465081,
+    "mtime": 1794694013.7615695,
+    "seen": 1794694144.4252408,
     "ast_hash": "eb9b10941542774f355c51ea62a5f0e5",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Desktop/ReportsViewModelBulkDeleteTests.cs": {
-    "mtime": 1787783205.2041109,
-    "seen": 1787783389.7465098,
+    "mtime": 1794694013.763656,
+    "seen": 1794694144.425243,
     "ast_hash": "f00970f19bed83a792f036a5a5961ff9",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Desktop/ReportsViewModelTests.cs": {
-    "mtime": 1787783205.2041109,
-    "seen": 1787783389.7465115,
+    "mtime": 1794694013.7669275,
+    "seen": 1794694144.425245,
     "ast_hash": "b31fed50567b2ba205b58c7f8861b0a0",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Desktop/SettingsViewModelTests.cs": {
-    "mtime": 1787783205.2041109,
-    "seen": 1787783389.7465131,
+    "mtime": 1794694013.769042,
+    "seen": 1794694144.425247,
     "ast_hash": "75c39ed4328a063392c3cbc395ae54de",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Desktop/SyncViewModelTests.cs": {
-    "mtime": 1787783205.2041109,
-    "seen": 1787783389.746515,
+    "mtime": 1794694013.772087,
+    "seen": 1794694144.4252493,
     "ast_hash": "4b2aa3f6c35b276fa21ed91f3ced10b2",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Desktop/TestAppBuilder.cs": {
-    "mtime": 1787783205.2041109,
-    "seen": 1787783389.7465167,
+    "mtime": 1794694013.772087,
+    "seen": 1794694144.4252515,
     "ast_hash": "53f388c2bd698ffaf18f8acb5e020288",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Desktop/TextFilterFlyoutViewModelTests.cs": {
-    "mtime": 1787783205.2041109,
-    "seen": 1787783389.7465193,
+    "mtime": 1794694013.7761235,
+    "seen": 1794694144.4252536,
     "ast_hash": "0e3d2ddc5c4325b84fc05f5cc398a277",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Desktop/ViewModels/DashboardViewModelTests.cs": {
-    "mtime": 1787783205.2041109,
-    "seen": 1787783389.746521,
+    "mtime": 1794694013.778662,
+    "seen": 1794694144.425259,
     "ast_hash": "f21ef852c198fd502619d45dd4343316",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Desktop/ViewModels/HolidayEntryViewModelTests.cs": {
-    "mtime": 1787783205.2080042,
-    "seen": 1787783389.746523,
+    "mtime": 1794694013.7802362,
+    "seen": 1794694144.4252613,
     "ast_hash": "219124ff73c46d777cdc348f78629c88",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Desktop/ViewModels/ImporterItemViewModelTests.cs": {
-    "mtime": 1787783205.2080042,
-    "seen": 1787783389.7465246,
+    "mtime": 1794694013.7832747,
+    "seen": 1794694144.4252636,
     "ast_hash": "94e743ea5a198377b585e22800bae76c",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Desktop/ViewModels/SyncProgressEntryViewModelTests.cs": {
-    "mtime": 1787783205.2080042,
-    "seen": 1787783389.7465267,
+    "mtime": 1794694013.7832747,
+    "seen": 1794694144.425266,
     "ast_hash": "c82ac741c6a4015ee597d2ce3a9d9d40",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Desktop/Views/DashboardViewHeadlessTests.cs": {
-    "mtime": 1787783205.2080042,
-    "seen": 1787783389.7465286,
+    "mtime": 1794694013.7872975,
+    "seen": 1794694144.4252677,
     "ast_hash": "8181b3d86f8365b7d22103b6872de503",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Desktop/Views/FilingsViewHeadlessTests.cs": {
-    "mtime": 1787783205.2090185,
-    "seen": 1787783389.7465303,
+    "mtime": 1794694013.7872975,
+    "seen": 1794694144.42527,
     "ast_hash": "4ce393144a2189f1e0789837a5c754b6",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Desktop/Views/HolidaySettingsViewHeadlessTests.cs": {
-    "mtime": 1787783205.2090185,
-    "seen": 1787783389.7465317,
+    "mtime": 1794694013.7926843,
+    "seen": 1794694144.425272,
     "ast_hash": "71d982aaf756bb5d529ec7772211b9fa",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Desktop/Views/MailboxSettingsViewHeadlessTests.cs": {
-    "mtime": 1787783205.2090185,
-    "seen": 1787783389.7465336,
+    "mtime": 1794694013.7957797,
+    "seen": 1794694144.4252741,
     "ast_hash": "5acad494bf326a59e126d0d8b00e3e78",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Desktop/Views/MainWindowViewHeadlessTests.cs": {
-    "mtime": 1787783205.2090185,
-    "seen": 1787783389.7465355,
+    "mtime": 1794694013.7979863,
+    "seen": 1794694144.425276,
     "ast_hash": "a4758d8a49b5b80207904ad96c3f0558",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Desktop/Views/ProfileSettingsViewHeadlessTests.cs": {
-    "mtime": 1787783205.2090185,
-    "seen": 1787783389.7465374,
+    "mtime": 1794694013.7979863,
+    "seen": 1794694144.4252782,
     "ast_hash": "ad66365818aca71ecbeb40fbb994f09b",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Desktop/Views/ReportsViewHeadlessTests.cs": {
-    "mtime": 1787783205.2090185,
-    "seen": 1787783389.7465396,
+    "mtime": 1794694013.7979863,
+    "seen": 1794694144.42528,
     "ast_hash": "a364e74cbc9808f0d4c6045363ae053c",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Desktop/Views/SyncViewHeadlessTests.cs": {
-    "mtime": 1787783205.2090185,
-    "seen": 1787783389.7465413,
+    "mtime": 1794694013.7979863,
+    "seen": 1794694144.425282,
     "ast_hash": "dcb3c41e742b751f232c1210fca3000a",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Domain/ExchangeRateTests.cs": {
-    "mtime": 1787783205.2090185,
-    "seen": 1787783389.7465432,
+    "mtime": 1794694013.7979863,
+    "seen": 1794694144.4252841,
     "ast_hash": "5f94d4230e96ddf98969b4b6ba199d4b",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Domain/FilingCreateFromIncomeTests.cs": {
-    "mtime": 1787783205.2113583,
-    "seen": 1787783389.7465448,
+    "mtime": 1794694013.8083072,
+    "seen": 1794694144.425286,
     "ast_hash": "f810cb71402d48f7d7a4116e8f9dc368",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Domain/FilingInfoTests.cs": {
-    "mtime": 1787783205.2113583,
-    "seen": 1787783389.7465467,
+    "mtime": 1794694013.8083072,
+    "seen": 1794694144.4252882,
     "ast_hash": "48493cab1ce48ee4880f0b2900aabd6f",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Domain/FilingPaymentNotesTests.cs": {
-    "mtime": 1787783205.2113583,
-    "seen": 1787783389.7465482,
+    "mtime": 1794694013.8152268,
+    "seen": 1794694144.4252903,
     "ast_hash": "a5e1df875c186687b84cc4a0ab9de313",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Domain/FilingPaymentReferenceTests.cs": {
-    "mtime": 1787783205.2113583,
-    "seen": 1787783389.74655,
+    "mtime": 1794694013.8176262,
+    "seen": 1794694144.4252923,
     "ast_hash": "e722010557fba0e2e7fee46b25c33415",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Domain/FilingStatusTransitionTests.cs": {
-    "mtime": 1787783205.2113583,
-    "seen": 1787783389.7465518,
+    "mtime": 1794694013.819165,
+    "seen": 1794694144.4252944,
     "ast_hash": "4e74c9722d3af1593966fcd8c1562f8c",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Domain/FilingTickerTests.cs": {
-    "mtime": 1787783205.2113583,
-    "seen": 1787783389.7465537,
+    "mtime": 1794694013.819165,
+    "seen": 1794694144.4252965,
     "ast_hash": "60022c5de2cfb7659a95b02d5270a13b",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Domain/HolidayConfTests.cs": {
-    "mtime": 1787783205.2113583,
-    "seen": 1787783389.7465553,
+    "mtime": 1794694013.819165,
+    "seen": 1794694144.4252987,
     "ast_hash": "3bd7695b8e32583c9a9e271f0691a363",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Domain/HolidayYearRangeTests.cs": {
-    "mtime": 1787783205.2113583,
-    "seen": 1787783389.7465575,
+    "mtime": 1794694013.819165,
+    "seen": 1794694144.425301,
     "ast_hash": "624eaffbb2f63b8362110c9e42b7e469",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Domain/ImporterTests.cs": {
-    "mtime": 1787783205.2113583,
-    "seen": 1787783389.746559,
+    "mtime": 1794694013.8287785,
+    "seen": 1794694144.425303,
     "ast_hash": "999d13103a60051c76552aa5886da482",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Domain/MailboxCursorTests.cs": {
-    "mtime": 1787783205.2113583,
-    "seen": 1787783389.7465608,
+    "mtime": 1794694013.8308723,
+    "seen": 1794694144.4253051,
     "ast_hash": "e6d51859313ddd1882d449b33c0b5103",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Domain/MailboxTests.cs": {
-    "mtime": 1787783205.2113583,
-    "seen": 1787783389.7465625,
+    "mtime": 1794694013.832901,
+    "seen": 1794694144.425307,
     "ast_hash": "643da5194adabb500d23834c28752a17",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Domain/MoneyTests.cs": {
-    "mtime": 1787783205.2113583,
-    "seen": 1787783389.7465644,
+    "mtime": 1794694013.8349123,
+    "seen": 1794694144.4253092,
     "ast_hash": "d2e18788bd4ce8bb5df8b31d24c69950",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Domain/Properties/FilingDeadlineProperties.cs": {
-    "mtime": 1787783205.2113583,
-    "seen": 1787783389.746566,
+    "mtime": 1794694013.8396564,
+    "seen": 1794694144.4253113,
     "ast_hash": "48f06ee8f3f3a7b772ee7607769af1e7",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Domain/Properties/FilingStatusTransitionProperties.cs": {
-    "mtime": 1787783205.2136679,
-    "seen": 1787783389.746568,
+    "mtime": 1794694013.8396564,
+    "seen": 1794694144.4253135,
     "ast_hash": "54a540ed2b8f595ee54ae39b251a328c",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Domain/Properties/PaginationProperties.cs": {
-    "mtime": 1787783205.2136679,
-    "seen": 1787783389.7465696,
+    "mtime": 1794694013.8446972,
+    "seen": 1794694144.4253156,
     "ast_hash": "ee5b633f264bceb65aa30c7bda70260c",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Domain/Properties/PaymentReferenceProperties.cs": {
-    "mtime": 1787783205.2136679,
-    "seen": 1787783389.7465715,
+    "mtime": 1794694013.8482244,
+    "seen": 1794694144.425318,
     "ast_hash": "63350e56b2e308da90fbd0fda3bf49e8",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Domain/Properties/TaxCalculationProperties.cs": {
-    "mtime": 1787783205.2136679,
-    "seen": 1787783389.7465732,
+    "mtime": 1794694013.851867,
+    "seen": 1794694144.4253201,
     "ast_hash": "e82ce622c715c88feeaacf1228c30b3f",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Domain/PublicHolidayTests.cs": {
-    "mtime": 1787783205.2136679,
-    "seen": 1787783389.7465749,
+    "mtime": 1794694013.8536656,
+    "seen": 1794694144.4253228,
     "ast_hash": "2697f6e58cd0a76e138aa3cb464e13d6",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Domain/ReportTests.cs": {
-    "mtime": 1787783205.2136679,
-    "seen": 1787783389.7465768,
+    "mtime": 1794694013.8536656,
+    "seen": 1794694144.4253252,
     "ast_hash": "5e4ba44966addbecd7641708e932194f",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Domain/Services/BusinessDayResolverTests.cs": {
-    "mtime": 1787783205.2136679,
-    "seen": 1787783389.7465787,
+    "mtime": 1794694013.8572252,
+    "seen": 1794694144.425327,
     "ast_hash": "0ba9f99e7e061e78cec2b9ff06252c5d",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Domain/Services/FilingDeadlineCalculatorTests.cs": {
-    "mtime": 1787783205.2151022,
-    "seen": 1787783389.7465801,
+    "mtime": 1794694013.860336,
+    "seen": 1794694144.4253292,
     "ast_hash": "2f1e778bae5ca0f923ff4ef676623de0",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Domain/Services/TaxCalculationServiceTests.cs": {
-    "mtime": 1787783205.2151022,
-    "seen": 1787783389.7465818,
+    "mtime": 1794694013.86244,
+    "seen": 1794694144.4253314,
     "ast_hash": "b417c375b35ccc75d35b3b6a9df0a1bc",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Domain/SyncParametersTests.cs": {
-    "mtime": 1787783205.2151022,
-    "seen": 1787783389.7465832,
+    "mtime": 1794694013.8654895,
+    "seen": 1794694144.4253335,
     "ast_hash": "4157891bd74460a2e52681e2c0dcc213",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Domain/TaxpayerProfileTests.cs": {
-    "mtime": 1787783205.2151022,
-    "seen": 1787783389.7465851,
+    "mtime": 1794694013.8671877,
+    "seen": 1794694144.4253356,
     "ast_hash": "478f871d4ab352e8299be1bf0072b5b7",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Domain/UserPreferenceTests.cs": {
-    "mtime": 1787783205.2151022,
-    "seen": 1787783389.7465863,
+    "mtime": 1794694013.8692172,
+    "seen": 1794694144.4253378,
     "ast_hash": "3fd8e7b63df20dad4e6192c7560342b5",
     "semantic_hash": ""
   },
   "tests/Rentier.UnitTests/Rentier.UnitTests.csproj": {
-    "mtime": 1787783205.2151022,
-    "seen": 1787783389.7465882,
-    "ast_hash": "7d6e3c326e55811807c0037398785b2b",
+    "mtime": 1794694013.872267,
+    "seen": 1794694144.42534,
+    "ast_hash": "9f876a886f7cc907250ff3444b70276a",
     "semantic_hash": ""
   },
   ".claude/agents/accessibility-expert.md": {
-    "mtime": 1787783205.044725,
-    "seen": 1787783389.7465894,
-    "ast_hash": "82ce44ae3162eac6dfd1283bd35461cf",
+    "mtime": 1794694012.31064,
+    "seen": 1794694144.4253423,
+    "ast_hash": "db770a2b3defb0d6840985be01c040f7",
     "semantic_hash": ""
   },
   ".claude/agents/csharp-expert.md": {
-    "mtime": 1787783205.0454786,
-    "seen": 1787783389.7465906,
-    "ast_hash": "93ca643ce2ebd0fa2c1cb6fef88ff1b7",
+    "mtime": 1794694012.31064,
+    "seen": 1794694144.4253442,
+    "ast_hash": "d45c30bf1631082550259a26579accbf",
     "semantic_hash": ""
   },
   ".claude/agents/dotnet-janitor.md": {
-    "mtime": 1787783205.0454786,
-    "seen": 1787783389.7465925,
-    "ast_hash": "aee38935a1745430ea7796f161abdb9e",
+    "mtime": 1794694012.31064,
+    "seen": 1794694144.4253464,
+    "ast_hash": "1f14e3b33ad770e91a53392ea594cc6a",
     "semantic_hash": ""
   },
   ".claude/agents/dotnet-upgrade.md": {
-    "mtime": 1787783205.0454786,
-    "seen": 1787783389.7465942,
-    "ast_hash": "eda861b6cfd7ba42b5a28992b7e03aa5",
+    "mtime": 1794694012.31064,
+    "seen": 1794694144.4253483,
+    "ast_hash": "4ff2d04b7cca537079e3f691dba1003d",
     "semantic_hash": ""
   },
   ".claude/agents/ux-ui-designer.md": {
-    "mtime": 1787783205.0454786,
-    "seen": 1787783389.746596,
-    "ast_hash": "5f0f62e807123e70c665c92561b89dd1",
+    "mtime": 1794694012.3178544,
+    "seen": 1794694144.4253504,
+    "ast_hash": "a2b70b3f065e973d2afa90f52ae5beee",
     "semantic_hash": ""
   },
   ".claude/rules/application-layer.md": {
-    "mtime": 1787783205.047063,
-    "seen": 1787783389.7465973,
-    "ast_hash": "53ab63ef2cbc71ffa8a046b0920d2523",
+    "mtime": 1794694012.327489,
+    "seen": 1794694144.4253523,
+    "ast_hash": "1e03c772f49b2bacb31e8569da0e7a71",
     "semantic_hash": ""
   },
   ".claude/rules/desktop-ui.md": {
-    "mtime": 1787783205.0475338,
-    "seen": 1787783389.7465992,
-    "ast_hash": "64181f6af1f40e4c9aaabba569f95930",
+    "mtime": 1794694012.3301277,
+    "seen": 1794694144.4253545,
+    "ast_hash": "a2478b85dbfb9487d12af1979c54d94e",
     "semantic_hash": ""
   },
   ".claude/rules/domain-layer.md": {
-    "mtime": 1787783205.0475338,
-    "seen": 1787783389.7466006,
-    "ast_hash": "1ba13426fb53919d4ef09d7fcd18f039",
+    "mtime": 1794694012.3301277,
+    "seen": 1794694144.4253566,
+    "ast_hash": "59629d2af7b34cdf9c68164f5331dc43",
     "semantic_hash": ""
   },
   ".claude/rules/infrastructure-layer.md": {
-    "mtime": 1787783205.0475338,
-    "seen": 1787783389.7466023,
-    "ast_hash": "b3a27a58f5d2636102cc5ac7d9eac149",
+    "mtime": 1794694012.3322318,
+    "seen": 1794694144.4253585,
+    "ast_hash": "54e1194d453fb2878a20bd470a6a9314",
     "semantic_hash": ""
   },
   ".claude/rules/tests.md": {
-    "mtime": 1787783205.0475338,
-    "seen": 1787783389.746604,
-    "ast_hash": "06b7fef0a66b5bf47daf40a586a3c196",
+    "mtime": 1794694012.3322318,
+    "seen": 1794694144.425361,
+    "ast_hash": "1f608b6d77b3ea0346c8c48b4fa5f6fd",
     "semantic_hash": ""
   },
   ".claude/skills/clean-architecture/SKILL.md": {
-    "mtime": 1787783205.0483687,
-    "seen": 1787783389.7466056,
-    "ast_hash": "b28f72691c0883898a20928dd9d43ab1",
+    "mtime": 1794694012.3402288,
+    "seen": 1794694144.4253633,
+    "ast_hash": "3fe664796f75fc9c6fb592fc9e315254",
     "semantic_hash": ""
   },
   ".claude/skills/csharp-async/SKILL.md": {
-    "mtime": 1787783205.0483687,
-    "seen": 1787783389.746607,
-    "ast_hash": "9d8d4bff9f1b74cb9aa9c1502e1486e5",
+    "mtime": 1794694012.344345,
+    "seen": 1794694144.425365,
+    "ast_hash": "4cd5b8722707a14d6638aec482382ee8",
     "semantic_hash": ""
   },
   ".claude/skills/csharp-xunit/SKILL.md": {
-    "mtime": 1787783205.0483687,
-    "seen": 1787783389.746608,
-    "ast_hash": "b0e77723616814b00952964b6d4243d4",
+    "mtime": 1794694012.344345,
+    "seen": 1794694144.4253674,
+    "ast_hash": "a4cb80709b174ecc6edd8088c3ad8e43",
     "semantic_hash": ""
   },
   ".claude/skills/ef-core/SKILL.md": {
-    "mtime": 1787783205.0483687,
-    "seen": 1787783389.7466097,
-    "ast_hash": "f38f05fb200be04bd03c05f90b63bf6b",
-    "semantic_hash": ""
-  },
-  ".claude/skills/graphify/SKILL.md": {
-    "mtime": 1787783381.807542,
-    "seen": 1787783389.7466109,
-    "ast_hash": "1656a8a8e4a05bbe69f32cd15de81e87",
-    "semantic_hash": ""
-  },
-  ".claude/skills/graphify/references/add-watch.md": {
-    "mtime": 1787783381.807524,
-    "seen": 1787783389.7466123,
-    "ast_hash": "d59d027fe449f06aa03905a01184e779",
-    "semantic_hash": ""
-  },
-  ".claude/skills/graphify/references/exports.md": {
-    "mtime": 1787783381.8070765,
-    "seen": 1787783389.7466135,
-    "ast_hash": "9da2a2152e60a22f07f05fed5158f287",
-    "semantic_hash": ""
-  },
-  ".claude/skills/graphify/references/extraction-spec.md": {
-    "mtime": 1787783381.8072815,
-    "seen": 1787783389.7466147,
-    "ast_hash": "42fef56a01698118f7fd722acdadea34",
-    "semantic_hash": ""
-  },
-  ".claude/skills/graphify/references/github-and-merge.md": {
-    "mtime": 1787783381.8074443,
-    "seen": 1787783389.7466164,
-    "ast_hash": "cde13df085e4c492aeb7ba298a996d0d",
-    "semantic_hash": ""
-  },
-  ".claude/skills/graphify/references/hooks.md": {
-    "mtime": 1787783381.8070955,
-    "seen": 1787783389.7466176,
-    "ast_hash": "3f545db6ce646650bb9de588f5512a27",
-    "semantic_hash": ""
-  },
-  ".claude/skills/graphify/references/query.md": {
-    "mtime": 1787783381.807458,
-    "seen": 1787783389.7466192,
-    "ast_hash": "3c46f8ad006874260614ed8657d02307",
-    "semantic_hash": ""
-  },
-  ".claude/skills/graphify/references/transcribe.md": {
-    "mtime": 1787783381.8073015,
-    "seen": 1787783389.7466204,
-    "ast_hash": "67b6a5fa6c0974e18f60db9f8932fbd8",
-    "semantic_hash": ""
-  },
-  ".claude/skills/graphify/references/update.md": {
-    "mtime": 1787783381.8073153,
-    "seen": 1787783389.7466214,
-    "ast_hash": "9378bd03d56baaf78bd738ab3848f142",
+    "mtime": 1794694012.3497276,
+    "seen": 1794694144.4253693,
+    "ast_hash": "0da3984abac9e503498be08b71ae5c9a",
     "semantic_hash": ""
   },
   ".claude/skills/grill-me/SKILL.md": {
-    "mtime": 1787783205.0483687,
-    "seen": 1787783389.7466228,
-    "ast_hash": "f8ce6c07e30c473c5bff100dad0411a8",
+    "mtime": 1794694012.3716142,
+    "seen": 1794694144.425372,
+    "ast_hash": "0a5c133dea70db046292fd1c8093ccf4",
     "semantic_hash": ""
   },
   ".claude/skills/package-upgrade/SKILL.md": {
-    "mtime": 1787783205.0483687,
-    "seen": 1787783389.7466238,
-    "ast_hash": "0c7f383192710a74ddee4b8131dc0e85",
+    "mtime": 1794694012.3767264,
+    "seen": 1794694144.4253743,
+    "ast_hash": "07bc66a044619e04239af9700ebbf107",
     "semantic_hash": ""
   },
   ".claude/skills/package-upgrade/references/major-upgrade-template.md": {
-    "mtime": 1787783205.0507338,
-    "seen": 1787783389.7466252,
-    "ast_hash": "b0cbb7ee09e48a61bb3be0a693dd9e7a",
+    "mtime": 1794694012.3783147,
+    "seen": 1794694144.4253764,
+    "ast_hash": "b22b57c76e560bdd3c9567073f50ed17",
     "semantic_hash": ""
   },
   ".claude/skills/package-upgrade/references/upgrade-scenarios.md": {
-    "mtime": 1787783205.051081,
-    "seen": 1787783389.7466269,
-    "ast_hash": "fcfcc888f82cea9b0d19dbe5bbce995c",
+    "mtime": 1794694012.3783147,
+    "seen": 1794694144.4253788,
+    "ast_hash": "4f37419c8fd7c8b44fe5158662239cc3",
     "semantic_hash": ""
   },
   ".claude/skills/rentier-integration-tests/SKILL.md": {
-    "mtime": 1787783205.051081,
-    "seen": 1787783389.7466283,
-    "ast_hash": "63c8d6dd3ed711c180201d60761c38e7",
+    "mtime": 1794694012.3841505,
+    "seen": 1794694144.4253812,
+    "ast_hash": "63007d45108f4aaf71e7df7196172684",
     "semantic_hash": ""
   },
   ".claude/skills/rentier-new-feature/SKILL.md": {
-    "mtime": 1787783205.051081,
-    "seen": 1787783389.74663,
-    "ast_hash": "87d993f8965db6b39dff67c36b53e65e",
+    "mtime": 1794694012.3854702,
+    "seen": 1794694144.425383,
+    "ast_hash": "8928006d0830f79afd0e434898274f16",
     "semantic_hash": ""
   },
   ".claude/skills/rentier-tax-rules/SKILL.md": {
-    "mtime": 1787783205.051081,
-    "seen": 1787783389.7466314,
-    "ast_hash": "6bc41e2f5541b186dcd5d1788acc1448",
+    "mtime": 1794694012.3879895,
+    "seen": 1794694144.4253852,
+    "ast_hash": "e5045fe8af3b6ae79868f64d3f20231e",
     "semantic_hash": ""
   },
   ".claude/skills/rentier-ui-design/SKILL.md": {
-    "mtime": 1787783205.051081,
-    "seen": 1787783389.7466333,
-    "ast_hash": "f44f90457f88b426f5c41b0393ecca0a",
+    "mtime": 1794694012.3915586,
+    "seen": 1794694144.4253876,
+    "ast_hash": "701fa7543da7c41907446e2d8ab57a34",
     "semantic_hash": ""
   },
   ".claude/skills/rentier-ui-tests/SKILL.md": {
-    "mtime": 1787783205.051081,
-    "seen": 1787783389.7466345,
-    "ast_hash": "dcdc50d85bebe180d831ddcf44466b37",
+    "mtime": 1794694012.3936014,
+    "seen": 1794694144.4253893,
+    "ast_hash": "dedb3c4db6bde8834aeb3e7f76f2c7c5",
     "semantic_hash": ""
   },
   ".claude/skills/rentier-unit-tests/SKILL.md": {
-    "mtime": 1787783205.051081,
-    "seen": 1787783389.746636,
-    "ast_hash": "7e96cd649072468ffc294cdd090f2268",
+    "mtime": 1794694012.3951879,
+    "seen": 1794694144.4253914,
+    "ast_hash": "7fceb4e5aa0f75ae02cc79f4c2046bdd",
     "semantic_hash": ""
   },
   ".github/dependabot.yml": {
-    "mtime": 1787783205.054505,
-    "seen": 1787783389.7466378,
-    "ast_hash": "999864b33a46ad95fa487be1a7f83ce4",
+    "mtime": 1794694051.9430287,
+    "seen": 1794694144.424266,
+    "ast_hash": "4aac1d631f4381d085585d6bf8d05616",
     "semantic_hash": ""
   },
   ".github/workflows/auto-release.yml": {
-    "mtime": 1787783205.054505,
-    "seen": 1787783389.7466393,
-    "ast_hash": "721b231aaccfdafcb49f9fa9fe19f9a3",
+    "mtime": 1794694012.404665,
+    "seen": 1794694144.4242687,
+    "ast_hash": "a420d6cf71862d32cb2b4ac15f69914c",
     "semantic_hash": ""
   },
   ".github/workflows/ci.yml": {
-    "mtime": 1787783205.0555246,
-    "seen": 1787783389.746641,
-    "ast_hash": "40656ba8779cdfa36c4bb673dbb0e982",
+    "mtime": 1794694052.1848013,
+    "seen": 1794694144.424271,
+    "ast_hash": "5bc22bfaec3a9e1825af13555889f964",
     "semantic_hash": ""
   },
   ".github/workflows/codeql.yml": {
-    "mtime": 1787783205.0555246,
-    "seen": 1787783389.746642,
-    "ast_hash": "8bc2cb7f0e7a80b096bcb05d818f4dcb",
+    "mtime": 1794694012.4121783,
+    "seen": 1794694144.4242735,
+    "ast_hash": "9a44f2c7aee10d7920878c4c54e12617",
     "semantic_hash": ""
   },
   ".github/workflows/pr-title.yml": {
-    "mtime": 1787783205.0555246,
-    "seen": 1787783389.7466435,
-    "ast_hash": "e8a1687ce3247ff616de4b1466963f09",
+    "mtime": 1794694012.4132013,
+    "seen": 1794694144.4242754,
+    "ast_hash": "a9f959ba2170983a80793e5490f9818b",
     "semantic_hash": ""
   },
   ".github/workflows/stryker.yml": {
-    "mtime": 1787783205.0555246,
-    "seen": 1787783389.746645,
-    "ast_hash": "b3f121884dbe3df0f20514a21d18b32b",
+    "mtime": 1794694012.415884,
+    "seen": 1794694144.4242775,
+    "ast_hash": "e53f8fcf2e3e62cfd8673b3dffd26acb",
     "semantic_hash": ""
   },
   "CLAUDE.md": {
-    "mtime": 1787783205.088111,
-    "seen": 1787783389.7466466,
-    "ast_hash": "7ec63049a8267ae441afecf24f32699c",
+    "mtime": 1794694012.4946935,
+    "seen": 1794694144.4253938,
+    "ast_hash": "a9e19f1bb69cf184c3070b170dd3b1a1",
     "semantic_hash": ""
   },
   "CONTRIBUTING.md": {
-    "mtime": 1787783205.088111,
-    "seen": 1787783389.7466478,
-    "ast_hash": "14d3e898f31a401a16f972d20b50b08e",
+    "mtime": 1794694012.4962296,
+    "seen": 1794694144.425396,
+    "ast_hash": "687d00034c16be5a7b5ec03ccb9372c7",
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1787783205.088111,
-    "seen": 1787783389.7466493,
-    "ast_hash": "8d53eae134088a2ec764e9ad8287ffe1",
+    "mtime": 1794694012.5026467,
+    "seen": 1794694144.425398,
+    "ast_hash": "0bc62fc01a682dd7b958b7ec2f892aee",
     "semantic_hash": ""
   },
   "docs/TESTING.md": {
-    "mtime": 1787783205.088111,
-    "seen": 1787783389.746651,
-    "ast_hash": "bc7388c852896553e8b3ebcd5443ceb9",
+    "mtime": 1794694012.5088165,
+    "seen": 1794694144.4254003,
+    "ast_hash": "3d5e290d50488c9d79dea8101cea0584",
     "semantic_hash": ""
   },
   "docs/en-US/GETTING-STARTED.md": {
-    "mtime": 1787783205.093651,
-    "seen": 1787783389.7466521,
-    "ast_hash": "417cf2501c03cb86a004c56a7995e6fb",
+    "mtime": 1794694012.5133977,
+    "seen": 1794694144.4254022,
+    "ast_hash": "eb8dab223f487c301ebd474e913a8dc0",
     "semantic_hash": ""
   },
   "docs/en-US/IBKR-SETUP.md": {
-    "mtime": 1787783205.0941143,
-    "seen": 1787783389.7466538,
-    "ast_hash": "3fb9951a6f1f724d10708dc08dd5f7cd",
+    "mtime": 1794694012.5149715,
+    "seen": 1794694144.425404,
+    "ast_hash": "f381d8cabfca158b697e4eaf75ab5840",
     "semantic_hash": ""
   },
   "docs/en-US/README.md": {
-    "mtime": 1787783205.0941143,
-    "seen": 1787783389.746655,
-    "ast_hash": "efbf52a22fd2df9937c5c16a55d82936",
+    "mtime": 1794694012.5165057,
+    "seen": 1794694144.4254062,
+    "ast_hash": "ceda68240091a69f8225b7c69291e7a6",
     "semantic_hash": ""
   },
   "docs/en-US/TAX-OVERVIEW.md": {
-    "mtime": 1787783205.0941143,
-    "seen": 1787783389.7466562,
-    "ast_hash": "2ddcdf247d3bac1abcdec4889a1ffb26",
+    "mtime": 1794694012.5165057,
+    "seen": 1794694144.425408,
+    "ast_hash": "092923b4ec57ba8c5c213435e9f461b8",
     "semantic_hash": ""
   },
   "docs/sr-RS/IBKR-INSTALACIJA.md": {
-    "mtime": 1787783205.0962627,
-    "seen": 1787783389.7466578,
-    "ast_hash": "8eb30d99943baf27181dc73380837f26",
+    "mtime": 1794694012.533891,
+    "seen": 1794694144.4254103,
+    "ast_hash": "c53e3442f444ec9ccb21152595bcd4ef",
     "semantic_hash": ""
   },
   "docs/sr-RS/PREGLED-POREZA.md": {
-    "mtime": 1787783205.0987408,
-    "seen": 1787783389.746659,
-    "ast_hash": "2ca0d01c48904b769047ecd8ea1c588e",
+    "mtime": 1794694012.5367436,
+    "seen": 1794694144.4254122,
+    "ast_hash": "551602abaa7a482adbaead4a3b6706f9",
     "semantic_hash": ""
   },
   "docs/sr-RS/PRVI-KORACI.md": {
-    "mtime": 1787783205.0987408,
-    "seen": 1787783389.7466605,
-    "ast_hash": "888eb5062c625681b41948a486df10da",
+    "mtime": 1794694012.5367436,
+    "seen": 1794694144.4254143,
+    "ast_hash": "53c1c940c411ed6ec7dc239ed726684b",
     "semantic_hash": ""
   },
   "docs/sr-RS/README.md": {
-    "mtime": 1787783205.0987408,
-    "seen": 1787783389.746662,
-    "ast_hash": "caa2cade2a342c6beba68c62992e00b3",
+    "mtime": 1794694012.5422819,
+    "seen": 1794694144.4254165,
+    "ast_hash": "42a01c26cacd74f748a571322bb0ec00",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/Parsers/Fixtures/holiday-scraped.txt": {
-    "mtime": 1787783205.17721,
-    "seen": 1787783389.7466633,
-    "ast_hash": "85ef2096b29adc9b4172ac141286abf8",
+    "mtime": 1794694013.5159562,
+    "seen": 1794694144.4254184,
+    "ast_hash": "926be4ea1a2138e152cd0e36728ac8f7",
     "semantic_hash": ""
   },
   "tests/Rentier.Infrastructure.Tests/Serialization/IbkrCsvParserSnapshotTests.ParseAsync_KnownIbkrCsvFixture_MatchesSnapshot.verified.txt": {
-    "mtime": 1787783205.1828523,
-    "seen": 1787783389.746665,
+    "mtime": 1794694013.56239,
+    "seen": 1794694144.4254208,
     "ast_hash": "47bdf372da65ed13e8294334e9845648",
     "semantic_hash": ""
   },
   "Assets/Icons/Rentier.iconset/icon_128x128.png": {
-    "mtime": 1787783205.0564864,
-    "seen": 1787783389.7466662,
+    "mtime": 1794694012.4221814,
+    "seen": 1794694144.4254231,
     "ast_hash": "1cdcb715fa877186c9155c282dbeeba4",
     "semantic_hash": ""
   },
   "Assets/Icons/Rentier.iconset/icon_128x128@2x.png": {
-    "mtime": 1787783205.0572975,
-    "seen": 1787783389.7466679,
+    "mtime": 1794694012.4236937,
+    "seen": 1794694144.4254253,
     "ast_hash": "ff4423307d4e126484901bc0bd854a3e",
     "semantic_hash": ""
   },
   "Assets/Icons/Rentier.iconset/icon_16x16.png": {
-    "mtime": 1787783205.0572975,
-    "seen": 1787783389.7466693,
+    "mtime": 1794694012.4257264,
+    "seen": 1794694144.4254274,
     "ast_hash": "40cc3a068cbb64ec54520e67260be28f",
     "semantic_hash": ""
   },
   "Assets/Icons/Rentier.iconset/icon_16x16@2x.png": {
-    "mtime": 1787783205.0572975,
-    "seen": 1787783389.7466702,
+    "mtime": 1794694012.4257264,
+    "seen": 1794694144.4254296,
     "ast_hash": "c26342931372ac41a5d38f3cb312769d",
     "semantic_hash": ""
   },
   "Assets/Icons/Rentier.iconset/icon_256x256.png": {
-    "mtime": 1787783205.0572975,
-    "seen": 1787783389.746672,
+    "mtime": 1794694012.4281423,
+    "seen": 1794694144.4254315,
     "ast_hash": "ff4423307d4e126484901bc0bd854a3e",
     "semantic_hash": ""
   },
   "Assets/Icons/Rentier.iconset/icon_256x256@2x.png": {
-    "mtime": 1787783205.0572975,
-    "seen": 1787783389.7466738,
+    "mtime": 1794694012.4311793,
+    "seen": 1794694144.4254336,
     "ast_hash": "9fe843e3eee7e50370dfde68ad2c88ea",
     "semantic_hash": ""
   },
   "Assets/Icons/Rentier.iconset/icon_32x32.png": {
-    "mtime": 1787783205.0572975,
-    "seen": 1787783389.7466755,
+    "mtime": 1794694012.4311793,
+    "seen": 1794694144.4254355,
     "ast_hash": "c26342931372ac41a5d38f3cb312769d",
     "semantic_hash": ""
   },
   "Assets/Icons/Rentier.iconset/icon_32x32@2x.png": {
-    "mtime": 1787783205.0572975,
-    "seen": 1787783389.7466767,
+    "mtime": 1794694012.434035,
+    "seen": 1794694144.4254377,
     "ast_hash": "e37c2d3263852c3fe5cc6029c27591bc",
     "semantic_hash": ""
   },
   "Assets/Icons/Rentier.iconset/icon_512x512.png": {
-    "mtime": 1787783205.0572975,
-    "seen": 1787783389.7466784,
+    "mtime": 1794694012.4366403,
+    "seen": 1794694144.4254396,
     "ast_hash": "9fe843e3eee7e50370dfde68ad2c88ea",
     "semantic_hash": ""
   },
   "Assets/Icons/Rentier.iconset/icon_512x512@2x.png": {
-    "mtime": 1787783205.0601108,
-    "seen": 1787783389.7466798,
+    "mtime": 1794694012.4462388,
+    "seen": 1794694144.4254417,
     "ast_hash": "c1613c6bc1a8db5f0c239097009b6211",
     "semantic_hash": ""
   },
   "Assets/Icons/app-icon.png": {
-    "mtime": 1787783205.0641108,
-    "seen": 1787783389.7466815,
+    "mtime": 1794694012.4545147,
+    "seen": 1794694144.4254441,
     "ast_hash": "c1613c6bc1a8db5f0c239097009b6211",
     "semantic_hash": ""
   },
   "Assets/Icons/png/rentier_1024x1024.png": {
-    "mtime": 1787783205.072111,
-    "seen": 1787783389.7466831,
+    "mtime": 1794694012.4636722,
+    "seen": 1794694144.425446,
     "ast_hash": "c1613c6bc1a8db5f0c239097009b6211",
     "semantic_hash": ""
   },
   "Assets/Icons/png/rentier_128x128.png": {
-    "mtime": 1787783205.077831,
-    "seen": 1787783389.7466848,
+    "mtime": 1794694012.4647698,
+    "seen": 1794694144.4254484,
     "ast_hash": "1cdcb715fa877186c9155c282dbeeba4",
     "semantic_hash": ""
   },
   "Assets/Icons/png/rentier_16x16.png": {
-    "mtime": 1787783205.077831,
-    "seen": 1787783389.7466862,
+    "mtime": 1794694012.466802,
+    "seen": 1794694144.4254506,
     "ast_hash": "40cc3a068cbb64ec54520e67260be28f",
     "semantic_hash": ""
   },
   "Assets/Icons/png/rentier_24x24.png": {
-    "mtime": 1787783205.077831,
-    "seen": 1787783389.7466877,
+    "mtime": 1794694012.466802,
+    "seen": 1794694144.4254527,
     "ast_hash": "4738408b3677d982c8cbb13d345dd3c4",
     "semantic_hash": ""
   },
   "Assets/Icons/png/rentier_256x256.png": {
-    "mtime": 1787783205.077831,
-    "seen": 1787783389.746689,
+    "mtime": 1794694012.4700086,
+    "seen": 1794694144.425455,
     "ast_hash": "ff4423307d4e126484901bc0bd854a3e",
     "semantic_hash": ""
   },
   "Assets/Icons/png/rentier_32x32.png": {
-    "mtime": 1787783205.077831,
-    "seen": 1787783389.7466905,
+    "mtime": 1794694012.4700086,
+    "seen": 1794694144.4254572,
     "ast_hash": "c26342931372ac41a5d38f3cb312769d",
     "semantic_hash": ""
   },
   "Assets/Icons/png/rentier_48x48.png": {
-    "mtime": 1787783205.077831,
-    "seen": 1787783389.746692,
+    "mtime": 1794694012.4700086,
+    "seen": 1794694144.4254591,
     "ast_hash": "39087b7062f7cae6fe23e29bfc2133e9",
     "semantic_hash": ""
   },
   "Assets/Icons/png/rentier_512x512.png": {
-    "mtime": 1787783205.077831,
-    "seen": 1787783389.7466931,
+    "mtime": 1794694012.475484,
+    "seen": 1794694144.4254615,
     "ast_hash": "9fe843e3eee7e50370dfde68ad2c88ea",
     "semantic_hash": ""
   },
   "Assets/Icons/png/rentier_64x64.png": {
-    "mtime": 1787783205.077831,
-    "seen": 1787783389.7466943,
+    "mtime": 1794694012.4764981,
+    "seen": 1794694144.4254634,
     "ast_hash": "e37c2d3263852c3fe5cc6029c27591bc",
     "semantic_hash": ""
   },
   "docs/en-US/screenshots/Dashboard.png": {
-    "mtime": 1787783205.0941143,
-    "seen": 1787783389.746696,
+    "mtime": 1794694012.5240872,
+    "seen": 1794694144.425466,
     "ast_hash": "ac2a2b8c7e258dc3978c90e39d09ea07",
     "semantic_hash": ""
   },
   "docs/en-US/screenshots/Filings.png": {
-    "mtime": 1787783205.0962627,
-    "seen": 1787783389.746698,
+    "mtime": 1794694012.5272095,
+    "seen": 1794694144.4254684,
     "ast_hash": "6e7093add299ee84564718ab34c9aed7",
     "semantic_hash": ""
   },
   "docs/en-US/screenshots/Reports.png": {
-    "mtime": 1787783205.0962627,
-    "seen": 1787783389.7466998,
+    "mtime": 1794694012.5314689,
+    "seen": 1794694144.4254708,
     "ast_hash": "39832fc0c63450c3b72aa75d009c21a7",
     "semantic_hash": ""
   },
   "src/Rentier.Desktop/Assets/Icons/app-icon-alpha.png": {
-    "mtime": 1787783205.124111,
-    "seen": 1787783389.746701,
+    "mtime": 1794694012.9414146,
+    "seen": 1794694144.425473,
     "ast_hash": "c1be7f84a067a51dd1d4925ea066c919",
+    "semantic_hash": ""
+  },
+  "tests/Rentier.UnitTests/Desktop/ViewLocatorTests.cs": {
+    "mtime": 1794694051.9502366,
+    "seen": 1794694144.4252565,
+    "ast_hash": "711814ab1e28b49df2cc1daf7a39232f",
     "semantic_hash": ""
   }
 }
