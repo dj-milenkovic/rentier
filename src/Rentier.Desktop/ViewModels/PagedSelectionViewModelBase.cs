@@ -18,19 +18,28 @@ public abstract class PagedSelectionViewModelBase<TRow> : ReactiveObject, IActiv
     private bool _isUpdatingSelection;
     protected readonly MultipleDisposable _rowSubscriptions = new();
 
-    private readonly ObservableAsPropertyHelper<bool> _hasSelection;
-    private readonly ObservableAsPropertyHelper<string> _deleteSelectedLabel;
-
     public ObservableCollection<TRow> Rows { get; } = new();
 
+    // HasSelection and DeleteSelectedLabel are derived from SelectedCount and raised from its
+    // setter rather than built with ToProperty: this type is generic in TRow, which the
+    // ReactiveUI.Binding source generator cannot intercept (RXUIBIND016), and the reflection
+    // ToPropertyUnsafe fallback cannot raise notifications on it at runtime.
     public int SelectedCount
     {
         get => _selectedCount;
-        protected set => this.RaiseAndSetIfChanged(ref _selectedCount, value);
+        protected set
+        {
+            if (_selectedCount == value)
+                return;
+
+            this.RaiseAndSetIfChanged(ref _selectedCount, value);
+            this.RaisePropertyChanged(nameof(HasSelection));
+            this.RaisePropertyChanged(nameof(DeleteSelectedLabel));
+        }
     }
 
-    public bool HasSelection => _hasSelection.Value;
-    public string DeleteSelectedLabel => _deleteSelectedLabel.Value;
+    public bool HasSelection => _selectedCount > 0;
+    public string DeleteSelectedLabel => string.Format(Strings.BulkDelete_Button_Template, _selectedCount);
     public bool HasItems => Rows.Count > 0;
 
     public ReactiveCommand<RxVoid, RxVoid> SelectAllCommand { get; }
@@ -67,18 +76,9 @@ public abstract class PagedSelectionViewModelBase<TRow> : ReactiveObject, IActiv
     {
         _scheduler = scheduler;
 
-        _hasSelection = this.WhenAnyValue(x => x.SelectedCount)
-            .Select(c => c > 0)
-            .ToProperty(this, x => x.HasSelection, scheduler: _scheduler);
-
-        _deleteSelectedLabel = this.WhenAnyValue(x => x.SelectedCount)
-            .Select(c => string.Format(Strings.BulkDelete_Button_Template, c))
-            .ToProperty(this, x => x.DeleteSelectedLabel,
-                initialValue: string.Format(Strings.BulkDelete_Button_Template, 0),
-                scheduler: _scheduler);
-
-        var hasItemsObservable = this.WhenAnyValue(x => x.HasItems);
-        var hasSelectionObservable = this.WhenAnyValue(x => x.HasSelection);
+        // Unsafe (reflection) observation: see the note on SelectedCount (RXUIBIND016).
+        var hasItemsObservable = this.WhenAnyValueUnsafe(x => x.HasItems);
+        var hasSelectionObservable = this.WhenAnyValueUnsafe(x => x.HasSelection);
 
         SelectAllCommand = ReactiveCommand.Create(
             () =>
@@ -104,7 +104,10 @@ public abstract class PagedSelectionViewModelBase<TRow> : ReactiveObject, IActiv
         _rowSubscriptions.Clear();
         foreach (var row in Rows)
         {
-            row.WhenAnyValue(r => r.IsSelected)
+            // Reflection-based overload: ReactiveUI.Binding 9.1's source generator emits an
+            // invalid `class, ReactiveObject` constraint (CS0450) when the sender is the
+            // generic TRow, so the generated WhenAnyValue can't be used here.
+            row.WhenAnyValueUnsafe(r => r.IsSelected)
                 .Skip(1)
                 .Subscribe(isNowSelected =>
                 {
