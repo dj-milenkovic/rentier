@@ -63,6 +63,18 @@
           }
         ]
       }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pwsh -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/graphify-worktree.ps1",
+            "timeout": 30
+          }
+        ]
+      }
     ]
   },
   "env": {
