@@ -2,7 +2,6 @@ using Avalonia;
 using Avalonia.Headless;
 using ReactiveUI.Avalonia;
 using Rentier.UnitTests.Desktop;
-using Xunit;
 using Xunit.Sdk;
 using Xunit.v3;
 
