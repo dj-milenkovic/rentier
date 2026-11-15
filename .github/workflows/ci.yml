@@ -421,9 +421,9 @@ jobs:
             /d:sonar.host.url="https://sonarcloud.io" \
             /d:sonar.sourceEncoding="UTF-8" \
             /d:sonar.cs.opencover.reportsPaths="${COV_PATHS}" \
-            /d:sonar.exclusions="**/Migrations/**,**/obj/**,**/bin/**,**/Properties/**,**/*.Designer.cs,**/*.g.cs,**/*.axaml.cs,**/AssemblyInfo.cs,**/coverage-raw/**,**/coverage-report/**" \
+            /d:sonar.exclusions="**/Migrations/**,**/obj/**,**/bin/**,**/Properties/**,**/*.Designer.cs,**/*.g.cs,**/*.axaml.cs,**/AssemblyInfo.cs,**/coverage-raw/**,**/coverage-report/**,.claude/**,graphify-out/**" \
             /d:sonar.coverage.exclusions="**/*.Tests/**,**/Migrations/**,**/Program.cs,**/*.axaml.cs,**/Properties/**" \
-            /d:sonar.cpd.exclusions="**/*.Tests/**,**/*.g.cs" \
+            /d:sonar.cpd.exclusions="**/*.Tests/**,**/*.g.cs,.claude/**,graphify-out/**" \
             /d:sonar.test.inclusions="**/*.Tests/**,**/*Tests.cs"
 
           for proj in \
