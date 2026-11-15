@@ -151,7 +151,6 @@ Thumbs.db
 .ruflo/
 .rvf/
 .cache/
-.codegraph/
 .swarm/
 .claude/worktrees/
 .claude/.proven-config-version
@@ -177,3 +176,6 @@ Thumbs.db
 .claude/skills/swarm-orchestration/
 .claude/skills/v3-*/
 .claude/skills/verification-quality/
+
+# Graphify output is a local build artifact (regenerate with `python -m graphify update .`)
+graphify-out/

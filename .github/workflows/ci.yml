@@ -292,6 +292,7 @@ jobs:
           reportgenerator \
             "-reports:${REPORTS}" \
             "-targetdir:./coverage-report" \
+            "-assemblyfilters:+Rentier.Domain;+Rentier.Application;+Rentier.Infrastructure;+Rentier.Desktop" \
             "-reporttypes:HtmlInline_AzurePipelines;Cobertura;TextSummary;MarkdownSummaryGithub"
 
           # Extract line coverage percentage
@@ -421,10 +422,10 @@ jobs:
             /d:sonar.host.url="https://sonarcloud.io" \
             /d:sonar.sourceEncoding="UTF-8" \
             /d:sonar.cs.opencover.reportsPaths="${COV_PATHS}" \
-            /d:sonar.exclusions="**/Migrations/**,**/obj/**,**/bin/**,**/Properties/**,**/*.Designer.cs,**/*.g.cs,**/*.axaml.cs,**/AssemblyInfo.cs,**/coverage-raw/**,**/coverage-report/**" \
-            /d:sonar.coverage.exclusions="**/*.Tests/**,**/Migrations/**,**/Program.cs,**/*.axaml.cs,**/Properties/**" \
-            /d:sonar.cpd.exclusions="**/*.Tests/**,**/*.g.cs" \
-            /d:sonar.test.inclusions="**/*.Tests/**,**/*Tests.cs"
+            /d:sonar.exclusions="**/Migrations/**,**/obj/**,**/bin/**,**/Properties/**,**/*.Designer.cs,**/*.g.cs,**/*.axaml.cs,**/AssemblyInfo.cs,**/coverage-raw/**,**/coverage-report/**,.claude/**,graphify-out/**" \
+            /d:sonar.coverage.exclusions="tests/**,**/*.Tests/**,**/Migrations/**,**/Program.cs,**/*.axaml.cs,**/Properties/**" \
+            /d:sonar.cpd.exclusions="tests/**,**/*.Tests/**,**/*.g.cs,.claude/**,graphify-out/**" \
+            /d:sonar.test.inclusions="tests/**,**/*.Tests/**,**/*Tests.cs"
 
           for proj in \
             src/Rentier.Domain/Rentier.Domain.csproj \
