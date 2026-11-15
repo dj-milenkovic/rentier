@@ -17,7 +17,7 @@ namespace Rentier.Desktop.Composition;
 
 /// <summary>
 /// DI composition root for Desktop services.
-/// Infrastructure services registered via AddInfrastructureServices in App.axaml.cs.
+/// Infrastructure services registered via AddInfrastructureServicesAsync in App.axaml.cs.
 /// </summary>
 public static class CompositionRoot
 {
