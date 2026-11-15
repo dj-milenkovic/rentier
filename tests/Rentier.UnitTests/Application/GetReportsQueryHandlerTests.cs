@@ -255,6 +255,28 @@ public class GetReportsQueryHandlerTests
         result.Value.Rows.Should().HaveCount(30);
     }
 
+    [Theory]
+    [InlineData(0, 30, 1)]
+    [InlineData(30, 30, 1)]
+    [InlineData(31, 30, 2)]
+    [InlineData(60, 30, 2)]
+    [InlineData(100, 100, 1)]
+    [InlineData(101, 100, 2)]
+    public async Task HandleAsync_TotalCountAndPageSize_ComputesTotalPagesWithIntegerCeiling(
+        int total, int pageSize, int expectedPages)
+    {
+        _reportRepo.GetPagedAsync(
+            Arg.Any<ReportColumnFilter?>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
+            .Returns(((IReadOnlyList<Report>)Array.Empty<Report>(), total));
+        _importerRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([]);
+        _filingRepo.GetAggregatesByReportIdsAsync(Arg.Any<IReadOnlyList<Guid>>(), Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<Guid, (int, DateOnly?)>());
+
+        var result = await _sut.HandleAsync(new GetReportsQuery(Page: 1, PageSize: pageSize), TestContext.Current.CancellationToken);
+
+        result.Value.TotalPages.Should().Be(expectedPages);
+    }
+
     [Fact]
     public async Task HandleAsync_EmptyCollection_ReturnsTotalPagesOne()
     {

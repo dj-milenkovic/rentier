@@ -74,7 +74,7 @@ public sealed class GetReportsQueryHandler
                     dtos = dtos.Where(d => d.FilingCount == fcVal).ToList();
                 }
 
-                var totalPages = Math.Max(1, (int)Math.Ceiling((double)totalCount / query.PageSize));
+                var totalPages = PageMath.TotalPages(totalCount, query.PageSize);
                 return Result<ReportsPageResult, Error>.Success(
                     new ReportsPageResult(dtos.AsReadOnly(), totalCount, totalPages));
             },
