@@ -7,7 +7,8 @@ using Rentier.Domain.ValueObjects;
 
 namespace Rentier.Application.Handlers;
 
-public sealed class GetDashboardQueryHandler(IFilingRepository filingRepo, IMailboxRepository mailboxRepo)
+public sealed class GetDashboardQueryHandler(
+    IFilingRepository filingRepo, IMailboxRepository mailboxRepo, TimeProvider timeProvider)
     : IQueryHandler<GetDashboardQuery, Result<DashboardDto, Error>>
 {
     public Task<Result<DashboardDto, Error>> HandleAsync(
@@ -15,7 +16,9 @@ public sealed class GetDashboardQueryHandler(IFilingRepository filingRepo, IMail
         HandlerHelper.ExecuteAsync(
             async () =>
             {
-                var today = DateOnly.FromDateTime(DateTime.Today);
+                // Deadlines are calendar dates the taxpayer must meet, so "overdue" and
+                // "upcoming" are judged against the user's local date, not the UTC date.
+                var today = timeProvider.GetLocalToday();
 
                 // Run sequentially — SQLite is not thread-safe with EF Core
                 var upcoming = await filingRepo.GetUpcomingAsync(today, 30, ct);

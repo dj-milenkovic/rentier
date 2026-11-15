@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
@@ -22,6 +23,11 @@ public static class CompositionRoot
 {
     public static IServiceCollection AddDesktopServices(this IServiceCollection services)
     {
+        // The one clock for the whole app. Application handlers and Infrastructure services take
+        // TimeProvider by constructor injection and never read DateTime.Now/UtcNow/Today directly.
+        // TryAdd so a host (or a test) that registered its own clock first keeps it.
+        services.TryAddSingleton(TimeProvider.System);
+
         // Theme service (Desktop-only UI concern — not an Application layer service)
         services.AddSingleton<IThemeService, ThemeService>();
 

@@ -10,6 +10,7 @@ using Rentier.Application.Queries;
 using Rentier.Application.Repositories;
 using Rentier.Desktop.Services;
 using Xunit;
+using Rentier.Tests.Common.Fakes;
 
 namespace Rentier.UnitTests;
 
@@ -112,6 +113,7 @@ public class DiRegistrationSmokeTests
         services.AddSingleton(Substitute.For<IImporterRepository>());
         services.AddSingleton(Substitute.For<IStatementParser>());
         services.AddSingleton(Substitute.For<ICommandHandler<ProcessReportsCommand, Result<ProcessReportsResult, Error>>>());
+        services.AddSingleton<TimeProvider>(TestClock.Provider());
 
         services.AddTransient<
             IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>>,

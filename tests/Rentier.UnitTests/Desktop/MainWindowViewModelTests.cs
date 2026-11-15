@@ -10,6 +10,7 @@ using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
 using Rentier.Desktop.Services;
 using Rentier.Desktop.ViewModels;
+using Rentier.Tests.Common.Fakes;
 using Xunit;
 
 namespace Rentier.UnitTests;
@@ -20,6 +21,7 @@ public class MainWindowViewModelTests
     private static IServiceProvider BuildProvider()
     {
         var services = new ServiceCollection();
+        services.AddSingleton<TimeProvider>(TestClock.Provider());
 
         // UpdateService
         services.AddSingleton(_ => Substitute.For<IUpdateService>());

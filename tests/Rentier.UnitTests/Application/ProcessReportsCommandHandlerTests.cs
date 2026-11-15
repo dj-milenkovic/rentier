@@ -13,6 +13,7 @@ using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 using Rentier.Domain.ValueObjects;
 using Xunit;
+using Rentier.Tests.Common.Fakes;
 
 namespace Rentier.UnitTests.Application;
 
@@ -35,7 +36,7 @@ public class ProcessReportsCommandHandlerTests
     }
 
     private static Report MakeReportWithContent(Guid importerId)
-        => Report.Create(importerId, "statement.csv", [1, 2, 3], null);
+        => Report.Create(importerId, "statement.csv", [1, 2, 3], null, TestClock.TODAY);
 
     /// <summary>Builds a valid persisted-looking Filing for the given entity/gross on TestDate (no WHT).</summary>
     private Filing MakeExistingFiling(string entity, decimal grossRsd, IncomeType incomeType = IncomeType.Dividend)
@@ -80,7 +81,8 @@ public class ProcessReportsCommandHandlerTests
             resolver,
             holidayRepo,
             parser,
-            NullLogger<ProcessReportsCommandHandler>.Instance);
+            NullLogger<ProcessReportsCommandHandler>.Instance,
+            TestClock.Provider());
     }
 
     [Fact]
@@ -102,7 +104,7 @@ public class ProcessReportsCommandHandlerTests
     public async Task HandleAsync_ReportWithNoContent_SetsReportToError()
     {
         var importer = MakeImporter();
-        var report = Report.Create(importer.Id, "empty.csv", null, null);
+        var report = Report.Create(importer.Id, "empty.csv", null, null, TestClock.TODAY);
 
         var reportRepo = Substitute.For<IReportRepository>();
         reportRepo.GetByStatusAsync(ReportStatus.Init, Arg.Any<CancellationToken>())
