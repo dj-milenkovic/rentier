@@ -7,6 +7,7 @@ using ReactiveUI;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Domain.Enums;
+using Rentier.Domain.Exceptions;
 using Rentier.Domain.ValueObjects;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
@@ -94,8 +95,10 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
     /// <summary>
     /// Upper bound for the DatePicker — today's <b>local</b> calendar date (the picker shows a
     /// local calendar), carried as a zero-offset value so its date part is never shifted.
+    /// Evaluated on every read so it never goes stale if the app stays open past midnight.
     /// </summary>
-    public DateTimeOffset TodayOffset { get; }
+    public DateTimeOffset TodayOffset =>
+        new(_timeProvider.GetLocalToday().ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
 
     // ── Derived observables ──────────────────────────────────────────────────
     private readonly ObservableAsPropertyHelper<bool> _isReplayFromDateMode;
@@ -118,12 +121,10 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
     public ReactiveCommand<RxVoid, RxVoid> CancelCommand { get; }
 
     public SyncViewModel(
-        ISyncAllCommandHandler handler, ISequencer? scheduler = null, TimeProvider? timeProvider = null)
+        ISyncAllCommandHandler handler, TimeProvider timeProvider, ISequencer? scheduler = null)
     {
         _handler = handler;
-        _timeProvider = timeProvider ?? TimeProvider.System;
-        TodayOffset = new DateTimeOffset(
-            _timeProvider.GetLocalToday().ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+        _timeProvider = timeProvider;
         var effectiveScheduler = scheduler ?? RxSchedulers.MainThreadScheduler;
         _scheduler = effectiveScheduler;
 
@@ -234,11 +235,12 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
                 entry => LogEntries.Add(new SyncProgressEntryViewModel(entry)),
                 _scheduler);
 
-            var parameters = new SyncParameters(
-                SelectedSyncMode,
-                SelectedDuplicateStrategy,
-                SelectedSyncMode == SyncMode.ReplayFromDate ? ReplayFromDate : null,
-                today: _timeProvider.GetLocalToday());
+            var parameters = SelectedSyncMode == SyncMode.ReplayFromDate
+                ? SyncParameters.ReplayFrom(
+                    ReplayFromDate ?? throw new DomainException("ReplayFromDate is required for ReplayFromDate mode"),
+                    _timeProvider.GetLocalToday(),
+                    SelectedDuplicateStrategy)
+                : new SyncParameters(SelectedSyncMode, SelectedDuplicateStrategy);
 
             var result = await _handler.HandleAsync(new SyncAllCommand(parameters), progress, _cts.Token);
 

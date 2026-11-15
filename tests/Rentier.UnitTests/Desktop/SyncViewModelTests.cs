@@ -36,8 +36,8 @@ public class SyncViewModelTests
         TimeProvider? timeProvider = null)
         => new(
             handler ?? MakeHandler(),
-            ImmediateSequencer.Instance,
-            timeProvider ?? TestClock.Provider());
+            timeProvider ?? TestClock.Provider(),
+            ImmediateSequencer.Instance);
 
     /// <summary>A date as the DatePicker hands it over: midnight of the picked local day.</summary>
     private static DateTimeOffset Picked(DateOnly date) =>
@@ -108,7 +108,7 @@ public class SyncViewModelTests
                 return Result<SyncAllResult, Error>.Success(new SyncAllResult(1, 0, 0, 0, []));
             });
 
-        var vm = new SyncViewModel(handler, ImmediateSequencer.Instance);
+        var vm = new SyncViewModel(handler, TestClock.Provider(), ImmediateSequencer.Instance);
 
         await vm.SyncCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
@@ -276,7 +276,7 @@ public class SyncViewModelTests
                 return await tcs.Task;
             });
 
-        var vm = new SyncViewModel(handler);
+        var vm = new SyncViewModel(handler, TestClock.Provider());
         using var _ = vm.Activator.Activate();
 
         var executeTask = vm.SyncCommand.Execute().FirstAsync(TestContext.Current.CancellationToken).GetAwaiter();
@@ -328,7 +328,7 @@ public class SyncViewModelTests
                 return Result<SyncAllResult, Error>.Success(new SyncAllResult(1, 0, 0, 0, []));
             });
 
-        var vm = new SyncViewModel(handler, ImmediateSequencer.Instance);
+        var vm = new SyncViewModel(handler, TestClock.Provider(), ImmediateSequencer.Instance);
 
         // Progress<T> captures the SynchronizationContext at creation time and may
         // post callbacks to a thread-pool thread rather than the current thread.
@@ -532,6 +532,18 @@ public class SyncViewModelTests
         var vm = CreateVm(timeProvider: SerbianNewYearClock());
 
         vm.TodayOffset.Should().Be(Picked(new DateOnly(2026, 1, 1)));
+    }
+
+    [Fact]
+    public void TodayOffset_ClockPassesLocalMidnight_FollowsTheClock()
+    {
+        var clock = SerbianNewYearClock();
+        var vm = CreateVm(timeProvider: clock);
+        vm.TodayOffset.Should().Be(Picked(new DateOnly(2026, 1, 1)));
+
+        clock.Advance(TimeSpan.FromDays(1));
+
+        vm.TodayOffset.Should().Be(Picked(new DateOnly(2026, 1, 2)));
     }
 
     [Fact]
