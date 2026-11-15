@@ -15,6 +15,7 @@ using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
 using Rentier.Desktop.Resources;
+using Rentier.Desktop.Services;
 using Rentier.Desktop.ViewModels;
 using Rentier.Desktop.Views;
 using Rentier.Domain.Enums;
@@ -825,9 +826,9 @@ public class FilingsViewHeadlessTests
                 Substitute.For<ICommandHandler<DeleteFilingCommand, Result<VoidResult, Error>>>(),
                 Substitute.For<ICommandHandler<ExportFilingCommand, Result<ExportFilingResult, Error>>>(),
                 Substitute.For<ICommandHandler<BulkDeleteFilingsCommand, Result<VoidResult, Error>>>()),
-            confirmDelete: _ => Task.FromResult(false),
-            saveFile: _ => Task.CompletedTask,
-            navigateToManualFiling: () => { },
+            confirmation: DesktopTestDoubles.Confirmation(),
+            fileSave: DesktopTestDoubles.FileSave(),
+            navigation: Substitute.For<INavigationService>(),
             scheduler: ImmediateSequencer.Instance);
 
         var view = new FilingsView { DataContext = vm };
@@ -874,9 +875,9 @@ public class FilingsViewHeadlessTests
                 deleteFiling,
                 exportFiling,
                 bulkDelete),
-            confirmDelete: _ => Task.FromResult(false),
-            saveFile: _ => Task.CompletedTask,
-            navigateToManualFiling: () => { },
+            confirmation: DesktopTestDoubles.Confirmation(),
+            fileSave: DesktopTestDoubles.FileSave(),
+            navigation: Substitute.For<INavigationService>(),
             scheduler: ImmediateSequencer.Instance);
     }
 

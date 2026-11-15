@@ -7,6 +7,7 @@ using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
+using Rentier.Desktop.Services;
 using Rentier.Desktop.ViewModels;
 using Rentier.Domain.Enums;
 using Xunit;
@@ -39,7 +40,8 @@ public sealed class ImporterSettingsViewModelTests
         IQueryHandler<GetMailboxesQuery, Result<IReadOnlyList<MailboxDto>, Error>>? getMailboxes = null,
         ICommandHandler<AddImporterCommand, Result<Guid, Error>>? add = null,
         ICommandHandler<UpdateImporterCommand, Result<VoidResult, Error>>? update = null,
-        ICommandHandler<DeleteImporterCommand, Result<VoidResult, Error>>? delete = null)
+        ICommandHandler<DeleteImporterCommand, Result<VoidResult, Error>>? delete = null,
+        IConfirmationService? confirmation = null)
     {
         // Only set up defaults for mocks that were NOT provided by the caller
         if (getImporters == null)
@@ -69,8 +71,8 @@ public sealed class ImporterSettingsViewModelTests
                 add ?? MockAdd(),
                 update ?? MockUpdate(),
                 delete ?? MockDelete()),
-            ImmediateSequencer.Instance,
-            confirmAction: (_, _, _, _) => Task.FromResult(true));
+            confirmation ?? DesktopTestDoubles.Confirmation(true),
+            ImmediateSequencer.Instance);
     }
 
     private static ImporterDto MakeImporterDto(string name = "Test Importer") =>
@@ -510,6 +512,20 @@ public sealed class ImporterSettingsViewModelTests
         await deleteHandler.Received(1).HandleAsync(Arg.Any<DeleteImporterCommand>(), Arg.Any<CancellationToken>());
         vm.SelectedImporter.Should().BeNull();
         vm.IsEditMode.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task DeleteCommand_WhenUserCancels_DoesNotCallDeleteHandler()
+    {
+        var deleteHandler = MockDelete();
+        var vm = CreateVm(delete: deleteHandler, confirmation: DesktopTestDoubles.Confirmation(false));
+        var item = ImporterItemViewModel.From(MakeImporterDto("Keep Me"));
+        vm.ImporterItems.Add(item);
+        vm.SelectedImporter = item;
+
+        await vm.DeleteCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
+
+        await deleteHandler.DidNotReceive().HandleAsync(Arg.Any<DeleteImporterCommand>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]

@@ -46,8 +46,7 @@ public class MainWindowViewModelTests
             Substitute.For<ICommandHandler<ExportFilingCommand, Result<ExportFilingResult, Error>>>());
         services.AddTransient(_ =>
             Substitute.For<ICommandHandler<BulkDeleteFilingsCommand, Result<VoidResult, Error>>>());
-        services.AddTransient<Func<string, Task<bool>>>(_ => _ => Task.FromResult(false));
-        services.AddTransient<Func<ExportFilingResult, Task>>(_ => _ => Task.CompletedTask);
+        DesktopTestDoubles.AddUiServiceDoubles(services);
         services.AddTransient<FilingsHandlers>();
 
         // ManualFiling
@@ -75,9 +74,7 @@ public class MainWindowViewModelTests
             Substitute.For<ICommandHandler<DeleteReportCommand, Result<VoidResult, Error>>>());
         services.AddTransient(_ =>
             Substitute.For<ICommandHandler<BulkDeleteReportsCommand, Result<VoidResult, Error>>>());
-        services.AddTransient<Func<string, string, Task<bool>>>(_ => (_, _) => Task.FromResult(false));
-        services.AddTransient<Func<Task<(Guid ImporterId, string FileName, byte[] Content)?>>>(
-            _ => () => Task.FromResult<(Guid, string, byte[])?>(null));
+        services.AddTransient<ReportsHandlers>();
 
         // Sync
         services.AddTransient(_ =>
@@ -129,7 +126,8 @@ public class MainWindowViewModelTests
         return new ImporterSettingsViewModel(
             new ImporterSettingsHandlers(
                 getImporters, getProfile, getMailboxes,
-                addImporter, updateImporter, deleteImporter));
+                addImporter, updateImporter, deleteImporter),
+            DesktopTestDoubles.Confirmation());
     }
 
     private static AppearanceSettingsViewModel BuildAppearanceVm()
@@ -173,7 +171,8 @@ public class MainWindowViewModelTests
     {
         var provider = BuildProvider();
         var updateService = provider.GetRequiredService<IUpdateService>();
-        return new(provider, BuildLocalizationService(), updateService, BuildAppVersionService());
+        return new(provider, BuildLocalizationService(), updateService, BuildAppVersionService(),
+            provider.GetRequiredService<INavigationRequestSource>());
     }
 
     // ── Constructor tests ─────────────────────────────────────────────────────
@@ -211,7 +210,8 @@ public class MainWindowViewModelTests
         var appVersionService = BuildAppVersionService("v9.9.9");
 
         var vm = new MainWindowViewModel(
-            provider, BuildLocalizationService(), updateService, appVersionService);
+            provider, BuildLocalizationService(), updateService, appVersionService,
+            provider.GetRequiredService<INavigationRequestSource>());
 
         vm.AppVersionText.Should().Be("v9.9.9");
     }
@@ -319,6 +319,41 @@ public class MainWindowViewModelTests
         manualVm!.CancelCommand.Execute().Subscribe();
 
         filingsVm.ReportIdFilter.Should().BeNull();
+    }
+
+    // ── Navigation requests raised through INavigationService ─────────────────
+
+    private static (MainWindowViewModel Vm, INavigationService Navigation) CreateVmWithNavigation()
+    {
+        var provider = BuildProvider();
+        var vm = new MainWindowViewModel(
+            provider, BuildLocalizationService(), provider.GetRequiredService<IUpdateService>(),
+            BuildAppVersionService(), provider.GetRequiredService<INavigationRequestSource>());
+        return (vm, provider.GetRequiredService<INavigationService>());
+    }
+
+    [Fact]
+    public void NavigateToManualFiling_CalledTwice_OpensFreshFormEachTime()
+    {
+        var (vm, navigation) = CreateVmWithNavigation();
+        using var _ = vm.Activator.Activate();
+        navigation.NavigateToManualFiling();
+        var first = vm.CurrentViewModel;
+
+        navigation.NavigateToManualFiling();
+
+        vm.CurrentViewModel.Should().BeOfType<ManualFilingViewModel>().And.NotBeSameAs(first);
+    }
+
+    [Fact]
+    public void NavigateToManualFiling_Called_DoesNotAddSidebarEntry()
+    {
+        var (vm, navigation) = CreateVmWithNavigation();
+        using var _ = vm.Activator.Activate();
+
+        navigation.NavigateToManualFiling();
+
+        vm.NavigationEntries.Should().NotContain(e => e.ViewModel is ManualFilingViewModel);
     }
 }
 

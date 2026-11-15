@@ -12,6 +12,7 @@ using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
+using Rentier.Desktop.Services;
 using Rentier.Desktop.ViewModels;
 using Rentier.Desktop.Views;
 using Rentier.Domain.Enums;
@@ -292,13 +293,10 @@ public class ReportsViewHeadlessTests
         var bulkDelete = Substitute.For<ICommandHandler<BulkDeleteReportsCommand, Result<VoidResult, Error>>>();
 
         return new ReportsViewModel(
-            getReports,
-            importReport,
-            deleteReport,
-            bulkDelete,
-            confirmDelete: (_, _) => Task.FromResult(false),
-            showImportDialog: () => Task.FromResult<(Guid ImporterId, string FileName, byte[] Content)?>(null),
-            navigateToFilings: _ => { },
+            new ReportsHandlers(getReports, importReport, deleteReport, bulkDelete),
+            confirmation: DesktopTestDoubles.Confirmation(),
+            importDialog: DesktopTestDoubles.ImportDialog(),
+            navigation: Substitute.For<INavigationService>(),
             scheduler: ImmediateSequencer.Instance);
     }
 

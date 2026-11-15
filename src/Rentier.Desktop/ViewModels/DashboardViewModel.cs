@@ -10,6 +10,7 @@ using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
 using Rentier.Desktop.Resources;
+using Rentier.Desktop.Services;
 
 namespace Rentier.Desktop.ViewModels;
 
@@ -18,7 +19,6 @@ public sealed class DashboardViewModel : ReactiveObject, IActivatableViewModel
     public ViewModelActivator Activator { get; } = new();
 
     private readonly IQueryHandler<GetDashboardQuery, Result<DashboardDto, Error>> _handler;
-    private readonly Action _navigateToFilings;
 
     private bool _isLoading;
     private string? _errorMessage;
@@ -105,16 +105,15 @@ public sealed class DashboardViewModel : ReactiveObject, IActivatableViewModel
 
     public DashboardViewModel(
         IQueryHandler<GetDashboardQuery, Result<DashboardDto, Error>> handler,
-        Action navigateToFilings,
+        INavigationService navigation,
         ISequencer? scheduler = null)
     {
         _handler = handler;
-        _navigateToFilings = navigateToFilings;
         var outputScheduler = scheduler ?? RxSchedulers.MainThreadScheduler;
 
         LoadCommand = ReactiveCommand.CreateFromTask(LoadAsync, outputScheduler: outputScheduler);
         NavigateToFilingsCommand = ReactiveCommand.Create(
-            () => _navigateToFilings(), outputScheduler: outputScheduler);
+            () => navigation.NavigateToFilings(), outputScheduler: outputScheduler);
 
         this.WhenActivated((MultipleDisposable disposables) =>
         {

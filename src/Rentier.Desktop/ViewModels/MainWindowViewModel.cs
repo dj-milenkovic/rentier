@@ -123,12 +123,14 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
     private readonly IUpdateService _updateService;
     private readonly ILocalizationService _localizationService;
     private readonly ISequencer _outputScheduler;
+    private readonly IServiceProvider _provider;
 
     public MainWindowViewModel(
         IServiceProvider provider,
         ILocalizationService localizationService,
         IUpdateService updateService,
         IAppVersionService appVersionService,
+        INavigationRequestSource navigationRequests,
         ISequencer? outputScheduler = null)
     {
         _updateService = updateService;
@@ -176,6 +178,7 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
         RetryDownloadCommand = ReactiveCommand.CreateFromTask(
             RunDownloadUpdateAsync, canRetry, outputScheduler: _outputScheduler);
 
+        _provider = provider;
         NavigationEntries = BuildNavigationEntries(provider, localizationService);
 
         _selectedEntry = NavigationEntries[0];
@@ -183,7 +186,28 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
         _lastContentEntry = NavigationEntries[0];
         NavigationEntries[0].IsActive = true;
 
+        // Both live for the whole app session (singletons), so the handler is never detached.
+        navigationRequests.NavigationRequested += OnNavigationRequested;
+
         this.WhenActivated(RegisterActivation);
+    }
+
+    private void OnNavigationRequested(NavigationRequest request)
+    {
+        switch (request.Target)
+        {
+            case NavigationTarget.Filings:
+                var filingsEntry = NavigationEntries.First(e => e.ViewModel is FilingsViewModel);
+                ((FilingsViewModel)filingsEntry.ViewModel!).ReportIdFilter = request.ReportId;
+                SelectedEntry = filingsEntry;
+                break;
+
+            case NavigationTarget.ManualFiling:
+                // A fresh form each time; it is a hidden sub-page, not a sidebar entry.
+                var manualVm = ActivatorUtilities.CreateInstance<ManualFilingViewModel>(_provider);
+                SelectedEntry = new NavigationEntry(string.Empty, manualVm, IsVisible: false);
+                break;
+        }
     }
 
     private async Task OnDismissUpdateAsync()
@@ -202,47 +226,10 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
     private List<NavigationEntry> BuildNavigationEntries(
         IServiceProvider provider, ILocalizationService localizationService)
     {
-        // ── Dashboard navigation ──────────────────────────────────────────────
-        FilingsViewModel? filingsVm = null;
-        Action navigateToDashboardFilings = () =>
-        {
-            if (filingsVm is not null) filingsVm.ReportIdFilter = null;
-            var filingsEntry = NavigationEntries?.FirstOrDefault(e => e.ViewModel is FilingsViewModel);
-            if (filingsEntry is not null)
-                SelectedEntry = filingsEntry;
-        };
-
-        var dashboardVm = ActivatorUtilities.CreateInstance<DashboardViewModel>(
-            provider, navigateToDashboardFilings);
-
-        // ── Manual filing navigation ──────────────────────────────────────────
-        Action navigateToManualFiling = () =>
-        {
-            var manualVm = ActivatorUtilities.CreateInstance<ManualFilingViewModel>(
-                provider, (Action)(() =>
-                {
-                    if (filingsVm is not null) filingsVm.ReportIdFilter = null;
-                    var filingsEntry = NavigationEntries?.FirstOrDefault(e => e.ViewModel is FilingsViewModel);
-                    if (filingsEntry is not null) SelectedEntry = filingsEntry;
-                }));
-            SelectedEntry = new NavigationEntry(string.Empty, manualVm, IsVisible: false);
-        };
-
-        filingsVm = ActivatorUtilities.CreateInstance<FilingsViewModel>(
-            provider, navigateToManualFiling);
-
-        // ── Reports navigation ────────────────────────────────────────────────
-        Action<Guid> navigateToFilings = reportId =>
-        {
-            filingsVm.ReportIdFilter = reportId;
-            var filingsEntry = NavigationEntries?.FirstOrDefault(e => e.ViewModel is FilingsViewModel);
-            if (filingsEntry is not null)
-                SelectedEntry = filingsEntry;
-        };
-
-        var reportsVm = ActivatorUtilities.CreateInstance<ReportsViewModel>(
-            provider, navigateToFilings);
-
+        // Pages raise cross-page jumps through INavigationService; OnNavigationRequested performs them.
+        var dashboardVm = ActivatorUtilities.CreateInstance<DashboardViewModel>(provider);
+        var filingsVm = ActivatorUtilities.CreateInstance<FilingsViewModel>(provider);
+        var reportsVm = ActivatorUtilities.CreateInstance<ReportsViewModel>(provider);
         var syncVm = ActivatorUtilities.CreateInstance<SyncViewModel>(provider);
 
         // ── Settings sub-ViewModels ───────────────────────────────────────────

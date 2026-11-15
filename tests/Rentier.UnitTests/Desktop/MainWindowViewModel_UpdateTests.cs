@@ -49,8 +49,7 @@ public class MainWindowViewModel_UpdateTests
         services.AddTransient(_ => Substitute.For<ICommandHandler<DeleteFilingCommand, Result<VoidResult, Error>>>());
         services.AddTransient(_ => Substitute.For<ICommandHandler<ExportFilingCommand, Result<ExportFilingResult, Error>>>());
         services.AddTransient(_ => Substitute.For<ICommandHandler<BulkDeleteFilingsCommand, Result<VoidResult, Error>>>());
-        services.AddTransient<Func<string, Task<bool>>>(_ => _ => Task.FromResult(false));
-        services.AddTransient<Func<ExportFilingResult, Task>>(_ => _ => Task.CompletedTask);
+        DesktopTestDoubles.AddUiServiceDoubles(services);
         services.AddTransient<FilingsHandlers>();
         services.AddTransient(_ => Substitute.For<ICommandHandler<CalculateManualFilingCommand, Result<ManualFilingPreviewDto, Error>>>());
         services.AddTransient(_ => Substitute.For<ICommandHandler<CreateManualFilingCommand, Result<Guid, Error>>>());
@@ -71,9 +70,7 @@ public class MainWindowViewModel_UpdateTests
         services.AddTransient(_ => Substitute.For<ICommandHandler<ImportReportCommand, Result<Guid, Error>>>());
         services.AddTransient(_ => Substitute.For<ICommandHandler<DeleteReportCommand, Result<VoidResult, Error>>>());
         services.AddTransient(_ => Substitute.For<ICommandHandler<BulkDeleteReportsCommand, Result<VoidResult, Error>>>());
-        services.AddTransient<Func<string, string, Task<bool>>>(_ => (_, _) => Task.FromResult(false));
-        services.AddTransient<Func<Task<(Guid ImporterId, string FileName, byte[] Content)?>>>(
-            _ => () => Task.FromResult<(Guid, string, byte[])?>(null));
+        services.AddTransient<ReportsHandlers>();
 
         services.AddSingleton(BuildProfileVm());
         services.AddSingleton(BuildHolidayVm());
@@ -117,7 +114,8 @@ public class MainWindowViewModel_UpdateTests
                 Substitute.For<IQueryHandler<GetMailboxesQuery, Result<IReadOnlyList<MailboxDto>, Error>>>(),
                 Substitute.For<ICommandHandler<AddImporterCommand, Result<Guid, Error>>>(),
                 Substitute.For<ICommandHandler<UpdateImporterCommand, Result<VoidResult, Error>>>(),
-                Substitute.For<ICommandHandler<DeleteImporterCommand, Result<VoidResult, Error>>>()));
+                Substitute.For<ICommandHandler<DeleteImporterCommand, Result<VoidResult, Error>>>()),
+            DesktopTestDoubles.Confirmation());
     }
 
     private static AppearanceSettingsViewModel BuildAppearanceVm()
@@ -163,8 +161,10 @@ public class MainWindowViewModel_UpdateTests
     private static MainWindowViewModel CreateVm(IUpdateService? updateService = null)
     {
         var svc = updateService ?? BuildUpdateService();
+        var provider = BuildProvider(svc);
         return new MainWindowViewModel(
-            BuildProvider(svc), BuildLocalizationService(), svc, BuildAppVersionService(), ImmediateSequencer.Instance);
+            provider, BuildLocalizationService(), svc, BuildAppVersionService(),
+            provider.GetRequiredService<INavigationRequestSource>(), ImmediateSequencer.Instance);
     }
 
     [Fact]
