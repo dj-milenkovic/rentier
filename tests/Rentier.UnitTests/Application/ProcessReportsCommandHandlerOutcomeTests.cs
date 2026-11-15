@@ -9,7 +9,9 @@ using Rentier.Application.Parsing;
 using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
+using Rentier.Domain.Exceptions;
 using Rentier.Domain.ValueObjects;
+using Rentier.Tests.Common.Fakes;
 using Xunit;
 
 namespace Rentier.UnitTests.Application;
@@ -20,6 +22,11 @@ namespace Rentier.UnitTests.Application;
 /// counters, progress messages and <see cref="ReportProcessingDetail"/> for the rejected,
 /// completed and unexpected-exception paths.
 /// </summary>
+/// <remarks>
+/// Written against the handler before the unit of work (#159) and re-targeted to it: the
+/// rejected and completed paths are unchanged; an unexpected exception now leaves the report
+/// pending for retry (Warning) instead of committing it as Error, as #159 intended.
+/// </remarks>
 public partial class ProcessReportsCommandHandlerTests
 {
     /// <summary>Synchronous progress sink — <see cref="Progress{T}"/> posts asynchronously.</summary>
@@ -39,15 +46,27 @@ public partial class ProcessReportsCommandHandlerTests
         public IStatementParser Parser { get; } = Substitute.For<IStatementParser>();
         public RecordingProgress Progress { get; } = new();
 
-        /// <summary>Report statuses in the order they were handed to <c>UpdateAsync</c>.</summary>
+        public FakeUnitOfWorkFactory UnitOfWorkFactory { get; }
+
+        /// <summary>Report statuses in the order they were handed to <c>UpdateProcessingStateAsync</c>.</summary>
         public List<(string Name, ReportStatus Status)> Persisted { get; } = [];
+
+        /// <summary>The "database" copy of each report, served to the failed-attempt re-read.</summary>
+        public Dictionary<Guid, Report> Stored { get; } = [];
 
         public OutcomeFixture(Importer importer, params Report[] reports)
         {
+            UnitOfWorkFactory = new FakeUnitOfWorkFactory(ReportRepo, FilingRepo);
             ReportRepo.GetByStatusAsync(ReportStatus.Init, Arg.Any<CancellationToken>()).Returns(reports);
-            ReportRepo.UpdateAsync(Arg.Any<Report>(), Arg.Any<CancellationToken>())
+            ReportRepo.UpdateProcessingStateAsync(Arg.Any<Report>(), Arg.Any<CancellationToken>())
                 .Returns(Task.CompletedTask)
                 .AndDoes(ci => Persisted.Add((ci.Arg<Report>().ReportName, ci.Arg<Report>().Status)));
+            foreach (var report in reports)
+            {
+                var stored = StoredCopyOf(report);
+                Stored[report.Id] = stored;
+                ReportRepo.GetByIdAsync(report.Id, Arg.Any<CancellationToken>()).Returns(stored);
+            }
             ImporterRepo.GetByIdAsync(importer.Id, Arg.Any<CancellationToken>()).Returns(importer);
             FilingRepo.GetByIncomeEventAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<DateOnly>(),
                     Arg.Any<CancellationToken>())
@@ -64,26 +83,32 @@ public partial class ProcessReportsCommandHandlerTests
             => Parser.ParseAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
                 .Returns(Result<StatementParseResult, Error>.Success(
                     new StatementParseResult(dividends, [], [], [], [])));
+
+        /// <summary>A shallow copy of <paramref name="report"/> as the database would hold it.</summary>
+        private static Report StoredCopyOf(Report report)
+            => (Report)typeof(object)
+                .GetMethod("MemberwiseClone", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+                .Invoke(report, null)!;
     }
 
     private Task<Result<ProcessReportsResult, Error>> RunAsync(OutcomeFixture f)
         => MakeHandler(
                 reportRepo: f.ReportRepo, importerRepo: f.ImporterRepo, filingRepo: f.FilingRepo,
-                rateFetcher: f.RateFetcher, parser: f.Parser)
+                rateFetcher: f.RateFetcher, parser: f.Parser, unitOfWorkFactory: f.UnitOfWorkFactory)
             .HandleAsync(new ProcessReportsCommand(f.Progress), TestContext.Current.CancellationToken);
 
     [Fact]
     public async Task HandleAsync_RejectedReport_PersistsErrorAndReportsRejectionMessage()
     {
         var importer = MakeImporter();
-        var f = new OutcomeFixture(importer, Report.Create(importer.Id, "empty.csv", null, null));
+        var f = new OutcomeFixture(importer, Report.Create(importer.Id, "empty.csv", null, null, TestClock.TODAY));
 
         var result = await RunAsync(f);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().BeEquivalentTo(new ProcessReportsResult(
             0, 0, 1, [], 0,
-            [new ReportProcessingDetail("empty.csv", 0, 0, SyncProgressSeverity.Error)]));
+            [new ReportProcessingDetail("empty.csv", 0, 0, SyncProgressSeverity.Error)], 0, []));
         f.Persisted.Should().Equal(("empty.csv", ReportStatus.Error));
         f.Progress.Entries.Should().ContainSingle();
         f.Progress.Entries[0].Message.Should().Be(
@@ -118,7 +143,7 @@ public partial class ProcessReportsCommandHandlerTests
 
         result.Value.Should().BeEquivalentTo(new ProcessReportsResult(
             1, 1, 0, [], 0,
-            [new ReportProcessingDetail("statement.csv", 1, 0, SyncProgressSeverity.Info)]));
+            [new ReportProcessingDetail("statement.csv", 1, 0, SyncProgressSeverity.Info)], 0, []));
         f.Persisted.Should().Equal(("statement.csv", ReportStatus.Processed));
         f.Progress.Entries.Should().ContainSingle();
         f.Progress.Entries[0].Message.Should().Be("Report 'statement.csv': 1 filing(s) created, 0 failed.");
@@ -190,7 +215,7 @@ public partial class ProcessReportsCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_EventThrows_RecordsDomainErrorForThatEventAndContinues()
+    public async Task HandleAsync_EventThrowsDomainException_RecordsDomainErrorForThatEventAndContinues()
     {
         var importer = MakeImporter();
         var f = new OutcomeFixture(importer, MakeReportWithContent(importer.Id));
@@ -198,7 +223,7 @@ public partial class ProcessReportsCommandHandlerTests
             new DividendRecord(TestDate, "USD", "Broken Co", 100m),
             new DividendRecord(TestDate, "USD", "ACME Corp", 100m));
         f.FilingRepo.AddAsync(Arg.Is<Filing>(x => x.PayingEntity == "Broken Co"), Arg.Any<CancellationToken>())
-            .ThrowsAsync(new InvalidOperationException("insert failed"));
+            .ThrowsAsync(new DomainException("insert failed"));
 
         var result = await RunAsync(f);
 
@@ -212,12 +237,12 @@ public partial class ProcessReportsCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_UnexpectedException_PersistsErrorReportsMessageAndContinuesWithNextReport()
+    public async Task HandleAsync_UnexpectedException_KeepsReportPendingReportsRetryAndContinuesWithNextReport()
     {
         var importer = MakeImporter();
         var brokenImporterId = Guid.NewGuid();
-        var broken = Report.Create(brokenImporterId, "broken.csv", [1, 2, 3], null);
-        var good = Report.Create(importer.Id, "good.csv", [1, 2, 3], null);
+        var broken = Report.Create(brokenImporterId, "broken.csv", [1, 2, 3], null, TestClock.TODAY);
+        var good = Report.Create(importer.Id, "good.csv", [1, 2, 3], null, TestClock.TODAY);
         var f = new OutcomeFixture(importer, broken, good);
         f.ImporterRepo.GetByIdAsync(brokenImporterId, Arg.Any<CancellationToken>())
             .ThrowsAsync(new InvalidOperationException("db down"));
@@ -228,15 +253,18 @@ public partial class ProcessReportsCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().BeEquivalentTo(
             new ProcessReportsResult(
-                1, 1, 1, [], 0,
+                1, 1, 0, [], 0,
                 [
-                    new ReportProcessingDetail("broken.csv", 0, 0, SyncProgressSeverity.Error),
+                    new ReportProcessingDetail("broken.csv", 0, 0, SyncProgressSeverity.Warning),
                     new ReportProcessingDetail("good.csv", 1, 0, SyncProgressSeverity.Info),
-                ]),
+                ],
+                1,
+                [new ReportFailedAttempt(broken.Id, "broken.csv", "db down", 1, FailedAttemptKind.PendingRetry)]),
             o => o.WithStrictOrdering());
-        f.Persisted.Should().Equal(("broken.csv", ReportStatus.Error), ("good.csv", ReportStatus.Processed));
+        f.Persisted.Should().Equal(("broken.csv", ReportStatus.Init), ("good.csv", ReportStatus.Processed));
         f.Progress.Entries.Select(e => (e.Message, e.Severity)).Should().Equal(
-            ("Report 'broken.csv': processing error — db down.", SyncProgressSeverity.Error),
+            ("Report 'broken.csv': processing failed (attempt 1) — db down. Nothing was saved; it will be retried on the next sync.",
+                SyncProgressSeverity.Warning),
             ("Report 'good.csv': 1 filing(s) created, 0 failed.", SyncProgressSeverity.Info));
     }
 
@@ -268,5 +296,62 @@ public partial class ProcessReportsCommandHandlerTests
 
         await act.Should().ThrowAsync<OperationCanceledException>();
         f.Persisted.Should().BeEmpty();
+    }
+
+    // ── Rejection commit failures ────────────────────────────────────────────
+    // Saving a rejection can fail like any commit. The rejection is the cause, so it — not the
+    // storage error — must be what the failed attempt records and what the user is told.
+
+    private OutcomeFixture RejectionWhoseCommitFails()
+    {
+        var importer = MakeImporter();
+        var f = new OutcomeFixture(importer, Report.Create(importer.Id, "empty.csv", null, null, TestClock.TODAY));
+        // Unit of work #1 commits the rejection (fails); #2 records the failed attempt.
+        f.UnitOfWorkFactory.SaveFailure = ordinal => ordinal == 1 ? new InvalidOperationException("disk full") : null;
+        return f;
+    }
+
+    [Fact]
+    public async Task HandleAsync_RejectionCommitFails_RecordsRejectionReasonNotStorageError()
+    {
+        var f = RejectionWhoseCommitFails();
+
+        await RunAsync(f);
+
+        f.Stored.Values.Single().LastProcessingError.Should().Be("Report has no attachment content");
+    }
+
+    [Fact]
+    public async Task HandleAsync_RejectionCommitFails_ReportsRejectionReasonInRetryWarning()
+    {
+        var f = RejectionWhoseCommitFails();
+
+        await RunAsync(f);
+
+        f.Progress.Entries.Select(e => (e.Message, e.Severity)).Should().Equal(
+            ("Report 'empty.csv': processing failed (attempt 1) — Report has no attachment content. " +
+                "Nothing was saved; it will be retried on the next sync.",
+                SyncProgressSeverity.Warning));
+    }
+
+    [Fact]
+    public async Task HandleAsync_RejectionCommitFails_CountsReportAsPendingRetryNotErrored()
+    {
+        var f = RejectionWhoseCommitFails();
+
+        var result = await RunAsync(f);
+
+        (result.Value.ReportsErrored, result.Value.ReportsPendingRetry).Should().Be((0, 1));
+    }
+
+    [Fact]
+    public async Task HandleAsync_CancellationWhileCommittingRejection_Propagates()
+    {
+        var f = RejectionWhoseCommitFails();
+        f.UnitOfWorkFactory.SaveFailure = _ => new OperationCanceledException();
+
+        var act = () => RunAsync(f);
+
+        await act.Should().ThrowAsync<OperationCanceledException>();
     }
 }
