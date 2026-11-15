@@ -15,6 +15,8 @@ public class AmbientClockTests
         BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static
         | BindingFlags.DeclaredOnly;
 
+    private const string INSTRUMENTATION_NAMESPACE = "Coverlet.Core.Instrumentation";
+
     private const byte IL_CALL = 0x28;
     private const byte IL_CALLVIRT = 0x6F;
 
@@ -42,7 +44,7 @@ public class AmbientClockTests
     [MemberData(nameof(GuardedAssemblies))]
     public void Assembly_MustNot_ReadAmbientClock(string assemblyName)
     {
-        var assembly = AppDomain.CurrentDomain.GetAssemblies().Single(a => a.GetName().Name == assemblyName);
+        var assembly = Assembly.Load(assemblyName);
 
         var offenders = FindClockReads(assembly);
 
@@ -69,6 +71,8 @@ public class AmbientClockTests
         var offenders = new List<string>();
         foreach (var type in assembly.GetTypes())
         {
+            // Coverage tooling (Coverlet) injects a Tracker type that reads the clock; it is not product code.
+            if (type.FullName?.StartsWith(INSTRUMENTATION_NAMESPACE, StringComparison.Ordinal) == true) continue;
             var methods = type.GetMethods(ALL_DECLARED).Cast<MethodBase>()
                 .Concat(type.GetConstructors(ALL_DECLARED));
             foreach (var method in methods)
