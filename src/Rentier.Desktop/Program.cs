@@ -46,6 +46,7 @@ public static class Program
             // bridge the compiler emits for an async Main.
             return Task.Run(SmokeTestAsync).GetAwaiter().GetResult();
         }
+        // Process boundary: any failure becomes a non-zero exit code for the CI smoke step.
         catch (Exception ex)
         {
             Console.Error.WriteLine($"[SMOKE] FAILED: {ex}");

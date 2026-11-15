@@ -68,7 +68,12 @@ public sealed class ThemeService : IThemeService
                 Enum.TryParse<ThemePreference>(prop.GetString(), out var parsed))
                 return parsed;
         }
-        catch { /* fall through to default */ }
+        // A missing, unreadable or malformed settings file falls back to the default theme.
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
+                                       or JsonException or InvalidOperationException)
+        {
+            // fall through to default
+        }
 
         return ThemePreference.System;
     }
@@ -81,6 +86,10 @@ public sealed class ThemeService : IThemeService
             var json = JsonSerializer.Serialize(new { theme = preference.ToString() });
             File.WriteAllText(SettingsPath, json);
         }
-        catch { /* ignore transient I/O failures */ }
+        // The preference is a convenience: failing to persist it must not break theme switching.
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // ignore transient I/O failures
+        }
     }
 }

@@ -93,7 +93,10 @@ public class ImapMailboxSyncService(
 
             return Result<SyncResult, Error>.Success(new SyncResult(reportsCreated, errors));
         }
-        catch (Exception ex)
+        // Boundary translation: MailKit surfaces connection, protocol, authentication and
+        // socket failures through unrelated exception hierarchies, so everything except caller
+        // cancellation (an internal timeout is not one) becomes an infrastructure Result failure.
+        catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
         {
             return Result<SyncResult, Error>.Failure(
                 Error.Infrastructure($"IMAP sync failed for mailbox {mailbox.Id}: {ex.Message}"));
@@ -149,13 +152,15 @@ public class ImapMailboxSyncService(
                     if (maxUid == null || uid.Id > maxUid.Value)
                         maxUid = uid.Id;
                 }
-                catch (Exception ex)
+                // Per-message isolation: one bad message is recorded and the rest continue.
+                catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
                 {
                     errors.Add($"Importer {importer.Id} UID {uid.Id}: {ex.Message}");
                 }
             }
         }
-        catch (Exception ex)
+        // Per-importer isolation (invalid regex, failed search): recorded, other importers continue.
+        catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
         {
             errors.Add($"Importer {importer.Id}: {ex.Message}");
         }

@@ -48,7 +48,10 @@ public sealed class NbsWebScraper : IExchangeRateFetcher
                         $"NBS web app returned {(int)response.StatusCode} for {date:yyyy-MM-dd}."));
             html = await response.Content.ReadAsStringAsync(ct);
         }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        // TaskCanceledException is an HttpClient timeout unless the caller cancelled —
+        // caller cancellation must propagate, not become NBS_HTTP_ERROR.
+        catch (Exception ex) when (
+            ex is HttpRequestException || (ex is TaskCanceledException && !ct.IsCancellationRequested))
         {
             return Result<ExchangeRate, Error>.Failure(
                 new Error("NBS_HTTP_ERROR", ex.Message));
@@ -83,6 +86,9 @@ public sealed class NbsWebScraper : IExchangeRateFetcher
                     new Error("RATE_NOT_FOUND",
                         $"Currency '{upperCurrency}' not found in NBS web app for {date:yyyy-MM-dd}."));
         }
+        // Boundary translation: scraping third-party HTML can fail in ways that cannot be
+        // enumerated (markup changes, number formats), so everything except cancellation
+        // becomes NBS_SCRAPE_ERROR and the composite fetcher can react.
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             return Result<ExchangeRate, Error>.Failure(
