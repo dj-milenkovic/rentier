@@ -17,12 +17,15 @@ public sealed class ImportReportCommandHandler
     private readonly IReportRepository _reportRepository;
     private readonly IStatementParser _statementParser;
     private readonly ICommandHandler<ProcessReportsCommand, Result<ProcessReportsResult, Error>> _processReports;
+    private readonly TimeProvider _timeProvider;
 
     public ImportReportCommandHandler(
         IReportRepository reportRepository,
         IStatementParser statementParser,
-        ICommandHandler<ProcessReportsCommand, Result<ProcessReportsResult, Error>> processReports)
+        ICommandHandler<ProcessReportsCommand, Result<ProcessReportsResult, Error>> processReports,
+        TimeProvider timeProvider)
     {
+        _timeProvider = timeProvider;
         _reportRepository = reportRepository;
         _statementParser = statementParser;
         _processReports = processReports;
@@ -49,7 +52,9 @@ public sealed class ImportReportCommandHandler
                             $"A report named ''{command.FileName}'' already exists for this importer."));
 
                 // Step 3: Persist
-                var report = Report.Create(command.ImporterId, command.FileName, command.CsvContent, null);
+                var report = Report.Create(
+                    command.ImporterId, command.FileName, command.CsvContent, null,
+                    importDate: _timeProvider.GetLocalToday());
                 await _reportRepository.AddAsync(report, ct);
 
                 // Step 4: Run pipeline for all Init reports

@@ -3,11 +3,14 @@ using Rentier.Domain.Enums;
 using Rentier.Domain.Exceptions;
 using Rentier.Domain.ValueObjects;
 using Xunit;
+using Rentier.Tests.Common.Fakes;
 
 namespace Rentier.UnitTests;
 
 public class SyncParametersTests
 {
+    private static readonly DateOnly TODAY = TestClock.TODAY;
+
     [Fact]
     public void Default_CreatesIncrementalSkipExisting()
     {
@@ -29,16 +32,55 @@ public class SyncParametersTests
     [Fact]
     public void Constructor_ReplayFromDateMode_FutureDate_ThrowsDomainException()
     {
-        var futureDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1));
-        var act = () => new SyncParameters(SyncMode.ReplayFromDate, replayFromDate: futureDate);
+        var act = () => new SyncParameters(
+            SyncMode.ReplayFromDate, replayFromDate: TODAY.AddDays(1), today: TODAY);
         act.Should().Throw<DomainException>().WithMessage("*future*");
+    }
+
+    [Fact]
+    public void Constructor_ReplayFromDateMode_Today_Succeeds()
+    {
+        var p = new SyncParameters(SyncMode.ReplayFromDate, replayFromDate: TODAY, today: TODAY);
+        p.ReplayFromDate.Should().Be(TODAY);
+    }
+
+    [Fact]
+    public void Constructor_ReplayFromDateMode_WithoutToday_ThrowsDomainException()
+    {
+        var act = () => new SyncParameters(SyncMode.ReplayFromDate, replayFromDate: new DateOnly(2024, 1, 1));
+        act.Should().Throw<DomainException>().WithMessage("*Today*required*");
+    }
+
+    [Fact]
+    public void Constructor_ReplayFromDateMode_NewYearsDayWhenTodayIsNewYearsEve_ThrowsDomainException()
+    {
+        var act = () => new SyncParameters(
+            SyncMode.ReplayFromDate, replayFromDate: new DateOnly(2026, 1, 1), today: new DateOnly(2025, 12, 31));
+        act.Should().Throw<DomainException>().WithMessage("*future*");
+    }
+
+    [Fact]
+    public void Constructor_ReplayFromDateMode_NewYearsEveWhenTodayIsNewYearsDay_Succeeds()
+    {
+        var p = new SyncParameters(
+            SyncMode.ReplayFromDate, replayFromDate: new DateOnly(2025, 12, 31), today: new DateOnly(2026, 1, 1));
+        p.ReplayFromDate.Should().Be(new DateOnly(2025, 12, 31));
+    }
+
+    [Fact]
+    public void Equality_IgnoresTodayUsedForValidation()
+    {
+        var replayDate = new DateOnly(2024, 1, 1);
+        var a = new SyncParameters(SyncMode.ReplayFromDate, replayFromDate: replayDate, today: TODAY);
+        var b = new SyncParameters(SyncMode.ReplayFromDate, replayFromDate: replayDate, today: TODAY.AddDays(1));
+        a.Should().Be(b);
     }
 
     [Fact]
     public void Constructor_ReplayFromDateMode_PastDate_Succeeds()
     {
         var pastDate = new DateOnly(2024, 1, 1);
-        var p = new SyncParameters(SyncMode.ReplayFromDate, replayFromDate: pastDate);
+        var p = new SyncParameters(SyncMode.ReplayFromDate, replayFromDate: pastDate, today: TODAY);
         p.ReplayFromDate.Should().Be(pastDate);
     }
 
@@ -74,7 +116,7 @@ public class SyncParametersTests
     {
         var replayDate = new DateOnly(2024, 3, 15);
         var cursor = new MailboxCursor.SyncedTo(new DateOnly(2024, 6, 1), 100L);
-        var p = new SyncParameters(SyncMode.ReplayFromDate, replayFromDate: replayDate);
+        var p = new SyncParameters(SyncMode.ReplayFromDate, replayFromDate: replayDate, today: TODAY);
 
         var result = p.GetEffectiveStartDate(cursor);
 

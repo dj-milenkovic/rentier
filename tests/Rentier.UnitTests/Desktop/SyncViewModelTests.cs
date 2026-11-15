@@ -10,6 +10,7 @@ using Rentier.Application.Interfaces;
 using Rentier.Desktop.ViewModels;
 using Rentier.Domain.Enums;
 using Xunit;
+using Rentier.Tests.Common.Fakes;
 
 namespace Rentier.UnitTests.Desktop;
 
@@ -31,10 +32,21 @@ public class SyncViewModelTests
     }
 
     private static SyncViewModel CreateVm(
-        ISyncAllCommandHandler? handler = null)
+        ISyncAllCommandHandler? handler = null,
+        TimeProvider? timeProvider = null)
         => new(
             handler ?? MakeHandler(),
-            ImmediateSequencer.Instance);
+            ImmediateSequencer.Instance,
+            timeProvider ?? TestClock.Provider());
+
+    /// <summary>A date as the DatePicker hands it over: midnight of the picked local day.</summary>
+    private static DateTimeOffset Picked(DateOnly date) =>
+        new(date.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+
+    // 2025-12-31 23:30 UTC is already 2026-01-01 00:30 in Serbia (UTC+1).
+    private static FixedTimeProvider SerbianNewYearClock() =>
+        new(new DateTimeOffset(2025, 12, 31, 23, 30, 0, TimeSpan.Zero),
+            FixedTimeProvider.FixedOffsetZone(TimeSpan.FromHours(1)));
 
     // ── Tests ────────────────────────────────────────────────────────────────
 
@@ -477,9 +489,67 @@ public class SyncViewModelTests
     {
         var vm = CreateVm();
         vm.SelectedSyncMode = SyncMode.ReplayFromDate;
-        vm.ReplayFromDateOffset = DateTimeOffset.UtcNow.AddDays(1);
+        vm.ReplayFromDateOffset = Picked(TestClock.TODAY.AddDays(1));
 
         vm.ValidationError.Should().Be("Replay date cannot be in the future");
+    }
+
+    [Fact]
+    public void ValidationError_WhenReplayFromDateIsToday_IsNull()
+    {
+        var vm = CreateVm();
+        vm.SelectedSyncMode = SyncMode.ReplayFromDate;
+        vm.ReplayFromDateOffset = Picked(TestClock.TODAY);
+
+        vm.ValidationError.Should().BeNull();
+    }
+
+    [Fact]
+    public void ValidationError_LocalTodayAheadOfUtc_LocalTodayIsNotFuture()
+    {
+        // Regression: the bound used to be the UTC date, so just after local midnight
+        // the user's own "today" was rejected as a future date.
+        var vm = CreateVm(timeProvider: SerbianNewYearClock());
+        vm.SelectedSyncMode = SyncMode.ReplayFromDate;
+        vm.ReplayFromDateOffset = Picked(new DateOnly(2026, 1, 1));
+
+        vm.ValidationError.Should().BeNull();
+    }
+
+    [Fact]
+    public void ValidationError_LocalTodayAheadOfUtc_LocalTomorrowIsFuture()
+    {
+        var vm = CreateVm(timeProvider: SerbianNewYearClock());
+        vm.SelectedSyncMode = SyncMode.ReplayFromDate;
+        vm.ReplayFromDateOffset = Picked(new DateOnly(2026, 1, 2));
+
+        vm.ValidationError.Should().Be("Replay date cannot be in the future");
+    }
+
+    [Fact]
+    public void TodayOffset_LocalTodayAheadOfUtc_IsLocalCalendarDate()
+    {
+        var vm = CreateVm(timeProvider: SerbianNewYearClock());
+
+        vm.TodayOffset.Should().Be(Picked(new DateOnly(2026, 1, 1)));
+    }
+
+    [Fact]
+    public async Task SyncCommand_ReplayFromLocalToday_PassesReplayDateToHandler()
+    {
+        // The ViewModel and the Domain must agree on "today": a date the ViewModel accepts
+        // must not be rejected by SyncParameters.
+        var handler = MakeHandler();
+        var vm = CreateVm(handler, SerbianNewYearClock());
+        vm.SelectedSyncMode = SyncMode.ReplayFromDate;
+        vm.ReplayFromDateOffset = Picked(new DateOnly(2026, 1, 1));
+
+        await vm.SyncCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
+
+        await handler.Received(1).HandleAsync(
+            Arg.Is<SyncAllCommand>(c => c!.Parameters.ReplayFromDate == new DateOnly(2026, 1, 1)),
+            Arg.Any<IProgress<SyncProgressEntry>>(),
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -487,7 +557,7 @@ public class SyncViewModelTests
     {
         var vm = CreateVm();
         vm.SelectedSyncMode = SyncMode.ReplayFromDate;
-        vm.ReplayFromDateOffset = DateTimeOffset.UtcNow.AddDays(-1);
+        vm.ReplayFromDateOffset = Picked(TestClock.TODAY.AddDays(-1));
 
         vm.ValidationError.Should().BeNull();
     }

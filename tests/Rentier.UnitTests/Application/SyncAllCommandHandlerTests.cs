@@ -8,6 +8,7 @@ using Rentier.Application.Interfaces;
 using Rentier.Domain.ValueObjects;
 using Rentier.UnitTests.Application.Common;
 using Xunit;
+using Rentier.Tests.Common.Fakes;
 
 namespace Rentier.UnitTests.Application;
 
@@ -38,7 +39,8 @@ public class SyncAllCommandHandlerTests
         ICommandHandler<ProcessReportsCommand, Result<ProcessReportsResult, Error>>? processHandler = null)
         => new(
             syncHandler ?? MakeSyncMailboxHandler(),
-            processHandler ?? MakeProcessReportsHandler());
+            processHandler ?? MakeProcessReportsHandler(),
+            TestClock.Provider());
 
     private static IProgress<SyncProgressEntry> NoProgress() =>
         Substitute.For<IProgress<SyncProgressEntry>>();
@@ -46,6 +48,24 @@ public class SyncAllCommandHandlerTests
     private static SyncAllCommand DefaultCommand() => new(SyncParameters.Default);
 
     // ── Tests ────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task HandleAsync_ProgressEntries_AreStampedWithClockLocalTime()
+    {
+        var clock = new FixedTimeProvider(
+            new DateTimeOffset(2025, 12, 31, 23, 30, 0, TimeSpan.Zero),
+            FixedTimeProvider.FixedOffsetZone(TimeSpan.FromHours(1)));
+        var handler = new SyncAllCommandHandler(MakeSyncMailboxHandler(), MakeProcessReportsHandler(), clock);
+        var entries = new List<SyncProgressEntry>();
+        var progress = Substitute.For<IProgress<SyncProgressEntry>>();
+        progress.Report(Arg.Do<SyncProgressEntry>(entries.Add));
+
+        await handler.HandleAsync(DefaultCommand(), progress, TestContext.Current.CancellationToken);
+
+        entries.Should().NotBeEmpty().And.OnlyContain(e =>
+            e.Timestamp == new DateTimeOffset(2026, 1, 1, 0, 30, 0, TimeSpan.FromHours(1))
+            && e.Timestamp.Offset == TimeSpan.FromHours(1));
+    }
 
     [Fact]
     public async Task HandleAsync_BothSucceed_ReturnsCombinedResult()

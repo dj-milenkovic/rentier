@@ -13,6 +13,7 @@ using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 using Rentier.Domain.ValueObjects;
 using Xunit;
+using Rentier.Tests.Common.Fakes;
 
 namespace Rentier.UnitTests.Application.Handlers;
 
@@ -32,7 +33,7 @@ public class ProcessReportsCommandHandlerPartialSuccessTests
     }
 
     private static Report MakeReportWithContent(Guid importerId)
-        => Report.Create(importerId, "statement.csv", [1, 2, 3], null);
+        => Report.Create(importerId, "statement.csv", [1, 2, 3], null, TestClock.TODAY);
 
     private static ExchangeRateResolver MakeResolver(IExchangeRateFetcher fetcher)
         => new ExchangeRateResolver(fetcher, NullLogger<ExchangeRateResolver>.Instance);
@@ -49,7 +50,8 @@ public class ProcessReportsCommandHandlerPartialSuccessTests
 
         return new ProcessReportsCommandHandler(
             reportRepo, importerRepo, filingRepo, resolver, holidayRepo, parser,
-            NullLogger<ProcessReportsCommandHandler>.Instance);
+            NullLogger<ProcessReportsCommandHandler>.Instance,
+            TestClock.Provider());
     }
 
     [Fact]

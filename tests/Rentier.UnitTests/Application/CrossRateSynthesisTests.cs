@@ -13,6 +13,7 @@ using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 using Rentier.Domain.ValueObjects;
 using Xunit;
+using Rentier.Tests.Common.Fakes;
 
 namespace Rentier.UnitTests.Application;
 
@@ -33,7 +34,7 @@ public class CrossRateSynthesisTests
     }
 
     private static Report MakeReportWithContent(Guid importerId)
-        => Report.Create(importerId, "statement.csv", [1, 2, 3], null);
+        => Report.Create(importerId, "statement.csv", [1, 2, 3], null, TestClock.TODAY);
 
     private ProcessReportsCommandHandler MakeHandler(
         IReportRepository reportRepo,
@@ -51,7 +52,8 @@ public class CrossRateSynthesisTests
         return new ProcessReportsCommandHandler(
             reportRepo, importerRepo, filingRepo, resolver,
             holidayRepo, parser,
-            NullLogger<ProcessReportsCommandHandler>.Instance);
+            NullLogger<ProcessReportsCommandHandler>.Instance,
+            TestClock.Provider());
     }
 
     private IStatementParser MakeParserReturning(StatementParseResult result)

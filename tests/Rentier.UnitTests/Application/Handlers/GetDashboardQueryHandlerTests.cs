@@ -8,6 +8,7 @@ using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 using Rentier.Domain.ValueObjects;
 using Xunit;
+using Rentier.Tests.Common.Fakes;
 
 namespace Rentier.UnitTests.Application.Handlers;
 
@@ -16,11 +17,11 @@ public class GetDashboardQueryHandlerTests
     private readonly IFilingRepository _filingRepo = Substitute.For<IFilingRepository>();
     private readonly IMailboxRepository _mailboxRepo = Substitute.For<IMailboxRepository>();
     private readonly GetDashboardQueryHandler _sut;
-    private readonly DateOnly _today = DateOnly.FromDateTime(DateTime.Today);
+    private readonly DateOnly _today = TestClock.TODAY;
 
     public GetDashboardQueryHandlerTests()
     {
-        _sut = new GetDashboardQueryHandler(_filingRepo, _mailboxRepo);
+        _sut = new GetDashboardQueryHandler(_filingRepo, _mailboxRepo, TestClock.Provider());
 
         // Default: empty returns
         _filingRepo.GetUpcomingAsync(Arg.Any<DateOnly>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
@@ -52,7 +53,7 @@ public class GetDashboardQueryHandlerTests
 
     private static Mailbox MakeMailbox(DateOnly? lastSyncDate = null)
     {
-        var m = Mailbox.Create("imap.test.com", 993, "user@test.com");
+        var m = Mailbox.Create("imap.test.com", 993, "user@test.com", TestClock.TODAY);
         // Set cursor: NeverSynced when null, SyncedTo otherwise
         MailboxCursor cursor = lastSyncDate.HasValue
             ? new MailboxCursor.SyncedTo(lastSyncDate.Value, 999L)
@@ -207,7 +208,77 @@ public class GetDashboardQueryHandlerTests
 
         await _sut.HandleAsync(new GetDashboardQuery(), TestContext.Current.CancellationToken);
 
-        capturedToday.Should().Be(DateOnly.FromDateTime(DateTime.Today));
+        capturedToday.Should().Be(_today);
+    }
+
+    // ── "today" used for deadline logic is the LOCAL calendar date ──────────────
+
+    private async Task<(DateOnly Overdue, DateOnly Upcoming)> CaptureTodayAsync(
+        DateTimeOffset utcNow, TimeSpan localOffset)
+    {
+        DateOnly? overdueToday = null;
+        DateOnly? upcomingToday = null;
+        _filingRepo.GetOverdueAsync(Arg.Do<DateOnly>(d => overdueToday = d), Arg.Any<CancellationToken>())
+            .Returns(new List<Filing>().AsReadOnly() as IReadOnlyList<Filing>);
+        _filingRepo.GetUpcomingAsync(
+                Arg.Do<DateOnly>(d => upcomingToday = d), Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .Returns(new List<Filing>().AsReadOnly() as IReadOnlyList<Filing>);
+        var sut = new GetDashboardQueryHandler(
+            _filingRepo, _mailboxRepo,
+            new FixedTimeProvider(utcNow, FixedTimeProvider.FixedOffsetZone(localOffset)));
+
+        await sut.HandleAsync(new GetDashboardQuery(), TestContext.Current.CancellationToken);
+
+        return (overdueToday!.Value, upcomingToday!.Value);
+    }
+
+    [Fact]
+    public async Task HandleAsync_LocalDateAheadOfUtc_OverdueUsesLocalDate()
+    {
+        // 2025-03-31 23:30 UTC is 2025-04-01 01:30 in Serbia (UTC+2, summer time): a filing
+        // due 2025-03-31 is already overdue for the taxpayer although the UTC date says otherwise.
+        var (overdue, _) = await CaptureTodayAsync(
+            new DateTimeOffset(2025, 3, 31, 23, 30, 0, TimeSpan.Zero), TimeSpan.FromHours(2));
+
+        overdue.Should().Be(new DateOnly(2025, 4, 1));
+    }
+
+    [Fact]
+    public async Task HandleAsync_LocalDateBehindUtc_OverdueUsesLocalDate()
+    {
+        // 2025-04-01 02:00 UTC is still 2025-03-31 at UTC-5: a filing due 2025-03-31 is not overdue yet.
+        var (overdue, _) = await CaptureTodayAsync(
+            new DateTimeOffset(2025, 4, 1, 2, 0, 0, TimeSpan.Zero), TimeSpan.FromHours(-5));
+
+        overdue.Should().Be(new DateOnly(2025, 3, 31));
+    }
+
+    [Fact]
+    public async Task HandleAsync_UpcomingAndOverdue_UseTheSameToday()
+    {
+        var (overdue, upcoming) = await CaptureTodayAsync(
+            new DateTimeOffset(2025, 3, 31, 23, 30, 0, TimeSpan.Zero), TimeSpan.FromHours(2));
+
+        upcoming.Should().Be(overdue);
+    }
+
+    [Fact]
+    public async Task HandleAsync_LocalNewYearAlreadyPassedButUtcHasNot_TodayIsJanuaryFirst()
+    {
+        // 2025-12-31 23:30 UTC is 2026-01-01 00:30 in Serbia (UTC+1, winter time).
+        var (overdue, _) = await CaptureTodayAsync(
+            new DateTimeOffset(2025, 12, 31, 23, 30, 0, TimeSpan.Zero), TimeSpan.FromHours(1));
+
+        overdue.Should().Be(new DateOnly(2026, 1, 1));
+    }
+
+    [Fact]
+    public async Task HandleAsync_LastLocalSecondOfYear_TodayIsDecemberThirtyFirst()
+    {
+        var (overdue, _) = await CaptureTodayAsync(
+            new DateTimeOffset(2025, 12, 31, 22, 59, 59, TimeSpan.Zero), TimeSpan.FromHours(1));
+
+        overdue.Should().Be(new DateOnly(2025, 12, 31));
     }
 
     [Fact]

@@ -36,6 +36,9 @@ public sealed class ScenarioFixture : IAsyncLifetime
         services.AddSingleton<ICredentialStore>(new FakeCredentialStore());
         services.AddSingleton(NSubstitute.Substitute.For<IMailboxSyncService>());
 
+        // The clock is registered by the Desktop composition root in production.
+        services.AddSingleton(TimeProvider.System);
+
         // Application layer: command handlers
         services.AddTransient<
             ICommandHandler<ProcessReportsCommand, Result<ProcessReportsResult, Error>>,
