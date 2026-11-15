@@ -15,11 +15,12 @@ public interface IReportRepository
     Task UpdateAsync(Report report, CancellationToken ct = default);
 
     /// <summary>
-    /// Persists only <see cref="Report.Status"/> of an existing report — the other columns
-    /// (notably the attachment BLOB) are not rewritten. The transition itself must already
-    /// have been applied through <see cref="Report.SetStatus"/>, which enforces the rules.
+    /// Persists only the processing state of an existing report — <see cref="Report.Status"/>,
+    /// <see cref="Report.ProcessingAttempts"/> and <see cref="Report.LastProcessingError"/>. The
+    /// other columns (notably the attachment BLOB) are not rewritten. Changes must already have
+    /// been applied through the Report's domain methods, which enforce the rules.
     /// </summary>
-    Task UpdateStatusAsync(Report report, CancellationToken ct = default);
+    Task UpdateProcessingStateAsync(Report report, CancellationToken ct = default);
     Task DeleteAsync(Guid id, CancellationToken ct = default);
 
     /// <summary>

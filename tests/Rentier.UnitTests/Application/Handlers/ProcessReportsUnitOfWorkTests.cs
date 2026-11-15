@@ -71,11 +71,28 @@ public class ProcessReportsUnitOfWorkTests
             .ToList();
         _reportRepo.GetByStatusAsync(ReportStatus.Init, Arg.Any<CancellationToken>()).Returns(reports);
 
+        // The failed-attempt path re-reads the report: serve a separate "persisted" copy, as the
+        // database would, so status changes applied in memory before a failed commit don't leak.
+        foreach (var report in reports)
+        {
+            var persisted = PersistedCopyOf(report);
+            _persisted[report.Id] = persisted;
+            _reportRepo.GetByIdAsync(report.Id, Arg.Any<CancellationToken>()).Returns(persisted);
+        }
+
         _parser.ParseAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
             .Returns(Result<StatementParseResult, Error>.Success(
                 new StatementParseResult(dividends, [], [], [], [])));
         return reports;
     }
+
+    private readonly Dictionary<Guid, Report> _persisted = [];
+
+    /// <summary>A shallow copy of <paramref name="report"/> in its current (persisted) state.</summary>
+    private static Report PersistedCopyOf(Report report)
+        => (Report)typeof(object)
+            .GetMethod("MemberwiseClone", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+            .Invoke(report, null)!;
 
     private static DividendRecord Dividend(string entity, decimal amount = 100m)
         => new(TEST_DATE, "USD", entity, amount);
@@ -125,14 +142,15 @@ public class ProcessReportsUnitOfWorkTests
     }
 
     [Fact]
-    public async Task HandleAsync_CommitFails_CountsReportAsErroredOnly()
+    public async Task HandleAsync_CommitFails_CountsReportAsPendingRetryNotErrored()
     {
         ArrangeReports(1, Dividend("ACME Corp"));
         _unitOfWorkFactory.SaveFailure = ordinal => ordinal == 1 ? new InvalidOperationException("disk full") : null;
 
         var result = await ActAsync();
 
-        (result.Value.ReportsProcessed, result.Value.ReportsErrored).Should().Be((0, 1));
+        (result.Value.ReportsProcessed, result.Value.ReportsErrored, result.Value.ReportsPendingRetry)
+            .Should().Be((0, 0, 1));
     }
 
     [Fact]
@@ -206,33 +224,179 @@ public class ProcessReportsUnitOfWorkTests
     public async Task HandleAsync_CommitFailsAfterSeveralEventsStaged_FailsWholeReportNotPartially()
     {
         // A storage failure surfaces at the single commit, so the report is all-or-nothing:
-        // counted as errored with no filings — never PartialError with some filings persisted.
+        // pending retry with no filings — never PartialError with some filings persisted.
         ArrangeReports(1, Dividend("ACME Corp"), Dividend("Globex"));
         _unitOfWorkFactory.SaveFailure = ordinal => ordinal == 1 ? new InvalidOperationException("FK violation") : null;
 
         var result = await ActAsync();
 
-        (result.Value.ReportsPartialError, result.Value.ReportsErrored, result.Value.FilingsCreated)
+        (result.Value.ReportsPartialError, result.Value.ReportsPendingRetry, result.Value.FilingsCreated)
             .Should().Be((0, 1, 0));
     }
 
     // ── Unexpected failures leave the report at Init so the next run retries it ──
 
     [Fact]
-    public async Task HandleAsync_CommitFails_WritesNothingFurtherForTheReport()
+    public async Task HandleAsync_CommitFails_RecordsAttemptOnPersistedReport()
     {
-        // No second unit of work: the report is not marked Error (that status is terminal);
-        // its staged changes were discarded and it stays Init in the database.
-        ArrangeReports(1, Dividend("ACME Corp"));
+        var report = ArrangeReports(1, Dividend("ACME Corp"))[0];
         _unitOfWorkFactory.SaveFailure = ordinal => ordinal == 1 ? new InvalidOperationException("disk full") : null;
 
         await ActAsync();
 
-        _unitOfWorkFactory.CreatedCount.Should().Be(1);
+        await _reportRepo.Received(1).UpdateProcessingStateAsync(
+            Arg.Is<Report>(r => ReferenceEquals(r, _persisted[report.Id]) && r.ProcessingAttempts == 1),
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task HandleAsync_UnexpectedExceptionBeforeCommit_CommitsNothing()
+    public async Task HandleAsync_CommitFails_KeepsPersistedReportPending()
+    {
+        var report = ArrangeReports(1, Dividend("ACME Corp"))[0];
+        _unitOfWorkFactory.SaveFailure = ordinal => ordinal == 1 ? new InvalidOperationException("disk full") : null;
+
+        await ActAsync();
+
+        _persisted[report.Id].Status.Should().Be(ReportStatus.Init);
+    }
+
+    [Fact]
+    public async Task HandleAsync_CommitFails_StoresFailureReason()
+    {
+        var report = ArrangeReports(1, Dividend("ACME Corp"))[0];
+        _unitOfWorkFactory.SaveFailure = ordinal => ordinal == 1 ? new InvalidOperationException("disk full") : null;
+
+        await ActAsync();
+
+        _persisted[report.Id].LastProcessingError.Should().Be("disk full");
+    }
+
+    [Fact]
+    public async Task HandleAsync_FinalAllowedAttemptFails_MarksReportError()
+    {
+        var report = ArrangeReports(1, Dividend("ACME Corp"))[0];
+        var persisted = _persisted[report.Id];
+        for (var i = 1; i < ProcessReportsCommandHandler.MAX_PROCESSING_ATTEMPTS; i++)
+            persisted.RecordFailedAttempt("earlier failure", ProcessReportsCommandHandler.MAX_PROCESSING_ATTEMPTS);
+        _unitOfWorkFactory.SaveFailure = ordinal => ordinal == 1 ? new InvalidOperationException("disk full") : null;
+
+        await ActAsync();
+
+        persisted.Status.Should().Be(ReportStatus.Error);
+    }
+
+    [Fact]
+    public async Task HandleAsync_FinalAllowedAttemptFails_CountsReportAsErroredNotPending()
+    {
+        var report = ArrangeReports(1, Dividend("ACME Corp"))[0];
+        var persisted = _persisted[report.Id];
+        for (var i = 1; i < ProcessReportsCommandHandler.MAX_PROCESSING_ATTEMPTS; i++)
+            persisted.RecordFailedAttempt("earlier failure", ProcessReportsCommandHandler.MAX_PROCESSING_ATTEMPTS);
+        _unitOfWorkFactory.SaveFailure = ordinal => ordinal == 1 ? new InvalidOperationException("disk full") : null;
+
+        var result = await ActAsync();
+
+        (result.Value.ReportsErrored, result.Value.ReportsPendingRetry).Should().Be((1, 0));
+    }
+
+    [Fact]
+    public async Task HandleAsync_CommitFails_ReturnsFailedAttemptInResult()
+    {
+        var report = ArrangeReports(1, Dividend("ACME Corp"))[0];
+        _unitOfWorkFactory.SaveFailure = ordinal => ordinal == 1 ? new InvalidOperationException("disk full") : null;
+
+        var result = await ActAsync();
+
+        result.Value.FailedAttempts.Should().ContainSingle()
+            .Which.Should().Be(new ReportFailedAttempt(report.Id, report.ReportName, "disk full", 1, FailedAttemptKind.PendingRetry));
+    }
+
+    [Fact]
+    public async Task HandleAsync_CommitFailsAndReportWasDeleted_DoesNotCountItAsPending()
+    {
+        var report = ArrangeReports(1, Dividend("ACME Corp"))[0];
+        _reportRepo.GetByIdAsync(report.Id, Arg.Any<CancellationToken>()).Returns((Report?)null);
+        _unitOfWorkFactory.SaveFailure = ordinal => ordinal == 1 ? new InvalidOperationException("row not found") : null;
+
+        var result = await ActAsync();
+
+        (result.Value.ReportsPendingRetry, result.Value.FailedAttempts!.Count).Should().Be((0, 0));
+    }
+
+    [Fact]
+    public async Task HandleAsync_RecordingAttemptAlsoFails_StillProcessesNextReport()
+    {
+        // Unit of work #1 = report 1 (commit fails), #2 = recording its attempt (also fails),
+        // #3 = report 2, which must still be processed and committed.
+        ArrangeReports(2, Dividend("ACME Corp"));
+        _unitOfWorkFactory.SaveFailure = ordinal => ordinal <= 2 ? new InvalidOperationException("database locked") : null;
+
+        var result = await ActAsync();
+
+        result.Value.ReportsProcessed.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task HandleAsync_RateSourceUnavailable_CommitsNoFilings()
+    {
+        ArrangeReports(1, Dividend("ACME Corp"), Dividend("Globex"));
+        ArrangeRateSourceUnavailableOnSecondLookup();
+
+        var result = await ActAsync();
+
+        result.Value.FilingsCreated.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task HandleAsync_RateSourceUnavailable_KeepsReportPendingForRetry()
+    {
+        ArrangeReports(1, Dividend("ACME Corp"), Dividend("Globex"));
+        ArrangeRateSourceUnavailableOnSecondLookup();
+
+        var result = await ActAsync();
+
+        (result.Value.ReportsPendingRetry, result.Value.ReportsErrored, result.Value.ReportsPartialError)
+            .Should().Be((1, 0, 0));
+    }
+
+    [Fact]
+    public async Task HandleAsync_RateSourceUnavailable_DoesNotReportEventError()
+    {
+        ArrangeReports(1, Dividend("ACME Corp"), Dividend("Globex"));
+        ArrangeRateSourceUnavailableOnSecondLookup();
+
+        var result = await ActAsync();
+
+        result.Value.EventErrors.Should().BeEmpty();
+    }
+
+    /// <summary>First rate lookup succeeds; the second hits an NBS outage (HTTP error).</summary>
+    private void ArrangeRateSourceUnavailableOnSecondLookup()
+    {
+        var calls = 0;
+        _rateFetcher.FetchRateAsync(Arg.Any<DateOnly>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(_ => ++calls == 1
+                ? Result<ExchangeRate, Error>.Success(new ExchangeRate(TEST_DATE, "USD", USD_RATE))
+                : Result<ExchangeRate, Error>.Failure(new Error("NBS_HTTP_ERROR", "connection refused")));
+    }
+
+    [Fact]
+    public async Task HandleAsync_UnexpectedNonDomainExceptionInEvent_FailsReportNotJustTheEvent()
+    {
+        // A database error while checking for duplicates must not be swallowed as one failed
+        // event (which would commit the rest as PartialError and lose the event for good).
+        ArrangeReports(1, Dividend("ACME Corp"), Dividend("Globex"));
+        _filingRepo.GetByIncomeEventAsync(
+                Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns<IReadOnlyList<Filing>>(_ => throw new InvalidOperationException("database is locked"));
+
+        var result = await ActAsync();
+
+        (result.Value.ReportsPartialError, result.Value.ReportsPendingRetry).Should().Be((0, 1));
+    }
+
+    [Fact]
+    public async Task HandleAsync_UnexpectedExceptionBeforeCommit_CommitsOnlyTheFailedAttempt()
     {
         ArrangeReports(1, Dividend("ACME Corp"));
         _parser.ParseAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
@@ -240,19 +404,19 @@ public class ProcessReportsUnitOfWorkTests
 
         await ActAsync();
 
-        _unitOfWorkFactory.CommittedCount.Should().Be(0);
+        (_unitOfWorkFactory.CreatedCount, _unitOfWorkFactory.CommittedCount).Should().Be((2, 1));
     }
 
     [Fact]
-    public async Task HandleAsync_UnexpectedExceptionBeforeCommit_DoesNotStageErrorStatus()
+    public async Task HandleAsync_UnexpectedExceptionBeforeCommit_LeavesReportPendingWithOneAttempt()
     {
-        ArrangeReports(1, Dividend("ACME Corp"));
+        var report = ArrangeReports(1, Dividend("ACME Corp"))[0];
         _parser.ParseAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
             .Returns<Task<Result<StatementParseResult, Error>>>(_ => throw new InvalidOperationException("boom"));
 
         await ActAsync();
 
-        await _reportRepo.DidNotReceive().UpdateStatusAsync(Arg.Any<Report>(), Arg.Any<CancellationToken>());
+        (_persisted[report.Id].Status, _persisted[report.Id].ProcessingAttempts).Should().Be((ReportStatus.Init, 1));
     }
 
     [Fact]
@@ -265,7 +429,7 @@ public class ProcessReportsUnitOfWorkTests
         await _sut.HandleAsync(
             new ProcessReportsCommand(new SynchronousProgress(reported.Add)), TestContext.Current.CancellationToken);
 
-        reported.Should().ContainSingle(e => e.Severity == SyncProgressSeverity.Error)
+        reported.Should().ContainSingle(e => e.Severity == SyncProgressSeverity.Warning && e.Message.StartsWith("Report '"))
             .Which.Message.Should().Contain("retried on the next sync");
     }
 
@@ -290,7 +454,7 @@ public class ProcessReportsUnitOfWorkTests
             // The callback's own exception is allowed to surface; what matters is below.
         }
 
-        await _reportRepo.DidNotReceive().UpdateStatusAsync(
+        await _reportRepo.DidNotReceive().UpdateProcessingStateAsync(
             Arg.Is<Report>(r => r.Status == ReportStatus.Error), Arg.Any<CancellationToken>());
     }
 

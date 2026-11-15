@@ -345,7 +345,7 @@ public class ProcessReportsProgressTests
     }
 
     [Fact]
-    public async Task HandleAsync_UnexpectedException_EmitsErrorSeverityEntry()
+    public async Task HandleAsync_UnexpectedException_EmitsRetryWarningEntry()
     {
         // Arrange — statementParser.ParseAsync throws (not returns Failure, but throws).
         // This exception is NOT caught inside ProcessReportAsync (which has no try-catch),
@@ -357,8 +357,9 @@ public class ProcessReportsProgressTests
         var reportRepo = Substitute.For<IReportRepository>();
         reportRepo.GetByStatusAsync(ReportStatus.Init, Arg.Any<CancellationToken>())
             .Returns(new[] { report });
-        // UpdateStatusAsync succeeds (called in the outer catch path)
-        reportRepo.UpdateStatusAsync(Arg.Any<Report>(), Arg.Any<CancellationToken>())
+        // The failed-attempt path re-reads the persisted report (still Init) and records the attempt
+        reportRepo.GetByIdAsync(report.Id, Arg.Any<CancellationToken>()).Returns(report);
+        reportRepo.UpdateProcessingStateAsync(Arg.Any<Report>(), Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
 
         var importerRepo = Substitute.For<IImporterRepository>();
@@ -381,10 +382,10 @@ public class ProcessReportsProgressTests
         await handler.HandleAsync(new ProcessReportsCommand(progress), TestContext.Current.CancellationToken);
         await Task.Delay(50, TestContext.Current.CancellationToken);
 
-        // Assert — an error-severity entry is emitted for the report-level exception
+        // Assert — a retry warning is emitted: nothing was saved and the report stays pending
         var perReport = reported.Where(e => e.Message.StartsWith("Report '")).ToList();
         perReport.Should().HaveCount(1);
-        perReport[0].Severity.Should().Be(SyncProgressSeverity.Error);
-        perReport[0].Message.Should().StartWith("Report 'exception.csv': processing error —");
+        perReport[0].Severity.Should().Be(SyncProgressSeverity.Warning);
+        perReport[0].Message.Should().StartWith("Report 'exception.csv': processing failed (attempt 1) —");
     }
 }

@@ -92,14 +92,14 @@ public abstract class UnitOfWorkAwareRepository
     }
 
     /// <summary>
-    /// Stages a change to a single property of <paramref name="entity"/>, so the UPDATE only
-    /// writes that column (e.g. a status change must not rewrite a report's attachment BLOB).
-    /// A staged insert already carries the new value and is left as is.
+    /// Stages a change to only the named properties of <paramref name="entity"/>, so the UPDATE
+    /// writes just those columns (e.g. a status change must not rewrite a report's attachment
+    /// BLOB). A staged insert already carries the new values and is left as is.
     /// </summary>
-    private protected void StagePropertyUpdate<TEntity, TProperty>(
+    private protected void StagePropertyUpdate<TEntity>(
         TEntity entity,
         Func<TEntity, bool> hasSameKey,
-        Expression<Func<TEntity, TProperty>> property)
+        params string[] propertyNames)
         where TEntity : class
     {
         var tracked = TrackedEntriesWithoutDetectingChanges<TEntity>().FirstOrDefault(e => hasSameKey(e.Entity));
@@ -111,24 +111,37 @@ public abstract class UnitOfWorkAwareRepository
                     $"{typeof(TEntity).Name} is staged for deletion in this unit of work and cannot be updated.");
             case EntityState.Added:
                 if (!ReferenceEquals(tracked.Entity, entity))
-                    tracked.Property(property).CurrentValue = property.Compile()(entity);
+                    CopyValues(tracked, entity, propertyNames, markModified: false);
                 return;
             case null:
                 var attached = Db.Attach(entity);
-                attached.Property(property).IsModified = true;
+                foreach (var name in propertyNames)
+                    attached.Property(name).IsModified = true;
                 return;
             default:
                 if (ReferenceEquals(tracked.Entity, entity))
                 {
-                    tracked.Property(property).IsModified = true;
+                    foreach (var name in propertyNames)
+                        tracked.Property(name).IsModified = true;
                 }
                 else
                 {
-                    var propertyEntry = tracked.Property(property);
-                    propertyEntry.CurrentValue = property.Compile()(entity);
-                    propertyEntry.IsModified = true;
+                    CopyValues(tracked, entity, propertyNames, markModified: true);
                 }
                 return;
+        }
+    }
+
+    private static void CopyValues<TEntity>(
+        EntityEntry<TEntity> target, TEntity source, string[] propertyNames, bool markModified)
+        where TEntity : class
+    {
+        foreach (var name in propertyNames)
+        {
+            var property = target.Property(name);
+            property.CurrentValue = property.Metadata.GetGetter().GetClrValue(source);
+            if (markModified)
+                property.IsModified = true;
         }
     }
 }

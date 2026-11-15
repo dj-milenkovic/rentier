@@ -200,4 +200,158 @@ public class ReportTests
         var act = () => Report.CreateRevision(null!, null);
         act.Should().Throw<DomainException>();
     }
+
+    // ── Bounded retry: failed attempts, rejection reason ────────────────────
+
+    private const int MAX_ATTEMPTS = 3;
+
+    private static Report NewReport() => Report.Create(Guid.NewGuid(), "statement.csv", [1, 2, 3], null);
+
+    [Fact]
+    public void RecordFailedAttempt_BelowLimit_KeepsReportInit()
+    {
+        var report = NewReport();
+
+        report.RecordFailedAttempt("NBS unreachable", MAX_ATTEMPTS);
+
+        report.Status.Should().Be(ReportStatus.Init);
+    }
+
+    [Fact]
+    public void RecordFailedAttempt_BelowLimit_ReturnsFalse()
+    {
+        var report = NewReport();
+
+        var exhausted = report.RecordFailedAttempt("NBS unreachable", MAX_ATTEMPTS);
+
+        exhausted.Should().BeFalse();
+    }
+
+    [Fact]
+    public void RecordFailedAttempt_EachCall_IncrementsAttempts()
+    {
+        var report = NewReport();
+
+        report.RecordFailedAttempt("first", MAX_ATTEMPTS);
+        report.RecordFailedAttempt("second", MAX_ATTEMPTS);
+
+        report.ProcessingAttempts.Should().Be(2);
+    }
+
+    [Fact]
+    public void RecordFailedAttempt_EachCall_KeepsLatestReason()
+    {
+        var report = NewReport();
+
+        report.RecordFailedAttempt("first", MAX_ATTEMPTS);
+        report.RecordFailedAttempt("second", MAX_ATTEMPTS);
+
+        report.LastProcessingError.Should().Be("second");
+    }
+
+    [Fact]
+    public void RecordFailedAttempt_ReachingLimit_MovesReportToError()
+    {
+        var report = NewReport();
+
+        for (var i = 0; i < MAX_ATTEMPTS; i++)
+            report.RecordFailedAttempt("still failing", MAX_ATTEMPTS);
+
+        report.Status.Should().Be(ReportStatus.Error);
+    }
+
+    [Fact]
+    public void RecordFailedAttempt_ReachingLimit_ReturnsTrue()
+    {
+        var report = NewReport();
+        for (var i = 1; i < MAX_ATTEMPTS; i++)
+            report.RecordFailedAttempt("still failing", MAX_ATTEMPTS);
+
+        var exhausted = report.RecordFailedAttempt("still failing", MAX_ATTEMPTS);
+
+        exhausted.Should().BeTrue();
+    }
+
+    [Fact]
+    public void RecordFailedAttempt_ReportNotInit_ThrowsDomainException()
+    {
+        var report = NewReport();
+        report.SetStatus(ReportStatus.Processed);
+
+        var act = () => report.RecordFailedAttempt("late failure", MAX_ATTEMPTS);
+
+        act.Should().Throw<DomainException>();
+    }
+
+    [Fact]
+    public void RecordFailedAttempt_MaxAttemptsBelowOne_ThrowsDomainException()
+    {
+        var report = NewReport();
+
+        var act = () => report.RecordFailedAttempt("failure", 0);
+
+        act.Should().Throw<DomainException>();
+    }
+
+    [Fact]
+    public void RecordFailedAttempt_OverlongReason_TruncatesToMaxLength()
+    {
+        var report = NewReport();
+
+        report.RecordFailedAttempt(new string('x', Report.MAX_PROCESSING_ERROR_LENGTH + 50), MAX_ATTEMPTS);
+
+        report.LastProcessingError!.Length.Should().Be(Report.MAX_PROCESSING_ERROR_LENGTH);
+    }
+
+    [Fact]
+    public void RecordFailedAttempt_BlankReason_StoresPlaceholder()
+    {
+        var report = NewReport();
+
+        report.RecordFailedAttempt("   ", MAX_ATTEMPTS);
+
+        report.LastProcessingError.Should().Be("Unknown error");
+    }
+
+    [Fact]
+    public void Reject_InitReport_MovesToError()
+    {
+        var report = NewReport();
+
+        report.Reject("parse failed");
+
+        report.Status.Should().Be(ReportStatus.Error);
+    }
+
+    [Fact]
+    public void Reject_InitReport_StoresReason()
+    {
+        var report = NewReport();
+
+        report.Reject("parse failed");
+
+        report.LastProcessingError.Should().Be("parse failed");
+    }
+
+    [Fact]
+    public void SetStatus_ProcessedAfterFailedAttempt_ClearsLastProcessingError()
+    {
+        var report = NewReport();
+        report.RecordFailedAttempt("NBS unreachable", MAX_ATTEMPTS);
+
+        report.SetStatus(ReportStatus.Processed);
+
+        report.LastProcessingError.Should().BeNull();
+    }
+
+    [Fact]
+    public void SetStatus_ProcessedAfterFailedAttempt_KeepsAttemptCount()
+    {
+        var report = NewReport();
+        report.RecordFailedAttempt("NBS unreachable", MAX_ATTEMPTS);
+
+        report.SetStatus(ReportStatus.Processed);
+
+        report.ProcessingAttempts.Should().Be(1);
+    }
 }

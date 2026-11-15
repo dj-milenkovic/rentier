@@ -57,6 +57,19 @@ public sealed class ImportReportCommandHandler
                 if (!processResult.IsSuccess)
                     return Result<Guid, Error>.Failure(processResult.Error);
 
+                // The report is saved either way, but if its own processing failed without
+                // persisting anything the user must be told — it is not a successful import.
+                var failedAttempt = processResult.Value.FailedAttempts?
+                    .FirstOrDefault(a => a.ReportId == report.Id && a.Kind != FailedAttemptKind.ReportGone);
+                if (failedAttempt is not null)
+                {
+                    var code = failedAttempt.WillBeRetried
+                        ? ErrorCodes.REPORT_PROCESS_DEFERRED
+                        : ErrorCodes.REPORT_PROCESS_ATTEMPTS_EXHAUSTED;
+                    return Result<Guid, Error>.Failure(new Error(code,
+                        $"'{command.FileName}' was imported, but {failedAttempt.ToLogMessage()}"));
+                }
+
                 return Result<Guid, Error>.Success(report.Id);
             },
             ErrorCodes.REPORT_IMPORT_FAILED);

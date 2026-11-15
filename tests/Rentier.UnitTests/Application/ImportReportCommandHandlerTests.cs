@@ -141,4 +141,60 @@ public class ImportReportCommandHandlerTests
         result.Error.Code.Should().Be("REPORT_IMPORT_FAILED");
         result.Error.Message.Should().Contain("DB write failed");
     }
+
+    // ── The imported report's own processing failed: not a silent success ──
+
+    /// <summary>Processing reports a failed attempt of <paramref name="kind"/> for the report just imported.</summary>
+    private void ArrangeImportedReportFails(FailedAttemptKind kind)
+    {
+        Guid? importedId = null;
+        _reportRepo.AddAsync(Arg.Do<Report>(r => importedId = r.Id), Arg.Any<CancellationToken>());
+        _processReports.HandleAsync(Arg.Any<ProcessReportsCommand>(), Arg.Any<CancellationToken>())
+            .Returns(_ => Result<ProcessReportsResult, Error>.Success(new ProcessReportsResult(
+                0, 0, 0, [],
+                FailedAttempts: [new ReportFailedAttempt(importedId!.Value, "stmt.csv", "NBS unreachable", 1, kind)])));
+    }
+
+    [Fact]
+    public async Task HandleAsync_ImportedReportPendingRetry_ReturnsDeferredFailure()
+    {
+        ArrangeImportedReportFails(FailedAttemptKind.PendingRetry);
+
+        var result = await _sut.HandleAsync(MakeCommand(), TestContext.Current.CancellationToken);
+
+        result.Error.Code.Should().Be(ErrorCodes.REPORT_PROCESS_DEFERRED);
+    }
+
+    [Fact]
+    public async Task HandleAsync_ImportedReportPendingRetry_MessageSaysItWillBeRetried()
+    {
+        ArrangeImportedReportFails(FailedAttemptKind.PendingRetry);
+
+        var result = await _sut.HandleAsync(MakeCommand(), TestContext.Current.CancellationToken);
+
+        result.Error.Message.Should().Contain("was imported").And.Contain("retried on the next sync");
+    }
+
+    [Fact]
+    public async Task HandleAsync_ImportedReportAttemptsExhausted_ReturnsExhaustedFailure()
+    {
+        ArrangeImportedReportFails(FailedAttemptKind.Exhausted);
+
+        var result = await _sut.HandleAsync(MakeCommand(), TestContext.Current.CancellationToken);
+
+        result.Error.Code.Should().Be(ErrorCodes.REPORT_PROCESS_ATTEMPTS_EXHAUSTED);
+    }
+
+    [Fact]
+    public async Task HandleAsync_OnlyAnotherReportFailed_ReturnsSuccess()
+    {
+        _processReports.HandleAsync(Arg.Any<ProcessReportsCommand>(), Arg.Any<CancellationToken>())
+            .Returns(Result<ProcessReportsResult, Error>.Success(new ProcessReportsResult(
+                0, 0, 0, [],
+                FailedAttempts: [new ReportFailedAttempt(Guid.NewGuid(), "other.csv", "boom", 1, FailedAttemptKind.PendingRetry)])));
+
+        var result = await _sut.HandleAsync(MakeCommand(), TestContext.Current.CancellationToken);
+
+        result.IsSuccess.Should().BeTrue();
+    }
 }

@@ -157,6 +157,35 @@ public sealed class ReportProcessingAtomicityScenario : IAsyncLifetime
         report!.Status.Should().Be(ReportStatus.Processed);
     }
 
+    [Fact]
+    public async Task ProcessingFailsOnEveryRun_MarksReportErrorAfterAttemptLimit()
+    {
+        for (var i = 0; i < ProcessReportsCommandHandler.MAX_PROCESSING_ATTEMPTS; i++)
+            await ProcessWithFailingParserAsync();
+
+        var report = await _fixture.Get<IReportRepository>().GetByIdAsync(_reportId, TestContext.Current.CancellationToken);
+        report!.Status.Should().Be(ReportStatus.Error);
+    }
+
+    [Fact]
+    public async Task ProcessingFailsOnEveryRun_PersistsFailureReason()
+    {
+        for (var i = 0; i < ProcessReportsCommandHandler.MAX_PROCESSING_ATTEMPTS; i++)
+            await ProcessWithFailingParserAsync();
+
+        var report = await _fixture.Get<IReportRepository>().GetByIdAsync(_reportId, TestContext.Current.CancellationToken);
+        report!.LastProcessingError.Should().Contain("Simulated storage failure");
+    }
+
+    [Fact]
+    public async Task ProcessingFailsOnce_PersistsOneAttempt()
+    {
+        await ProcessWithFailingParserAsync();
+
+        var report = await _fixture.Get<IReportRepository>().GetByIdAsync(_reportId, TestContext.Current.CancellationToken);
+        report!.ProcessingAttempts.Should().Be(1);
+    }
+
     /// <summary>Simulates an unexpected infrastructure failure (it throws rather than returning a Failure).</summary>
     private sealed class FailingStatementParser : IStatementParser
     {

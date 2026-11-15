@@ -65,10 +65,18 @@ public sealed class SyncAllCommandHandler : ISyncAllCommandHandler
                 errors.Add(eventMsg);
                 progress.Report(new SyncProgressEntry(DateTimeOffset.Now, eventMsg, SyncProgressSeverity.Warning));
             }
-            var statusMsg = reportsProcessed == 0
-                ? "No new reports to process."
-                : $"Processed {reportsProcessed} report(s), created {filingsCreated} filing(s).";
-            progress.Report(new SyncProgressEntry(DateTimeOffset.Now, statusMsg, SyncProgressSeverity.Info));
+
+            // Failed attempts persisted nothing; they must reach the result (not just the live
+            // log) so they stay visible after the sync screen is closed. The live log already
+            // received each message from the processing handler.
+            foreach (var attempt in processResult.Value.FailedAttempts ?? [])
+                errors.Add(attempt.ToLogMessage());
+
+            var statusMsg = BuildProcessingSummary(processResult.Value);
+            progress.Report(new SyncProgressEntry(DateTimeOffset.Now, statusMsg,
+                processResult.Value.ReportsPendingRetry > 0 || processResult.Value.ReportsErrored > 0
+                    ? SyncProgressSeverity.Warning
+                    : SyncProgressSeverity.Info));
         }
         else
         {
@@ -78,5 +86,21 @@ public sealed class SyncAllCommandHandler : ISyncAllCommandHandler
 
         return Result<SyncAllResult, Error>.Success(
             new SyncAllResult(mailboxesSynced, attachmentsDownloaded, reportsProcessed, filingsCreated, errors.AsReadOnly()));
+    }
+
+    /// <summary>One-line summary that never reads as a clean run when reports failed or were deferred.</summary>
+    private static string BuildProcessingSummary(ProcessReportsResult result)
+    {
+        var parts = new List<string>();
+        if (result.ReportsProcessed > 0)
+            parts.Add($"Processed {result.ReportsProcessed} report(s), created {result.FilingsCreated} filing(s).");
+        if (result.ReportsPartialError > 0)
+            parts.Add($"{result.ReportsPartialError} report(s) partially processed.");
+        if (result.ReportsErrored > 0)
+            parts.Add($"{result.ReportsErrored} report(s) failed and need attention.");
+        if (result.ReportsPendingRetry > 0)
+            parts.Add($"{result.ReportsPendingRetry} report(s) could not be processed and will be retried on the next sync.");
+
+        return parts.Count == 0 ? "No new reports to process." : string.Join(" ", parts);
     }
 }

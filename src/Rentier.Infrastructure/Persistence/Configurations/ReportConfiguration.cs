@@ -1,6 +1,4 @@
-using System.Runtime.CompilerServices;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
@@ -9,10 +7,6 @@ namespace Rentier.Infrastructure.Persistence.Configurations;
 
 public sealed class ReportConfiguration : IEntityTypeConfiguration<Report>
 {
-    private static readonly ValueComparer<byte[]?> ATTACHMENT_REFERENCE_COMPARER = new(
-        (left, right) => ReferenceEquals(left, right),
-        content => content == null ? 0 : RuntimeHelpers.GetHashCode(content),
-        content => content);
 
     public void Configure(EntityTypeBuilder<Report> builder)
     {
@@ -20,12 +14,13 @@ public sealed class ReportConfiguration : IEntityTypeConfiguration<Report>
         builder.HasKey(r => r.Id);
         builder.Property(r => r.Id).ValueGeneratedNever();
         builder.Property(r => r.ReportName).IsRequired().HasMaxLength(500);
-        // Reference comparer: the domain only ever replaces the attachment array, never
-        // mutates it in place, so EF Core need not deep-copy the (multi-MB) BLOB into its
-        // original-value snapshot each time a report is attached or loaded for tracking.
-        builder.Property(r => r.AttachmentContent)
+        builder.Property(r => r.AttachmentContent).IsRequired(false);
+        builder.Property(r => r.ProcessingAttempts)
+            .IsRequired()
+            .HasDefaultValue(0);
+        builder.Property(r => r.LastProcessingError)
             .IsRequired(false)
-            .Metadata.SetValueComparer(ATTACHMENT_REFERENCE_COMPARER);
+            .HasMaxLength(Report.MAX_PROCESSING_ERROR_LENGTH);
         builder.Property(r => r.Status)
             .IsRequired()
             .HasConversion<int>()

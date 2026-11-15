@@ -346,21 +346,21 @@ public sealed class EfUnitOfWorkTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task UpdateStatusAsync_DetachedReport_PersistsStatus()
+    public async Task UpdateProcessingStateAsync_DetachedReport_PersistsStatus()
     {
         var ct = TestContext.Current.CancellationToken;
         var report = await LoadDetachedReportAsync();
         report.SetStatus(ReportStatus.Processed);
         await using var unitOfWork = _factory.Create();
 
-        await unitOfWork.Reports.UpdateStatusAsync(report, ct);
+        await unitOfWork.Reports.UpdateProcessingStateAsync(report, ct);
         await unitOfWork.SaveChangesAsync(ct);
 
         (await ReadReportStatusAsync()).Should().Be(ReportStatus.Processed);
     }
 
     [Fact]
-    public async Task UpdateStatusAsync_DetachedReport_MarksOnlyStatusModified()
+    public async Task UpdateProcessingStateAsync_DetachedReport_MarksOnlyProcessingStateModified()
     {
         var ct = TestContext.Current.CancellationToken;
         var report = await LoadDetachedReportAsync();
@@ -368,36 +368,39 @@ public sealed class EfUnitOfWorkTests : IAsyncLifetime
         await using var db = new AppDbContext(_options);
         var repository = new Rentier.Infrastructure.Repositories.ReportRepository(db, isStaging: true);
 
-        await repository.UpdateStatusAsync(report, ct);
+        await repository.UpdateProcessingStateAsync(report, ct);
 
         db.Entry(report).Properties.Where(p => p.IsModified).Select(p => p.Metadata.Name)
-            .Should().Equal(nameof(Report.Status));
+            .Should().BeEquivalentTo(
+                nameof(Report.Status), nameof(Report.ProcessingAttempts), nameof(Report.LastProcessingError));
     }
 
     [Fact]
-    public async Task UpdateStatusAsync_DetachedReport_DoesNotCopyAttachmentIntoSnapshot()
+    public async Task UpdateProcessingStateAsync_FailedAttemptRecorded_PersistsAttemptCountAndReason()
     {
         var ct = TestContext.Current.CancellationToken;
         var report = await LoadDetachedReportAsync();
-        report.SetStatus(ReportStatus.Processed);
-        await using var db = new AppDbContext(_options);
-        var repository = new Rentier.Infrastructure.Repositories.ReportRepository(db, isStaging: true);
+        report.RecordFailedAttempt("NBS unreachable", maxAttempts: 3);
+        await using (var unitOfWork = _factory.Create())
+        {
+            await unitOfWork.Reports.UpdateProcessingStateAsync(report, ct);
+            await unitOfWork.SaveChangesAsync(ct);
+        }
 
-        await repository.UpdateStatusAsync(report, ct);
+        var persisted = await LoadDetachedReportAsync();
 
-        db.Entry(report).Property(r => r.AttachmentContent).OriginalValue
-            .Should().BeSameAs(report.AttachmentContent);
+        (persisted.ProcessingAttempts, persisted.LastProcessingError).Should().Be((1, "NBS unreachable"));
     }
 
     [Fact]
-    public async Task UpdateStatusAsync_ReportStagedForDeletion_Throws()
+    public async Task UpdateProcessingStateAsync_ReportStagedForDeletion_Throws()
     {
         var ct = TestContext.Current.CancellationToken;
         var detached = await LoadDetachedReportAsync();
         await using var unitOfWork = _factory.Create();
         await unitOfWork.Reports.DeleteAsync(_report.Id, ct);
 
-        var act = () => unitOfWork.Reports.UpdateStatusAsync(detached, ct);
+        var act = () => unitOfWork.Reports.UpdateProcessingStateAsync(detached, ct);
 
         await act.Should().ThrowAsync<InvalidOperationException>();
     }

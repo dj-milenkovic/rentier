@@ -107,6 +107,66 @@ public class CrossRateSynthesisTests
     }
 
     /// <summary>
+    /// Arranges one CHF dividend with an IBKR CHF→USD rate. <paramref name="chfError"/> is what NBS
+    /// returns for CHF; USD succeeds unless <paramref name="usdError"/> is given.
+    /// </summary>
+    private (ProcessReportsCommandHandler Handler, IFilingRepository Filings) ArrangeChfDividend(
+        Error chfError, Error? usdError = null)
+    {
+        var importer = MakeImporter();
+        var report = MakeReportWithContent(importer.Id);
+
+        var reportRepo = Substitute.For<IReportRepository>();
+        reportRepo.GetByStatusAsync(ReportStatus.Init, Arg.Any<CancellationToken>()).Returns(new[] { report });
+        reportRepo.GetByIdAsync(report.Id, Arg.Any<CancellationToken>()).Returns(report);
+
+        var importerRepo = Substitute.For<IImporterRepository>();
+        importerRepo.GetByIdAsync(importer.Id, Arg.Any<CancellationToken>()).Returns(importer);
+
+        var dividends = new[] { new DividendRecord(TestDate, "CHF", "Swiss Corp", 100m) };
+        var ibkrRates = new[] { new IbkrExchangeRate(TestDate, "CHF", "USD", 1.1m) };
+        var parser = MakeParserReturning(new StatementParseResult(dividends, [], [], ibkrRates, []));
+
+        var rateFetcher = Substitute.For<IExchangeRateFetcher>();
+        rateFetcher.FetchRateAsync(Arg.Any<DateOnly>(), "CHF", Arg.Any<CancellationToken>())
+            .Returns(Result<ExchangeRate, Error>.Failure(chfError));
+        rateFetcher.FetchRateAsync(Arg.Any<DateOnly>(), "USD", Arg.Any<CancellationToken>())
+            .Returns(usdError is null
+                ? Result<ExchangeRate, Error>.Success(new ExchangeRate(TestDate, "USD", 108m))
+                : Result<ExchangeRate, Error>.Failure(usdError));
+
+        var filingRepo = Substitute.For<IFilingRepository>();
+        filingRepo.GetByIncomeEventAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(Array.Empty<Filing>());
+        return (MakeHandler(reportRepo, importerRepo, filingRepo, rateFetcher, parser), filingRepo);
+    }
+
+    /// <summary>
+    /// NBS could not be reached for CHF: its CHF rate may exist, so the IBKR cross-rate must not
+    /// replace it (IBKR rates are a fallback only for currencies NBS does not publish).
+    /// </summary>
+    [Fact]
+    public async Task HandleAsync_NbsUnreachableForCurrency_DoesNotSynthesizeCrossRate()
+    {
+        var (handler, filings) = ArrangeChfDividend(new Error("NBS_HTTP_ERROR", "timeout"));
+
+        await handler.HandleAsync(new ProcessReportsCommand(), TestContext.Current.CancellationToken);
+
+        await filings.DidNotReceive().AddAsync(Arg.Any<Filing>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_NbsUnreachableForUsdPivot_DefersReportForRetry()
+    {
+        var (handler, _) = ArrangeChfDividend(
+            new Error("UNSUPPORTED_CURRENCY", "CHF not in NBS"), new Error("NBS_HTTP_ERROR", "timeout"));
+
+        var result = await handler.HandleAsync(new ProcessReportsCommand(), TestContext.Current.CancellationToken);
+
+        (result.Value.ReportsPendingRetry, result.Value.EventErrors.Count).Should().Be((1, 0));
+    }
+
+    /// <summary>
     /// CHF has no NBS rate, IBKR CHF→USD rate has value 0 (edge case — parser
     /// would normally reject this, but tests the guard inside BuildRateProvider).
     /// Expected: synthetic rate = 0 * usdRate ≤ 0 → INVALID_EXCHANGE_RATE error.

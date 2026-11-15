@@ -79,9 +79,10 @@ public sealed class ReportRepository : UnitOfWorkAwareRepository, IReportReposit
         await CommitIfStandaloneAsync(ct);
     }
 
-    public async Task UpdateStatusAsync(Report report, CancellationToken ct = default)
+    public async Task UpdateProcessingStateAsync(Report report, CancellationToken ct = default)
     {
-        StagePropertyUpdate(report, tracked => tracked.Id == report.Id, r => r.Status);
+        StagePropertyUpdate(report, tracked => tracked.Id == report.Id,
+            nameof(Report.Status), nameof(Report.ProcessingAttempts), nameof(Report.LastProcessingError));
         await CommitIfStandaloneAsync(ct);
     }
 

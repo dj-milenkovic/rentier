@@ -120,7 +120,7 @@ public class ProcessReportsCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         result.Value.ReportsErrored.Should().Be(1);
         result.Value.EventErrors.Should().BeEmpty();
-        await reportRepo.Received(1).UpdateStatusAsync(
+        await reportRepo.Received(1).UpdateProcessingStateAsync(
             Arg.Is<Report>(r => r!.Status == ReportStatus.Error),
             Arg.Any<CancellationToken>());
     }
@@ -186,7 +186,7 @@ public class ProcessReportsCommandHandlerTests
 
         result.Value.ReportsProcessed.Should().Be(1);
         result.Value.FilingsCreated.Should().Be(0);
-        await reportRepo.Received(1).UpdateStatusAsync(
+        await reportRepo.Received(1).UpdateProcessingStateAsync(
             Arg.Is<Report>(r => r!.Status == ReportStatus.Processed),
             Arg.Any<CancellationToken>());
     }

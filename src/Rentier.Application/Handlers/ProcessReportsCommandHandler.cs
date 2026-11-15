@@ -7,6 +7,7 @@ using Rentier.Application.Parsing;
 using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
+using Rentier.Domain.Exceptions;
 using Rentier.Domain.Services;
 using Rentier.Domain.ValueObjects;
 
@@ -55,6 +56,8 @@ public sealed class ProcessReportsCommandHandler
         var reportsProcessed = 0;
         var reportsErrored = 0;
         var reportsPartialError = 0;
+        var reportsPendingRetry = 0;
+        var failedAttempts = new List<ReportFailedAttempt>();
 
         foreach (var report in initReports)
         {
@@ -62,7 +65,7 @@ public sealed class ProcessReportsCommandHandler
 
             // Only processing and the commit sit inside the try: once the report is committed
             // its outcome is final, so nothing after that point may route it to the
-            // unexpected-failure path (which would count it twice).
+            // failed-attempt path (which would count it twice).
             ReportOutcome outcome;
             try
             {
@@ -74,25 +77,44 @@ public sealed class ProcessReportsCommandHandler
             }
             catch (Exception ex)
             {
-                // Truly unexpected failures (network, DB, a failed commit) — log as error.
-                // The report's unit of work is already disposed, so everything it staged
-                // (filings, status) was discarded and nothing about the report was persisted.
-                // It deliberately stays at Init: the next run retries the complete report,
-                // whereas Error would be terminal (Error → Init is not a valid transition).
-                reportsErrored++;
-                _logger.LogError(ex, "Report {ReportId} failed unexpectedly and stays pending for retry: {Message}",
-                    report.Id, ex.Message);
-                command.Progress?.Report(new SyncProgressEntry(
-                    DateTimeOffset.Now,
-                    $"Report '{report.ReportName}': processing error — {ex.Message}. Nothing was saved; it will be retried on the next sync.",
-                    SyncProgressSeverity.Error));
-                reportDetails.Add(new ReportProcessingDetail(report.ReportName, 0, 0, SyncProgressSeverity.Error));
-                continue;
+                // Unexpected failure (DB error, a failed commit, a bug). The report's unit of work
+                // is already disposed, so everything it staged (filings, status) was discarded.
+                _logger.LogError(ex, "Report {ReportId} failed unexpectedly: {Message}", report.Id, ex.Message);
+                outcome = new ReportOutcome.AttemptFailed(ex.Message);
             }
 
-            // ── The report is committed: bookkeeping only from here on ──
             switch (outcome)
             {
+                case ReportOutcome.AttemptFailed failedAttempt:
+                    {
+                        // Nothing was persisted. Record the attempt so the failure is visible and
+                        // bounded: the report stays Init and is retried by the next run, until
+                        // MAX_PROCESSING_ATTEMPTS failures move it to Error for manual attention.
+                        var attempt = await RecordFailedAttemptAsync(report, failedAttempt.Reason, ct);
+                        switch (attempt.Kind)
+                        {
+                            case FailedAttemptKind.PendingRetry:
+                            case FailedAttemptKind.NotRecorded:
+                                reportsPendingRetry++;
+                                break;
+                            case FailedAttemptKind.Exhausted:
+                                reportsErrored++;
+                                break;
+                        }
+
+                        if (attempt.Kind != FailedAttemptKind.ReportGone)
+                            failedAttempts.Add(attempt);
+
+                        var attemptSeverity = attempt.Kind == FailedAttemptKind.Exhausted
+                            ? SyncProgressSeverity.Error
+                            : SyncProgressSeverity.Warning;
+                        command.Progress?.Report(new SyncProgressEntry(
+                            DateTimeOffset.Now, attempt.ToLogMessage(), attemptSeverity));
+                        reportDetails.Add(new ReportProcessingDetail(report.ReportName, 0, 0, attemptSeverity));
+                        break;
+                    }
+
+                // ── Committed outcomes: bookkeeping only from here on ──
                 case ReportOutcome.Rejected rejected:
                     // Data integrity failure (no attachment, missing importer, parse error) — not an unexpected exception
                     reportsErrored++;
@@ -139,29 +161,47 @@ public sealed class ProcessReportsCommandHandler
         }
 
         return Result<ProcessReportsResult, Error>.Success(
-            new ProcessReportsResult(filingsCreated, reportsProcessed, reportsErrored, allEventErrors, reportsPartialError, reportDetails));
+            new ProcessReportsResult(filingsCreated, reportsProcessed, reportsErrored, allEventErrors, reportsPartialError,
+                reportDetails, reportsPendingRetry, failedAttempts));
     }
+
+    /// <summary>
+    /// Failed attempts (that persisted nothing) a report may accumulate before it is moved to
+    /// Error and no longer retried automatically.
+    /// </summary>
+    public const int MAX_PROCESSING_ATTEMPTS = 3;
 
     /// <summary>
     /// Processes one report inside its own unit of work and commits its filings and its new
     /// status together with a single SaveChangesAsync, so a failure or cancellation part-way
     /// through leaves the report at Init with no filings.
     /// </summary>
+    /// <remarks>
+    /// The status is applied to the in-memory <paramref name="report"/> before the commit. If the
+    /// commit fails, that instance is discarded (never reused or re-saved): the failed-attempt
+    /// path re-reads the persisted report instead.
+    /// </remarks>
     private async Task<ReportOutcome> ProcessAndCommitReportAsync(Report report, HolidayConf holidays, CancellationToken ct)
     {
         await using var unitOfWork = _unitOfWorkFactory.Create();
 
-        var processResult = await ProcessReportAsync(report, holidays, unitOfWork.Filings, ct);
+        var processing = await ProcessReportAsync(report, holidays, unitOfWork.Filings, ct);
 
-        if (!processResult.IsSuccess)
+        if (processing is ReportProcessing.Deferred deferred)
         {
-            report.SetStatus(ReportStatus.Error);
-            await unitOfWork.Reports.UpdateStatusAsync(report, ct);
-            await unitOfWork.SaveChangesAsync(ct);
-            return new ReportOutcome.Rejected(processResult.Error);
+            // Not committed: the staged filings are discarded with the unit of work.
+            return new ReportOutcome.AttemptFailed(deferred.Reason);
         }
 
-        var (created, succeeded, failed, eventErrors) = processResult.Value;
+        if (processing is ReportProcessing.Rejected rejection)
+        {
+            report.Reject(rejection.Error.Message);
+            await unitOfWork.Reports.UpdateProcessingStateAsync(report, ct);
+            await unitOfWork.SaveChangesAsync(ct);
+            return new ReportOutcome.Rejected(rejection.Error);
+        }
+
+        var (created, succeeded, failed, eventErrors) = (ReportProcessing.Completed)processing;
 
         ReportStatus status;
         if (failed == 0)
@@ -172,18 +212,68 @@ public sealed class ProcessReportsCommandHandler
             status = ReportStatus.Error;
 
         report.SetStatus(status);
-        await unitOfWork.Reports.UpdateStatusAsync(report, ct);
+        await unitOfWork.Reports.UpdateProcessingStateAsync(report, ct);
         await unitOfWork.SaveChangesAsync(ct);
 
         return new ReportOutcome.Committed(status, created, succeeded, failed, eventErrors);
     }
 
-    /// <summary>A committed report's result: either rejected as a whole, or processed with event tallies.</summary>
+    /// <summary>
+    /// Records a failed attempt on the persisted report in a fresh unit of work. Never throws
+    /// (except on cancellation), so one report's failure cannot stop the remaining reports.
+    /// </summary>
+    private async Task<ReportFailedAttempt> RecordFailedAttemptAsync(Report report, string reason, CancellationToken ct)
+    {
+        try
+        {
+            await using var unitOfWork = _unitOfWorkFactory.Create();
+
+            // Re-read rather than reuse the in-memory instance: a failed commit may already have
+            // applied a status to it that never reached the database.
+            var persisted = await unitOfWork.Reports.GetByIdAsync(report.Id, ct);
+            if (persisted is null || persisted.Status != ReportStatus.Init)
+            {
+                // Deleted (or processed elsewhere) while this run was working on it.
+                _logger.LogWarning(
+                    "Report {ReportId} failed but is no longer pending (status {Status}); nothing to retry",
+                    report.Id, persisted?.Status.ToString() ?? "deleted");
+                return new ReportFailedAttempt(report.Id, report.ReportName, reason, 0, FailedAttemptKind.ReportGone);
+            }
+
+            var exhausted = persisted.RecordFailedAttempt(reason, MAX_PROCESSING_ATTEMPTS);
+            await unitOfWork.Reports.UpdateProcessingStateAsync(persisted, ct);
+            await unitOfWork.SaveChangesAsync(ct);
+
+            if (exhausted)
+            {
+                _logger.LogError(
+                    "Report {ReportId} failed {Attempts} times and was marked Error: {Reason}",
+                    report.Id, persisted.ProcessingAttempts, reason);
+            }
+
+            return new ReportFailedAttempt(report.Id, report.ReportName, reason, persisted.ProcessingAttempts,
+                exhausted ? FailedAttemptKind.Exhausted : FailedAttemptKind.PendingRetry);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Report {ReportId}: the failed attempt could not be recorded; it stays pending", report.Id);
+            return new ReportFailedAttempt(report.Id, report.ReportName, reason, 0, FailedAttemptKind.NotRecorded);
+        }
+    }
+
+    /// <summary>A report's result for this run.</summary>
     private abstract record ReportOutcome
     {
         private ReportOutcome()
         {
         }
+
+        /// <summary>Nothing was persisted (unexpected failure or rate source unavailable); retry later.</summary>
+        public sealed record AttemptFailed(string Reason) : ReportOutcome;
 
         /// <summary>The report was rejected (and committed as Error) before any event was processed.</summary>
         public sealed record Rejected(Error Error) : ReportOutcome;
@@ -197,20 +287,38 @@ public sealed class ProcessReportsCommandHandler
             List<FilingCreationError> EventErrors) : ReportOutcome;
     }
 
-    private async Task<Result<(int created, int succeeded, int failed, List<FilingCreationError> errors), Error>>
-        ProcessReportAsync(Report report, HolidayConf holidays, IFilingRepository filings, CancellationToken ct)
+    /// <summary>Result of processing a report's content, before anything is committed.</summary>
+    private abstract record ReportProcessing
+    {
+        private ReportProcessing()
+        {
+        }
+
+        /// <summary>The report cannot be processed as a whole (data-integrity failure).</summary>
+        public sealed record Rejected(Error Error) : ReportProcessing;
+
+        /// <summary>Processing stopped for a temporary reason; the report must not be committed.</summary>
+        public sealed record Deferred(string Reason) : ReportProcessing;
+
+        /// <summary>All events were processed; filings are staged in the unit of work.</summary>
+        public sealed record Completed(int Created, int Succeeded, int Failed, List<FilingCreationError> Errors)
+            : ReportProcessing;
+    }
+
+    private async Task<ReportProcessing> ProcessReportAsync(
+        Report report, HolidayConf holidays, IFilingRepository filings, CancellationToken ct)
     {
         if (report.AttachmentContent == null || report.AttachmentContent.Length == 0)
-            return Result<(int, int, int, List<FilingCreationError>), Error>.Failure(
+            return new ReportProcessing.Rejected(
                 new Error(ErrorCodes.REPORT_PROCESS_NO_ATTACHMENT, "Report has no attachment content"));
 
         var importer = await _importerRepository.GetByIdAsync(report.ImporterId, ct);
         if (importer is null)
-            return Result<(int, int, int, List<FilingCreationError>), Error>.Failure(
+            return new ReportProcessing.Rejected(
                 new Error(ErrorCodes.IMPORTER_NOT_FOUND, $"Importer {report.ImporterId} not found"));
 
         if (importer.TaxpayerProfileId == null)
-            return Result<(int, int, int, List<FilingCreationError>), Error>.Failure(
+            return new ReportProcessing.Rejected(
                 new Error(ErrorCodes.REPORT_PROCESS_NO_TAXPAYER, $"Importer {report.ImporterId} has no TaxpayerProfileId"));
 
         var taxpayerProfileId = importer.TaxpayerProfileId.Value;
@@ -219,7 +327,7 @@ public sealed class ProcessReportsCommandHandler
         var parseResult = await _statementParser.ParseAsync(stream, ct);
 
         if (!parseResult.IsSuccess)
-            return Result<(int, int, int, List<FilingCreationError>), Error>.Failure(
+            return new ReportProcessing.Rejected(
                 new Error(ErrorCodes.REPORT_PROCESS_PARSE_FAILED, parseResult.Error.Message));
 
         var parsed = parseResult.Value;
@@ -237,24 +345,26 @@ public sealed class ProcessReportsCommandHandler
             try
             {
                 var outcome = await ProcessIncomeEventAsync(ev, rateProvider, filings, errors, ct);
-                ApplyOutcome(outcome, ref created, ref succeeded, ref failed);
+                if (outcome.Kind == IncomeEventOutcomeKind.SourceUnavailable)
+                {
+                    // The rate may exist but could not be fetched: committing now would turn a
+                    // temporary outage into a permanent event failure. Defer the whole report.
+                    return new ReportProcessing.Deferred(outcome.Reason!);
+                }
+
+                ApplyOutcome(outcome.Kind, ref created, ref succeeded, ref failed);
             }
-            catch (OperationCanceledException)
+            catch (DomainException ex)
             {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                // Per-event failures before staging (domain validation, tax calculation).
-                // Writes are only staged here, so storage failures surface at the report's
-                // commit instead and fail the whole report (see HandleAsync).
+                // A business-rule violation for this one event (validation, tax calculation,
+                // deadline). Anything else (e.g. a database error) is not caught here: it fails
+                // the whole report, which is then retried, instead of losing this event forever.
                 errors.Add(new FilingCreationError(ev.EntityName, ev.Date, ev.Currency, ev.Amount, ErrorCodes.DOMAIN_ERROR, ex.Message));
                 failed++;
             }
         }
 
-        return Result<(int, int, int, List<FilingCreationError>), Error>.Success(
-            (created, succeeded, failed, errors));
+        return new ReportProcessing.Completed(created, succeeded, failed, errors);
     }
 
     /// <summary>
@@ -285,18 +395,18 @@ public sealed class ProcessReportsCommandHandler
         }
     }
 
-    private static void ApplyOutcome(IncomeEventOutcome outcome, ref int created, ref int succeeded, ref int failed)
+    private static void ApplyOutcome(IncomeEventOutcomeKind outcome, ref int created, ref int succeeded, ref int failed)
     {
         switch (outcome)
         {
-            case IncomeEventOutcome.Created:
+            case IncomeEventOutcomeKind.Created:
                 created++;
                 succeeded++;
                 break;
-            case IncomeEventOutcome.SkippedIdempotent:
+            case IncomeEventOutcomeKind.SkippedIdempotent:
                 succeeded++;
                 break;
-            case IncomeEventOutcome.Failed:
+            case IncomeEventOutcomeKind.Failed:
                 failed++;
                 break;
         }
@@ -330,6 +440,9 @@ public sealed class ProcessReportsCommandHandler
         var rateResult = await rateProvider(request.Date, request.Currency);
         if (!rateResult.IsSuccess)
         {
+            if (rateResult.Error.Code == ErrorCodes.RATE_SOURCE_UNAVAILABLE)
+                return IncomeEventOutcome.SourceUnavailable(rateResult.Error.Message);
+
             errors.Add(new FilingCreationError(request.EntityName, request.Date, request.Currency, request.Amount,
                 rateResult.Error.Code, rateResult.Error.Message));
             return IncomeEventOutcome.Failed;
@@ -378,11 +491,23 @@ public sealed class ProcessReportsCommandHandler
         return IncomeEventOutcome.Failed;
     }
 
-    private enum IncomeEventOutcome
+    private enum IncomeEventOutcomeKind
     {
         Created,
         SkippedIdempotent,
         Failed,
+        SourceUnavailable,
+    }
+
+    /// <summary>Per-event result; <see cref="Reason"/> is set only for <see cref="IncomeEventOutcomeKind.SourceUnavailable"/>.</summary>
+    private readonly record struct IncomeEventOutcome(IncomeEventOutcomeKind Kind, string? Reason = null)
+    {
+        public static readonly IncomeEventOutcome Created = new(IncomeEventOutcomeKind.Created);
+        public static readonly IncomeEventOutcome SkippedIdempotent = new(IncomeEventOutcomeKind.SkippedIdempotent);
+        public static readonly IncomeEventOutcome Failed = new(IncomeEventOutcomeKind.Failed);
+
+        public static IncomeEventOutcome SourceUnavailable(string reason)
+            => new(IncomeEventOutcomeKind.SourceUnavailable, reason);
     }
 
     private Func<DateOnly, string, Task<Result<RateResolution, Error>>> BuildRateProvider(
@@ -394,12 +519,20 @@ public sealed class ProcessReportsCommandHandler
             if (result.IsSuccess)
                 return Result<RateResolution, Error>.Success(result.Value);
 
+            // NBS unreachable: its rate for this currency may exist, so an IBKR cross-rate must
+            // not replace it (IBKR rates are a fallback only for currencies NBS does not publish).
+            if (result.Error.Code == ErrorCodes.RATE_SOURCE_UNAVAILABLE)
+                return Result<RateResolution, Error>.Failure(result.Error);
+
             // Cross-rate fallback: find IBKR rate for this currency to USD
             var ibkrRate = parsed.EmbeddedRates
                 .FirstOrDefault(r => r.FromCurrency.Equals(currency, StringComparison.OrdinalIgnoreCase));
             if (ibkrRate != null)
             {
                 var usdResult = await _exchangeRateResolver.ResolveAsync(date, "USD", holidays, ct: ct);
+                if (!usdResult.IsSuccess && usdResult.Error.Code == ErrorCodes.RATE_SOURCE_UNAVAILABLE)
+                    return Result<RateResolution, Error>.Failure(usdResult.Error);
+
                 if (usdResult.IsSuccess)
                 {
                     var syntheticRateValue = ibkrRate.Rate * usdResult.Value.Rate.RateToRsd;
