@@ -1,3 +1,4 @@
+using System.Globalization;
 using Rentier.Domain.Enums;
 using Rentier.Domain.Exceptions;
 
@@ -93,7 +94,7 @@ public sealed class Report
         Report original, byte[]? newContent, DateOnly importDate, DateTimeOffset revisedAt)
     {
         if (original is null) throw new DomainException("Original report must not be null");
-        var suffix = FormattableString.Invariant($"_rev{revisedAt.UtcDateTime:yyyyMMddHHmmss}");
+        var suffix = string.Create(CultureInfo.InvariantCulture, $"_rev{revisedAt.UtcDateTime:yyyyMMddHHmmss}");
         var baseName = original.ReportName.Length + suffix.Length > 500
             ? original.ReportName[..(500 - suffix.Length)]
             : original.ReportName;

@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
@@ -24,6 +25,8 @@ public sealed class ProcessReportsCommandHandler
     private readonly ILogger<ProcessReportsCommandHandler> _logger;
     private readonly TimeProvider _timeProvider;
 
+    [SuppressMessage("Major Code Smell", "S107:Methods should not have too many parameters",
+        Justification = "DI-resolved handler constructor; each parameter is a distinct injected collaborator.")]
     public ProcessReportsCommandHandler(
         IReportRepository reportRepository,
         IImporterRepository importerRepository,
