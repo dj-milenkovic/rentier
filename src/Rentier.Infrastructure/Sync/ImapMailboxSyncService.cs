@@ -61,7 +61,8 @@ public class ImapMailboxSyncService(
             long? maxUid = null;
 
             // Build base time/uid search query using SyncParameters
-            var baseQuery = BuildBaseQuery(cursor, parameters, timeProvider.GetUtcNow());
+            var utcNow = timeProvider.GetUtcNow();
+            var baseQuery = BuildBaseQuery(cursor, parameters, utcNow);
 
             // Process each importer within this mailbox. A single importer's failure is
             // recorded in `errors` and does not abort the remaining importers.
@@ -85,7 +86,7 @@ public class ImapMailboxSyncService(
             // Update cursor after all importers processed successfully
             // Cursor dates are UTC calendar dates, consistent with email dates (normalised to UTC below).
             var newCursor = new MailboxCursor.SyncedTo(
-                timeProvider.GetUtcToday(),
+                DateOnly.FromDateTime(utcNow.UtcDateTime),
                 maxUid ?? (cursor is MailboxCursor.SyncedTo s ? s.Uid : null));
             mailbox.UpdateCursor(newCursor);
             await mailboxRepository.UpdateAsync(mailbox, ct);
