@@ -12,6 +12,7 @@ using Rentier.Application.Repositories;
 using Rentier.Desktop.Services;
 using Rentier.Desktop.ViewModels;
 using ReactiveUI.Primitives.Concurrency;
+using Rentier.Tests.Common.Fakes;
 using Xunit;
 
 namespace Rentier.UnitTests;
@@ -63,6 +64,7 @@ public class MainWindowViewModelSmokeTests
     private static IServiceProvider CreateProvider()
     {
         var services = new ServiceCollection();
+        services.AddSingleton<TimeProvider>(TestClock.Provider());
 
         var getFilings = Substitute.For<IQueryHandler<GetFilingsQuery, Result<FilingsPageResult, Error>>>();
         getFilings.HandleAsync(Arg.Any<GetFilingsQuery>(), Arg.Any<CancellationToken>())

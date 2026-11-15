@@ -9,6 +9,7 @@ using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 using Rentier.Domain.ValueObjects;
 using Xunit;
+using Rentier.Tests.Common.Fakes;
 
 namespace Rentier.UnitTests.Application;
 
@@ -105,7 +106,7 @@ public class ExportFilingCommandHandlerTests
     [Fact]
     public async Task HandleAsync_ReportBackedFiling_IgnoresFilingPaymentNotesAndUsesImporterPaymentNotes()
     {
-        var report = Report.Create(Guid.NewGuid(), "report.csv", null, null);
+        var report = Report.Create(Guid.NewGuid(), "report.csv", null, null, TestClock.TODAY);
         var filing = MakeFiling(reportId: report.Id, paymentNotes: "Should not be used");
         var profile = MakeProfile();
         var importer = Importer.Create("Test Importer");

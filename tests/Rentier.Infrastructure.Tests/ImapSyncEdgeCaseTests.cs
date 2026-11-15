@@ -15,6 +15,7 @@ using Rentier.Domain.Enums;
 using Rentier.Domain.ValueObjects;
 using Rentier.Infrastructure.Sync;
 using Xunit;
+using Rentier.Tests.Common.Fakes;
 
 namespace Rentier.Infrastructure.Tests;
 
@@ -34,7 +35,7 @@ public class ImapSyncEdgeCaseTests
             IMailboxRepository mailboxRepository,
             ICredentialStore credentialStore,
             ImapClient client)
-            : base(reportRepository, mailboxRepository, credentialStore)
+            : base(reportRepository, mailboxRepository, credentialStore, TestClock.Provider())
         {
             _client = client;
         }
@@ -43,7 +44,7 @@ public class ImapSyncEdgeCaseTests
     }
 
     private static Mailbox MakeMailbox()
-        => Mailbox.Create("imap.example.com", 993, "user@example.com");
+        => Mailbox.Create("imap.example.com", 993, "user@example.com", TestClock.TODAY);
 
     private static Importer MakeImporter(Guid mailboxId)
     {

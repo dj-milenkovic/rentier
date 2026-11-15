@@ -7,6 +7,7 @@ using Rentier.Application.Interfaces;
 using Rentier.Application.Repositories;
 using Rentier.Tests.Common.Fakes;
 using Rentier.Domain.Entities;
+using Rentier.Domain.ValueObjects;
 using Xunit;
 
 namespace Rentier.UnitTests.Application;
@@ -21,7 +22,7 @@ public class AddMailboxCommandHandlerTests
 
     public AddMailboxCommandHandlerTests()
     {
-        _handler = new AddMailboxCommandHandler(_repo, _fakeCredentials);
+        _handler = new AddMailboxCommandHandler(_repo, _fakeCredentials, TestClock.Provider());
     }
 
     [Fact]
@@ -34,6 +35,24 @@ public class AddMailboxCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBe(Guid.Empty);
         await _repo.Received(1).AddAsync(Arg.Any<Mailbox>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_NewMailbox_CursorStartsNinetyDaysBeforeUtcToday()
+    {
+        // 2026-01-01 00:30 local (UTC+1) is still 2025-12-31 in UTC; cursor dates are UTC dates.
+        var clock = new FixedTimeProvider(
+            new DateTimeOffset(2025, 12, 31, 23, 30, 0, TimeSpan.Zero),
+            FixedTimeProvider.FixedOffsetZone(TimeSpan.FromHours(1)));
+        var handler = new AddMailboxCommandHandler(_repo, _fakeCredentials, clock);
+        Mailbox? saved = null;
+        await _repo.AddAsync(Arg.Do<Mailbox>(m => saved = m), Arg.Any<CancellationToken>());
+
+        await handler.HandleAsync(
+            new AddMailboxCommand("imap.example.com", 993, "user@example.com", null),
+            TestContext.Current.CancellationToken);
+
+        saved!.Cursor.Should().Be(new MailboxCursor.SyncedTo(new DateOnly(2025, 12, 31).AddDays(-90), null));
     }
 
     [Fact]
@@ -104,7 +123,7 @@ public class AddMailboxCommandHandlerTests
         failingCredentials.SaveCredentialAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(Result<VoidResult, Error>.Failure(Error.CredentialWriteFailed("OS store failure")));
 
-        var handler = new AddMailboxCommandHandler(_repo, failingCredentials);
+        var handler = new AddMailboxCommandHandler(_repo, failingCredentials, TestClock.Provider());
         var cmd = new AddMailboxCommand("imap.example.com", 993, "user@example.com", "pass");
 
         var result = await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);

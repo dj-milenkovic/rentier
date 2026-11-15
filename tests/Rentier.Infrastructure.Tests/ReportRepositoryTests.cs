@@ -7,6 +7,7 @@ using Rentier.Domain.Enums;
 using Rentier.Infrastructure.Persistence;
 using Rentier.Infrastructure.Repositories;
 using Xunit;
+using Rentier.Tests.Common.Fakes;
 
 namespace Rentier.Infrastructure.Tests;
 
@@ -43,7 +44,7 @@ public class ReportRepositoryTests : IAsyncLifetime
         => Importer.Create("Test Importer");
 
     private static Report MakeReport(Guid importerId, string name = "report.csv")
-        => Report.Create(importerId, name, [1, 2, 3], 100L);
+        => Report.Create(importerId, name, [1, 2, 3], 100L, TestClock.TODAY);
 
     [Fact]
     public async Task AddAsync_ValidReport_PersistedInDb()
@@ -68,8 +69,8 @@ public class ReportRepositoryTests : IAsyncLifetime
         await _context.Importers.AddAsync(importer, TestContext.Current.CancellationToken);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var older = Report.Create(importer.Id, "older.csv", [1], 100L, new DateOnly(2024, 1, 15));
-        var newer = Report.Create(importer.Id, "newer.csv", [1], 101L, new DateOnly(2024, 3, 15));
+        var older = Report.Create(importer.Id, "older.csv", [1], 100L, TestClock.TODAY, new DateOnly(2024, 1, 15));
+        var newer = Report.Create(importer.Id, "newer.csv", [1], 101L, TestClock.TODAY, new DateOnly(2024, 3, 15));
 
         await _repository.AddAsync(older, TestContext.Current.CancellationToken);
         await _repository.AddAsync(newer, TestContext.Current.CancellationToken);
