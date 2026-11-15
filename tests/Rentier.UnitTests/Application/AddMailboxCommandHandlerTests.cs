@@ -7,6 +7,7 @@ using Rentier.Application.Interfaces;
 using Rentier.Application.Repositories;
 using Rentier.Tests.Common.Fakes;
 using Rentier.Domain.Entities;
+using Rentier.Domain.ValueObjects;
 using Xunit;
 
 namespace Rentier.UnitTests.Application;
