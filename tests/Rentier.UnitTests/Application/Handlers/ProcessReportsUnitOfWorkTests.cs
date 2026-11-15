@@ -56,7 +56,8 @@ public class ProcessReportsUnitOfWorkTests
             new ExchangeRateResolver(_rateFetcher, NullLogger<ExchangeRateResolver>.Instance),
             holidayRepo,
             _parser,
-            NullLogger<ProcessReportsCommandHandler>.Instance);
+            NullLogger<ProcessReportsCommandHandler>.Instance,
+            TestClock.Provider());
     }
 
     /// <summary>Arranges <paramref name="reportCount"/> Init reports that all parse to <paramref name="dividends"/>.</summary>
@@ -67,7 +68,7 @@ public class ProcessReportsUnitOfWorkTests
         _importerRepo.GetByIdAsync(importer.Id, Arg.Any<CancellationToken>()).Returns(importer);
 
         var reports = Enumerable.Range(1, reportCount)
-            .Select(i => Report.Create(importer.Id, $"statement{i}.csv", [1, 2, 3], null))
+            .Select(i => Report.Create(importer.Id, $"statement{i}.csv", [1, 2, 3], null, TestClock.TODAY))
             .ToList();
         _reportRepo.GetByStatusAsync(ReportStatus.Init, Arg.Any<CancellationToken>()).Returns(reports);
 

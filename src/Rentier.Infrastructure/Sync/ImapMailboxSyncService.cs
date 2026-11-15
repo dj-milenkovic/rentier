@@ -20,7 +20,8 @@ namespace Rentier.Infrastructure.Sync;
 public class ImapMailboxSyncService(
     IReportRepository reportRepository,
     IMailboxRepository mailboxRepository,
-    ICredentialStore credentialStore)
+    ICredentialStore credentialStore,
+    TimeProvider timeProvider)
     : IMailboxSyncService
 {
     /// <summary>Seam for unit tests — override to return a pre-configured or mocked client.</summary>
@@ -60,7 +61,8 @@ public class ImapMailboxSyncService(
             long? maxUid = null;
 
             // Build base time/uid search query using SyncParameters
-            var baseQuery = BuildBaseQuery(cursor, parameters);
+            var utcNow = timeProvider.GetUtcNow();
+            var baseQuery = BuildBaseQuery(cursor, parameters, utcNow);
 
             // Process each importer within this mailbox. A single importer's failure is
             // recorded in `errors` and does not abort the remaining importers.
@@ -82,8 +84,9 @@ public class ImapMailboxSyncService(
             await client.DisconnectAsync(quit: true, ct);
 
             // Update cursor after all importers processed successfully
+            // Cursor dates are UTC calendar dates, consistent with email dates (normalised to UTC below).
             var newCursor = new MailboxCursor.SyncedTo(
-                DateOnly.FromDateTime(DateTime.UtcNow),
+                DateOnly.FromDateTime(utcNow.UtcDateTime),
                 maxUid ?? (cursor is MailboxCursor.SyncedTo s ? s.Uid : null));
             mailbox.UpdateCursor(newCursor);
             await mailboxRepository.UpdateAsync(mailbox, ct);
@@ -135,7 +138,7 @@ public class ImapMailboxSyncService(
                     var subject = message.Subject ?? string.Empty;
                     processed++;
                     progress?.Report(new SyncProgressEntry(
-                        DateTimeOffset.Now,
+                        timeProvider.GetLocalNow(),
                         $"Downloading email {processed}/{total}: {subject}",
                         SyncProgressSeverity.Info));
 
@@ -192,7 +195,7 @@ public class ImapMailboxSyncService(
             var rawDate = message.Date;
             // Guard against missing/default Date header (MimeKit returns DateTimeOffset.MinValue).
             // Use Unix epoch as a stable sentinel so the report name is deterministic
-            // across replays — DateTime.UtcNow would produce a different name each run.
+            // across replays — the current time would produce a different name each run.
             var emailDate = rawDate == default
                 ? DateOnly.FromDateTime(DateTime.UnixEpoch)
                 : DateOnly.FromDateTime(rawDate.UtcDateTime);
@@ -208,7 +211,9 @@ public class ImapMailboxSyncService(
                 await attachment.Content.DecodeToAsync(ms, ct);
             var content = ms.ToArray();
 
-            var report = Report.Create(importer.Id, reportName, content, uid.Id, emailDate);
+            var report = Report.Create(
+                importer.Id, reportName, content, uid.Id,
+                importDate: timeProvider.GetLocalToday(), emailDate: emailDate);
             await reportRepository.AddAsync(report, ct);
             onReportCreated();
         }
@@ -217,7 +222,7 @@ public class ImapMailboxSyncService(
     /// <summary>Per-importer outcome of <see cref="ProcessImporterAsync"/>: reports created, the highest UID seen, and any errors encountered.</summary>
     private readonly record struct ImporterSyncResult(int ReportsCreated, long? MaxUid, IReadOnlyList<string> Errors);
 
-    private static SearchQuery BuildBaseQuery(MailboxCursor cursor, SyncParameters parameters)
+    private static SearchQuery BuildBaseQuery(MailboxCursor cursor, SyncParameters parameters, DateTimeOffset utcNow)
     {
         var effectiveDate = parameters.GetEffectiveStartDate(cursor);
 
@@ -236,7 +241,7 @@ public class ImapMailboxSyncService(
 
         // Otherwise: use date filter
         var sinceDate = effectiveDate?.ToDateTime(TimeOnly.MinValue)
-            ?? DateTime.UtcNow.AddDays(-90);
+            ?? utcNow.UtcDateTime.AddDays(-Mailbox.DEFAULT_LOOKBACK_DAYS);
         return SearchQuery.DeliveredAfter(sinceDate);
     }
 

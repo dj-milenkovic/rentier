@@ -3,6 +3,7 @@ using Rentier.Domain.Entities;
 using Rentier.Domain.Exceptions;
 using Rentier.Domain.ValueObjects;
 using Xunit;
+using Rentier.Tests.Common.Fakes;
 
 namespace Rentier.UnitTests;
 
@@ -11,7 +12,7 @@ public class MailboxTests
     [Fact]
     public void Create_ValidInputs_ReturnsMailboxWithCorrectProperties()
     {
-        var mailbox = Mailbox.Create("imap.example.com", 993, "user@example.com");
+        var mailbox = Mailbox.Create("imap.example.com", 993, "user@example.com", TestClock.TODAY);
 
         mailbox.Id.Should().NotBe(Guid.Empty);
         mailbox.Host.Should().Be("imap.example.com");
@@ -20,51 +21,59 @@ public class MailboxTests
     }
 
     [Fact]
+    public void Create_CursorStartsNinetyDaysBeforeSuppliedToday()
+    {
+        var mailbox = Mailbox.Create("imap.example.com", 993, "user@example.com", new DateOnly(2026, 1, 1));
+
+        mailbox.Cursor.Should().Be(new MailboxCursor.SyncedTo(new DateOnly(2025, 10, 3), null));
+    }
+
+    [Fact]
     public void Create_EmptyHost_ThrowsDomainException()
     {
-        var act = () => Mailbox.Create("", 993, "user@example.com");
+        var act = () => Mailbox.Create("", 993, "user@example.com", TestClock.TODAY);
         act.Should().Throw<DomainException>();
     }
 
     [Fact]
     public void Create_WhitespaceHost_ThrowsDomainException()
     {
-        var act = () => Mailbox.Create("   ", 993, "user@example.com");
+        var act = () => Mailbox.Create("   ", 993, "user@example.com", TestClock.TODAY);
         act.Should().Throw<DomainException>();
     }
 
     [Fact]
     public void Create_PortZero_ThrowsDomainException()
     {
-        var act = () => Mailbox.Create("imap.example.com", 0, "user@example.com");
+        var act = () => Mailbox.Create("imap.example.com", 0, "user@example.com", TestClock.TODAY);
         act.Should().Throw<DomainException>();
     }
 
     [Fact]
     public void Create_PortAbove65535_ThrowsDomainException()
     {
-        var act = () => Mailbox.Create("imap.example.com", 65536, "user@example.com");
+        var act = () => Mailbox.Create("imap.example.com", 65536, "user@example.com", TestClock.TODAY);
         act.Should().Throw<DomainException>();
     }
 
     [Fact]
     public void Create_Port65535_Succeeds()
     {
-        var act = () => Mailbox.Create("imap.example.com", 65535, "user@example.com");
+        var act = () => Mailbox.Create("imap.example.com", 65535, "user@example.com", TestClock.TODAY);
         act.Should().NotThrow();
     }
 
     [Fact]
     public void Create_EmptyUsername_ThrowsDomainException()
     {
-        var act = () => Mailbox.Create("imap.example.com", 993, "");
+        var act = () => Mailbox.Create("imap.example.com", 993, "", TestClock.TODAY);
         act.Should().Throw<DomainException>();
     }
 
     [Fact]
     public void Create_SetsInitialCursorTo90DaysAgo()
     {
-        var mailbox = Mailbox.Create("imap.example.com", 993, "user@example.com");
+        var mailbox = Mailbox.Create("imap.example.com", 993, "user@example.com", TestClock.TODAY);
 
         mailbox.Cursor.Should().BeOfType<MailboxCursor.SyncedTo>();
         ((MailboxCursor.SyncedTo)mailbox.Cursor).Uid.Should().BeNull();
@@ -73,8 +82,8 @@ public class MailboxTests
     [Fact]
     public void Create_AssignsUniqueGuidEachCall()
     {
-        var m1 = Mailbox.Create("imap.example.com", 993, "user@example.com");
-        var m2 = Mailbox.Create("imap.example.com", 993, "user@example.com");
+        var m1 = Mailbox.Create("imap.example.com", 993, "user@example.com", TestClock.TODAY);
+        var m2 = Mailbox.Create("imap.example.com", 993, "user@example.com", TestClock.TODAY);
 
         m1.Id.Should().NotBe(m2.Id);
     }
@@ -84,7 +93,7 @@ public class MailboxTests
     [InlineData("   ")]
     public void UpdateDetails_WithNullOrWhitespaceUsername_ThrowsDomainException(string username)
     {
-        var mailbox = Mailbox.Create("imap.example.com", 993, "user@example.com");
+        var mailbox = Mailbox.Create("imap.example.com", 993, "user@example.com", TestClock.TODAY);
 
         var act = () => mailbox.UpdateDetails("imap.example.com", 993, username);
 
@@ -94,7 +103,7 @@ public class MailboxTests
     [Fact]
     public void UpdateDetails_ValidInputs_UpdatesProperties()
     {
-        var mailbox = Mailbox.Create("imap.example.com", 993, "user@example.com");
+        var mailbox = Mailbox.Create("imap.example.com", 993, "user@example.com", TestClock.TODAY);
 
         mailbox.UpdateDetails("imap.newhost.com", 143, "new@example.com");
 
@@ -106,7 +115,7 @@ public class MailboxTests
     [Fact]
     public void UpdateDetails_EmptyHost_ThrowsDomainException()
     {
-        var mailbox = Mailbox.Create("imap.example.com", 993, "user@example.com");
+        var mailbox = Mailbox.Create("imap.example.com", 993, "user@example.com", TestClock.TODAY);
         var act = () => mailbox.UpdateDetails("", 993, "user@example.com");
         act.Should().Throw<DomainException>();
     }
@@ -114,7 +123,7 @@ public class MailboxTests
     [Fact]
     public void UpdateDetails_InvalidPort_ThrowsDomainException()
     {
-        var mailbox = Mailbox.Create("imap.example.com", 993, "user@example.com");
+        var mailbox = Mailbox.Create("imap.example.com", 993, "user@example.com", TestClock.TODAY);
         var act = () => mailbox.UpdateDetails("imap.example.com", 0, "user@example.com");
         act.Should().Throw<DomainException>();
     }
@@ -122,7 +131,7 @@ public class MailboxTests
     [Fact]
     public void UpdateCursor_ValidCursor_UpdatesCursor()
     {
-        var mailbox = Mailbox.Create("imap.example.com", 993, "user@example.com");
+        var mailbox = Mailbox.Create("imap.example.com", 993, "user@example.com", TestClock.TODAY);
         var newCursor = new MailboxCursor.SyncedTo(new DateOnly(2025, 1, 1), 42L);
 
         mailbox.UpdateCursor(newCursor);
@@ -135,7 +144,7 @@ public class MailboxTests
     [Fact]
     public void UpdateCursor_NullCursor_ThrowsDomainException()
     {
-        var mailbox = Mailbox.Create("imap.example.com", 993, "user@example.com");
+        var mailbox = Mailbox.Create("imap.example.com", 993, "user@example.com", TestClock.TODAY);
         var act = () => mailbox.UpdateCursor(null!);
         act.Should().Throw<DomainException>();
     }

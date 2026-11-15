@@ -33,7 +33,7 @@ public class ProcessReportsCommandHandlerPartialSuccessTests
     }
 
     private static Report MakeReportWithContent(Guid importerId)
-        => Report.Create(importerId, "statement.csv", [1, 2, 3], null);
+        => Report.Create(importerId, "statement.csv", [1, 2, 3], null, TestClock.TODAY);
 
     private static ExchangeRateResolver MakeResolver(IExchangeRateFetcher fetcher)
         => new ExchangeRateResolver(fetcher, NullLogger<ExchangeRateResolver>.Instance);
@@ -50,7 +50,8 @@ public class ProcessReportsCommandHandlerPartialSuccessTests
 
         return new ProcessReportsCommandHandler(
             reportRepo, importerRepo, new FakeUnitOfWorkFactory(reportRepo, filingRepo), resolver, holidayRepo, parser,
-            NullLogger<ProcessReportsCommandHandler>.Instance);
+            NullLogger<ProcessReportsCommandHandler>.Instance,
+            TestClock.Provider());
     }
 
     [Fact]

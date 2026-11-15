@@ -17,6 +17,14 @@ namespace Rentier.Infrastructure;
 
 public static class InfrastructureServiceExtensions
 {
+    /// <summary>
+    /// Registers all infrastructure services (DbContext, repositories, HTTP clients, credential
+    /// store, parsers, serializers, sync, updates, database initializer). This is the single
+    /// entry point the composition root (Rentier.Desktop bootstrap) calls. Async because the
+    /// platform credential store is probed during registration.
+    /// </summary>
+    /// <param name="services">The DI service collection to register into.</param>
+    /// <param name="dbPath">Absolute path to the SQLite database file.</param>
     public static async Task AddInfrastructureServicesAsync(
         this IServiceCollection services, string dbPath)
     {
@@ -62,5 +70,6 @@ public static class InfrastructureServiceExtensions
         services.AddTransient<IXmlFilingSerializer, PpOpoXmlSerializer>();
         services.AddTransient<IMailboxSyncService, ImapMailboxSyncService>();
         services.AddSingleton<IUpdateService, VelopackUpdateService>();
+        services.AddTransient<IDatabaseInitializer, DatabaseInitializer>();
     }
 }

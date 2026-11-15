@@ -8,6 +8,7 @@ using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 using Xunit;
+using Rentier.Tests.Common.Fakes;
 
 namespace Rentier.UnitTests.Application;
 
@@ -26,7 +27,7 @@ public class GetReportsQueryHandlerTests
     private static Report MakeReport(Guid? importerId = null, string name = "rep.csv")
     {
         var id = importerId ?? Guid.NewGuid();
-        return Report.Create(id, name, null, null);
+        return Report.Create(id, name, null, null, TestClock.TODAY);
     }
 
     private static Importer MakeImporter(string display = "Test Importer")

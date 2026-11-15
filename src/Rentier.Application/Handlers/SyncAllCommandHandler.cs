@@ -9,13 +9,16 @@ public sealed class SyncAllCommandHandler : ISyncAllCommandHandler
 {
     private readonly ISyncMailboxCommandHandler _syncMailboxHandler;
     private readonly ICommandHandler<ProcessReportsCommand, Result<ProcessReportsResult, Error>> _processReportsHandler;
+    private readonly TimeProvider _timeProvider;
 
     public SyncAllCommandHandler(
         ISyncMailboxCommandHandler syncMailboxHandler,
-        ICommandHandler<ProcessReportsCommand, Result<ProcessReportsResult, Error>> processReportsHandler)
+        ICommandHandler<ProcessReportsCommand, Result<ProcessReportsResult, Error>> processReportsHandler,
+        TimeProvider timeProvider)
     {
         _syncMailboxHandler = syncMailboxHandler;
         _processReportsHandler = processReportsHandler;
+        _timeProvider = timeProvider;
     }
 
     public async Task<Result<SyncAllResult, Error>> HandleAsync(
@@ -27,7 +30,7 @@ public sealed class SyncAllCommandHandler : ISyncAllCommandHandler
         int mailboxesSynced = 0, attachmentsDownloaded = 0, reportsProcessed = 0, filingsCreated = 0;
 
         // Phase 1: Mailbox sync
-        progress.Report(new SyncProgressEntry(DateTimeOffset.Now, "Starting mailbox sync...", SyncProgressSeverity.Info));
+        progress.Report(new SyncProgressEntry(_timeProvider.GetLocalNow(), "Starting mailbox sync...", SyncProgressSeverity.Info));
 
         var syncResult = await _syncMailboxHandler.HandleAsync(
             new SyncMailboxCommand(command.Parameters), progress, ct);
@@ -39,19 +42,19 @@ public sealed class SyncAllCommandHandler : ISyncAllCommandHandler
             foreach (var e in syncResult.Value.Errors)
             {
                 errors.Add(e);
-                progress.Report(new SyncProgressEntry(DateTimeOffset.Now, e, SyncProgressSeverity.Warning));
+                progress.Report(new SyncProgressEntry(_timeProvider.GetLocalNow(), e, SyncProgressSeverity.Warning));
             }
-            progress.Report(new SyncProgressEntry(DateTimeOffset.Now,
+            progress.Report(new SyncProgressEntry(_timeProvider.GetLocalNow(),
                 $"Mailbox sync complete. {attachmentsDownloaded} attachment(s) downloaded.", SyncProgressSeverity.Info));
         }
         else
         {
             errors.Add(syncResult.Error.Message);
-            progress.Report(new SyncProgressEntry(DateTimeOffset.Now, syncResult.Error.Message, SyncProgressSeverity.Error));
+            progress.Report(new SyncProgressEntry(_timeProvider.GetLocalNow(), syncResult.Error.Message, SyncProgressSeverity.Error));
         }
 
         // Phase 2: Process reports (always runs)
-        progress.Report(new SyncProgressEntry(DateTimeOffset.Now, "Processing reports...", SyncProgressSeverity.Info));
+        progress.Report(new SyncProgressEntry(_timeProvider.GetLocalNow(), "Processing reports...", SyncProgressSeverity.Info));
 
         var processResult = await _processReportsHandler.HandleAsync(new ProcessReportsCommand(Progress: progress), ct);
 
@@ -63,7 +66,7 @@ public sealed class SyncAllCommandHandler : ISyncAllCommandHandler
             {
                 var eventMsg = $"{e.EntityName} {e.IncomeDate:yyyy-MM-dd}: {e.ErrorCode} - {e.Message}";
                 errors.Add(eventMsg);
-                progress.Report(new SyncProgressEntry(DateTimeOffset.Now, eventMsg, SyncProgressSeverity.Warning));
+                progress.Report(new SyncProgressEntry(_timeProvider.GetLocalNow(), eventMsg, SyncProgressSeverity.Warning));
             }
 
             // Failed attempts persisted nothing; they must reach the result (not just the live
@@ -73,7 +76,7 @@ public sealed class SyncAllCommandHandler : ISyncAllCommandHandler
                 errors.Add(attempt.ToLogMessage());
 
             var statusMsg = BuildProcessingSummary(processResult.Value);
-            progress.Report(new SyncProgressEntry(DateTimeOffset.Now, statusMsg,
+            progress.Report(new SyncProgressEntry(_timeProvider.GetLocalNow(), statusMsg,
                 processResult.Value.ReportsPendingRetry > 0 || processResult.Value.ReportsErrored > 0
                     ? SyncProgressSeverity.Warning
                     : SyncProgressSeverity.Info));
@@ -81,7 +84,7 @@ public sealed class SyncAllCommandHandler : ISyncAllCommandHandler
         else
         {
             errors.Add(processResult.Error.Message);
-            progress.Report(new SyncProgressEntry(DateTimeOffset.Now, processResult.Error.Message, SyncProgressSeverity.Error));
+            progress.Report(new SyncProgressEntry(_timeProvider.GetLocalNow(), processResult.Error.Message, SyncProgressSeverity.Error));
         }
 
         return Result<SyncAllResult, Error>.Success(

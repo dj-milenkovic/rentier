@@ -34,7 +34,7 @@ public class CrossRateSynthesisTests
     }
 
     private static Report MakeReportWithContent(Guid importerId)
-        => Report.Create(importerId, "statement.csv", [1, 2, 3], null);
+        => Report.Create(importerId, "statement.csv", [1, 2, 3], null, TestClock.TODAY);
 
     private ProcessReportsCommandHandler MakeHandler(
         IReportRepository reportRepo,
@@ -52,7 +52,8 @@ public class CrossRateSynthesisTests
         return new ProcessReportsCommandHandler(
             reportRepo, importerRepo, new FakeUnitOfWorkFactory(reportRepo, filingRepo), resolver,
             holidayRepo, parser,
-            NullLogger<ProcessReportsCommandHandler>.Instance);
+            NullLogger<ProcessReportsCommandHandler>.Instance,
+            TestClock.Provider());
     }
 
     private IStatementParser MakeParserReturning(StatementParseResult result)

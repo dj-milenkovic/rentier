@@ -10,6 +10,7 @@ using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 using Rentier.Domain.ValueObjects;
 using Xunit;
+using Rentier.Tests.Common.Fakes;
 
 namespace Rentier.UnitTests.Application;
 
@@ -25,7 +26,7 @@ public class SyncMailboxCommandHandlerTests
 
     private static Mailbox MakeMailbox(Guid id)
     {
-        return Mailbox.Create("imap.example.com", 993, "user@test.com");
+        return Mailbox.Create("imap.example.com", 993, "user@test.com", TestClock.TODAY);
     }
 
     [Fact]
@@ -62,8 +63,8 @@ public class SyncMailboxCommandHandlerTests
         importerRepo.GetAllAsync(Arg.Any<CancellationToken>())
             .Returns(new[] { importer1, importer2 });
 
-        var mailbox1 = Mailbox.Create("imap1.test.com", 993, "u1@test.com");
-        var mailbox2 = Mailbox.Create("imap2.test.com", 993, "u2@test.com");
+        var mailbox1 = Mailbox.Create("imap1.test.com", 993, "u1@test.com", TestClock.TODAY);
+        var mailbox2 = Mailbox.Create("imap2.test.com", 993, "u2@test.com", TestClock.TODAY);
 
         var mailboxRepo = Substitute.For<IMailboxRepository>();
         mailboxRepo.GetByIdAsync(mailboxId1, Arg.Any<CancellationToken>()).Returns(mailbox1);
@@ -118,7 +119,7 @@ public class SyncMailboxCommandHandlerTests
         var importerRepo = Substitute.For<IImporterRepository>();
         importerRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(new[] { importer });
 
-        var mailbox = Mailbox.Create("imap.test.com", 993, "u@test.com");
+        var mailbox = Mailbox.Create("imap.test.com", 993, "u@test.com", TestClock.TODAY);
         var mailboxRepo = Substitute.For<IMailboxRepository>();
         mailboxRepo.GetByIdAsync(mailboxId, Arg.Any<CancellationToken>()).Returns(mailbox);
 
@@ -145,7 +146,7 @@ public class SyncMailboxCommandHandlerTests
         var importerRepo = Substitute.For<IImporterRepository>();
         importerRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(new[] { importer });
 
-        var mailbox = Mailbox.Create("imap.test.com", 993, "u@test.com");
+        var mailbox = Mailbox.Create("imap.test.com", 993, "u@test.com", TestClock.TODAY);
         var mailboxRepo = Substitute.For<IMailboxRepository>();
         mailboxRepo.GetByIdAsync(mailboxId, Arg.Any<CancellationToken>()).Returns(mailbox);
 
@@ -174,7 +175,7 @@ public class SyncMailboxCommandHandlerTests
         var importerRepo = Substitute.For<IImporterRepository>();
         importerRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(new[] { importer });
 
-        var mailbox = Mailbox.Create("imap.test.com", 993, "u@test.com");
+        var mailbox = Mailbox.Create("imap.test.com", 993, "u@test.com", TestClock.TODAY);
         var mailboxRepo = Substitute.For<IMailboxRepository>();
         mailboxRepo.GetByIdAsync(mailboxId, Arg.Any<CancellationToken>()).Returns(mailbox);
 

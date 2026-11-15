@@ -10,6 +10,7 @@ using Rentier.Application.Parsing;
 using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
 using Xunit;
+using Rentier.Tests.Common.Fakes;
 
 namespace Rentier.UnitTests;
 
@@ -19,11 +20,12 @@ public class ImportReportCommandHandlerTests
     private readonly IStatementParser _parser = Substitute.For<IStatementParser>();
     private readonly ICommandHandler<ProcessReportsCommand, Result<ProcessReportsResult, Error>> _processReports
         = Substitute.For<ICommandHandler<ProcessReportsCommand, Result<ProcessReportsResult, Error>>>();
+    private readonly FixedTimeProvider _clock = TestClock.Provider();
     private readonly ImportReportCommandHandler _sut;
 
     public ImportReportCommandHandlerTests()
     {
-        _sut = new ImportReportCommandHandler(_reportRepo, _parser, _processReports);
+        _sut = new ImportReportCommandHandler(_reportRepo, _parser, _processReports, _clock);
 
         // Default: parse succeeds with empty result
         _parser.ParseAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
@@ -43,6 +45,30 @@ public class ImportReportCommandHandlerTests
 
     private static ImportReportCommand MakeCommand() =>
         new(Guid.NewGuid(), "stmt.csv", [1, 2, 3]);
+
+    [Fact]
+    public async Task HandleAsync_PersistedReport_HasImportDateFromClock()
+    {
+        await _sut.HandleAsync(MakeCommand(), TestContext.Current.CancellationToken);
+
+        await _reportRepo.Received(1).AddAsync(
+            Arg.Is<Report>(r => r!.ImportDate == TestClock.TODAY), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_LocalNewYearAlreadyPassedButUtcHasNot_ImportDateIsLocalDate()
+    {
+        // 2025-12-31 23:30 UTC is 2026-01-01 00:30 in Serbia (UTC+1): the report is filed under 2026.
+        var clock = new FixedTimeProvider(
+            new DateTimeOffset(2025, 12, 31, 23, 30, 0, TimeSpan.Zero),
+            FixedTimeProvider.FixedOffsetZone(TimeSpan.FromHours(1)));
+        var sut = new ImportReportCommandHandler(_reportRepo, _parser, _processReports, clock);
+
+        await sut.HandleAsync(MakeCommand(), TestContext.Current.CancellationToken);
+
+        await _reportRepo.Received(1).AddAsync(
+            Arg.Is<Report>(r => r!.ImportDate == new DateOnly(2026, 1, 1)), Arg.Any<CancellationToken>());
+    }
 
     [Fact]
     public async Task HandleAsync_WithValidCsvAndNoExistingReport_PersistsReportAndReturnsId()

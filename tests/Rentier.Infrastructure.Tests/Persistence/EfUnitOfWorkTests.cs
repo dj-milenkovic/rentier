@@ -7,6 +7,7 @@ using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 using Rentier.Domain.ValueObjects;
 using Rentier.Infrastructure.Persistence;
+using Rentier.Tests.Common.Fakes;
 
 namespace Rentier.Infrastructure.Tests.Persistence;
 
@@ -35,7 +36,7 @@ public sealed class EfUnitOfWorkTests : IAsyncLifetime
 
         _profile = new TaxpayerProfile(Guid.NewGuid(), "1234567890123", "John Doe", "Belgrade", "018");
         var importer = Importer.Create("Test Importer");
-        _report = Report.Create(importer.Id, "statement.csv", [1, 2, 3], 100L);
+        _report = Report.Create(importer.Id, "statement.csv", [1, 2, 3], 100L, TestClock.TODAY);
 
         await using var seed = new AppDbContext(_options);
         await seed.Database.EnsureCreatedAsync(ct);

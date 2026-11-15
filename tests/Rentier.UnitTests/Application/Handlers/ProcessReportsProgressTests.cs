@@ -39,7 +39,7 @@ public class ProcessReportsProgressTests
     }
 
     private static Report MakeReportWithContent(Guid importerId, string name = "statement.csv")
-        => Report.Create(importerId, name, [1, 2, 3], null);
+        => Report.Create(importerId, name, [1, 2, 3], null, TestClock.TODAY);
 
     private static ExchangeRateResolver MakeResolver(IExchangeRateFetcher fetcher)
         => new ExchangeRateResolver(fetcher, NullLogger<ExchangeRateResolver>.Instance);
@@ -84,7 +84,8 @@ public class ProcessReportsProgressTests
             MakeResolver(rateFetcher ?? Substitute.For<IExchangeRateFetcher>()),
             holidayRepo,
             parser,
-            NullLogger<ProcessReportsCommandHandler>.Instance);
+            NullLogger<ProcessReportsCommandHandler>.Instance,
+            TestClock.Provider());
     }
 
     // ── T006: success / partial-error / total-failure severity ───────────────
@@ -256,7 +257,7 @@ public class ProcessReportsProgressTests
     {
         // Arrange — report has no attachment content
         var importer = MakeImporter();
-        var report = Report.Create(importer.Id, "no-attach.csv", null, null);
+        var report = Report.Create(importer.Id, "no-attach.csv", null, null, TestClock.TODAY);
 
         var reportRepo = Substitute.For<IReportRepository>();
         reportRepo.GetByStatusAsync(ReportStatus.Init, Arg.Any<CancellationToken>())

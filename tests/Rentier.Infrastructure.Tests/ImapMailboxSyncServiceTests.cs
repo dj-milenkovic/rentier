@@ -16,6 +16,7 @@ using Rentier.Domain.Enums;
 using Rentier.Domain.ValueObjects;
 using Rentier.Infrastructure.Sync;
 using Xunit;
+using Rentier.Tests.Common.Fakes;
 
 namespace Rentier.Infrastructure.Tests;
 
@@ -30,8 +31,9 @@ public class ImapMailboxSyncServiceTests
             IReportRepository reportRepository,
             IMailboxRepository mailboxRepository,
             ICredentialStore credentialStore,
-            ImapClient client)
-            : base(reportRepository, mailboxRepository, credentialStore)
+            ImapClient client,
+            TimeProvider? timeProvider = null)
+            : base(reportRepository, mailboxRepository, credentialStore, timeProvider ?? TestClock.Provider())
         {
             _client = client;
         }
@@ -40,7 +42,7 @@ public class ImapMailboxSyncServiceTests
     }
 
     private static Mailbox MakeMailbox()
-        => Mailbox.Create("imap.example.com", 993, "user@example.com");
+        => Mailbox.Create("imap.example.com", 993, "user@example.com", TestClock.TODAY);
 
     private static Importer MakeImporter(string attachmentRegex = @".*\.csv")
     {
@@ -106,7 +108,8 @@ public class ImapMailboxSyncServiceTests
         var svc = new ImapMailboxSyncService(
             Substitute.For<IReportRepository>(),
             Substitute.For<IMailboxRepository>(),
-            credStore);
+            credStore,
+            TestClock.Provider());
 
         var mailbox = MakeMailbox();
         var result = await svc.SyncAsync(mailbox, Array.Empty<Importer>(), SyncParameters.Default, null, CancellationToken.None);
@@ -125,7 +128,8 @@ public class ImapMailboxSyncServiceTests
         var svc = new ImapMailboxSyncService(
             Substitute.For<IReportRepository>(),
             Substitute.For<IMailboxRepository>(),
-            credStore);
+            credStore,
+            TestClock.Provider());
 
         var mailbox = MakeMailbox();
         var result = await svc.SyncAsync(mailbox, Array.Empty<Importer>(), SyncParameters.Default, null, CancellationToken.None);
@@ -140,7 +144,8 @@ public class ImapMailboxSyncServiceTests
         var svc = new ImapMailboxSyncService(
             Substitute.For<IReportRepository>(),
             Substitute.For<IMailboxRepository>(),
-            Substitute.For<ICredentialStore>());
+            Substitute.For<ICredentialStore>(),
+            TestClock.Provider());
 
         var act = async () => await svc.SyncAsync(null!, Array.Empty<Importer>(), SyncParameters.Default, null, CancellationToken.None);
 
@@ -153,7 +158,8 @@ public class ImapMailboxSyncServiceTests
         var svc = new ImapMailboxSyncService(
             Substitute.For<IReportRepository>(),
             Substitute.For<IMailboxRepository>(),
-            Substitute.For<ICredentialStore>());
+            Substitute.For<ICredentialStore>(),
+            TestClock.Provider());
 
         var mailbox = MakeMailbox();
         var act = async () => await svc.SyncAsync(mailbox, null!, SyncParameters.Default, null, CancellationToken.None);
@@ -215,6 +221,61 @@ public class ImapMailboxSyncServiceTests
         progress.Received(1).Report(Arg.Is<SyncProgressEntry>(entry =>
             entry!.Message == "Downloading email 1/1: Dividend statement"
             && entry.Severity == SyncProgressSeverity.Info));
+    }
+
+    // 2025-12-31 23:30 UTC is already 2026-01-01 00:30 in Serbia (UTC+1).
+    private static FixedTimeProvider SerbianNewYearClock() =>
+        new(new DateTimeOffset(2025, 12, 31, 23, 30, 0, TimeSpan.Zero),
+            FixedTimeProvider.FixedOffsetZone(TimeSpan.FromHours(1)));
+
+    private static async Task<(Mailbox Mailbox, IReportRepository Reports, IProgress<SyncProgressEntry> Progress)>
+        SyncOneAttachmentAtAsync(TimeProvider clock)
+    {
+        var mailbox = MakeMailbox();
+        var reportRepository = Substitute.For<IReportRepository>();
+        reportRepository.ExistsByImporterAndNameAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(false);
+        var (client, inbox) = MakeConnectedClient(mailbox);
+        var uid = new UniqueId(7);
+        inbox.SearchAsync(Arg.Any<SearchQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IList<UniqueId>>(new[] { uid }));
+        inbox.GetMessageAsync(uid, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(MakeMessageWithAttachment("Dividend statement", "statement.csv")));
+        var progress = Substitute.For<IProgress<SyncProgressEntry>>();
+        var svc = new TestableImapMailboxSyncService(
+            reportRepository, Substitute.For<IMailboxRepository>(), MakeCredentialStore(), client, clock);
+
+        var result = await svc.SyncAsync(
+            mailbox, new[] { MakeImporter() }, SyncParameters.Default, progress, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        return (mailbox, reportRepository, progress);
+    }
+
+    [Fact]
+    public async Task SyncAsync_LocalDateAheadOfUtc_CursorAdvancesToUtcDate()
+    {
+        var (mailbox, _, _) = await SyncOneAttachmentAtAsync(SerbianNewYearClock());
+
+        mailbox.Cursor.Should().Be(new MailboxCursor.SyncedTo(new DateOnly(2025, 12, 31), 7));
+    }
+
+    [Fact]
+    public async Task SyncAsync_LocalDateAheadOfUtc_ReportImportDateIsLocalDate()
+    {
+        var (_, reports, _) = await SyncOneAttachmentAtAsync(SerbianNewYearClock());
+
+        await reports.Received(1).AddAsync(
+            Arg.Is<Report>(r => r!.ImportDate == new DateOnly(2026, 1, 1)), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task SyncAsync_ProgressEntry_IsStampedWithClockLocalTime()
+    {
+        var (_, _, progress) = await SyncOneAttachmentAtAsync(SerbianNewYearClock());
+
+        progress.Received(1).Report(Arg.Is<SyncProgressEntry>(e =>
+            e!.Timestamp == new DateTimeOffset(2026, 1, 1, 0, 30, 0, TimeSpan.FromHours(1))));
     }
 
     [Fact]

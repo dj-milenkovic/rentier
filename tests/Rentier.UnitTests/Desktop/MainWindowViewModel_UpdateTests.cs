@@ -11,6 +11,7 @@ using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
 using Rentier.Desktop.Services;
 using Rentier.Desktop.ViewModels;
+using Rentier.Tests.Common.Fakes;
 using Xunit;
 
 namespace Rentier.UnitTests.Desktop;
@@ -32,6 +33,7 @@ public class MainWindowViewModel_UpdateTests
     private static IServiceProvider BuildProvider(IUpdateService? updateService = null)
     {
         var services = new ServiceCollection();
+        services.AddSingleton<TimeProvider>(TestClock.Provider());
 
         updateService ??= BuildUpdateService();
         services.AddSingleton(updateService);

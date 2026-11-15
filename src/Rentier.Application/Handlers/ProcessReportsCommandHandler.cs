@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
@@ -23,7 +24,10 @@ public sealed class ProcessReportsCommandHandler
     private readonly IHolidayRepository _holidayRepository;
     private readonly IStatementParser _statementParser;
     private readonly ILogger<ProcessReportsCommandHandler> _logger;
+    private readonly TimeProvider _timeProvider;
 
+    [SuppressMessage("Major Code Smell", "S107:Methods should not have too many parameters",
+        Justification = "DI-resolved handler constructor; each parameter is a distinct injected collaborator.")]
     public ProcessReportsCommandHandler(
         IReportRepository reportRepository,
         IImporterRepository importerRepository,
@@ -31,8 +35,10 @@ public sealed class ProcessReportsCommandHandler
         IExchangeRateResolver exchangeRateResolver,
         IHolidayRepository holidayRepository,
         IStatementParser statementParser,
-        ILogger<ProcessReportsCommandHandler> logger)
+        ILogger<ProcessReportsCommandHandler> logger,
+        TimeProvider timeProvider)
     {
+        _timeProvider = timeProvider;
         _reportRepository = reportRepository;
         _importerRepository = importerRepository;
         _unitOfWorkFactory = unitOfWorkFactory;
@@ -109,7 +115,7 @@ public sealed class ProcessReportsCommandHandler
                             ? SyncProgressSeverity.Error
                             : SyncProgressSeverity.Warning;
                         command.Progress?.Report(new SyncProgressEntry(
-                            DateTimeOffset.Now, attempt.ToLogMessage(), attemptSeverity));
+                            _timeProvider.GetLocalNow(), attempt.ToLogMessage(), attemptSeverity));
                         reportDetails.Add(new ReportProcessingDetail(report.ReportName, 0, 0, attemptSeverity));
                         break;
                     }
@@ -122,7 +128,7 @@ public sealed class ProcessReportsCommandHandler
                         "Report {ReportId} rejected: [{Code}] {Message}",
                         report.Id, rejected.Error.Code, rejected.Error.Message);
                     command.Progress?.Report(new SyncProgressEntry(
-                        DateTimeOffset.Now,
+                        _timeProvider.GetLocalNow(),
                         $"Report '{report.ReportName}': processing error — {rejected.Error.Message}.",
                         SyncProgressSeverity.Error));
                     reportDetails.Add(new ReportProcessingDetail(report.ReportName, 0, 0, SyncProgressSeverity.Error));
@@ -154,7 +160,7 @@ public sealed class ProcessReportsCommandHandler
 
                     var severity = ReportProcessingDetail.ClassifySeverity(committed.Created, committed.Failed);
                     var detail = new ReportProcessingDetail(report.ReportName, committed.Created, committed.Failed, severity);
-                    command.Progress?.Report(new SyncProgressEntry(DateTimeOffset.Now, detail.ToLogMessage(), severity));
+                    command.Progress?.Report(new SyncProgressEntry(_timeProvider.GetLocalNow(), detail.ToLogMessage(), severity));
                     reportDetails.Add(detail);
                     break;
             }

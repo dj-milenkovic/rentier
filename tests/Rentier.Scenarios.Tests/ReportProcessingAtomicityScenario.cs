@@ -11,6 +11,7 @@ using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 using Rentier.Domain.ValueObjects;
+using Rentier.Tests.Common.Fakes;
 using Xunit;
 
 namespace Rentier.Scenarios.Tests;
@@ -56,7 +57,7 @@ public sealed class ReportProcessingAtomicityScenario : IAsyncLifetime
         await rates.SaveAsync(new ExchangeRate(new DateOnly(2024, 1, 15), "USD", USD_RATE), ct);
         await rates.SaveAsync(new ExchangeRate(new DateOnly(2024, 1, 31), "USD", USD_RATE), ct);
 
-        var report = Report.Create(importer.Id, "two_events.csv", TWO_EVENT_CSV_BYTES, null);
+        var report = Report.Create(importer.Id, "two_events.csv", TWO_EVENT_CSV_BYTES, null, TestClock.TODAY);
         await _fixture.Get<IReportRepository>().AddAsync(report, ct);
         _reportId = report.Id;
     }
@@ -71,7 +72,8 @@ public sealed class ReportProcessingAtomicityScenario : IAsyncLifetime
         new InterruptingRateResolver(_fixture.Get<IExchangeRateResolver>(), interruptOnCall: 2),
         _fixture.Get<IHolidayRepository>(),
         _fixture.Get<IStatementParser>(),
-        NullLogger<ProcessReportsCommandHandler>.Instance);
+        NullLogger<ProcessReportsCommandHandler>.Instance,
+        _fixture.Get<TimeProvider>());
 
     private async Task ProcessInterruptedAsync()
     {
@@ -134,7 +136,8 @@ public sealed class ReportProcessingAtomicityScenario : IAsyncLifetime
                 _fixture.Get<IExchangeRateResolver>(),
                 _fixture.Get<IHolidayRepository>(),
                 new FailingStatementParser(),
-                NullLogger<ProcessReportsCommandHandler>.Instance)
+                NullLogger<ProcessReportsCommandHandler>.Instance,
+                _fixture.Get<TimeProvider>())
             .HandleAsync(new ProcessReportsCommand(), TestContext.Current.CancellationToken);
 
     [Fact]

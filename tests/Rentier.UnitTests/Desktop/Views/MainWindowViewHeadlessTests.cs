@@ -16,6 +16,7 @@ using Rentier.Application.Queries;
 using Rentier.Desktop.Services;
 using Rentier.Desktop.ViewModels;
 using Rentier.Desktop.Views;
+using Rentier.Tests.Common.Fakes;
 using Xunit;
 using ReactiveUI.Primitives.Signals;
 
@@ -34,6 +35,7 @@ public class MainWindowViewHeadlessTests
     private static IServiceProvider BuildProvider()
     {
         var services = new ServiceCollection();
+        services.AddSingleton<TimeProvider>(TestClock.Provider());
 
         services.AddSingleton(_ => Substitute.For<IUpdateService>());
 

@@ -6,19 +6,19 @@ using Rentier.Application.Repositories;
 namespace Rentier.Infrastructure.Tests;
 
 /// <summary>
-/// Verifies that InfrastructureRegistrar wires all required application interfaces
+/// Verifies that AddInfrastructureServicesAsync wires all required application interfaces
 /// into the DI container. Uses descriptor-level assertions to avoid instantiating
 /// DB-connected services in a bare ServiceCollection.
 /// </summary>
 [Trait("Category", "Integration")]
-public sealed class InfrastructureRegistrarSmokeTests : IAsyncLifetime
+public sealed class InfrastructureRegistrationSmokeTests : IAsyncLifetime
 {
     private IServiceCollection _services = new ServiceCollection();
 
     public async ValueTask InitializeAsync()
     {
         var dbPath = Path.Combine(Path.GetTempPath(), $"rentier_smoke_{Guid.NewGuid():N}.db");
-        await new InfrastructureRegistrar().RegisterServicesAsync(_services, dbPath);
+        await _services.AddInfrastructureServicesAsync(dbPath);
     }
 
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
@@ -40,10 +40,10 @@ public sealed class InfrastructureRegistrarSmokeTests : IAsyncLifetime
     [InlineData(typeof(IUpdateService))]
     [InlineData(typeof(IUserPreferenceRepository))]
     [InlineData(typeof(IUnitOfWorkFactory))]
-    public void RegisterServicesAsync_AllRequiredInterfaces_AreRegistered(Type serviceType)
+    public void AddInfrastructureServicesAsync_AllRequiredInterfaces_AreRegistered(Type serviceType)
     {
         _services.Should().Contain(
             d => d.ServiceType == serviceType,
-            because: $"{serviceType.Name} must be registered by InfrastructureRegistrar");
+            because: $"{serviceType.Name} must be registered by AddInfrastructureServicesAsync");
     }
 }

@@ -8,6 +8,7 @@ using Rentier.Domain.Enums;
 using Rentier.Domain.ValueObjects;
 using Rentier.Infrastructure.Persistence;
 using Rentier.Infrastructure.Repositories;
+using Rentier.Tests.Common.Fakes;
 
 namespace Rentier.Infrastructure.Tests;
 
@@ -171,7 +172,7 @@ public class FilingRepositoryTests : IAsyncLifetime
         await _context.Importers.AddAsync(importer, TestContext.Current.CancellationToken);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var report = Report.Create(importer.Id, "report.csv", null, null);
+        var report = Report.Create(importer.Id, "report.csv", null, null, TestClock.TODAY);
         await _context.Reports.AddAsync(report, TestContext.Current.CancellationToken);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
@@ -449,7 +450,7 @@ public class FilingRepositoryTests : IAsyncLifetime
         await _context.Importers.AddAsync(importer);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var report = Report.Create(importer.Id, "stmt.csv", null, null);
+        var report = Report.Create(importer.Id, "stmt.csv", null, null, TestClock.TODAY);
         await _context.Reports.AddAsync(report);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
@@ -548,7 +549,7 @@ public class FilingRepositoryTests : IAsyncLifetime
         var importer2 = Importer.Create("Other");
         await _context.Importers.AddAsync(importer2, TestContext.Current.CancellationToken);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
-        var report2 = Report.Create(importer2.Id, "other.csv", null, null);
+        var report2 = Report.Create(importer2.Id, "other.csv", null, null, TestClock.TODAY);
         await _context.Reports.AddAsync(report2, TestContext.Current.CancellationToken);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
@@ -576,8 +577,8 @@ public class FilingRepositoryTests : IAsyncLifetime
         var (_, report1, profile) = await SeedReportAsync();
         var importer = Importer.Create("Other");
         await _context.Importers.AddAsync(importer, ct);
-        var report2 = Report.Create(importer.Id, "second.csv", null, null);
-        var report3 = Report.Create(importer.Id, "third.csv", null, null);
+        var report2 = Report.Create(importer.Id, "second.csv", null, null, TestClock.TODAY);
+        var report3 = Report.Create(importer.Id, "third.csv", null, null, TestClock.TODAY);
         await _context.Reports.AddRangeAsync([report2, report3], ct);
         await _context.SaveChangesAsync(ct);
 
