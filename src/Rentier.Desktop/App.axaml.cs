@@ -9,11 +9,14 @@ using Rentier.Desktop.Composition;
 using Rentier.Desktop.Services;
 using Rentier.Desktop.ViewModels;
 using Rentier.Desktop.Views;
+using Rentier.Infrastructure;
 
 namespace Rentier.Desktop;
 
 /// <summary>
-/// DI composition root. Infrastructure services registered via reflection-discovered IInfrastructureRegistrar.
+/// Application bootstrap and DI composition root: wires Infrastructure
+/// (AddInfrastructureServicesAsync) and Desktop/Application services
+/// (CompositionRoot.AddDesktopServices) into one container.
 /// </summary>
 public partial class App : Avalonia.Application
 {
@@ -41,22 +44,9 @@ public partial class App : Avalonia.Application
 
             var services = new ServiceCollection();
 
-            // Discover and invoke IInfrastructureRegistrar at runtime via reflection.
-            // This removes the compile-time ProjectReference from Desktop → Infrastructure.
-            var infraAssembly = System.Reflection.Assembly.Load("Rentier.Infrastructure")
-                ?? throw new InvalidOperationException(
-                    "Could not load Rentier.Infrastructure assembly. " +
-                    "Ensure the assembly is present in the application output directory.");
-
-            var registrarType = infraAssembly.GetTypes()
-                .FirstOrDefault(t => typeof(IInfrastructureRegistrar).IsAssignableFrom(t)
-                                     && t is { IsClass: true, IsAbstract: false })
-                ?? throw new InvalidOperationException(
-                    "No implementation of IInfrastructureRegistrar was found in Rentier.Infrastructure. " +
-                    "Ensure InfrastructureRegistrar is present and implements the interface.");
-
-            var registrar = (IInfrastructureRegistrar)Activator.CreateInstance(registrarType)!;
-            await registrar.RegisterServicesAsync(services, dbPath);
+            // Composition root: Infrastructure is wired explicitly, so a missing or renamed
+            // registration entry point is a compile error rather than a startup failure.
+            await services.AddInfrastructureServicesAsync(dbPath);
 
             services.AddDesktopServices();
             var provider = services.BuildServiceProvider();

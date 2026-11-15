@@ -8,10 +8,10 @@
   <ItemGroup>
     <ProjectReference Include="..\Rentier.Application\Rentier.Application.csproj" />
     <ProjectReference Include="..\Rentier.Domain\Rentier.Domain.csproj" />
-    <!-- Runtime-only dependency: Desktop loads Infrastructure via Assembly.Load (reflection)
-         to preserve compile-time decoupling. The C# compiler omits unused references from
-         the assembly manifest, so the LayerDependencyTest still passes. This ProjectReference
-         ensures MSBuild copies Infrastructure + its transitive NuGet deps to the output. -->
+    <!-- Desktop is the composition root, so it references Infrastructure directly. Only the
+         bootstrap code (Composition/, Program.cs, App.axaml.cs) may use Infrastructure types;
+         ViewModels, Views, Services, Converters etc. stay on Application abstractions.
+         Enforced per type by tests/Rentier.UnitTests/Architecture/LayerDependencyTests.cs. -->
     <ProjectReference Include="..\Rentier.Infrastructure\Rentier.Infrastructure.csproj" />
   </ItemGroup>
 
