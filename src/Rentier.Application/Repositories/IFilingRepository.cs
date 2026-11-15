@@ -55,6 +55,16 @@ public interface IFilingRepository
         CancellationToken ct = default);
 
     /// <summary>
+    /// Deletes all Filing records whose ReportId is in <paramref name="reportIds"/>, loading
+    /// them with a single query. Used by BulkDeleteReportsCommandHandler BEFORE deleting the
+    /// parent Reports. An empty list is a no-op. Same load-then-remove rule as
+    /// <see cref="DeleteByReportIdAsync"/> — ExecuteDeleteAsync is prohibited.
+    /// </summary>
+    Task DeleteByReportIdsAsync(
+        IReadOnlyList<Guid> reportIds,
+        CancellationToken ct = default);
+
+    /// <summary>
     /// Deletes all Filing records whose IDs are in the provided list.
     /// An empty list is a no-op.
     /// </summary>

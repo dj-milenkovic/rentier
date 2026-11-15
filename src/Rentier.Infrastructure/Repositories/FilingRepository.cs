@@ -61,40 +61,64 @@ public sealed class FilingRepository : UnitOfWorkAwareRepository, IFilingReposit
         DateOnly incomeDate,
         CancellationToken ct = default)
     {
-        // One predicate for both the database query and the staged-change lookup, so
-        // duplicate detection within a unit of work can never drift from detection across
-        // statements. SQLite's default BINARY collation matches ordinal C# string equality.
-        Expression<Func<Filing, bool>> sameIncomeEvent = f =>
-            f.TaxpayerProfileId == taxpayerProfileId &&
-            f.PayingEntity == payingEntity &&
-            f.IncomeDate == incomeDate;
+        var key = new IncomeEventKey(taxpayerProfileId, payingEntity, incomeDate);
 
         var persisted = await Db.Filings
             .AsNoTracking()
-            .Where(sameIncomeEvent)
+            .Where(SameIncomeEventAs(key))
             .ToListAsync(ct);
 
         if (!IsStaging)
             return persisted.AsReadOnly();
 
-        // Inside a unit of work, changes staged earlier in the same operation must count:
-        // include filings staged for insert and drop those staged for deletion.
-        var matches = sameIncomeEvent.Compile();
-        var stagedEntries = Db.ChangeTracker.Entries<Filing>().ToList();
-        var stagedDeletes = stagedEntries
-            .Where(e => e.State == EntityState.Deleted)
-            .Select(e => e.Entity.Id)
-            .ToHashSet();
-        var stagedInserts = stagedEntries
-            .Where(e => e.State == EntityState.Added)
-            .Select(e => e.Entity)
-            .Where(matches);
+        // Inside a unit of work, changes staged earlier in the same operation must count.
+        // A tracked filing's current (staged) values win over its database row: staged
+        // inserts and updates are matched on their new values, staged deletes drop out.
+        // Entry states are set explicitly by Add/Update/Remove, so change detection (a scan
+        // of every tracked entity) is unnecessary here and is skipped.
+        var tracked = TrackedEntriesWithoutDetectingChanges<Filing>();
+        var trackedIds = tracked.Select(e => e.Entity.Id).ToHashSet();
 
-        return persisted
-            .Where(f => !stagedDeletes.Contains(f.Id))
-            .Concat(stagedInserts)
-            .ToList()
-            .AsReadOnly();
+        var fromDatabase = persisted.Where(f => !trackedIds.Contains(f.Id));
+        var fromTracker = tracked
+            .Where(e => e.State is EntityState.Added or EntityState.Modified or EntityState.Unchanged)
+            .Select(e => e.Entity)
+            .Where(f => MATCHES_INCOME_EVENT(f, key));
+
+        return fromDatabase.Concat(fromTracker).ToList().AsReadOnly();
+    }
+
+    /// <summary>The identity of an income event for duplicate/correction detection.</summary>
+    private sealed record IncomeEventKey(Guid TaxpayerProfileId, string PayingEntity, DateOnly IncomeDate);
+
+    // One predicate for both the database query and the staged-change lookup, so duplicate
+    // detection within a unit of work can never drift from detection across statements.
+    // SQLite's default BINARY collation matches ordinal C# string equality. Compiled once.
+    private static readonly Expression<Func<Filing, IncomeEventKey, bool>> SAME_INCOME_EVENT =
+        (f, key) =>
+            f.TaxpayerProfileId == key.TaxpayerProfileId &&
+            f.PayingEntity == key.PayingEntity &&
+            f.IncomeDate == key.IncomeDate;
+
+    private static readonly Func<Filing, IncomeEventKey, bool> MATCHES_INCOME_EVENT = SAME_INCOME_EVENT.Compile();
+
+    /// <summary>
+    /// Binds <paramref name="key"/> into <see cref="SAME_INCOME_EVENT"/> for LINQ-to-Entities.
+    /// The key's members are accessed on a constant, which EF Core extracts as SQL parameters,
+    /// so the query shape (and its cached plan) is the same for every key.
+    /// </summary>
+    private static Expression<Func<Filing, bool>> SameIncomeEventAs(IncomeEventKey key)
+    {
+        var filing = SAME_INCOME_EVENT.Parameters[0];
+        var body = new ParameterReplacer(SAME_INCOME_EVENT.Parameters[1], Expression.Constant(key))
+            .Visit(SAME_INCOME_EVENT.Body);
+        return Expression.Lambda<Func<Filing, bool>>(body, filing);
+    }
+
+    private sealed class ParameterReplacer(ParameterExpression parameter, Expression replacement) : ExpressionVisitor
+    {
+        protected override Expression VisitParameter(ParameterExpression node)
+            => node == parameter ? replacement : base.VisitParameter(node);
     }
 
     public async Task<IReadOnlyList<Filing>> GetByReportIdAsync(Guid reportId, CancellationToken ct = default)
@@ -207,6 +231,19 @@ public sealed class FilingRepository : UnitOfWorkAwareRepository, IFilingReposit
 
     public async Task<int> GetFilingCountByReportIdAsync(Guid reportId, CancellationToken ct = default)
         => await Db.Filings.AsNoTracking().CountAsync(f => f.ReportId == reportId, ct);
+
+    public async Task DeleteByReportIdsAsync(IReadOnlyList<Guid> reportIds, CancellationToken ct = default)
+    {
+        if (reportIds.Count == 0)
+            return;
+        var filings = await Db.Filings
+            .Where(f => f.ReportId != null && reportIds.Contains(f.ReportId.Value))
+            .ToListAsync(ct);
+        if (filings.Count == 0)
+            return;
+        Db.Filings.RemoveRange(filings);
+        await CommitIfStandaloneAsync(ct);
+    }
 
     public async Task DeleteByReportIdAsync(Guid reportId, CancellationToken ct = default)
     {

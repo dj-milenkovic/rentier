@@ -10,10 +10,17 @@ namespace Rentier.Application.Interfaces;
 /// Disposing without saving discards everything that was staged.
 /// </summary>
 /// <remarks>
-/// Reads through these repositories query the database and therefore do <b>not</b> see
-/// changes that are staged but not yet saved — with one deliberate exception:
-/// <see cref="IFilingRepository.GetByIncomeEventAsync"/> includes staged filings, because
-/// duplicate detection must hold within a single operation as well as across operations.
+/// Read visibility of staged (unsaved) changes differs per method:
+/// <list type="bullet">
+/// <item><b>Queries</b> (lists, paging, existence checks) read the database and do <b>not</b>
+/// see staged changes.</item>
+/// <item><b>GetByIdAsync</b> returns the instance this unit of work already tracks, if any —
+/// including one that has been modified or staged for deletion. Do not use it to check
+/// whether a staged delete took effect.</item>
+/// <item><see cref="IFilingRepository.GetByIncomeEventAsync"/> deliberately reflects staged
+/// changes (inserts and updates matched on their new values, deletes excluded), because
+/// duplicate detection must hold within a single operation as well as across operations.</item>
+/// </list>
 /// </remarks>
 public interface IUnitOfWork : IAsyncDisposable
 {

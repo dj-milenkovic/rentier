@@ -278,6 +278,22 @@ public sealed class EfUnitOfWorkTests : IAsyncLifetime
         found.Should().ContainSingle();
     }
 
+    [Fact]
+    public async Task GetByIncomeEventAsync_CommittedFilingStagedForUpdate_ReturnsTrackedInstanceOnce()
+    {
+        // The tracked (staged) copy wins over its database row — never both.
+        var ct = TestContext.Current.CancellationToken;
+        await SeedCommittedFilingsAsync();
+        await using var unitOfWork = _factory.Create();
+        var tracked = (await unitOfWork.Filings.GetByIncomeEventAsync(_profile.Id, "ACME", INCOME_DATE, ct))[0];
+        var staged = await unitOfWork.Filings.GetByIdAsync(tracked.Id, ct);
+        await unitOfWork.Filings.UpdateAsync(staged!, ct);
+
+        var found = await unitOfWork.Filings.GetByIncomeEventAsync(_profile.Id, "ACME", INCOME_DATE, ct);
+
+        found.Should().ContainSingle().Which.Should().BeSameAs(staged);
+    }
+
     // ── Updates must not clobber a change already staged for the same entity ──
 
     [Fact]
@@ -356,6 +372,21 @@ public sealed class EfUnitOfWorkTests : IAsyncLifetime
 
         db.Entry(report).Properties.Where(p => p.IsModified).Select(p => p.Metadata.Name)
             .Should().Equal(nameof(Report.Status));
+    }
+
+    [Fact]
+    public async Task UpdateStatusAsync_DetachedReport_DoesNotCopyAttachmentIntoSnapshot()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var report = await LoadDetachedReportAsync();
+        report.SetStatus(ReportStatus.Processed);
+        await using var db = new AppDbContext(_options);
+        var repository = new Rentier.Infrastructure.Repositories.ReportRepository(db, isStaging: true);
+
+        await repository.UpdateStatusAsync(report, ct);
+
+        db.Entry(report).Property(r => r.AttachmentContent).OriginalValue
+            .Should().BeSameAs(report.AttachmentContent);
     }
 
     [Fact]

@@ -136,21 +136,6 @@ public class ProcessReportsUnitOfWorkTests
     }
 
     [Fact]
-    public async Task HandleAsync_CommitFails_MarksPersistedReportErroredInSeparateUnitOfWork()
-    {
-        var report = ArrangeReports(1, Dividend("ACME Corp"))[0];
-        var persisted = Report.Create(report.ImporterId, report.ReportName, [1, 2, 3], null);
-        _reportRepo.GetByIdAsync(report.Id, Arg.Any<CancellationToken>()).Returns(persisted);
-        _unitOfWorkFactory.SaveFailure = ordinal => ordinal == 1 ? new InvalidOperationException("disk full") : null;
-
-        await ActAsync();
-
-        await _reportRepo.Received(1).UpdateStatusAsync(
-            Arg.Is<Report>(r => ReferenceEquals(r, persisted) && r.Status == ReportStatus.Error),
-            Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
     public async Task HandleAsync_CommitFailsForFirstReport_StillCommitsSecondReport()
     {
         ArrangeReports(2, Dividend("ACME Corp"));
@@ -221,7 +206,7 @@ public class ProcessReportsUnitOfWorkTests
     public async Task HandleAsync_CommitFailsAfterSeveralEventsStaged_FailsWholeReportNotPartially()
     {
         // A storage failure surfaces at the single commit, so the report is all-or-nothing:
-        // Error with no filings — never PartialError with some of its filings persisted.
+        // counted as errored with no filings — never PartialError with some filings persisted.
         ArrangeReports(1, Dividend("ACME Corp"), Dividend("Globex"));
         _unitOfWorkFactory.SaveFailure = ordinal => ordinal == 1 ? new InvalidOperationException("FK violation") : null;
 
@@ -231,22 +216,23 @@ public class ProcessReportsUnitOfWorkTests
             .Should().Be((0, 1, 0));
     }
 
+    // ── Unexpected failures leave the report at Init so the next run retries it ──
+
     [Fact]
-    public async Task HandleAsync_FailureBeforeStatusApplied_MarksInMemoryReportErroredWithoutReread()
+    public async Task HandleAsync_CommitFails_WritesNothingFurtherForTheReport()
     {
-        var report = ArrangeReports(1, Dividend("ACME Corp"))[0];
-        _parser.ParseAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
-            .Returns<Task<Result<StatementParseResult, Error>>>(_ => throw new InvalidOperationException("boom"));
+        // No second unit of work: the report is not marked Error (that status is terminal);
+        // its staged changes were discarded and it stays Init in the database.
+        ArrangeReports(1, Dividend("ACME Corp"));
+        _unitOfWorkFactory.SaveFailure = ordinal => ordinal == 1 ? new InvalidOperationException("disk full") : null;
 
         await ActAsync();
 
-        await _reportRepo.Received(1).UpdateStatusAsync(
-            Arg.Is<Report>(r => ReferenceEquals(r, report) && r.Status == ReportStatus.Error),
-            Arg.Any<CancellationToken>());
+        _unitOfWorkFactory.CreatedCount.Should().Be(1);
     }
 
     [Fact]
-    public async Task HandleAsync_FailureBeforeStatusApplied_DoesNotRereadReport()
+    public async Task HandleAsync_UnexpectedExceptionBeforeCommit_CommitsNothing()
     {
         ArrangeReports(1, Dividend("ACME Corp"));
         _parser.ParseAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
@@ -254,48 +240,39 @@ public class ProcessReportsUnitOfWorkTests
 
         await ActAsync();
 
-        await _reportRepo.DidNotReceive().GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        _unitOfWorkFactory.CommittedCount.Should().Be(0);
     }
 
     [Fact]
-    public async Task HandleAsync_CommitFailsAndPersistedReportNoLongerInit_DoesNotThrow()
+    public async Task HandleAsync_UnexpectedExceptionBeforeCommit_DoesNotStageErrorStatus()
     {
-        var report = ArrangeReports(1, Dividend("ACME Corp"))[0];
-        var persisted = Report.Create(report.ImporterId, report.ReportName, [1, 2, 3], null);
-        persisted.SetStatus(ReportStatus.Processed);
-        _reportRepo.GetByIdAsync(report.Id, Arg.Any<CancellationToken>()).Returns(persisted);
+        ArrangeReports(1, Dividend("ACME Corp"));
+        _parser.ParseAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
+            .Returns<Task<Result<StatementParseResult, Error>>>(_ => throw new InvalidOperationException("boom"));
+
+        await ActAsync();
+
+        await _reportRepo.DidNotReceive().UpdateStatusAsync(Arg.Any<Report>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_CommitFails_TellsUserReportWillBeRetried()
+    {
+        ArrangeReports(1, Dividend("ACME Corp"));
         _unitOfWorkFactory.SaveFailure = ordinal => ordinal == 1 ? new InvalidOperationException("disk full") : null;
+        var reported = new List<SyncProgressEntry>();
 
-        var act = ActAsync;
+        await _sut.HandleAsync(
+            new ProcessReportsCommand(new SynchronousProgress(reported.Add)), TestContext.Current.CancellationToken);
 
-        await act.Should().NotThrowAsync();
+        reported.Should().ContainSingle(e => e.Severity == SyncProgressSeverity.Error)
+            .Which.Message.Should().Contain("retried on the next sync");
     }
 
-    [Fact]
-    public async Task HandleAsync_CommitFailsAndReportMissing_StillProcessesNextReport()
+    /// <summary>Progress sink that records entries synchronously (Progress&lt;T&gt; posts asynchronously).</summary>
+    private sealed class SynchronousProgress(Action<SyncProgressEntry> onReport) : IProgress<SyncProgressEntry>
     {
-        ArrangeReports(2, Dividend("ACME Corp"));
-        _reportRepo.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((Report?)null);
-        _unitOfWorkFactory.SaveFailure = ordinal => ordinal == 1 ? new InvalidOperationException("disk full") : null;
-
-        var result = await ActAsync();
-
-        result.Value.ReportsProcessed.Should().Be(1);
-    }
-
-    [Fact]
-    public async Task HandleAsync_MarkingReportErroredAlsoFails_StillProcessesNextReport()
-    {
-        // Unit of work #1 = report 1 (commit fails), #2 = its Error mark (also fails),
-        // #3 = report 2, which must still be processed and committed.
-        var reports = ArrangeReports(2, Dividend("ACME Corp"));
-        var persisted = Report.Create(reports[0].ImporterId, reports[0].ReportName, [1, 2, 3], null);
-        _reportRepo.GetByIdAsync(reports[0].Id, Arg.Any<CancellationToken>()).Returns(persisted);
-        _unitOfWorkFactory.SaveFailure = ordinal => ordinal <= 2 ? new InvalidOperationException("database locked") : null;
-
-        var result = await ActAsync();
-
-        result.Value.ReportsProcessed.Should().Be(1);
+        public void Report(SyncProgressEntry value) => onReport(value);
     }
 
     [Fact]

@@ -62,7 +62,7 @@ public sealed class ProcessReportsCommandHandler
 
             // Only processing and the commit sit inside the try: once the report is committed
             // its outcome is final, so nothing after that point may route it to the
-            // unexpected-failure path (which would count it twice and try Processed → Error).
+            // unexpected-failure path (which would count it twice).
             ReportOutcome outcome;
             try
             {
@@ -75,64 +75,67 @@ public sealed class ProcessReportsCommandHandler
             catch (Exception ex)
             {
                 // Truly unexpected failures (network, DB, a failed commit) — log as error.
-                // The report's unit of work is already disposed here, so anything it staged
-                // (filings, status) was discarded; the Error status is its own commit.
-                // A storage failure on any one filing therefore fails the whole report: it is
-                // reported as Error (not PartialError) with no filings, and a later run retries
-                // the complete report.
-                await MarkReportErroredAsync(report, ct);
+                // The report's unit of work is already disposed, so everything it staged
+                // (filings, status) was discarded and nothing about the report was persisted.
+                // It deliberately stays at Init: the next run retries the complete report,
+                // whereas Error would be terminal (Error → Init is not a valid transition).
                 reportsErrored++;
-                _logger.LogError(ex, "Report {ReportId} failed unexpectedly: {Message}", report.Id, ex.Message);
+                _logger.LogError(ex, "Report {ReportId} failed unexpectedly and stays pending for retry: {Message}",
+                    report.Id, ex.Message);
                 command.Progress?.Report(new SyncProgressEntry(
                     DateTimeOffset.Now,
-                    $"Report '{report.ReportName}': processing error — {ex.Message}.",
+                    $"Report '{report.ReportName}': processing error — {ex.Message}. Nothing was saved; it will be retried on the next sync.",
                     SyncProgressSeverity.Error));
                 reportDetails.Add(new ReportProcessingDetail(report.ReportName, 0, 0, SyncProgressSeverity.Error));
                 continue;
             }
 
             // ── The report is committed: bookkeeping only from here on ──
-            if (outcome.Rejection is { } rejection)
+            switch (outcome)
             {
-                // Data integrity failure (no attachment, missing importer, parse error) — not an unexpected exception
-                reportsErrored++;
-                _logger.LogWarning(
-                    "Report {ReportId} rejected: [{Code}] {Message}",
-                    report.Id, rejection.Code, rejection.Message);
-                command.Progress?.Report(new SyncProgressEntry(
-                    DateTimeOffset.Now,
-                    $"Report '{report.ReportName}': processing error — {rejection.Message}.",
-                    SyncProgressSeverity.Error));
-                reportDetails.Add(new ReportProcessingDetail(report.ReportName, 0, 0, SyncProgressSeverity.Error));
-                continue;
-            }
-
-            filingsCreated += outcome.Created;
-            allEventErrors.AddRange(outcome.EventErrors);
-            switch (outcome.Status)
-            {
-                case ReportStatus.Processed:
-                    reportsProcessed++;
-                    break;
-                case ReportStatus.PartialError:
-                    reportsPartialError++;
-                    break;
-                default:
+                case ReportOutcome.Rejected rejected:
+                    // Data integrity failure (no attachment, missing importer, parse error) — not an unexpected exception
                     reportsErrored++;
+                    _logger.LogWarning(
+                        "Report {ReportId} rejected: [{Code}] {Message}",
+                        report.Id, rejected.Error.Code, rejected.Error.Message);
+                    command.Progress?.Report(new SyncProgressEntry(
+                        DateTimeOffset.Now,
+                        $"Report '{report.ReportName}': processing error — {rejected.Error.Message}.",
+                        SyncProgressSeverity.Error));
+                    reportDetails.Add(new ReportProcessingDetail(report.ReportName, 0, 0, SyncProgressSeverity.Error));
+                    break;
+
+                case ReportOutcome.Committed committed:
+                    filingsCreated += committed.Created;
+                    allEventErrors.AddRange(committed.EventErrors);
+                    switch (committed.Status)
+                    {
+                        case ReportStatus.Processed:
+                            reportsProcessed++;
+                            break;
+                        case ReportStatus.PartialError:
+                            reportsPartialError++;
+                            break;
+                        default:
+                            reportsErrored++;
+                            break;
+                    }
+
+                    if (_logger.IsEnabled(LogLevel.Information))
+                    {
+                        _logger.LogInformation(
+                            "Report {ReportId}: {Total} events, {Created} filings, {Failed} failed -> {Status}",
+                            report.Id, committed.Succeeded + committed.Failed, committed.Created, committed.Failed,
+                            committed.Status);
+                    }
+
+                    var severity = ReportProcessingDetail.ClassifySeverity(committed.Created, committed.Failed);
+                    var detail = new ReportProcessingDetail(report.ReportName, committed.Created, committed.Failed, severity);
+                    command.Progress?.Report(new SyncProgressEntry(DateTimeOffset.Now, detail.ToLogMessage(), severity));
+                    reportDetails.Add(detail);
                     break;
             }
-
-            if (_logger.IsEnabled(LogLevel.Information))
-            {
-                _logger.LogInformation(
-                    "Report {ReportId}: {Total} events, {Created} filings, {Failed} failed -> {Status}",
-                    report.Id, outcome.Succeeded + outcome.Failed, outcome.Created, outcome.Failed, outcome.Status);
-            }
-
-            var severity = ReportProcessingDetail.ClassifySeverity(outcome.Created, outcome.Failed);
-            var detail = new ReportProcessingDetail(report.ReportName, outcome.Created, outcome.Failed, severity);
-            command.Progress?.Report(new SyncProgressEntry(DateTimeOffset.Now, detail.ToLogMessage(), severity));
-            reportDetails.Add(detail);
         }
 
         return Result<ProcessReportsResult, Error>.Success(
@@ -155,7 +158,7 @@ public sealed class ProcessReportsCommandHandler
             report.SetStatus(ReportStatus.Error);
             await unitOfWork.Reports.UpdateStatusAsync(report, ct);
             await unitOfWork.SaveChangesAsync(ct);
-            return ReportOutcome.Rejected(processResult.Error);
+            return new ReportOutcome.Rejected(processResult.Error);
         }
 
         var (created, succeeded, failed, eventErrors) = processResult.Value;
@@ -172,59 +175,26 @@ public sealed class ProcessReportsCommandHandler
         await unitOfWork.Reports.UpdateStatusAsync(report, ct);
         await unitOfWork.SaveChangesAsync(ct);
 
-        return new ReportOutcome(null, status, created, succeeded, failed, eventErrors);
+        return new ReportOutcome.Committed(status, created, succeeded, failed, eventErrors);
     }
 
-    /// <summary>
-    /// Records Error for a report whose processing or commit failed unexpectedly, in a fresh
-    /// unit of work. Never throws (except on cancellation): a report that cannot be marked
-    /// stays at Init and is retried by the next run, and the remaining reports still run.
-    /// </summary>
-    private async Task MarkReportErroredAsync(Report report, CancellationToken ct)
+    /// <summary>A committed report's result: either rejected as a whole, or processed with event tallies.</summary>
+    private abstract record ReportOutcome
     {
-        try
+        private ReportOutcome()
         {
-            await using var unitOfWork = _unitOfWorkFactory.Create();
-
-            // If the failure happened before a status was applied, the in-memory report is
-            // still Init and can be used directly. Otherwise its new status was applied but the
-            // commit failed, so the in-memory instance no longer reflects the database: re-read it.
-            var target = report.Status == ReportStatus.Init
-                ? report
-                : await unitOfWork.Reports.GetByIdAsync(report.Id, ct);
-
-            if (target is null || target.Status != ReportStatus.Init)
-            {
-                _logger.LogWarning(
-                    "Report {ReportId} not marked as Error: persisted status is {Status}",
-                    report.Id, target?.Status.ToString() ?? "missing");
-                return;
-            }
-
-            target.SetStatus(ReportStatus.Error);
-            await unitOfWork.Reports.UpdateStatusAsync(target, ct);
-            await unitOfWork.SaveChangesAsync(ct);
         }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Report {ReportId} could not be marked as Error; it stays at Init", report.Id);
-        }
-    }
 
-    /// <summary>A committed report's result: either a rejection or its event tallies.</summary>
-    private sealed record ReportOutcome(
-        Error? Rejection,
-        ReportStatus Status,
-        int Created,
-        int Succeeded,
-        int Failed,
-        List<FilingCreationError> EventErrors)
-    {
-        public static ReportOutcome Rejected(Error error) => new(error, ReportStatus.Error, 0, 0, 0, []);
+        /// <summary>The report was rejected (and committed as Error) before any event was processed.</summary>
+        public sealed record Rejected(Error Error) : ReportOutcome;
+
+        /// <summary>The report's events were processed and its filings committed with <paramref name="Status"/>.</summary>
+        public sealed record Committed(
+            ReportStatus Status,
+            int Created,
+            int Succeeded,
+            int Failed,
+            List<FilingCreationError> EventErrors) : ReportOutcome;
     }
 
     private async Task<Result<(int created, int succeeded, int failed, List<FilingCreationError> errors), Error>>

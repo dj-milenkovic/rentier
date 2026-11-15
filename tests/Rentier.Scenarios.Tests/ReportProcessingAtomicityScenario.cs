@@ -6,6 +6,7 @@ using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Handlers;
 using Rentier.Application.Interfaces;
+using Rentier.Application.Parsing;
 using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
@@ -121,6 +122,46 @@ public sealed class ReportProcessingAtomicityScenario : IAsyncLifetime
 
         var report = await _fixture.Get<IReportRepository>().GetByIdAsync(_reportId, TestContext.Current.CancellationToken);
         report!.Status.Should().Be(ReportStatus.Processed);
+    }
+
+    // ── Unexpected failure: the report stays Init and the next run retries it ──
+
+    private Task<Result<ProcessReportsResult, Error>> ProcessWithFailingParserAsync() =>
+        new ProcessReportsCommandHandler(
+                _fixture.Get<IReportRepository>(),
+                _fixture.Get<IImporterRepository>(),
+                _fixture.Get<IUnitOfWorkFactory>(),
+                _fixture.Get<IExchangeRateResolver>(),
+                _fixture.Get<IHolidayRepository>(),
+                new FailingStatementParser(),
+                NullLogger<ProcessReportsCommandHandler>.Instance)
+            .HandleAsync(new ProcessReportsCommand(), TestContext.Current.CancellationToken);
+
+    [Fact]
+    public async Task ProcessingFailsUnexpectedly_LeavesReportAtInitForRetry()
+    {
+        await ProcessWithFailingParserAsync();
+
+        var report = await _fixture.Get<IReportRepository>().GetByIdAsync(_reportId, TestContext.Current.CancellationToken);
+        report!.Status.Should().Be(ReportStatus.Init);
+    }
+
+    [Fact]
+    public async Task NextRunAfterUnexpectedFailure_MarksReportProcessed()
+    {
+        await ProcessWithFailingParserAsync();
+
+        await ProcessNormallyAsync();
+
+        var report = await _fixture.Get<IReportRepository>().GetByIdAsync(_reportId, TestContext.Current.CancellationToken);
+        report!.Status.Should().Be(ReportStatus.Processed);
+    }
+
+    /// <summary>Simulates an unexpected infrastructure failure (it throws rather than returning a Failure).</summary>
+    private sealed class FailingStatementParser : IStatementParser
+    {
+        public Task<Result<StatementParseResult, Error>> ParseAsync(Stream stream, CancellationToken ct = default)
+            => throw new IOException("Simulated storage failure while reading the statement.");
     }
 
     private sealed class InterruptingRateResolver(IExchangeRateResolver inner, int interruptOnCall) : IExchangeRateResolver

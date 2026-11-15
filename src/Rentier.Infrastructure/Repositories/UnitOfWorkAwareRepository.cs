@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Rentier.Application.Interfaces;
 using Rentier.Infrastructure.Persistence;
 
@@ -16,24 +17,42 @@ namespace Rentier.Infrastructure.Repositories;
 /// </summary>
 public abstract class UnitOfWorkAwareRepository
 {
-    private readonly bool _isStaging;
-
     // private protected: only Infrastructure repositories can derive, and only EfUnitOfWork
     // (via the derived types' internal constructors) can create a staging instance.
     private protected UnitOfWorkAwareRepository(AppDbContext db, bool isStaging)
     {
         Db = db;
-        _isStaging = isStaging;
+        IsStaging = isStaging;
     }
 
     private protected AppDbContext Db { get; }
 
     /// <summary>True when owned by a unit of work, i.e. writes are staged rather than committed.</summary>
-    private protected bool IsStaging => _isStaging;
+    private protected bool IsStaging { get; }
 
     /// <summary>Commits immediately when standalone; a no-op while staging.</summary>
     private protected Task CommitIfStandaloneAsync(CancellationToken ct)
-        => _isStaging ? Task.CompletedTask : Db.SaveChangesAsync(ct);
+        => IsStaging ? Task.CompletedTask : Db.SaveChangesAsync(ct);
+
+    /// <summary>
+    /// The tracked entries of <typeparamref name="TEntity"/> without running DetectChanges,
+    /// which would otherwise scan every tracked entity on each call. Safe for repository
+    /// code because staged states are set explicitly by Add/Update/Remove/Attach.
+    /// </summary>
+    private protected List<EntityEntry<TEntity>> TrackedEntriesWithoutDetectingChanges<TEntity>()
+        where TEntity : class
+    {
+        var autoDetect = Db.ChangeTracker.AutoDetectChangesEnabled;
+        Db.ChangeTracker.AutoDetectChangesEnabled = false;
+        try
+        {
+            return Db.ChangeTracker.Entries<TEntity>().ToList();
+        }
+        finally
+        {
+            Db.ChangeTracker.AutoDetectChangesEnabled = autoDetect;
+        }
+    }
 
     /// <summary>
     /// Stages a full update of <paramref name="entity"/> without clobbering a change already
@@ -47,7 +66,7 @@ public abstract class UnitOfWorkAwareRepository
     private protected void StageUpdate<TEntity>(DbSet<TEntity> set, TEntity entity, Func<TEntity, bool> hasSameKey)
         where TEntity : class
     {
-        var tracked = Db.ChangeTracker.Entries<TEntity>().FirstOrDefault(e => hasSameKey(e.Entity));
+        var tracked = TrackedEntriesWithoutDetectingChanges<TEntity>().FirstOrDefault(e => hasSameKey(e.Entity));
 
         switch (tracked?.State)
         {
@@ -83,7 +102,7 @@ public abstract class UnitOfWorkAwareRepository
         Expression<Func<TEntity, TProperty>> property)
         where TEntity : class
     {
-        var tracked = Db.ChangeTracker.Entries<TEntity>().FirstOrDefault(e => hasSameKey(e.Entity));
+        var tracked = TrackedEntriesWithoutDetectingChanges<TEntity>().FirstOrDefault(e => hasSameKey(e.Entity));
 
         switch (tracked?.State)
         {

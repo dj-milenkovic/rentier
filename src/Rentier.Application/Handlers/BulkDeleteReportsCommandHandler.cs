@@ -33,9 +33,8 @@ public sealed class BulkDeleteReportsCommandHandler
             {
                 await using var unitOfWork = _unitOfWorkFactory.Create();
 
-                // Delete linked filings first (cascade) to prevent FK violations
-                foreach (var reportId in command.ReportIds)
-                    await unitOfWork.Filings.DeleteByReportIdAsync(reportId, ct);
+                // Delete linked filings first (cascade) to prevent FK violations — one query for all reports
+                await unitOfWork.Filings.DeleteByReportIdsAsync(command.ReportIds, ct);
 
                 // Delete the reports
                 await unitOfWork.Reports.DeleteManyAsync(command.ReportIds, ct);
