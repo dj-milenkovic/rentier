@@ -15,6 +15,9 @@ public interface IFilingRepository
     /// Returns all filings for the same income event identified by (taxpayer, paying entity, income date),
     /// regardless of amount. Used by report processing to distinguish an exact duplicate (same gross —
     /// skip) from a broker correction (different gross — flag for manual review).
+    /// When obtained from an <see cref="Rentier.Application.Interfaces.IUnitOfWork"/>, the result also reflects changes
+    /// staged in that unit of work (staged inserts included, staged deletes excluded), so
+    /// duplicates within one operation are detected before it commits.
     /// </summary>
     Task<IReadOnlyList<Filing>> GetByIncomeEventAsync(Guid taxpayerProfileId, string payingEntity, DateOnly incomeDate, CancellationToken ct = default);
 
@@ -49,6 +52,16 @@ public interface IFilingRepository
     /// </summary>
     Task DeleteByReportIdAsync(
         Guid reportId,
+        CancellationToken ct = default);
+
+    /// <summary>
+    /// Deletes all Filing records whose ReportId is in <paramref name="reportIds"/>, loading
+    /// them with a single query. Used by BulkDeleteReportsCommandHandler BEFORE deleting the
+    /// parent Reports. An empty list is a no-op. Same load-then-remove rule as
+    /// <see cref="DeleteByReportIdAsync"/> — ExecuteDeleteAsync is prohibited.
+    /// </summary>
+    Task DeleteByReportIdsAsync(
+        IReadOnlyList<Guid> reportIds,
         CancellationToken ct = default);
 
     /// <summary>

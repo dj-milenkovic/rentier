@@ -12,8 +12,8 @@ using Rentier.Application.Services;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 using Rentier.Domain.ValueObjects;
-using Xunit;
 using Rentier.Tests.Common.Fakes;
+using Xunit;
 
 namespace Rentier.UnitTests.Application;
 
@@ -56,8 +56,10 @@ public class ProcessReportsCommandHandlerTests
         IFilingRepository? filingRepo = null,
         IExchangeRateFetcher? rateFetcher = null,
         IHolidayRepository? holidayRepo = null,
-        IStatementParser? parser = null)
+        IStatementParser? parser = null,
+        IUnitOfWorkFactory? unitOfWorkFactory = null)
     {
+        reportRepo ??= Substitute.For<IReportRepository>();
         if (holidayRepo == null)
         {
             var hr = Substitute.For<IHolidayRepository>();
@@ -75,9 +77,9 @@ public class ProcessReportsCommandHandlerTests
         var resolver = MakeResolver(rateFetcher ?? Substitute.For<IExchangeRateFetcher>());
 
         return new ProcessReportsCommandHandler(
-            reportRepo ?? Substitute.For<IReportRepository>(),
+            reportRepo,
             importerRepo ?? Substitute.For<IImporterRepository>(),
-            filingRepo ?? Substitute.For<IFilingRepository>(),
+            unitOfWorkFactory ?? new FakeUnitOfWorkFactory(reportRepo, filingRepo ?? Substitute.For<IFilingRepository>()),
             resolver,
             holidayRepo,
             parser,
@@ -119,7 +121,7 @@ public class ProcessReportsCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         result.Value.ReportsErrored.Should().Be(1);
         result.Value.EventErrors.Should().BeEmpty();
-        await reportRepo.Received(1).UpdateAsync(
+        await reportRepo.Received(1).UpdateProcessingStateAsync(
             Arg.Is<Report>(r => r!.Status == ReportStatus.Error),
             Arg.Any<CancellationToken>());
     }
@@ -185,7 +187,7 @@ public class ProcessReportsCommandHandlerTests
 
         result.Value.ReportsProcessed.Should().Be(1);
         result.Value.FilingsCreated.Should().Be(0);
-        await reportRepo.Received(1).UpdateAsync(
+        await reportRepo.Received(1).UpdateProcessingStateAsync(
             Arg.Is<Report>(r => r!.Status == ReportStatus.Processed),
             Arg.Any<CancellationToken>());
     }

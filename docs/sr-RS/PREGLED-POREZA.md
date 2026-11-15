@@ -74,6 +74,7 @@ Svi iznosi se prijavljuju u **RSD**. Rentier koristi **srednji kurs NBS** na dat
 - Ako kurs za taj dan nije objavljen (vikend/praznik), koristi se poslednji prethodni radni dan.  
 - Kursevi se čuvaju u lokalnoj SQLite bazi radi optimizacije.  
 - IBKR kursevi (`Base Currency Exchange Rate`) koriste se samo kao rezerva za valute koje NBS ne pokriva.
+- Ako NBS **nije dostupna** (prekid mreže ili servisa), Rentier nikada ne koristi kurs nekog ranijeg dana niti IBKR kurs — NBS kurs za taj dan možda postoji. Umesto toga, ništa iz tog izveštaja se ne čuva, a izveštaj se automatski ponovo obrađuje pri sledećoj sinhronizaciji. Posle 3 neuspela pokušaja označava se kao **Greška**, uz prikazan razlog, kako bi mogao da se pregleda.
 
 ---
 

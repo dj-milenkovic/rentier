@@ -6,22 +6,19 @@ using Rentier.Application.Repositories;
 namespace Rentier.Application.Handlers;
 
 /// <summary>
-/// Bulk-deletes multiple reports and all their linked filings.
-/// Filings are deleted first per report (cascade), then reports are deleted.
+/// Bulk-deletes multiple reports and all their linked filings as one atomic operation.
+/// Filings are staged for deletion first per report (cascade), then the reports; a single
+/// commit removes everything, so a failure leaves all reports and filings untouched.
 /// Empty list is rejected as a domain error.
 /// </summary>
 public sealed class BulkDeleteReportsCommandHandler
     : ICommandHandler<BulkDeleteReportsCommand, Result<VoidResult, Error>>
 {
-    private readonly IReportRepository _reportRepository;
-    private readonly IFilingRepository _filingRepository;
+    private readonly IUnitOfWorkFactory _unitOfWorkFactory;
 
-    public BulkDeleteReportsCommandHandler(
-        IReportRepository reportRepository,
-        IFilingRepository filingRepository)
+    public BulkDeleteReportsCommandHandler(IUnitOfWorkFactory unitOfWorkFactory)
     {
-        _reportRepository = reportRepository;
-        _filingRepository = filingRepository;
+        _unitOfWorkFactory = unitOfWorkFactory;
     }
 
     public Task<Result<VoidResult, Error>> HandleAsync(
@@ -34,12 +31,15 @@ public sealed class BulkDeleteReportsCommandHandler
         return HandlerHelper.ExecuteAsync<VoidResult>(
             async () =>
             {
-                // Delete linked filings first (cascade) to prevent FK violations
-                foreach (var reportId in command.ReportIds)
-                    await _filingRepository.DeleteByReportIdAsync(reportId, ct);
+                await using var unitOfWork = _unitOfWorkFactory.Create();
+
+                // Delete linked filings first (cascade) to prevent FK violations — one query for all reports
+                await unitOfWork.Filings.DeleteByReportIdsAsync(command.ReportIds, ct);
 
                 // Delete the reports
-                await _reportRepository.DeleteManyAsync(command.ReportIds, ct);
+                await unitOfWork.Reports.DeleteManyAsync(command.ReportIds, ct);
+
+                await unitOfWork.SaveChangesAsync(ct);
 
                 return Result<VoidResult, Error>.Success(VoidResult.Value);
             },

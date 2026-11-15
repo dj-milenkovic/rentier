@@ -95,6 +95,15 @@ Examples: income 2024-03-01 → raw 2024-03-31 (Sunday) → **2024-04-01**; inco
 - IBKR statement rates are a **fallback only**, for currencies NBS does not publish.
 - No rate available at all → a processing error surfaced to the user. Never
   substitute, guess, or interpolate a rate.
+- **"Not published" ≠ "could not be fetched."** `ExchangeRateResolver` walks back
+  only past dates NBS confirms have no rate (`RATE_NOT_FOUND`). A transient source
+  failure (`NBS_HTTP_ERROR`, `NBS_SCRAPE_ERROR`) on the income date or any walk-back
+  date stops the lookup with `RATE_SOURCE_UNAVAILABLE` — falling back would apply a
+  wrong rate. The IBKR cross-rate is not used in that case either.
+- `ProcessReportsCommandHandler` treats `RATE_SOURCE_UNAVAILABLE` as temporary: the
+  whole report is deferred (nothing committed), the attempt is recorded on the
+  report (`ProcessingAttempts`, `LastProcessingError`), and it is retried by the
+  next run; after `MAX_PROCESSING_ATTEMPTS` (3) failures it moves to Error.
 
 ## Income scope
 
