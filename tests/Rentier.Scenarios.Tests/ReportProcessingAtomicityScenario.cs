@@ -64,12 +64,15 @@ public sealed class ReportProcessingAtomicityScenario : IAsyncLifetime
 
     public ValueTask DisposeAsync() => _fixture.DisposeAsync();
 
-    /// <summary>Real pipeline, except the rate resolver aborts when the second income event is reached.</summary>
-    private ProcessReportsCommandHandler MakeHandlerInterruptedAtSecondEvent() => new(
+    /// <summary>
+    /// Real pipeline, except the rate resolver cancels the run (as a user would) when the second
+    /// income event is reached.
+    /// </summary>
+    private ProcessReportsCommandHandler MakeHandlerInterruptedAtSecondEvent(CancellationTokenSource caller) => new(
         _fixture.Get<IReportRepository>(),
         _fixture.Get<IImporterRepository>(),
         _fixture.Get<IUnitOfWorkFactory>(),
-        new InterruptingRateResolver(_fixture.Get<IExchangeRateResolver>(), interruptOnCall: 2),
+        new InterruptingRateResolver(_fixture.Get<IExchangeRateResolver>(), interruptOnCall: 2, caller),
         _fixture.Get<IHolidayRepository>(),
         _fixture.Get<IStatementParser>(),
         NullLogger<ProcessReportsCommandHandler>.Instance,
@@ -77,8 +80,9 @@ public sealed class ReportProcessingAtomicityScenario : IAsyncLifetime
 
     private async Task ProcessInterruptedAsync()
     {
-        var act = () => MakeHandlerInterruptedAtSecondEvent()
-            .HandleAsync(new ProcessReportsCommand(), TestContext.Current.CancellationToken);
+        using var caller = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        var act = () => MakeHandlerInterruptedAtSecondEvent(caller)
+            .HandleAsync(new ProcessReportsCommand(), caller.Token);
         await act.Should().ThrowAsync<OperationCanceledException>();
     }
 
@@ -196,7 +200,8 @@ public sealed class ReportProcessingAtomicityScenario : IAsyncLifetime
             => throw new IOException("Simulated storage failure while reading the statement.");
     }
 
-    private sealed class InterruptingRateResolver(IExchangeRateResolver inner, int interruptOnCall) : IExchangeRateResolver
+    private sealed class InterruptingRateResolver(
+        IExchangeRateResolver inner, int interruptOnCall, CancellationTokenSource caller) : IExchangeRateResolver
     {
         private int _calls;
 
@@ -204,7 +209,10 @@ public sealed class ReportProcessingAtomicityScenario : IAsyncLifetime
             DateOnly date, string currency, HolidayConf holidays, int maxLookbackDays = 10, CancellationToken ct = default)
         {
             if (++_calls >= interruptOnCall)
-                throw new OperationCanceledException("Simulated interruption mid-report.");
+            {
+                caller.Cancel();
+                throw new OperationCanceledException("Simulated interruption mid-report.", caller.Token);
+            }
 
             return inner.ResolveAsync(date, currency, holidays, maxLookbackDays, ct);
         }

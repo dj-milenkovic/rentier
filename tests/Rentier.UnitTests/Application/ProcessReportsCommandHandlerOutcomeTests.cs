@@ -79,6 +79,17 @@ public partial class ProcessReportsCommandHandlerTests
                     : Result<ExchangeRate, Error>.Failure(new Error("RATE_NOT_FOUND", "Rate not found")));
         }
 
+        /// <summary>The caller's token for the run, linked to the test's own token.</summary>
+        public CancellationTokenSource Caller { get; } =
+            CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+
+        /// <summary>Simulates the caller cancelling mid-run: cancels its token and returns the exception to throw.</summary>
+        public OperationCanceledException CancelCaller()
+        {
+            Caller.Cancel();
+            return new OperationCanceledException(Caller.Token);
+        }
+
         public void ParserReturns(params DividendRecord[] dividends)
             => Parser.ParseAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
                 .Returns(Result<StatementParseResult, Error>.Success(
@@ -95,7 +106,7 @@ public partial class ProcessReportsCommandHandlerTests
         => MakeHandler(
                 reportRepo: f.ReportRepo, importerRepo: f.ImporterRepo, filingRepo: f.FilingRepo,
                 rateFetcher: f.RateFetcher, parser: f.Parser, unitOfWorkFactory: f.UnitOfWorkFactory)
-            .HandleAsync(new ProcessReportsCommand(f.Progress), TestContext.Current.CancellationToken);
+            .HandleAsync(new ProcessReportsCommand(f.Progress), f.Caller.Token);
 
     [Fact]
     public async Task HandleAsync_RejectedReport_PersistsErrorAndReportsRejectionMessage()
@@ -274,7 +285,7 @@ public partial class ProcessReportsCommandHandlerTests
         var importer = MakeImporter();
         var f = new OutcomeFixture(importer, MakeReportWithContent(importer.Id));
         f.ImporterRepo.GetByIdAsync(importer.Id, Arg.Any<CancellationToken>())
-            .ThrowsAsync(new OperationCanceledException());
+            .ThrowsAsync(_ => f.CancelCaller());
 
         var act = () => RunAsync(f);
 
@@ -290,12 +301,31 @@ public partial class ProcessReportsCommandHandlerTests
         var f = new OutcomeFixture(importer, MakeReportWithContent(importer.Id));
         f.ParserReturns(new DividendRecord(TestDate, "USD", "ACME Corp", 100m));
         f.FilingRepo.AddAsync(Arg.Any<Filing>(), Arg.Any<CancellationToken>())
-            .ThrowsAsync(new OperationCanceledException());
+            .ThrowsAsync(_ => f.CancelCaller());
 
         var act = () => RunAsync(f);
 
         await act.Should().ThrowAsync<OperationCanceledException>();
         f.Persisted.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task HandleAsync_InternalCancellationWithoutCallerCancelling_KeepsReportPendingAndContinues()
+    {
+        // An OperationCanceledException the caller did not ask for (e.g. an internal timeout) is an
+        // unexpected failure of that report, not a reason to abandon the remaining reports.
+        var importer = MakeImporter();
+        var brokenImporterId = Guid.NewGuid();
+        var broken = Report.Create(brokenImporterId, "broken.csv", [1, 2, 3], null, TestClock.TODAY);
+        var good = Report.Create(importer.Id, "good.csv", [1, 2, 3], null, TestClock.TODAY);
+        var f = new OutcomeFixture(importer, broken, good);
+        f.ImporterRepo.GetByIdAsync(brokenImporterId, Arg.Any<CancellationToken>())
+            .ThrowsAsync(new TaskCanceledException("timed out"));
+        f.ParserReturns(new DividendRecord(TestDate, "USD", "ACME Corp", 100m));
+
+        var result = await RunAsync(f);
+
+        (result.Value.ReportsPendingRetry, result.Value.ReportsProcessed).Should().Be((1, 1));
     }
 
     // ── Rejection commit failures ────────────────────────────────────────────
@@ -348,7 +378,7 @@ public partial class ProcessReportsCommandHandlerTests
     public async Task HandleAsync_CancellationWhileCommittingRejection_Propagates()
     {
         var f = RejectionWhoseCommitFails();
-        f.UnitOfWorkFactory.SaveFailure = _ => new OperationCanceledException();
+        f.UnitOfWorkFactory.SaveFailure = _ => f.CancelCaller();
 
         var act = () => RunAsync(f);
 

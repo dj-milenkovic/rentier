@@ -70,7 +70,9 @@ public sealed class ProcessReportsCommandHandler
             {
                 outcome = await ProcessAndCommitReportAsync(report, holidays, ct);
             }
-            catch (OperationCanceledException)
+            // Only the caller's cancellation stops the run. An OperationCanceledException without
+            // it (e.g. an internal timeout) is an unexpected failure of this report, handled below.
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
             {
                 throw;
             }
@@ -319,7 +321,7 @@ public sealed class ProcessReportsCommandHandler
             return new ReportFailedAttempt(report.Id, report.ReportName, reason, persisted.ProcessingAttempts,
                 exhausted ? FailedAttemptKind.Exhausted : FailedAttemptKind.PendingRetry);
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
             throw;
         }
