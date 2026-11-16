@@ -312,7 +312,7 @@ public class ImapMailboxSyncServiceTests
     }
 
     [Fact]
-    public async Task SyncAsync_MessageThrowsForOneUid_OtherUidStillProcessedAndMaxUidReflectsSuccessOnly()
+    public async Task SyncAsync_MessageThrowsForOneUid_OtherUidStillProcessedAndCursorStopsBelowFailedUid()
     {
         var mailbox = MakeMailbox();
         var importer = MakeImporter();
@@ -343,8 +343,10 @@ public class ImapMailboxSyncServiceTests
         result.IsSuccess.Should().BeTrue();
         result.Value.ReportsCreated.Should().Be(1);
         result.Value.Errors.Should().ContainSingle(e => e.StartsWith($"Importer {importer.Id} UID {failingUid.Id}:"));
+        // The cursor stops just below the failed UID so the next incremental sync retries it
+        // (the succeeding UID is re-scanned and skipped as already imported).
         mailbox.Cursor.Should().BeOfType<MailboxCursor.SyncedTo>()
-            .Which.Uid.Should().Be(succeedingUid.Id);
+            .Which.Uid.Should().Be(failingUid.Id - 1);
     }
 
     [Fact]
