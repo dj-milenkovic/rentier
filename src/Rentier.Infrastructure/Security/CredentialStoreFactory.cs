@@ -44,9 +44,10 @@ public static class CredentialStoreFactory
                 var info = new ProviderInfo("Linux Secret Service", "Linux");
                 return Result<(ICredentialStore, ProviderInfo), Error>.Success((store, info));
             }
-            // Deliberately broad: D-Bus failures span unrelated exception types (listed below), and
-            // every one of them means the same thing — no Secret Service — so it becomes a Result.
-            catch (Exception ex) when (ex is not OperationCanceledException)
+            // Deliberately broad, cancellation included: D-Bus failures span unrelated exception
+            // types (listed below), and every one means the same thing — no Secret Service. There is
+            // no caller token here, so an OperationCanceledException can only be an internal timeout.
+            catch (Exception ex)
             {
                 // ArgumentNullException when DBUS_SESSION_BUS_ADDRESS is unset (headless CI/container),
                 // DBusErrorReplyException when daemon rejects the connection.

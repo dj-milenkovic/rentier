@@ -22,8 +22,8 @@ public sealed partial class IbkrCsvParser : IStatementParser
                 rows = await ReadRowsAsync(csvStream, cancellationToken);
             }
             // Boundary translation: any read/CSV failure on a user-supplied file is an expected
-            // parse failure; cancellation propagates.
-            catch (Exception ex) when (ex is not OperationCanceledException)
+            // parse failure; only caller cancellation propagates.
+            catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
             {
                 return Result<StatementParseResult, Error>.Failure(
                     new Error("PARSE_EXCEPTION", ex.Message));
@@ -62,8 +62,9 @@ public sealed partial class IbkrCsvParser : IStatementParser
                 allErrors.AsReadOnly()));
         }
         // Boundary translation: a malformed statement must surface as a Result failure the
-        // report-processing handler can record, never as an exception; cancellation propagates.
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        // report-processing handler can record, never as an exception; only caller cancellation
+        // propagates.
+        catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
         {
             return Result<StatementParseResult, Error>.Failure(
                 new Error("PARSE_EXCEPTION", ex.Message));

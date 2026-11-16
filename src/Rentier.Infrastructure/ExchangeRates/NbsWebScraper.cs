@@ -88,7 +88,7 @@ public sealed class NbsWebScraper : IExchangeRateFetcher
         }
         // Boundary translation: scraping third-party HTML can fail in ways that cannot be
         // enumerated (markup changes, number formats), so everything except cancellation
-        // becomes NBS_SCRAPE_ERROR and the composite fetcher can react.
+        // becomes NBS_SCRAPE_ERROR, which ExchangeRateResolver treats as "source unavailable".
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             return Result<ExchangeRate, Error>.Failure(

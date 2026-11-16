@@ -97,8 +97,9 @@ public sealed class ProcessReportsCommandHandler
     /// <summary>
     /// The single place where a report's outcome becomes observable: records a failed attempt
     /// when nothing was committed, then updates the run counters, logs, reports progress and adds
-    /// the <see cref="ReportProcessingDetail"/>. Throws only on cancellation (or if the caller's
-    /// progress callback throws), so one report cannot stop the remaining reports.
+    /// the <see cref="ReportProcessingDetail"/>. Expected failures never escape it, so one report
+    /// cannot stop the remaining reports; it throws only on cancellation, if the caller's progress
+    /// callback throws, or on an unhandled <see cref="ReportOutcome"/> subtype (a programming error).
     /// </summary>
     private async Task RecordOutcomeAsync(
         Report report,
@@ -159,7 +160,8 @@ public sealed class ProcessReportsCommandHandler
                 break;
 
             default:
-                throw new InvalidOperationException($"Unhandled report outcome {outcome.GetType().Name}.");
+                throw new System.Diagnostics.UnreachableException(
+                    $"Unhandled report outcome {outcome.GetType().Name}.");
         }
 
         progress?.Report(new SyncProgressEntry(_timeProvider.GetLocalNow(), message, severity));
