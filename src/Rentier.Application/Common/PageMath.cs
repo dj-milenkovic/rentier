@@ -17,4 +17,23 @@ public static class PageMath
         // (totalCount - 1) / pageSize + 1 cannot overflow, unlike (totalCount + pageSize - 1) / pageSize.
         return totalCount <= 0 ? 1 : ((totalCount - 1) / pageSize) + 1;
     }
+
+    /// <summary>
+    /// True when the zero-based row offset of <paramref name="page"/> fits in an
+    /// <see cref="int"/>, i.e. <see cref="Skip"/> will not overflow.
+    /// </summary>
+    public static bool IsOffsetInRange(int page, int pageSize)
+        => page >= 1 && pageSize >= 1 && ((long)page - 1) * pageSize <= int.MaxValue;
+
+    /// <summary>
+    /// Number of rows to skip to reach the first row of <paramref name="page"/> (1-based).
+    /// Checked arithmetic: callers validate with <see cref="IsOffsetInRange"/> first, so an
+    /// overflow here is a programming error and throws rather than wrapping to a negative skip.
+    /// </summary>
+    public static int Skip(int page, int pageSize)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(page, 1);
+        ArgumentOutOfRangeException.ThrowIfLessThan(pageSize, 1);
+        return checked((page - 1) * pageSize);
+    }
 }

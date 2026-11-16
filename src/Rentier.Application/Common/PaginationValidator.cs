@@ -14,6 +14,7 @@ public static class PaginationValidator
     /// <list type="bullet">
     ///   <item>Page must be ≥ 1.</item>
     ///   <item>PageSize must be between 1 and 100 (inclusive).</item>
+    ///   <item>The row offset (Page - 1) × PageSize must fit in an <see cref="int"/>.</item>
     /// </list>
     /// </summary>
     /// <typeparam name="TValue">The success value type of the surrounding handler result.</typeparam>
@@ -28,6 +29,11 @@ public static class PaginationValidator
         if (query.PageSize < 1 || query.PageSize > 100)
             return Result<TValue, Error>.Failure(
                 new Error(ErrorCodes.PAGINATION_VALIDATION_FAILED, "PageSize must be between 1 and 100."));
+
+        // The row offset (Page - 1) * PageSize must fit in an int, or the skip would overflow.
+        if (!PageMath.IsOffsetInRange(query.Page, query.PageSize))
+            return Result<TValue, Error>.Failure(
+                new Error(ErrorCodes.PAGINATION_VALIDATION_FAILED, "Page is out of range."));
 
         return null;
     }

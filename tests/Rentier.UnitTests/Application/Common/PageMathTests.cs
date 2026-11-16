@@ -41,6 +41,32 @@ public class PageMathTests
         act.Should().Throw<ArgumentOutOfRangeException>();
     }
 
+    [Theory]
+    [InlineData(1, 30, 0)]
+    [InlineData(2, 30, 30)]
+    [InlineData(5, 100, 400)]
+    [InlineData(21_474_837, 100, 2_147_483_600)]
+    public void Skip_ValidPage_ReturnsZeroBasedRowOffset(int page, int pageSize, int expected)
+        => PageMath.Skip(page, pageSize).Should().Be(expected);
+
+    [Fact]
+    public void Skip_OffsetOverflowsInt_ThrowsInsteadOfWrappingNegative()
+    {
+        var act = () => PageMath.Skip(100_000_000, 30);
+
+        act.Should().Throw<OverflowException>();
+    }
+
+    [Theory]
+    [InlineData(1, 100, true)]
+    [InlineData(21_474_837, 100, true)]
+    [InlineData(21_474_838, 100, false)]
+    [InlineData(int.MaxValue, 1, true)]
+    [InlineData(int.MaxValue, 2, false)]
+    [InlineData(0, 30, false)]
+    public void IsOffsetInRange_ForPageAndSize_ReportsWhetherSkipFitsInInt(int page, int pageSize, bool expected)
+        => PageMath.IsOffsetInRange(page, pageSize).Should().Be(expected);
+
     [Fact]
     public void TotalPages_MatchesPreviousFloatingPointFormula_ForAllValidPageSizes()
     {
