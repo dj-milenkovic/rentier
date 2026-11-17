@@ -1,6 +1,7 @@
 using ReactiveUI.Primitives;
 using ReactiveUI.Primitives.Concurrency;
 using ReactiveUI.Primitives.Disposables;
+using ReactiveUI.Primitives.Signals;
 using Rentier.Desktop.Extensions;
 using ReactiveUI;
 using Rentier.Application.Commands;
@@ -19,13 +20,16 @@ public sealed class FilingsViewModel : PagedSelectionViewModelBase<FilingRowView
     private const string EXPORT_FILE_PATTERN = "*.xml";
 
     private readonly FilingsHandlers _handlers;
-    private readonly IConfirmationService _confirmation;
     private readonly IFileSaveService _fileSave;
 
     private readonly SortState<FilingSortColumn> _sort = new(FilingSortColumn.FilingDeadline, descending: true);
     private bool _showAll = true;
     private Guid? _reportIdFilter;
     private readonly ObservableAsPropertyHelper<bool> _hasReportFilter;
+
+    // Fires whenever the list scope (ShowAll / ReportIdFilter) is assigned — also when re-assigned
+    // the same value — because the setter always resets to page 1 and the rows must follow.
+    private readonly Signal<RxVoid> _scopeAssigned = new();
 
     public bool ShowAll
     {
@@ -34,6 +38,7 @@ public sealed class FilingsViewModel : PagedSelectionViewModelBase<FilingRowView
         {
             this.RaiseAndSetIfChanged(ref _showAll, value);
             Paging.ResetToFirstPage();
+            _scopeAssigned.OnNext(RxVoid.Default);
         }
     }
 
@@ -47,6 +52,7 @@ public sealed class FilingsViewModel : PagedSelectionViewModelBase<FilingRowView
             if (value.HasValue)
                 ClearFilters();
             this.RaisePropertyChanged(nameof(IsFilterRowEnabled));
+            _scopeAssigned.OnNext(RxVoid.Default);
         }
     }
 
@@ -60,6 +66,8 @@ public sealed class FilingsViewModel : PagedSelectionViewModelBase<FilingRowView
         : Strings.Filings_Empty;
 
     protected override string PageIndicatorFormat => Strings.Filings_Page_Indicator;
+    protected override string DeleteConfirmButtonText => Strings.Filings_Delete_Confirm_Button;
+    protected override string DeleteCancelButtonText => Strings.Filings_Delete_Cancel_Button;
 
     /// <summary>False when a ReportIdFilter is active (flyout filters are disabled while browsing by report).</summary>
     public bool IsFilterRowEnabled => _reportIdFilter == null;
@@ -95,10 +103,9 @@ public sealed class FilingsViewModel : PagedSelectionViewModelBase<FilingRowView
         IConfirmationService confirmation,
         IFileSaveService fileSave,
         INavigationService navigation,
-        ISequencer? scheduler = null) : base(scheduler ?? RxSchedulers.MainThreadScheduler)
+        ISequencer? scheduler = null) : base(confirmation, scheduler ?? RxSchedulers.MainThreadScheduler)
     {
         _handlers = handlers;
-        _confirmation = confirmation;
         _fileSave = fileSave;
 
         _sort.PropertyChanged += (_, e) => this.RaisePropertyChanged(
@@ -169,20 +176,14 @@ public sealed class FilingsViewModel : PagedSelectionViewModelBase<FilingRowView
 
     protected override void OnActivated(MultipleDisposable disposables)
     {
-        // M2: InvokeCommand pattern prevents undisposed Subscribe() calls in property setters
-        this.WhenAnyValue(x => x.ShowAll)
-            .Skip(1)
-            .Select(_ => RxVoid.Default)
-            .InvokeCommand(LoadPageCommand)
-            .DisposeWith(disposables);
-
-        this.WhenAnyValue(x => x.ReportIdFilter)
-            .Skip(1)
-            .Select(_ => RxVoid.Default)
+        // M2: InvokeCommand pattern prevents undisposed Subscribe() calls in property setters.
+        // While inactive nothing listens: activation itself loads the (already reset) page.
+        _scopeAssigned
             .InvokeCommand(LoadPageCommand)
             .DisposeWith(disposables);
 
         SurfaceErrors(disposables,
+            NewFilingCommand.ThrownExceptions,
             AdvanceStatusCommand.ThrownExceptions,
             SavePaymentRefCommand.ThrownExceptions,
             DeleteCommand.ThrownExceptions,
@@ -233,16 +234,11 @@ public sealed class FilingsViewModel : PagedSelectionViewModelBase<FilingRowView
             ErrorMessage = result.Error.Message;
     }
 
-    private Task<bool> ConfirmDeleteAsync(string message) =>
-        _confirmation.ConfirmAsync(new ConfirmationRequest(
-            Strings.Filings_Delete_Confirmation_Title,
-            message,
-            Strings.Filings_Delete_Confirm_Button,
-            Strings.Filings_Delete_Cancel_Button));
-
     private async Task OnDeleteAsync(Guid id, CancellationToken ct)
     {
-        if (!await ConfirmDeleteAsync(Strings.Filings_Delete_Confirmation_Message))
+        var visibleCount = Rows.Count;
+        if (!await ConfirmDeleteAsync(
+                Strings.Filings_Delete_Confirmation_Title, Strings.Filings_Delete_Confirmation_Message))
             return;
 
         var result = await _handlers.DeleteFiling.HandleAsync(new DeleteFilingCommand(id), ct);
@@ -252,7 +248,7 @@ public sealed class FilingsViewModel : PagedSelectionViewModelBase<FilingRowView
             return;
         }
 
-        await ReloadAfterRemovalAsync(removedCount: 1, ct);
+        await ReloadAfterRemovalAsync(removedCount: 1, visibleCount, ct);
     }
 
     private async Task OnExportAsync(Guid id, CancellationToken ct)
@@ -274,6 +270,7 @@ public sealed class FilingsViewModel : PagedSelectionViewModelBase<FilingRowView
 
     private async Task OnBulkDeleteAsync(CancellationToken ct)
     {
+        var visibleCount = Rows.Count;
         var selectedIds = Rows
             .Where(r => r.IsSelected)
             .Select(r => r.Id)
@@ -282,7 +279,7 @@ public sealed class FilingsViewModel : PagedSelectionViewModelBase<FilingRowView
         if (selectedIds.Count == 0) return;
 
         var message = string.Format(Strings.BulkDelete_Filings_Confirmation_Message, selectedIds.Count);
-        if (!await ConfirmDeleteAsync(message))
+        if (!await ConfirmDeleteAsync(Strings.Filings_Delete_Confirmation_Title, message))
             return;
 
         var result = await _handlers.BulkDeleteFilings.HandleAsync(
@@ -294,7 +291,7 @@ public sealed class FilingsViewModel : PagedSelectionViewModelBase<FilingRowView
             return;
         }
 
-        await ReloadAfterRemovalAsync(selectedIds.Count, ct);
+        await ReloadAfterRemovalAsync(selectedIds.Count, visibleCount, ct);
     }
 
     private async Task OnApplySortAsync((string ColumnTag, bool? CurrentDirection) args, CancellationToken ct)

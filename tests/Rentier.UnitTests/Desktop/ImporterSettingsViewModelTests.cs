@@ -544,4 +544,45 @@ public sealed class ImporterSettingsViewModelTests
 
         vm.ErrorMessage.Should().Be("Delete failed");
     }
+
+    // ── Refresh failures after a successful write ────────────────────────────
+
+    private static IQueryHandler<GetImportersQuery, Result<IReadOnlyList<ImporterDto>, Error>> MockFailingGetImporters()
+    {
+        var getImporters = MockGetImporters();
+        getImporters.HandleAsync(Arg.Any<GetImportersQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<IReadOnlyList<ImporterDto>, Error>.Failure(new Error("ERR_LOAD", "Reload failed")));
+        return getImporters;
+    }
+
+    [Fact]
+    public async Task DeleteCommand_DeleteSucceedsButReloadFails_SetsErrorMessage()
+    {
+        var deleteHandler = MockDelete();
+        deleteHandler.HandleAsync(Arg.Any<DeleteImporterCommand>(), Arg.Any<CancellationToken>())
+            .Returns(Result<VoidResult, Error>.Success(VoidResult.Value));
+        var vm = CreateVm(getImporters: MockFailingGetImporters(), delete: deleteHandler);
+        var item = ImporterItemViewModel.From(MakeImporterDto("To Delete"));
+        vm.ImporterItems.Add(item);
+        vm.SelectedImporter = item;
+
+        await vm.DeleteCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
+
+        vm.ErrorMessage.Should().Be("Reload failed");
+    }
+
+    [Fact]
+    public async Task SaveCommand_SaveSucceedsButReloadFails_SetsErrorMessage()
+    {
+        var addHandler = MockAdd();
+        addHandler.HandleAsync(Arg.Any<AddImporterCommand>(), Arg.Any<CancellationToken>())
+            .Returns(Result<Guid, Error>.Success(Guid.NewGuid()));
+        var vm = CreateVm(getImporters: MockFailingGetImporters(), add: addHandler);
+        vm.DisplayName = "New Importer";
+        vm.IsEditMode = false;
+
+        await vm.SaveCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
+
+        vm.ErrorMessage.Should().Be("Reload failed");
+    }
 }

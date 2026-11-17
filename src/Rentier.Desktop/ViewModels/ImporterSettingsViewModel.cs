@@ -256,14 +256,18 @@ public sealed class ImporterSettingsViewModel : ReactiveObject, IActivatableView
     /// reselect the saved item, and repopulate the form (or clear it if it vanished).</summary>
     private async Task ReloadReselectAndPopulateAsync(Guid savedId, CancellationToken ct)
     {
-        await ReloadImportersAsync(ct);
+        var reloadError = await ReloadImportersAsync(ct);
         _selectedImporter = ImporterItems.FirstOrDefault(i => i.Id == savedId);
         this.RaisePropertyChanged(nameof(SelectedImporter));
         if (_selectedImporter != null)
             PopulateFormFromDto(_selectedImporter.Dto);
         else
             ClearForm();
+        // The save itself succeeded; a failed refresh is reported alongside it (after ClearForm,
+        // which resets both messages) so a stale list is never shown silently.
         SuccessMessage = Strings.Importers_Saved_Confirmation;
+        if (reloadError is not null)
+            ErrorMessage = reloadError.Message;
     }
 
     private async Task OnDeleteAsync(CancellationToken ct)
@@ -286,8 +290,11 @@ public sealed class ImporterSettingsViewModel : ReactiveObject, IActivatableView
             var result = await _handlers.DeleteImporter.HandleAsync(cmd, ct);
             if (result.IsSuccess)
             {
-                await ReloadImportersAsync(ct);
+                var reloadError = await ReloadImportersAsync(ct);
                 OnAddNew();
+                // Set after OnAddNew, which clears the messages; the list may still show the deleted row.
+                if (reloadError is not null)
+                    ErrorMessage = reloadError.Message;
             }
             else
             {

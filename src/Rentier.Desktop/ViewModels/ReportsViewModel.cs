@@ -17,7 +17,6 @@ namespace Rentier.Desktop.ViewModels;
 public sealed class ReportsViewModel : PagedSelectionViewModelBase<ReportRowViewModel>
 {
     private readonly ReportsHandlers _handlers;
-    private readonly IConfirmationService _confirmation;
     private readonly IReportImportDialogService _importDialog;
 
     private bool _sortDescending = true;
@@ -31,6 +30,8 @@ public sealed class ReportsViewModel : PagedSelectionViewModelBase<ReportRowView
     public EnumFilterFlyoutViewModel<ReportStatus> StatusFilter { get; }
 
     protected override string PageIndicatorFormat => Strings.Reports_Page_Indicator;
+    protected override string DeleteConfirmButtonText => Strings.Reports_Delete_Confirm_Button;
+    protected override string DeleteCancelButtonText => Strings.Reports_Delete_Cancel_Button;
 
     /// <summary>When true, reports are sorted newest-first. Changing this property resets the page to 1.</summary>
     public bool SortDescending
@@ -59,10 +60,9 @@ public sealed class ReportsViewModel : PagedSelectionViewModelBase<ReportRowView
         IConfirmationService confirmation,
         IReportImportDialogService importDialog,
         INavigationService navigation,
-        ISequencer? scheduler = null) : base(scheduler ?? RxSchedulers.MainThreadScheduler)
+        ISequencer? scheduler = null) : base(confirmation, scheduler ?? RxSchedulers.MainThreadScheduler)
     {
         _handlers = handlers;
-        _confirmation = confirmation;
         _importDialog = importDialog;
 
         NameFilter = new TextFilterFlyoutViewModel();
@@ -107,6 +107,7 @@ public sealed class ReportsViewModel : PagedSelectionViewModelBase<ReportRowView
         SurfaceErrors(disposables,
             ImportCommand.ThrownExceptions,
             DeleteCommand.ThrownExceptions,
+            ViewFilingsCommand.ThrownExceptions,
             BulkDeleteCommand.ThrownExceptions);
     }
 
@@ -150,13 +151,6 @@ public sealed class ReportsViewModel : PagedSelectionViewModelBase<ReportRowView
             StatusFilters: statusFilters);
     }
 
-    private Task<bool> ConfirmDeleteAsync(string title, string message) =>
-        _confirmation.ConfirmAsync(new ConfirmationRequest(
-            title,
-            message,
-            Strings.Reports_Delete_Confirm_Button,
-            Strings.Reports_Delete_Cancel_Button));
-
     private async Task ImportAsync(CancellationToken ct = default)
     {
         var selection = await _importDialog.PickReportAsync();
@@ -181,6 +175,7 @@ public sealed class ReportsViewModel : PagedSelectionViewModelBase<ReportRowView
 
     private async Task DeleteAsync(Guid reportId, CancellationToken ct = default)
     {
+        var visibleCount = Rows.Count;
         var confirmed = await ConfirmDeleteAsync(
             Strings.Reports_Delete_Confirmation_Title,
             Strings.Reports_Delete_Confirmation_Message);
@@ -197,7 +192,7 @@ public sealed class ReportsViewModel : PagedSelectionViewModelBase<ReportRowView
                 return;
             }
 
-            await ReloadAfterRemovalAsync(removedCount: 1, ct);
+            await ReloadAfterRemovalAsync(removedCount: 1, visibleCount, ct);
         }
         finally
         {
@@ -207,6 +202,7 @@ public sealed class ReportsViewModel : PagedSelectionViewModelBase<ReportRowView
 
     private async Task OnBulkDeleteAsync(CancellationToken ct)
     {
+        var visibleCount = Rows.Count;
         var selectedIds = Rows
             .Where(r => r.IsSelected)
             .Select(r => r.Id)
@@ -228,6 +224,6 @@ public sealed class ReportsViewModel : PagedSelectionViewModelBase<ReportRowView
             return;
         }
 
-        await ReloadAfterRemovalAsync(selectedIds.Count, ct);
+        await ReloadAfterRemovalAsync(selectedIds.Count, visibleCount, ct);
     }
 }

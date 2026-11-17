@@ -248,6 +248,9 @@ public sealed class ManualFilingViewModel : ReactiveObject, IActivatableViewMode
             SaveCommand.ThrownExceptions
                 .Subscribe(ex => ErrorMessage = ex.Message)
                 .DisposeWith(disposables);
+            CancelCommand.ThrownExceptions
+                .Subscribe(ex => ErrorMessage = ex.Message)
+                .DisposeWith(disposables);
         });
 
         // Clear preview and mark form dirty when any input changes (skip initial emission)

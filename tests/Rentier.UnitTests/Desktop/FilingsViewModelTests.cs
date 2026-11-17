@@ -917,4 +917,47 @@ public class FilingsViewModelTests
         vm.PayingEntityFilter.GetCommittedValue().Should().Be("ACME");
         vm.PayingEntityFilter.IsActive.Should().BeTrue();
     }
+
+    // ── Scope re-assignment (ShowAll / ReportIdFilter) ───────────────────────
+
+    [Fact]
+    public void ReportIdFilter_ReassignedSameValueWhileActive_ReloadsFirstPage()
+    {
+        var getFilings = MockGetFilings(new FilingsPageResult([MakeDto()], 40, 2));
+        var vm = CreateVm(getFilings: getFilings);
+        using var _ = vm.Activator.Activate();
+        vm.NextPageCommand.Execute().Subscribe();
+        getFilings.ClearReceivedCalls();
+
+        vm.ReportIdFilter = null;
+
+        getFilings.Received(1).HandleAsync(
+            Arg.Is<GetFilingsQuery>(q => q!.Page == 1), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public void ShowAll_ReassignedSameValueWhileActive_ReloadsFirstPage()
+    {
+        var getFilings = MockGetFilings(new FilingsPageResult([MakeDto()], 40, 2));
+        var vm = CreateVm(getFilings: getFilings);
+        using var _ = vm.Activator.Activate();
+        vm.NextPageCommand.Execute().Subscribe();
+        getFilings.ClearReceivedCalls();
+
+        vm.ShowAll = vm.ShowAll;
+
+        getFilings.Received(1).HandleAsync(
+            Arg.Is<GetFilingsQuery>(q => q!.Page == 1), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public void ReportIdFilter_AssignedWhileInactive_DoesNotQueryUntilActivated()
+    {
+        var getFilings = MockGetFilings();
+        var vm = CreateVm(getFilings: getFilings);
+
+        vm.ReportIdFilter = Guid.NewGuid();
+
+        getFilings.DidNotReceive().HandleAsync(Arg.Any<GetFilingsQuery>(), Arg.Any<CancellationToken>());
+    }
 }

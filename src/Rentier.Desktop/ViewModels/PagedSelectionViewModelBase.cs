@@ -7,6 +7,7 @@ using Rentier.Desktop.Extensions;
 using ReactiveUI;
 using Rentier.Application.Common;
 using Rentier.Desktop.Resources;
+using Rentier.Desktop.Services;
 
 namespace Rentier.Desktop.ViewModels;
 
@@ -29,6 +30,7 @@ public abstract class PagedSelectionViewModelBase<TRow> : ReactiveObject, IActiv
     public ViewModelActivator Activator { get; } = new();
 
     protected readonly ISequencer _scheduler;
+    private readonly IConfirmationService _confirmation;
     private int _selectedCount;
     private bool _isUpdatingSelection;
     private bool _isLoading;
@@ -51,7 +53,8 @@ public abstract class PagedSelectionViewModelBase<TRow> : ReactiveObject, IActiv
         protected set
         {
             if (value == _isLoading) return;
-            this.RaiseAndSetIfChanged(ref _isLoading, value);
+            _isLoading = value;
+            this.RaisePropertyChanged(nameof(IsLoading));
             this.RaisePropertyChanged(nameof(HasPreviousPage));
             this.RaisePropertyChanged(nameof(HasNextPage));
             RaiseEmptyStateChanged();
@@ -74,6 +77,10 @@ public abstract class PagedSelectionViewModelBase<TRow> : ReactiveObject, IActiv
     /// <summary>Localized "Page {0} of {1}" format for this list.</summary>
     protected abstract string PageIndicatorFormat { get; }
 
+    /// <summary>Localized confirm / cancel button texts of this list's delete confirmation.</summary>
+    protected abstract string DeleteConfirmButtonText { get; }
+    protected abstract string DeleteCancelButtonText { get; }
+
     public int SelectedCount
     {
         get => _selectedCount;
@@ -93,7 +100,8 @@ public abstract class PagedSelectionViewModelBase<TRow> : ReactiveObject, IActiv
         private set
         {
             if (value == _hasActiveFilters) return;
-            this.RaiseAndSetIfChanged(ref _hasActiveFilters, value);
+            _hasActiveFilters = value;
+            this.RaisePropertyChanged(nameof(HasActiveFilters));
             this.RaisePropertyChanged(nameof(IsEmptyWithFilters));
         }
     }
@@ -133,8 +141,9 @@ public abstract class PagedSelectionViewModelBase<TRow> : ReactiveObject, IActiv
         }
     }
 
-    protected PagedSelectionViewModelBase(ISequencer scheduler)
+    protected PagedSelectionViewModelBase(IConfirmationService confirmation, ISequencer scheduler)
     {
+        _confirmation = confirmation;
         _scheduler = scheduler;
         Paging.PropertyChanged += OnPagingChanged;
 
@@ -278,10 +287,19 @@ public abstract class PagedSelectionViewModelBase<TRow> : ReactiveObject, IActiv
         return LoadPageAsync(ct);
     }
 
-    /// <summary>Reloads after <paramref name="removedCount"/> visible rows were deleted.</summary>
-    protected Task ReloadAfterRemovalAsync(int removedCount, CancellationToken ct)
+    /// <summary>Asks the user to confirm a delete with this list's localized button texts.</summary>
+    protected Task<bool> ConfirmDeleteAsync(string title, string message) =>
+        _confirmation.ConfirmAsync(new ConfirmationRequest(
+            title, message, DeleteConfirmButtonText, DeleteCancelButtonText));
+
+    /// <summary>
+    /// Reloads after <paramref name="removedCount"/> of the <paramref name="visibleCountBeforeRemoval"/>
+    /// rows the user acted on were deleted. The visible count must be captured before the delete is
+    /// awaited: another reload may replace <see cref="Rows"/> meanwhile.
+    /// </summary>
+    protected Task ReloadAfterRemovalAsync(int removedCount, int visibleCountBeforeRemoval, CancellationToken ct)
     {
-        Paging.StepBackIfPageEmptied(removedCount, Rows.Count);
+        Paging.StepBackIfPageEmptied(removedCount, visibleCountBeforeRemoval);
         return LoadPageAsync(ct);
     }
 

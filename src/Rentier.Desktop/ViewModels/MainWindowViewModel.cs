@@ -197,8 +197,11 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
         switch (request.Target)
         {
             case NavigationTarget.Filings:
-                var filingsEntry = NavigationEntries.First(e => e.ViewModel is FilingsViewModel);
-                ((FilingsViewModel)filingsEntry.ViewModel!).ReportIdFilter = request.ReportId;
+                // Runs synchronously inside the requesting page's command: never throw from here.
+                var filingsEntry = NavigationEntries.FirstOrDefault(e => e.ViewModel is FilingsViewModel);
+                if (filingsEntry?.ViewModel is not FilingsViewModel filingsVm)
+                    return;
+                filingsVm.ReportIdFilter = request.ReportId;
                 SelectedEntry = filingsEntry;
                 break;
 

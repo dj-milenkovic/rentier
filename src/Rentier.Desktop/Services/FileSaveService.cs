@@ -29,13 +29,18 @@ internal sealed class FileSaveService : IFileSaveService
 
         if (file is null) return false;
 
-        await using var stream = await file.OpenWriteAsync();
         try
         {
-            await stream.WriteAsync(request.Content);
+            // Scoped so the stream is closed before the cleanup below: deleting a file that is
+            // still open fails on Windows and would mask the original write error.
+            await using (var stream = await file.OpenWriteAsync())
+            {
+                await stream.WriteAsync(request.Content);
+            }
         }
         catch
         {
+            // Never leave a partial export behind.
             await file.DeleteAsync();
             throw;
         }

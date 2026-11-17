@@ -121,6 +121,9 @@ public sealed class DashboardViewModel : ReactiveObject, IActivatableViewModel
             LoadCommand.ThrownExceptions
                 .Subscribe(ex => ErrorMessage = ex.Message)
                 .DisposeWith(disposables);
+            NavigateToFilingsCommand.ThrownExceptions
+                .Subscribe(ex => ErrorMessage = ex.Message)
+                .DisposeWith(disposables);
         });
     }
 

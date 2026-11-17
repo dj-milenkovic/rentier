@@ -34,7 +34,8 @@ public sealed class PagedQueryState : ReactiveObject
         private set
         {
             if (value == _currentPage) return;
-            this.RaiseAndSetIfChanged(ref _currentPage, value);
+            _currentPage = value;
+            this.RaisePropertyChanged(nameof(CurrentPage));
             this.RaisePropertyChanged(nameof(HasPreviousPage));
             this.RaisePropertyChanged(nameof(HasNextPage));
         }
@@ -46,7 +47,8 @@ public sealed class PagedQueryState : ReactiveObject
         private set
         {
             if (value == _totalPages) return;
-            this.RaiseAndSetIfChanged(ref _totalPages, value);
+            _totalPages = value;
+            this.RaisePropertyChanged(nameof(TotalPages));
             this.RaisePropertyChanged(nameof(HasNextPage));
         }
     }
