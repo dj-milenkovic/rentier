@@ -15,7 +15,7 @@ namespace Rentier.Infrastructure.Persistence.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "10.0.9");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.15");
 
             modelBuilder.Entity("Rentier.Domain.Entities.Filing", b =>
                 {
@@ -238,11 +238,20 @@ namespace Rentier.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("ImporterId")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("LastProcessingError")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
                     b.Property<long?>("MailboxMessageId")
                         .HasColumnType("INTEGER");
 
                     b.Property<Guid?>("OriginalReportId")
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("ProcessingAttempts")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0);
 
                     b.Property<string>("ReportName")
                         .IsRequired()

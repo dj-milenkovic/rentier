@@ -1,22 +1,20 @@
-using System.Diagnostics.CodeAnalysis;
+using System.Collections.Frozen;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
-using ReactiveUI;
 using Rentier.Desktop.ViewModels;
 using Rentier.Desktop.Views;
 
 namespace Rentier.Desktop;
 
 /// <summary>
-/// Resolves the View for a ViewModel through an explicit registry.
-/// Adding a new page means adding one entry to <see cref="FACTORIES"/>; a missing entry is
-/// caught by <c>ViewLocatorTests</c> instead of surfacing as a runtime "View not found".
+/// Resolves the View for a page ViewModel through an explicit registry.
+/// Adding a new page means adding one entry to <see cref="FACTORIES"/>; a missing or wrong
+/// entry is caught by <c>ViewLocatorTests</c> instead of surfacing as a runtime "View not found".
 /// No reflection or name-based lookup, so it stays safe under trimming.
 /// </summary>
-[ExcludeFromCodeCoverage]
 public sealed class ViewLocator : IDataTemplate
 {
-    private static readonly IReadOnlyDictionary<Type, Func<Control>> FACTORIES =
+    private static readonly FrozenDictionary<Type, Func<Control>> FACTORIES =
         new Dictionary<Type, Func<Control>>
         {
             [typeof(AppearanceSettingsViewModel)] = static () => new AppearanceSettingsView(),
@@ -29,7 +27,7 @@ public sealed class ViewLocator : IDataTemplate
             [typeof(ProfileSettingsViewModel)] = static () => new ProfileSettingsView(),
             [typeof(ReportsViewModel)] = static () => new ReportsView(),
             [typeof(SyncViewModel)] = static () => new SyncView(),
-        };
+        }.ToFrozenDictionary();
 
     /// <summary>ViewModel types that have a registered View.</summary>
     public static IEnumerable<Type> RegisteredViewModelTypes => FACTORIES.Keys;
@@ -39,10 +37,15 @@ public sealed class ViewLocator : IDataTemplate
         if (param is null)
             return new TextBlock { Text = "No ViewModel provided" };
 
-        return FACTORIES.TryGetValue(param.GetType(), out var factory)
+        var viewModelType = param.GetType();
+        return FACTORIES.TryGetValue(viewModelType, out var factory)
             ? factory()
-            : new TextBlock { Text = $"View not found for {param.GetType().Name}" };
+            : new TextBlock { Text = $"View not found for {viewModelType.FullName}" };
     }
 
-    public bool Match(object? data) => data is ReactiveObject;
+    /// <summary>
+    /// Claims only registered page ViewModels, so row/item ViewModels shown without a local
+    /// template fall through to Avalonia's default templates instead of "View not found".
+    /// </summary>
+    public bool Match(object? data) => data is not null && FACTORIES.ContainsKey(data.GetType());
 }

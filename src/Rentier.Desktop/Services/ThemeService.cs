@@ -68,7 +68,13 @@ public sealed class ThemeService : IThemeService
                 Enum.TryParse<ThemePreference>(prop.GetString(), out var parsed))
                 return parsed;
         }
-        catch { /* fall through to default */ }
+        // Deliberately broad: this runs from the constructor, and a missing, unreadable or
+        // malformed settings file (or an unusual profile path) must fall back to the default theme,
+        // never stop the app from starting. No cancellation is involved (synchronous file I/O).
+        catch (Exception)
+        {
+            // fall through to default
+        }
 
         return ThemePreference.System;
     }
@@ -81,6 +87,11 @@ public sealed class ThemeService : IThemeService
             var json = JsonSerializer.Serialize(new { theme = preference.ToString() });
             File.WriteAllText(SettingsPath, json);
         }
-        catch { /* ignore transient I/O failures */ }
+        // Deliberately broad: the preference is a convenience, so failing to persist it for any
+        // reason must not break theme switching. No cancellation is involved (synchronous file I/O).
+        catch (Exception)
+        {
+            // ignore transient I/O failures
+        }
     }
 }

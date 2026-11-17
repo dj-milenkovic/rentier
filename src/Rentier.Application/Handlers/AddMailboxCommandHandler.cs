@@ -11,11 +11,14 @@ public sealed class AddMailboxCommandHandler
 {
     private readonly IMailboxRepository _repository;
     private readonly ICredentialStore _credentials;
+    private readonly TimeProvider _timeProvider;
 
-    public AddMailboxCommandHandler(IMailboxRepository repository, ICredentialStore credentials)
+    public AddMailboxCommandHandler(
+        IMailboxRepository repository, ICredentialStore credentials, TimeProvider timeProvider)
     {
         _repository = repository;
         _credentials = credentials;
+        _timeProvider = timeProvider;
     }
 
     public async Task<Result<Guid, Error>> HandleAsync(
@@ -24,8 +27,9 @@ public sealed class AddMailboxCommandHandler
         Domain.Entities.Mailbox mailbox;
         try
         {
+            // Mailbox cursor dates are UTC calendar dates (see Mailbox.Create).
             mailbox = Domain.Entities.Mailbox.Create(
-                command.Host, command.Port, command.Username);
+                command.Host, command.Port, command.Username, _timeProvider.GetUtcToday());
         }
         catch (DomainException ex)
         {

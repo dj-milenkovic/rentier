@@ -1,27 +1,85 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using ReactiveUI.Primitives;
 using ReactiveUI.Primitives.Concurrency;
 using ReactiveUI.Primitives.Disposables;
 using Rentier.Desktop.Extensions;
 using ReactiveUI;
+using Rentier.Application.Common;
 using Rentier.Desktop.Resources;
+using Rentier.Desktop.Services;
 
 namespace Rentier.Desktop.ViewModels;
 
+/// <summary>One page of rows plus the totals the pager needs.</summary>
+public sealed record PageOf<TRow>(IReadOnlyList<TRow> Rows, int TotalCount, int TotalPages);
+
+/// <summary>
+/// Base for server-side paged lists with row selection and column filters (Filings, Reports).
+/// <para>
+/// Owns the load / page / filter state machine so derived ViewModels only describe their
+/// query (<see cref="QueryPageAsync"/>) and their page-specific commands. The rule
+/// "anything that changes the query goes back to page 1" lives in <see cref="PagedQueryState"/>
+/// and is applied here for column filters; derived classes call
+/// <see cref="PagedQueryState.ResetToFirstPage"/> on <see cref="Paging"/> for their own inputs.
+/// </para>
+/// </summary>
 public abstract class PagedSelectionViewModelBase<TRow> : ReactiveObject, IActivatableViewModel
     where TRow : ReactiveObject, ISelectableRow
 {
     public ViewModelActivator Activator { get; } = new();
 
     protected readonly ISequencer _scheduler;
+    private readonly IConfirmationService _confirmation;
     private int _selectedCount;
     private bool _isUpdatingSelection;
+    private bool _isLoading;
+    private string? _errorMessage;
+    private bool _hasActiveFilters;
+    private IReadOnlyList<IColumnFilter> _filters = [];
     protected readonly MultipleDisposable _rowSubscriptions = new();
 
     private readonly ObservableAsPropertyHelper<bool> _hasSelection;
     private readonly ObservableAsPropertyHelper<string> _deleteSelectedLabel;
 
     public ObservableCollection<TRow> Rows { get; } = new();
+
+    /// <summary>Current page and totals; the single owner of paging state.</summary>
+    protected PagedQueryState Paging { get; } = new();
+
+    public bool IsLoading
+    {
+        get => _isLoading;
+        protected set
+        {
+            if (value == _isLoading) return;
+            _isLoading = value;
+            this.RaisePropertyChanged(nameof(IsLoading));
+            this.RaisePropertyChanged(nameof(HasPreviousPage));
+            this.RaisePropertyChanged(nameof(HasNextPage));
+            RaiseEmptyStateChanged();
+        }
+    }
+
+    public string? ErrorMessage
+    {
+        get => _errorMessage;
+        protected set => this.RaiseAndSetIfChanged(ref _errorMessage, value);
+    }
+
+    public int CurrentPage => Paging.CurrentPage;
+    public int TotalPages => Paging.TotalPages;
+    public int TotalCount => Paging.TotalCount;
+    public bool HasPreviousPage => Paging.HasPreviousPage && !IsLoading;
+    public bool HasNextPage => Paging.HasNextPage && !IsLoading;
+    public string PageIndicator => string.Format(PageIndicatorFormat, CurrentPage, TotalPages);
+
+    /// <summary>Localized "Page {0} of {1}" format for this list.</summary>
+    protected abstract string PageIndicatorFormat { get; }
+
+    /// <summary>Localized confirm / cancel button texts of this list's delete confirmation.</summary>
+    protected abstract string DeleteConfirmButtonText { get; }
+    protected abstract string DeleteCancelButtonText { get; }
 
     public int SelectedCount
     {
@@ -32,9 +90,29 @@ public abstract class PagedSelectionViewModelBase<TRow> : ReactiveObject, IActiv
     public bool HasSelection => _hasSelection.Value;
     public string DeleteSelectedLabel => _deleteSelectedLabel.Value;
     public bool HasItems => Rows.Count > 0;
+    public bool IsEmpty => Rows.Count == 0 && !IsLoading;
+    public bool IsEmptyWithFilters => IsEmpty && HasActiveFilters;
+
+    /// <summary>True when at least one registered column filter is committed.</summary>
+    public bool HasActiveFilters
+    {
+        get => _hasActiveFilters;
+        private set
+        {
+            if (value == _hasActiveFilters) return;
+            _hasActiveFilters = value;
+            this.RaisePropertyChanged(nameof(HasActiveFilters));
+            this.RaisePropertyChanged(nameof(IsEmptyWithFilters));
+        }
+    }
 
     public ReactiveCommand<RxVoid, RxVoid> SelectAllCommand { get; }
     public ReactiveCommand<RxVoid, RxVoid> ClearSelectionCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> LoadPageCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> PreviousPageCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> NextPageCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> ClearErrorCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> ClearFiltersCommand { get; }
 
     public bool? IsAllSelected
     {
@@ -63,9 +141,11 @@ public abstract class PagedSelectionViewModelBase<TRow> : ReactiveObject, IActiv
         }
     }
 
-    protected PagedSelectionViewModelBase(ISequencer scheduler)
+    protected PagedSelectionViewModelBase(IConfirmationService confirmation, ISequencer scheduler)
     {
+        _confirmation = confirmation;
         _scheduler = scheduler;
+        Paging.PropertyChanged += OnPagingChanged;
 
         _hasSelection = this.WhenAnyValue(x => x.SelectedCount)
             .Select(c => c > 0)
@@ -97,6 +177,162 @@ public abstract class PagedSelectionViewModelBase<TRow> : ReactiveObject, IActiv
             },
             hasSelectionObservable,
             outputScheduler: _scheduler);
+
+        LoadPageCommand = ReactiveCommand.CreateFromTask(
+            LoadPageAsync, outputScheduler: _scheduler);
+
+        PreviousPageCommand = ReactiveCommand.CreateFromTask(
+            async (CancellationToken ct) =>
+            {
+                Paging.MoveToPreviousPage();
+                await LoadPageAsync(ct);
+            },
+            this.WhenAnyValue(x => x.HasPreviousPage),
+            outputScheduler: _scheduler);
+
+        NextPageCommand = ReactiveCommand.CreateFromTask(
+            async (CancellationToken ct) =>
+            {
+                Paging.MoveToNextPage();
+                await LoadPageAsync(ct);
+            },
+            this.WhenAnyValue(x => x.HasNextPage),
+            outputScheduler: _scheduler);
+
+        ClearErrorCommand = ReactiveCommand.Create(
+            () => { ErrorMessage = null; },
+            outputScheduler: _scheduler);
+
+        ClearFiltersCommand = ReactiveCommand.CreateFromTask(
+            async (CancellationToken ct) =>
+            {
+                ClearFilters();
+                await ReloadFromFirstPageAsync(ct);
+            },
+            this.WhenAnyValue(x => x.HasActiveFilters),
+            outputScheduler: _scheduler);
+
+        this.WhenActivated((MultipleDisposable disposables) =>
+        {
+            LoadPageCommand.Execute().Subscribe().DisposeWith(disposables);
+
+            // Any column filter applied → page 1 + reload.
+            _filters.Select(f => f.Applied)
+                .ToArray()
+                .Merge()
+                .ObserveOn(_scheduler)
+                .Do(_ => Paging.ResetToFirstPage())
+                .Select(_ => RxVoid.Default)
+                .InvokeCommand(LoadPageCommand)
+                .DisposeWith(disposables);
+
+            // Dispose row subscriptions on every deactivation cycle.
+            new ActionDisposable(() => _rowSubscriptions.Clear())
+                .DisposeWith(disposables);
+
+            SurfaceErrors(disposables,
+                LoadPageCommand.ThrownExceptions,
+                PreviousPageCommand.ThrownExceptions,
+                NextPageCommand.ThrownExceptions,
+                ClearFiltersCommand.ThrownExceptions);
+
+            OnActivated(disposables);
+        });
+    }
+
+    /// <summary>Fetches one page for the current filters and sort order.</summary>
+    protected abstract Task<Result<PageOf<TRow>, Error>> QueryPageAsync(
+        int page, int pageSize, CancellationToken ct);
+
+    /// <summary>Hook for page-specific activation wiring; runs after the initial load is started.</summary>
+    protected virtual void OnActivated(MultipleDisposable disposables)
+    {
+    }
+
+    /// <summary>Hook invoked after a page was loaded into <see cref="Rows"/>.</summary>
+    protected virtual void OnPageLoaded()
+    {
+    }
+
+    /// <summary>
+    /// Registers the column filter flyouts of this list. Applying any of them resets to page 1
+    /// and reloads; <see cref="HasActiveFilters"/> and <see cref="ClearFiltersCommand"/> follow them.
+    /// Call once from the derived constructor.
+    /// </summary>
+    protected void RegisterFilters(params IColumnFilter[] filters)
+    {
+        _filters = filters;
+        foreach (var filter in filters)
+            filter.PropertyChanged += OnFilterChanged;
+    }
+
+    /// <summary>Clears every registered column filter without reloading.</summary>
+    protected void ClearFilters()
+    {
+        foreach (var filter in _filters)
+            filter.Clear();
+    }
+
+    /// <summary>Routes unhandled command exceptions into <see cref="ErrorMessage"/>.</summary>
+    protected void SurfaceErrors(MultipleDisposable disposables, params IObservable<Exception>[] errors)
+    {
+        foreach (var source in errors)
+            source.Subscribe(ex => ErrorMessage = ex.Message).DisposeWith(disposables);
+    }
+
+    /// <summary>The query changed shape: go back to page 1 and reload.</summary>
+    protected Task ReloadFromFirstPageAsync(CancellationToken ct)
+    {
+        Paging.ResetToFirstPage();
+        return LoadPageAsync(ct);
+    }
+
+    /// <summary>Asks the user to confirm a delete with this list's localized button texts.</summary>
+    protected Task<bool> ConfirmDeleteAsync(string title, string message) =>
+        _confirmation.ConfirmAsync(new ConfirmationRequest(
+            title, message, DeleteConfirmButtonText, DeleteCancelButtonText));
+
+    /// <summary>
+    /// Reloads after <paramref name="removedCount"/> of the <paramref name="visibleCountBeforeRemoval"/>
+    /// rows the user acted on were deleted. The visible count must be captured before the delete is
+    /// awaited: another reload may replace <see cref="Rows"/> meanwhile.
+    /// </summary>
+    protected Task ReloadAfterRemovalAsync(int removedCount, int visibleCountBeforeRemoval, CancellationToken ct)
+    {
+        Paging.StepBackIfPageEmptied(removedCount, visibleCountBeforeRemoval);
+        return LoadPageAsync(ct);
+    }
+
+    protected async Task LoadPageAsync(CancellationToken ct = default)
+    {
+        IsLoading = true;
+        ErrorMessage = null;
+        try
+        {
+            var result = await QueryPageAsync(Paging.CurrentPage, Paging.PageSize, ct);
+            if (!result.IsSuccess)
+            {
+                ErrorMessage = result.Error.Message;
+                return;
+            }
+
+            var page = result.Value;
+            Rows.Clear();
+            foreach (var row in page.Rows)
+                Rows.Add(row);
+
+            Paging.ApplyResult(page.TotalCount, page.TotalPages);
+
+            this.RaisePropertyChanged(nameof(HasItems));
+            RaiseEmptyStateChanged();
+            OnPageLoaded();
+
+            RebuildRowSubscriptions();
+        }
+        finally
+        {
+            IsLoading = false;
+        }
     }
 
     protected void RebuildRowSubscriptions()
@@ -115,5 +351,26 @@ public abstract class PagedSelectionViewModelBase<TRow> : ReactiveObject, IActiv
         }
         SelectedCount = Rows.Count(r => r.IsSelected);
         this.RaisePropertyChanged(nameof(IsAllSelected));
+    }
+
+    private void RaiseEmptyStateChanged()
+    {
+        this.RaisePropertyChanged(nameof(IsEmpty));
+        this.RaisePropertyChanged(nameof(IsEmptyWithFilters));
+    }
+
+    private void OnPagingChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        // CurrentPage / TotalPages / TotalCount / HasPreviousPage / HasNextPage are re-exposed
+        // under the same names, so the notification is forwarded as-is.
+        this.RaisePropertyChanged(e.PropertyName);
+        if (e.PropertyName is nameof(PagedQueryState.CurrentPage) or nameof(PagedQueryState.TotalPages))
+            this.RaisePropertyChanged(nameof(PageIndicator));
+    }
+
+    private void OnFilterChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(IColumnFilter.IsActive))
+            HasActiveFilters = _filters.Any(f => f.IsActive);
     }
 }

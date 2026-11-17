@@ -13,7 +13,7 @@ using Rentier.Tests.Common.Fakes;
 namespace Rentier.Scenarios.Tests;
 
 /// <summary>
-/// Bootstraps real DI with the production InfrastructureRegistrar and a SQLite temp file.
+/// Bootstraps real DI with the production AddInfrastructureServicesAsync registration and a SQLite temp file.
 /// Applies migrations via IDatabaseInitializer (MigrateAsync) — not EnsureCreated.
 /// Each test class creates its own instance for full data isolation.
 /// </summary>
@@ -30,11 +30,14 @@ public sealed class ScenarioFixture : IAsyncLifetime
         var services = new ServiceCollection();
         services.AddLogging(b => b.SetMinimumLevel(LogLevel.Warning));
 
-        await new InfrastructureRegistrar().RegisterServicesAsync(services, _dbPath);
+        await services.AddInfrastructureServicesAsync(_dbPath);
 
         // Override externals — last registration wins in .NET DI
         services.AddSingleton<ICredentialStore>(new FakeCredentialStore());
         services.AddSingleton(NSubstitute.Substitute.For<IMailboxSyncService>());
+
+        // The clock is registered by the Desktop composition root in production.
+        services.AddSingleton(TimeProvider.System);
 
         // Application layer: command handlers
         services.AddTransient<

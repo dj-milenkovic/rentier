@@ -12,6 +12,7 @@ using Rentier.Application.Interfaces;
 using Rentier.Desktop.ViewModels;
 using Rentier.Desktop.Views;
 using Rentier.Domain.Enums;
+using Rentier.Tests.Common.Fakes;
 using Xunit;
 
 namespace Rentier.UnitTests;
@@ -208,6 +209,7 @@ public class SyncViewHeadlessTests
 
         return new SyncViewModel(
             handler,
+            TestClock.Provider(),
             scheduler: ImmediateSequencer.Instance);
     }
 }

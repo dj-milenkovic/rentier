@@ -8,6 +8,7 @@ using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 using Xunit;
+using Rentier.Tests.Common.Fakes;
 
 namespace Rentier.UnitTests.Application;
 
@@ -26,7 +27,7 @@ public class GetReportsQueryHandlerTests
     private static Report MakeReport(Guid? importerId = null, string name = "rep.csv")
     {
         var id = importerId ?? Guid.NewGuid();
-        return Report.Create(id, name, null, null);
+        return Report.Create(id, name, null, null, TestClock.TODAY);
     }
 
     private static Importer MakeImporter(string display = "Test Importer")
@@ -254,6 +255,28 @@ public class GetReportsQueryHandlerTests
         result.Value.Rows.Should().HaveCount(30);
     }
 
+    [Theory]
+    [InlineData(0, 30, 1)]
+    [InlineData(30, 30, 1)]
+    [InlineData(31, 30, 2)]
+    [InlineData(60, 30, 2)]
+    [InlineData(100, 100, 1)]
+    [InlineData(101, 100, 2)]
+    public async Task HandleAsync_TotalCountAndPageSize_ComputesTotalPagesWithIntegerCeiling(
+        int total, int pageSize, int expectedPages)
+    {
+        _reportRepo.GetPagedAsync(
+            Arg.Any<ReportColumnFilter?>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
+            .Returns(((IReadOnlyList<Report>)Array.Empty<Report>(), total));
+        _importerRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([]);
+        _filingRepo.GetAggregatesByReportIdsAsync(Arg.Any<IReadOnlyList<Guid>>(), Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<Guid, (int, DateOnly?)>());
+
+        var result = await _sut.HandleAsync(new GetReportsQuery(Page: 1, PageSize: pageSize), TestContext.Current.CancellationToken);
+
+        result.Value.TotalPages.Should().Be(expectedPages);
+    }
+
     [Fact]
     public async Task HandleAsync_EmptyCollection_ReturnsTotalPagesOne()
     {
@@ -318,22 +341,39 @@ public class GetReportsQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_FilingCountFilter_PostFiltersPageResults()
+    public async Task HandleAsync_FilingCountFilter_IsPassedToRepository()
     {
-        var importer = MakeImporter();
-        var r1 = MakeReport(importer.Id, "r1.csv");
-        var r2 = MakeReport(importer.Id, "r2.csv");
-        SetupPagedReports([r1, r2]);
-        _importerRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([importer]);
-        _filingRepo.GetAggregatesByReportIdsAsync(Arg.Any<IReadOnlyList<Guid>>(), Arg.Any<CancellationToken>())
-            .Returns(new Dictionary<Guid, (int, DateOnly?)> { [r1.Id] = (3, null), [r2.Id] = (7, null) });
+        SetupPagedReports(0);
 
         var filter = new ReportColumnFilter(FilingCountValue: 7);
-        var result = await _sut.HandleAsync(new GetReportsQuery(Filter: filter), TestContext.Current.CancellationToken);
+        await _sut.HandleAsync(new GetReportsQuery(Filter: filter), TestContext.Current.CancellationToken);
 
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Rows.Should().HaveCount(1);
-        result.Value.Rows[0].Id.Should().Be(r2.Id);
+        await _reportRepo.Received(1).GetPagedAsync(
+            Arg.Is<ReportColumnFilter?>(f => f != null && f.FilingCountValue == 7),
+            Arg.Any<int>(),
+            Arg.Any<int>(),
+            Arg.Any<bool>(),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_FilingCountFilter_ReturnsRepositoryRowsAndTotalUnchanged()
+    {
+        // The repository applies the filter in SQL, so the handler must not filter the page
+        // again: rows, TotalCount and TotalPages all describe the same filtered set.
+        var importer = MakeImporter();
+        var r1 = MakeReport(importer.Id, "r1.csv");
+        _reportRepo.GetPagedAsync(
+                Arg.Any<ReportColumnFilter?>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
+            .Returns(((IReadOnlyList<Report>)[r1], 31));
+        _importerRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([importer]);
+        _filingRepo.GetAggregatesByReportIdsAsync(Arg.Any<IReadOnlyList<Guid>>(), Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<Guid, (int, DateOnly?)> { [r1.Id] = (7, null) });
+
+        var result = await _sut.HandleAsync(
+            new GetReportsQuery(Filter: new ReportColumnFilter(FilingCountValue: 7)), TestContext.Current.CancellationToken);
+
+        (result.Value.Rows.Count, result.Value.TotalCount, result.Value.TotalPages).Should().Be((1, 31, 2));
     }
 
     [Fact]

@@ -13,9 +13,11 @@ public sealed class ExchangeRateResolver : IExchangeRateResolver
     private readonly IExchangeRateFetcher _fetcher;
     private readonly ILogger<ExchangeRateResolver> _logger;
 
-    // Non-retryable error codes - resolver returns immediately without walking back
-    private static readonly HashSet<string> NonRetryable =
-        new(StringComparer.OrdinalIgnoreCase) { "UNSUPPORTED_CURRENCY", "NBS_PARSE_ERROR" };
+    // Fetcher error codes that mean "the rate source could not be reached or read right now":
+    // NBS_HTTP_ERROR (network/HTTP failure) and NBS_SCRAPE_ERROR (the web-app fallback, used
+    // after the primary API failed, returned an unreadable page).
+    private static readonly HashSet<string> TRANSIENT_SOURCE_ERRORS =
+        new(StringComparer.OrdinalIgnoreCase) { "NBS_HTTP_ERROR", "NBS_SCRAPE_ERROR" };
 
     public ExchangeRateResolver(IExchangeRateFetcher fetcher, ILogger<ExchangeRateResolver> logger)
     {
@@ -38,9 +40,11 @@ public sealed class ExchangeRateResolver : IExchangeRateResolver
                 new RateResolution(exactResult.Value, date, ExchangeRateSourceType.Exact));
         }
 
-        // Non-retryable errors - return immediately
-        if (NonRetryable.Contains(exactResult.Error.Code))
-            return Result<RateResolution, Error>.Failure(exactResult.Error);
+        // Only a confirmed "no rate published for this date" (weekend/holiday) may fall back to
+        // an earlier business day. Any other failure — notably NBS being unreachable — means the
+        // exact-date rate may well exist, so falling back would apply the wrong rate.
+        if (!IsNoRatePublished(exactResult.Error))
+            return Result<RateResolution, Error>.Failure(Classify(exactResult.Error, currency, date));
 
         // Step 2: Walk backward through business days
         var triedDates = new List<DateOnly> { date };
@@ -59,12 +63,15 @@ public sealed class ExchangeRateResolver : IExchangeRateResolver
                     new RateResolution(fallbackResult.Value, candidate, ExchangeRateSourceType.Fallback));
             }
 
-            if (fallbackResult.Error.Code == "RATE_NOT_FOUND")
+            if (IsNoRatePublished(fallbackResult.Error))
                 continue;
 
+            // Skipping a candidate whose rate could not be determined would silently apply an
+            // even older rate, so stop here.
             _logger.LogWarning(
-                "Unexpected error fetching rate for {Currency} on {Date}: {Code}",
+                "Rate lookup for {Currency} on {Date} failed with {Code}; not walking back further",
                 currency, candidate, fallbackResult.Error.Code);
+            return Result<RateResolution, Error>.Failure(Classify(fallbackResult.Error, currency, candidate));
         }
 
         // Step 3: Exhausted
@@ -74,6 +81,21 @@ public sealed class ExchangeRateResolver : IExchangeRateResolver
         _logger.LogError(
             "Rate resolution exhausted for {Currency} on {Date}. Tried: {TriedDates}",
             currency, date, triedList);
-        return Result<RateResolution, Error>.Failure(new Error("RATE_NOT_FOUND", message));
+        return Result<RateResolution, Error>.Failure(new Error(ErrorCodes.RATE_NOT_FOUND, message));
     }
+
+    private static bool IsNoRatePublished(Error error)
+        => string.Equals(error.Code, ErrorCodes.RATE_NOT_FOUND, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Maps a temporary rate-source failure to <see cref="ErrorCodes.RATE_SOURCE_UNAVAILABLE"/> so
+    /// callers can retry later instead of treating the rate as permanently missing; other errors
+    /// (unsupported currency, unparseable response) are returned unchanged.
+    /// </summary>
+    private static Error Classify(Error error, string currency, DateOnly date)
+        => TRANSIENT_SOURCE_ERRORS.Contains(error.Code)
+            ? new Error(ErrorCodes.RATE_SOURCE_UNAVAILABLE,
+                $"The NBS exchange-rate service could not be reached for {currency} on {date:yyyy-MM-dd} " +
+                $"({error.Code}: {error.Message}). Try again later.")
+            : error;
 }

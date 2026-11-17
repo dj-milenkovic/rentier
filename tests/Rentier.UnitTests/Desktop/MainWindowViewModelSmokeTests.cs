@@ -12,6 +12,7 @@ using Rentier.Application.Repositories;
 using Rentier.Desktop.Services;
 using Rentier.Desktop.ViewModels;
 using ReactiveUI.Primitives.Concurrency;
+using Rentier.Tests.Common.Fakes;
 using Xunit;
 
 namespace Rentier.UnitTests;
@@ -45,7 +46,8 @@ public class MainWindowViewModelSmokeTests
                 Substitute.For<IQueryHandler<GetMailboxesQuery, Result<IReadOnlyList<MailboxDto>, Error>>>(),
                 Substitute.For<ICommandHandler<AddImporterCommand, Result<Guid, Error>>>(),
                 Substitute.For<ICommandHandler<UpdateImporterCommand, Result<VoidResult, Error>>>(),
-                Substitute.For<ICommandHandler<DeleteImporterCommand, Result<VoidResult, Error>>>()));
+                Substitute.For<ICommandHandler<DeleteImporterCommand, Result<VoidResult, Error>>>()),
+            DesktopTestDoubles.Confirmation());
 
     private static AppearanceSettingsViewModel CreateAppearanceVm()
     {
@@ -63,6 +65,7 @@ public class MainWindowViewModelSmokeTests
     private static IServiceProvider CreateProvider()
     {
         var services = new ServiceCollection();
+        services.AddSingleton<TimeProvider>(TestClock.Provider());
 
         var getFilings = Substitute.For<IQueryHandler<GetFilingsQuery, Result<FilingsPageResult, Error>>>();
         getFilings.HandleAsync(Arg.Any<GetFilingsQuery>(), Arg.Any<CancellationToken>())
@@ -84,8 +87,7 @@ public class MainWindowViewModelSmokeTests
         services.AddSingleton(Substitute.For<ICommandHandler<DeleteFilingCommand, Result<VoidResult, Error>>>());
         services.AddSingleton(Substitute.For<ICommandHandler<ExportFilingCommand, Result<ExportFilingResult, Error>>>());
         services.AddSingleton(Substitute.For<ICommandHandler<BulkDeleteFilingsCommand, Result<VoidResult, Error>>>());
-        services.AddSingleton<Func<string, Task<bool>>>(_ => Task.FromResult(false));
-        services.AddSingleton<Func<ExportFilingResult, Task>>(_ => Task.CompletedTask);
+        DesktopTestDoubles.AddUiServiceDoubles(services);
         services.AddTransient<FilingsHandlers>();
 
         // ManualFilingViewModel deps
@@ -100,9 +102,7 @@ public class MainWindowViewModelSmokeTests
         services.AddSingleton(Substitute.For<ICommandHandler<ImportReportCommand, Result<Guid, Error>>>());
         services.AddSingleton(Substitute.For<ICommandHandler<DeleteReportCommand, Result<VoidResult, Error>>>());
         services.AddSingleton(Substitute.For<ICommandHandler<BulkDeleteReportsCommand, Result<VoidResult, Error>>>());
-        services.AddSingleton<Func<string, string, Task<bool>>>((_, _) => Task.FromResult(false));
-        services.AddSingleton<Func<Task<(Guid ImporterId, string FileName, byte[] Content)?>>>(
-            () => Task.FromResult<(Guid, string, byte[])?>(null));
+        services.AddTransient<ReportsHandlers>();
         services.AddSingleton(Substitute.For<ISyncAllCommandHandler>());
 
         // Settings sub-ViewModels (singletons matching production DI)
@@ -129,7 +129,8 @@ public class MainWindowViewModelSmokeTests
         var locService = Substitute.For<ILocalizationService>();
         locService.CultureChanged.Returns(Signal.Never<string>());
         var updateService = provider.GetRequiredService<IUpdateService>();
-        return new MainWindowViewModel(provider, locService, updateService, BuildAppVersionService());
+        return new MainWindowViewModel(provider, locService, updateService, BuildAppVersionService(),
+            provider.GetRequiredService<INavigationRequestSource>());
     }
 
     [Fact]

@@ -14,10 +14,12 @@ public sealed class EnsureHolidaysSeededCommandHandler
     : ICommandHandler<EnsureHolidaysSeededCommand, Result<bool, Error>>
 {
     private readonly IHolidayRepository _repository;
+    private readonly TimeProvider _timeProvider;
 
-    public EnsureHolidaysSeededCommandHandler(IHolidayRepository repository)
+    public EnsureHolidaysSeededCommandHandler(IHolidayRepository repository, TimeProvider timeProvider)
     {
         _repository = repository;
+        _timeProvider = timeProvider;
     }
 
     /// <returns>
@@ -31,7 +33,8 @@ public sealed class EnsureHolidaysSeededCommandHandler
         if (yearRange is not null)
             return Result<bool, Error>.Success(false);
 
-        var currentYear = DateOnly.FromDateTime(DateTime.Today).Year;
+        // Local calendar year: the holiday calendar feeds deadline math, which is local-date based.
+        var currentYear = _timeProvider.GetLocalToday().Year;
         var endYear = currentYear + 3;
 
         // Seed the fixed-date Serbian public holidays for every year in the range.

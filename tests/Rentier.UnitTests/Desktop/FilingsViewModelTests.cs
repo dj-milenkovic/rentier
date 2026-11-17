@@ -8,9 +8,12 @@ using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
 using Rentier.Desktop.Models;
+using Rentier.Desktop.Resources;
+using Rentier.Desktop.Services;
 using Rentier.Desktop.ViewModels;
 using Rentier.Domain.Enums;
 using Rentier.Application.Enums;
+using ReactiveUI;
 using Xunit;
 
 namespace Rentier.UnitTests;
@@ -61,9 +64,10 @@ public class FilingsViewModelTests
         ICommandHandler<UpdateFilingStatusCommand, Result<VoidResult, Error>>? updateStatus = null,
         ICommandHandler<UpdatePaymentReferenceCommand, Result<VoidResult, Error>>? updateRef = null,
         ICommandHandler<DeleteFilingCommand, Result<VoidResult, Error>>? deleteFiling = null,
-        Func<string, Task<bool>>? confirmDelete = null,
+        IConfirmationService? confirmation = null,
         ICommandHandler<ExportFilingCommand, Result<ExportFilingResult, Error>>? exportFiling = null,
-        Func<ExportFilingResult, Task>? saveFile = null)
+        IFileSaveService? fileSave = null,
+        INavigationService? navigation = null)
     {
         return new FilingsViewModel(
             new FilingsHandlers(
@@ -73,9 +77,9 @@ public class FilingsViewModelTests
                 deleteFiling ?? MockDelete(),
                 exportFiling ?? MockExport(),
                 MockBulkDeleteFilings()),
-            confirmDelete ?? (_ => Task.FromResult(false)),
-            saveFile ?? (_ => Task.CompletedTask),
-            () => { },
+            confirmation ?? DesktopTestDoubles.Confirmation(),
+            fileSave ?? DesktopTestDoubles.FileSave(),
+            navigation ?? Substitute.For<INavigationService>(),
             ImmediateSequencer.Instance);
     }
 
@@ -187,7 +191,7 @@ public class FilingsViewModelTests
         var deleteMock = MockDelete();
         var vm = CreateVm(
             deleteFiling: deleteMock,
-            confirmDelete: _ => Task.FromResult(false));
+            confirmation: DesktopTestDoubles.Confirmation(false));
 
         using var _ = vm.Activator.Activate();
         vm.DeleteCommand.Execute(Guid.NewGuid()).Subscribe();
@@ -206,7 +210,7 @@ public class FilingsViewModelTests
         var vm = CreateVm(
             getFilings: getFilings,
             deleteFiling: deleteMock,
-            confirmDelete: _ => Task.FromResult(true));
+            confirmation: DesktopTestDoubles.Confirmation(true));
 
         using var _ = vm.Activator.Activate();
         vm.DeleteCommand.Execute(Guid.NewGuid()).Subscribe();
@@ -229,7 +233,7 @@ public class FilingsViewModelTests
         var vm = CreateVm(
             getFilings: getFilings,
             deleteFiling: deleteMock,
-            confirmDelete: _ => Task.FromResult(true));
+            confirmation: DesktopTestDoubles.Confirmation(true));
 
         using var _ = vm.Activator.Activate();
 
@@ -484,20 +488,76 @@ public class FilingsViewModelTests
     // ── ExportCommand tests ──────────────────────────────────────────────────
 
     [Fact]
-    public void ExportCommand_WhenSuccessful_CallsSaveFileDialog()
+    public void ExportCommand_WhenSuccessful_SavesExportedBytesUnderSuggestedName()
     {
-        var expectedResult = new ExportFilingResult([], "test.xml");
-        var exportHandler = MockExportSuccess(expectedResult);
-        var savedResults = new List<ExportFilingResult>();
+        byte[] bytes = [1, 2, 3];
+        var exportHandler = MockExportSuccess(new ExportFilingResult(bytes, "test.xml"));
+        var fileSave = DesktopTestDoubles.FileSave();
 
-        var vm = CreateVm(
-            exportFiling: exportHandler,
-            saveFile: r => { savedResults.Add(r); return Task.CompletedTask; });
+        var vm = CreateVm(exportFiling: exportHandler, fileSave: fileSave);
         using var _ = vm.Activator.Activate();
 
         vm.ExportCommand.Execute(Guid.NewGuid()).Subscribe();
 
-        savedResults.Should().ContainSingle().Which.Should().Be(expectedResult);
+        fileSave.Received(1).SaveAsync(Arg.Is<FileSaveRequest>(r =>
+            r.SuggestedFileName == "test.xml" && r.Content == bytes));
+    }
+
+    [Fact]
+    public void ExportCommand_WhenSuccessful_OffersXmlFileTypeWithLocalizedTexts()
+    {
+        var fileSave = DesktopTestDoubles.FileSave();
+        var vm = CreateVm(exportFiling: MockExportSuccess(), fileSave: fileSave);
+        using var _ = vm.Activator.Activate();
+
+        vm.ExportCommand.Execute(Guid.NewGuid()).Subscribe();
+
+        fileSave.Received(1).SaveAsync(Arg.Is<FileSaveRequest>(r =>
+            r.Title == Strings.Filings_Export_SaveDialog_Title
+            && r.FileTypeName == Strings.Filings_Export_Filter_Xml
+            && r.Patterns.SequenceEqual(new[] { "*.xml" })));
+    }
+
+    [Fact]
+    public void ExportCommand_WhenHandlerFails_DoesNotOpenSaveDialog()
+    {
+        var exportHandler = MockExport();
+        exportHandler.HandleAsync(Arg.Any<ExportFilingCommand>(), Arg.Any<CancellationToken>())
+            .Returns(Result<ExportFilingResult, Error>.Failure(new Error("EXPORT_FAILED", "boom")));
+        var fileSave = DesktopTestDoubles.FileSave();
+        var vm = CreateVm(exportFiling: exportHandler, fileSave: fileSave);
+        using var _ = vm.Activator.Activate();
+
+        vm.ExportCommand.Execute(Guid.NewGuid()).Subscribe();
+
+        fileSave.DidNotReceive().SaveAsync(Arg.Any<FileSaveRequest>());
+    }
+
+    [Fact]
+    public void DeleteCommand_Executed_AsksConfirmationWithLocalizedFilingDeleteTexts()
+    {
+        var confirmation = DesktopTestDoubles.Confirmation();
+        var vm = CreateVm(confirmation: confirmation);
+        using var _ = vm.Activator.Activate();
+
+        vm.DeleteCommand.Execute(Guid.NewGuid()).Subscribe();
+
+        confirmation.Received(1).ConfirmAsync(new ConfirmationRequest(
+            Strings.Filings_Delete_Confirmation_Title,
+            Strings.Filings_Delete_Confirmation_Message,
+            Strings.Filings_Delete_Confirm_Button,
+            Strings.Filings_Delete_Cancel_Button));
+    }
+
+    [Fact]
+    public void NewFilingCommand_Executed_NavigatesToManualFiling()
+    {
+        var navigation = Substitute.For<INavigationService>();
+        var vm = CreateVm(navigation: navigation);
+
+        vm.NewFilingCommand.Execute().Subscribe();
+
+        navigation.Received(1).NavigateToManualFiling();
     }
 
     [Fact]
@@ -857,5 +917,87 @@ public class FilingsViewModelTests
 
         vm.PayingEntityFilter.GetCommittedValue().Should().Be("ACME");
         vm.PayingEntityFilter.IsActive.Should().BeTrue();
+    }
+
+    // ── Scope re-assignment (ShowAll / ReportIdFilter) ───────────────────────
+
+    [Fact]
+    public void ReportIdFilter_ReassignedSameValueWhileActive_ReloadsFirstPage()
+    {
+        var getFilings = MockGetFilings(new FilingsPageResult([MakeDto()], 40, 2));
+        var vm = CreateVm(getFilings: getFilings);
+        using var _ = vm.Activator.Activate();
+        vm.NextPageCommand.Execute().Subscribe();
+        getFilings.ClearReceivedCalls();
+
+        vm.ReportIdFilter = null;
+
+        getFilings.Received(1).HandleAsync(
+            Arg.Is<GetFilingsQuery>(q => q!.Page == 1), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public void ShowAll_ReassignedSameValueWhileActive_ReloadsFirstPage()
+    {
+        var getFilings = MockGetFilings(new FilingsPageResult([MakeDto()], 40, 2));
+        var vm = CreateVm(getFilings: getFilings);
+        using var _ = vm.Activator.Activate();
+        vm.NextPageCommand.Execute().Subscribe();
+        getFilings.ClearReceivedCalls();
+
+        vm.ShowAll = vm.ShowAll;
+
+        getFilings.Received(1).HandleAsync(
+            Arg.Is<GetFilingsQuery>(q => q!.Page == 1), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public void ReportIdFilter_AssignedWhileInactive_DoesNotQueryUntilActivated()
+    {
+        var getFilings = MockGetFilings();
+        var vm = CreateVm(getFilings: getFilings);
+
+        vm.ReportIdFilter = Guid.NewGuid();
+
+        getFilings.DidNotReceive().HandleAsync(Arg.Any<GetFilingsQuery>(), Arg.Any<CancellationToken>());
+    }
+
+    // ── State re-published when loading ends ─────────────────────────────────
+    // Bindings only re-read on PropertyChanged, so these must be raised after IsLoading turns false.
+
+    [Fact]
+    public void IsEmpty_LoadReturnsNoRows_NotifiesTrueWhenLoadingEnds()
+    {
+        var vm = CreateVm(getFilings: MockGetFilings());
+        var notified = new List<bool>();
+        using var subscription = vm.WhenAnyValue(x => x.IsEmpty).Subscribe(notified.Add);
+
+        using var _ = vm.Activator.Activate();
+
+        notified.Should().EndWith(true);
+    }
+
+    [Fact]
+    public void HasNextPage_LoadReturnsMorePages_NotifiesTrueWhenLoadingEnds()
+    {
+        var vm = CreateVm(getFilings: MockGetFilings(new FilingsPageResult([MakeDto()], 40, 2)));
+        var notified = new List<bool>();
+        using var subscription = vm.WhenAnyValue(x => x.HasNextPage).Subscribe(notified.Add);
+
+        using var _ = vm.Activator.Activate();
+
+        notified.Should().EndWith(true);
+    }
+
+    [Fact]
+    public void NextPageCommand_AfterLoadWithMorePages_CanExecute()
+    {
+        var vm = CreateVm(getFilings: MockGetFilings(new FilingsPageResult([MakeDto()], 40, 2)));
+        var canExecute = new List<bool>();
+        using var subscription = vm.NextPageCommand.CanExecute.Subscribe(canExecute.Add);
+
+        using var _ = vm.Activator.Activate();
+
+        canExecute.Should().EndWith(true);
     }
 }

@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Rentier.Domain.Entities;
 using Rentier.Infrastructure.Persistence;
 using Rentier.Infrastructure.Repositories;
+using Rentier.Tests.Common.Fakes;
 
 namespace Rentier.Infrastructure.Tests;
 
@@ -37,7 +38,7 @@ public class MailboxRepositoryTests : IAsyncLifetime
     }
 
     private static Mailbox MakeMailbox(string host = "imap.example.com")
-        => Mailbox.Create(host, 993, "user@example.com");
+        => Mailbox.Create(host, 993, "user@example.com", TestClock.TODAY);
 
     [Fact]
     public async Task GetAllAsync_EmptyDb_ReturnsEmptyList()

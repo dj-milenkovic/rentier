@@ -39,7 +39,7 @@ public sealed class GetFilingsQueryHandler
             return Result<FilingsPageResult, Error>.Failure(
                 new Error(ErrorCodes.PAGINATION_VALIDATION_FAILED, "Invalid sort column."));
 
-        var skip = (query.Page - 1) * query.PageSize;
+        var skip = PageMath.Skip(query.Page, query.PageSize);
         var (items, totalCount) = await _filings.GetPagedAsync(
             query.Filter, skip, query.PageSize, query.SortColumn, query.SortDescending,
             columnFilter: query.ColumnFilter, ct: ct);
@@ -56,7 +56,7 @@ public sealed class GetFilingsQueryHandler
             .ToList()
             .AsReadOnly();
 
-        var totalPages = Math.Max(1, (int)Math.Ceiling((double)totalCount / query.PageSize));
+        var totalPages = PageMath.TotalPages(totalCount, query.PageSize);
 
         return Result<FilingsPageResult, Error>.Success(
             new FilingsPageResult(dtos, totalCount, totalPages));

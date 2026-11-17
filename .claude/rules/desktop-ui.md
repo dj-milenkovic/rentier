@@ -6,7 +6,9 @@ paths:
 # Rentier.Desktop (Avalonia UI) rules
 
 - Calls **`Rentier.Application` use cases only** — never touches Infrastructure or
-  EF Core directly, even for "quick" reads.
+  EF Core directly, even for "quick" reads. The only exception is the composition root
+  (`Composition/`, `Program.cs`, `App.axaml.cs`), which wires Infrastructure via
+  `AddInfrastructureServicesAsync`; `LayerDependencyTests` enforces this per type.
 - **`ReactiveUserControl<TViewModel>`** for every view.
 - Bind to ViewModel observables only — **no event handlers in code-behind.**
 - **No UI-thread blocking.** All commands use `ReactiveCommand.CreateFromTask`; never

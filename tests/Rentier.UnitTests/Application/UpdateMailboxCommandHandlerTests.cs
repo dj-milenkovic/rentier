@@ -27,7 +27,7 @@ public class UpdateMailboxCommandHandlerTests
     [Fact]
     public async Task HandleAsync_ValidUpdate_UpdatesRepoAndReturnsSuccess()
     {
-        var existing = Mailbox.Create("imap.old.com", 993, "old@example.com");
+        var existing = Mailbox.Create("imap.old.com", 993, "old@example.com", TestClock.TODAY);
         _repo.GetByIdAsync(existing.Id, Arg.Any<CancellationToken>()).Returns(existing);
 
         var cmd = new UpdateMailboxCommand(existing.Id, "imap.new.com", 143, "new@example.com", null);
@@ -56,7 +56,7 @@ public class UpdateMailboxCommandHandlerTests
     [Fact]
     public async Task HandleAsync_WithNewPassword_UpdatesCredentialUsingCorrectKey()
     {
-        var existing = Mailbox.Create("imap.example.com", 993, "user@example.com");
+        var existing = Mailbox.Create("imap.example.com", 993, "user@example.com", TestClock.TODAY);
         _repo.GetByIdAsync(existing.Id, Arg.Any<CancellationToken>()).Returns(existing);
 
         var cmd = new UpdateMailboxCommand(existing.Id, "imap.example.com", 993, "user@example.com", "newpass");
@@ -70,7 +70,7 @@ public class UpdateMailboxCommandHandlerTests
     [Fact]
     public async Task HandleAsync_EmptyPassword_PreservesExistingCredential()
     {
-        var existing = Mailbox.Create("imap.example.com", 993, "user@example.com");
+        var existing = Mailbox.Create("imap.example.com", 993, "user@example.com", TestClock.TODAY);
         _repo.GetByIdAsync(existing.Id, Arg.Any<CancellationToken>()).Returns(existing);
 
         var cmd = new UpdateMailboxCommand(existing.Id, "imap.example.com", 993, "user@example.com", "");
@@ -84,7 +84,7 @@ public class UpdateMailboxCommandHandlerTests
     [Fact]
     public async Task HandleAsync_SaveCredentialFails_PropagatesCredentialWriteFailed()
     {
-        var existing = Mailbox.Create("imap.example.com", 993, "user@example.com");
+        var existing = Mailbox.Create("imap.example.com", 993, "user@example.com", TestClock.TODAY);
         _repo.GetByIdAsync(existing.Id, Arg.Any<CancellationToken>()).Returns(existing);
 
         var failingCredentials = Substitute.For<ICredentialStore>();
@@ -103,7 +103,7 @@ public class UpdateMailboxCommandHandlerTests
     [Fact]
     public async Task HandleAsync_EmptyHost_ReturnsDomainValidationError()
     {
-        var existing = Mailbox.Create("imap.example.com", 993, "user@example.com");
+        var existing = Mailbox.Create("imap.example.com", 993, "user@example.com", TestClock.TODAY);
         _repo.GetByIdAsync(existing.Id, Arg.Any<CancellationToken>()).Returns(existing);
 
         var cmd = new UpdateMailboxCommand(existing.Id, "", 993, "user@example.com", null);

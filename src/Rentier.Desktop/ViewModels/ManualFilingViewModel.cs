@@ -9,8 +9,8 @@ using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
-using Rentier.Desktop.Dialogs;
 using Rentier.Desktop.Resources;
+using Rentier.Desktop.Services;
 using Rentier.Domain.Enums;
 
 namespace Rentier.Desktop.ViewModels;
@@ -43,7 +43,8 @@ public sealed class ManualFilingViewModel : ReactiveObject, IActivatableViewMode
     private readonly ICommandHandler<CalculateManualFilingCommand, Result<ManualFilingPreviewDto, Error>> _calculateHandler;
     private readonly ICommandHandler<CreateManualFilingCommand, Result<Guid, Error>> _createHandler;
     private readonly IQueryHandler<GetTaxpayerProfileQuery, Result<TaxpayerProfileDto?, Error>> _profileQueryHandler;
-    private readonly Action _navigateBackToFilings;
+    private readonly IConfirmationService _confirmation;
+    private readonly INavigationService _navigation;
 
     // ── Properties ───────────────────────────────────────────────────────────
 
@@ -188,13 +189,15 @@ public sealed class ManualFilingViewModel : ReactiveObject, IActivatableViewMode
         ICommandHandler<CalculateManualFilingCommand, Result<ManualFilingPreviewDto, Error>> calculateHandler,
         ICommandHandler<CreateManualFilingCommand, Result<Guid, Error>> createHandler,
         IQueryHandler<GetTaxpayerProfileQuery, Result<TaxpayerProfileDto?, Error>> profileQueryHandler,
-        Action navigateBackToFilings,
+        IConfirmationService confirmation,
+        INavigationService navigation,
         ISequencer? scheduler = null)
     {
         _calculateHandler = calculateHandler;
         _createHandler = createHandler;
         _profileQueryHandler = profileQueryHandler;
-        _navigateBackToFilings = navigateBackToFilings;
+        _confirmation = confirmation;
+        _navigation = navigation;
         scheduler ??= RxSchedulers.MainThreadScheduler;
 
         // CalculateCommand canExecute: ticker not blank, gross > 0, date set, not loading
@@ -226,19 +229,7 @@ public sealed class ManualFilingViewModel : ReactiveObject, IActivatableViewMode
             canSave,
             outputScheduler: scheduler);
 
-        CancelCommand = ReactiveCommand.CreateFromTask(async () =>
-        {
-            if (IsDirty)
-            {
-                var confirmed = await ConfirmDialogHelper.ShowAsync(
-                    Strings.ManualFiling_Cancel_Discard_Title,
-                    Strings.ManualFiling_Cancel_Discard_Message,
-                    Strings.ManualFiling_Cancel_Discard_Confirm,
-                    Strings.ManualFiling_Cancel_Discard_Keep);
-                if (!confirmed) return;
-            }
-            _navigateBackToFilings();
-        }, outputScheduler: scheduler);
+        CancelCommand = ReactiveCommand.CreateFromTask(CancelAsync, outputScheduler: scheduler);
 
         ClearErrorCommand = ReactiveCommand.Create(
             () => { ErrorMessage = null; },
@@ -255,6 +246,9 @@ public sealed class ManualFilingViewModel : ReactiveObject, IActivatableViewMode
                 .Subscribe(ex => ErrorMessage = ex.Message)
                 .DisposeWith(disposables);
             SaveCommand.ThrownExceptions
+                .Subscribe(ex => ErrorMessage = ex.Message)
+                .DisposeWith(disposables);
+            CancelCommand.ThrownExceptions
                 .Subscribe(ex => ErrorMessage = ex.Message)
                 .DisposeWith(disposables);
         });
@@ -295,45 +289,59 @@ public sealed class ManualFilingViewModel : ReactiveObject, IActivatableViewMode
         }
     }
 
-    private async Task CalculateAsync(CancellationToken ct)
+    private async Task CancelAsync()
+    {
+        if (IsDirty)
+        {
+            var confirmed = await _confirmation.ConfirmAsync(new ConfirmationRequest(
+                Strings.ManualFiling_Cancel_Discard_Title,
+                Strings.ManualFiling_Cancel_Discard_Message,
+                Strings.ManualFiling_Cancel_Discard_Confirm,
+                Strings.ManualFiling_Cancel_Discard_Keep));
+            if (!confirmed) return;
+        }
+        _navigation.NavigateToFilings();
+    }
+
+    /// <summary>The form's inputs parsed into the values both Calculate and Save send to Application.</summary>
+    private sealed record FilingInput(Guid ProfileId, DateOnly IncomeDate, decimal GrossAmount, decimal? NetReceived);
+
+    private FilingInput ReadInput()
+    {
+        var incomeDate = IncomeDate.HasValue
+            ? DateOnly.FromDateTime(IncomeDate.Value.Date)
+            : default;
+
+        decimal? netReceived = null;
+        if (!string.IsNullOrWhiteSpace(NetReceivedText) &&
+            decimal.TryParse(NetReceivedText,
+                System.Globalization.NumberStyles.Number,
+                System.Globalization.CultureInfo.CurrentCulture, out var nr))
+            netReceived = nr;
+
+        decimal.TryParse(GrossAmountText,
+            System.Globalization.NumberStyles.Number,
+            System.Globalization.CultureInfo.CurrentCulture, out var grossAmount);
+
+        return new FilingInput(_taxpayerProfileId ?? Guid.Empty, incomeDate, grossAmount, netReceived);
+    }
+
+    /// <summary>Shared loading/error envelope for Calculate and Save.</summary>
+    private async Task RunAsync<T>(
+        Func<FilingInput, Task<Result<T, Error>>> send, Action<T> onSuccess)
     {
         IsLoading = true;
         ErrorMessage = null;
         try
         {
-            var profileId = _taxpayerProfileId ?? Guid.Empty;
-            var incomeDate = IncomeDate.HasValue
-                ? DateOnly.FromDateTime(IncomeDate.Value.Date)
-                : default;
-
-            decimal? netReceived = null;
-            if (!string.IsNullOrWhiteSpace(NetReceivedText) &&
-                decimal.TryParse(NetReceivedText,
-                    System.Globalization.NumberStyles.Number,
-                    System.Globalization.CultureInfo.CurrentCulture, out var nr))
-                netReceived = nr;
-
-            decimal.TryParse(GrossAmountText,
-                System.Globalization.NumberStyles.Number,
-                System.Globalization.CultureInfo.CurrentCulture, out var grossAmount);
-
-            var command = new CalculateManualFilingCommand(
-                profileId,
-                SelectedIncomeType,
-                Ticker.Trim(),
-                incomeDate,
-                SelectedCurrency,
-                grossAmount,
-                netReceived);
-
-            var result = await _calculateHandler.HandleAsync(command, ct);
+            var result = await send(ReadInput());
             if (!result.IsSuccess)
             {
                 ErrorMessage = result.Error.Message;
                 return;
             }
 
-            Preview = result.Value;
+            onSuccess(result.Value);
         }
         finally
         {
@@ -341,50 +349,32 @@ public sealed class ManualFilingViewModel : ReactiveObject, IActivatableViewMode
         }
     }
 
-    private async Task SaveAsync(CancellationToken ct)
-    {
-        IsLoading = true;
-        ErrorMessage = null;
-        try
-        {
-            var profileId = _taxpayerProfileId ?? Guid.Empty;
-            var incomeDate = IncomeDate.HasValue
-                ? DateOnly.FromDateTime(IncomeDate.Value.Date)
-                : default;
+    private Task CalculateAsync(CancellationToken ct) =>
+        RunAsync(
+            input => _calculateHandler.HandleAsync(
+                new CalculateManualFilingCommand(
+                    input.ProfileId,
+                    SelectedIncomeType,
+                    Ticker.Trim(),
+                    input.IncomeDate,
+                    SelectedCurrency,
+                    input.GrossAmount,
+                    input.NetReceived),
+                ct),
+            preview => Preview = preview);
 
-            decimal? netReceived = null;
-            if (!string.IsNullOrWhiteSpace(NetReceivedText) &&
-                decimal.TryParse(NetReceivedText,
-                    System.Globalization.NumberStyles.Number,
-                    System.Globalization.CultureInfo.CurrentCulture, out var nr))
-                netReceived = nr;
-
-            decimal.TryParse(GrossAmountText,
-                System.Globalization.NumberStyles.Number,
-                System.Globalization.CultureInfo.CurrentCulture, out var grossAmount);
-
-            var command = new CreateManualFilingCommand(
-                profileId,
-                SelectedIncomeType,
-                Ticker.Trim(),
-                incomeDate,
-                SelectedCurrency,
-                grossAmount,
-                netReceived,
-                PaymentNotes: string.IsNullOrWhiteSpace(PaymentNotesText) ? null : PaymentNotesText.Trim());
-
-            var result = await _createHandler.HandleAsync(command, ct);
-            if (!result.IsSuccess)
-            {
-                ErrorMessage = result.Error.Message;
-                return;
-            }
-
-            _navigateBackToFilings();
-        }
-        finally
-        {
-            IsLoading = false;
-        }
-    }
+    private Task SaveAsync(CancellationToken ct) =>
+        RunAsync(
+            input => _createHandler.HandleAsync(
+                new CreateManualFilingCommand(
+                    input.ProfileId,
+                    SelectedIncomeType,
+                    Ticker.Trim(),
+                    input.IncomeDate,
+                    SelectedCurrency,
+                    input.GrossAmount,
+                    input.NetReceived,
+                    PaymentNotes: string.IsNullOrWhiteSpace(PaymentNotesText) ? null : PaymentNotesText.Trim()),
+                ct),
+            _ => _navigation.NavigateToFilings());
 }
