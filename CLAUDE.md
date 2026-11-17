@@ -98,8 +98,7 @@ When implementing a feature, create:
 
 `graphify-out/` holds a per-checkout knowledge graph, kept current by
 `.claude/hooks/graphify-session.ps1`. For codebase questions, use the `graphify` skill
-before grepping or reading source. The `graphify` launcher is not on PATH: run every
-command the skill shows as `python -m graphify ...`.
+before grepping or reading source.
 
 ## Where to Look Next
 - **`.claude/rules/`** — path-scoped constraints for each layer (Domain, Application,

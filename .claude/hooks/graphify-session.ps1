@@ -83,7 +83,7 @@ try {
         $state = if ($needsBuild) { "an incremental refresh for HEAD $($head.Substring(0, 8)) is running in the background" } else { 'it is current with HEAD' }
         Write-Output @"
 Graphify knowledge graph is available at graphify-out/ ($state).
-For any codebase/architecture question, use the graphify skill FIRST: run ``python -m graphify query "<question>"`` (or ``path "<A>" "<B>"`` / ``explain "<concept>"``) before grepping or reading source files. The bare ``graphify`` launcher is not on PATH here; always use ``python -m graphify``.
+For any codebase/architecture question, use the graphify skill FIRST: run ``graphify query "<question>"`` (or ``graphify path "<A>" "<B>"`` / ``graphify explain "<concept>"``) before grepping or reading source files.
 "@
     } else {
         Write-Output "Graphify: no knowledge graph in this checkout yet; building it in the background (a few minutes; log: $log). Until graphify-out/graph.json exists, use normal search."
