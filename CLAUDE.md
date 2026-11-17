@@ -96,21 +96,10 @@ When implementing a feature, create:
 
 ## graphify
 
-This project has a knowledge graph at `graphify-out/` (gitignored, one per checkout).
-A SessionStart hook (`.claude/hooks/graphify-session.ps1`) builds it when missing and
-refreshes it in the background when HEAD has moved. The bare `graphify` launcher is
-not on PATH, so always invoke it as `python -m graphify`.
-
-Rules:
-- When `graphify-out/graph.json` exists, run `python -m graphify query "<question>"`
-  before your first grep, search or source-file read for a codebase question, and put
-  this rule in every subagent prompt that explores code. Read raw files only for lines
-  the graph or an earlier read already located. Use `python -m graphify path "<A>" "<B>"`
-  for relationships and `python -m graphify explain "<concept>"` for focused concepts.
-- Read `graphify-out/GRAPH_REPORT.md` only for broad architecture review or when
-  query/path/explain do not surface enough context.
-- After modifying code, run `python -m graphify update .` to keep the graph current
-  (AST-only, no API cost).
+`graphify-out/` holds a per-checkout knowledge graph, kept current by
+`.claude/hooks/graphify-session.ps1`. For codebase questions, use the `graphify` skill
+before grepping or reading source. The `graphify` launcher is not on PATH: run every
+command the skill shows as `python -m graphify ...`.
 
 ## Where to Look Next
 - **`.claude/rules/`** — path-scoped constraints for each layer (Domain, Application,
