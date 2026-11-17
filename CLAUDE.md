@@ -94,7 +94,7 @@ When implementing a feature, create:
 - Before changing tax computation, deadlines, exchange-rate handling, or PP-OPO XML,
   consult `.claude/skills/rentier-tax-rules` — it documents the rules as implemented.
 
-## graphify
+## Graphify
 
 `graphify-out/` holds a per-checkout knowledge graph, kept current by
 `.claude/hooks/graphify-session.ps1`. For codebase questions, use the `graphify` skill
