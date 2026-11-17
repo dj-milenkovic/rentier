@@ -1,8 +1,6 @@
 using System.Globalization;
-using System.Text;
 using System.Text.RegularExpressions;
 using CsvHelper;
-using CsvHelper.Configuration;
 using Rentier.Application.Common;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Parsing;
@@ -71,24 +69,34 @@ public sealed partial class IbkrCsvParser : IStatementParser
         }
     }
 
+    // CsvHelper 34 auto-detects the separator and expects a header row by default, and IBKR
+    // statements are ragged (every section has a different column count). Pin everything the
+    // parser depends on so a library default can never silently reshape the statement.
+    private static readonly CsvReaderOptions ReaderOptions = new()
+    {
+        Separator = ',',
+        HasHeader = false,
+        SkipEmptyLines = true,
+        TrimWhitespace = false,
+        FieldCountMismatch = CsvFieldCountHandling.Allow,
+        MissingField = CsvMissingFieldHandling.ReturnEmpty,
+        MalformedData = CsvMalformedDataHandling.Recover,
+        FormatProvider = CultureInfo.InvariantCulture,
+    };
+
     private static async Task<List<string[]>> ReadRowsAsync(
         Stream stream, CancellationToken ct)
     {
-        using var reader = new StreamReader(stream, Encoding.UTF8, leaveOpen: true);
-        using var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture)
-        {
-            HasHeaderRecord = false,
-            MissingFieldFound = null,
-            BadDataFound = null,
-        });
+        await using var csv = CsvReader.Create(stream, ReaderOptions, leaveOpen: true);
 
         var rows = new List<string[]>();
-        while (await csv.ReadAsync())
+        while (await csv.ReadAsync(ct))
         {
             ct.ThrowIfCancellationRequested();
-            var record = csv.Parser.Record;
-            if (record is not null)
-                rows.Add(record);
+            var record = new string[csv.FieldCount];
+            for (var i = 0; i < record.Length; i++)
+                record[i] = csv.GetString(i);
+            rows.Add(record);
         }
         return rows;
     }
