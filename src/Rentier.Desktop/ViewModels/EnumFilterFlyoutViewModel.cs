@@ -14,7 +14,7 @@ namespace Rentier.Desktop.ViewModels;
 /// </para>
 /// </summary>
 /// <typeparam name="T">The enum type being filtered.</typeparam>
-public sealed class EnumFilterFlyoutViewModel<T> : ReactiveObject
+public sealed class EnumFilterFlyoutViewModel<T> : ReactiveObject, IColumnFilter
     where T : struct, Enum
 {
     private readonly Signal<RxVoid> _applied = new();

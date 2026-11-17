@@ -16,7 +16,7 @@ repository directly from a ViewModel — stop and route through Application inst
 src/Rentier.Domain          no external dependencies — pure C# records & interfaces
 src/Rentier.Application     references Domain only — CQRS commands/queries, IRepository interfaces
 src/Rentier.Infrastructure  implements Application interfaces — EF Core, MailKit, HttpClient
-src/Rentier.Desktop         Avalonia UI — calls Application use cases only, never Infrastructure directly
+src/Rentier.Desktop         Avalonia UI + composition root — UI code calls Application use cases only; only the bootstrap (Composition/, Program.cs, App.axaml.cs) may touch Infrastructure
 ```
 
 Layer-specific constraints are auto-loaded from `.claude/rules/` based on which files
@@ -94,7 +94,7 @@ When implementing a feature, create:
 - Before changing tax computation, deadlines, exchange-rate handling, or PP-OPO XML,
   consult `.claude/skills/rentier-tax-rules` — it documents the rules as implemented.
 
-## graphify
+## Graphify
 
 `graphify-out/` holds a per-checkout knowledge graph, kept current by
 `.claude/hooks/graphify-session.ps1`. For codebase questions, use the `graphify` skill

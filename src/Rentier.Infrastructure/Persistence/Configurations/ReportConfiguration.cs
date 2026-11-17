@@ -7,6 +7,7 @@ namespace Rentier.Infrastructure.Persistence.Configurations;
 
 public sealed class ReportConfiguration : IEntityTypeConfiguration<Report>
 {
+
     public void Configure(EntityTypeBuilder<Report> builder)
     {
         builder.ToTable("Reports");
@@ -14,6 +15,12 @@ public sealed class ReportConfiguration : IEntityTypeConfiguration<Report>
         builder.Property(r => r.Id).ValueGeneratedNever();
         builder.Property(r => r.ReportName).IsRequired().HasMaxLength(500);
         builder.Property(r => r.AttachmentContent).IsRequired(false);
+        builder.Property(r => r.ProcessingAttempts)
+            .IsRequired()
+            .HasDefaultValue(0);
+        builder.Property(r => r.LastProcessingError)
+            .IsRequired(false)
+            .HasMaxLength(Report.MAX_PROCESSING_ERROR_LENGTH);
         builder.Property(r => r.Status)
             .IsRequired()
             .HasConversion<int>()

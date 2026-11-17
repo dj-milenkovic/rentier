@@ -13,6 +13,14 @@ public interface IReportRepository
     Task<bool> ExistsByImporterAndNameAsync(Guid importerId, string reportName, CancellationToken ct = default);
     Task AddAsync(Report report, CancellationToken ct = default);
     Task UpdateAsync(Report report, CancellationToken ct = default);
+
+    /// <summary>
+    /// Persists only the processing state of an existing report — <see cref="Report.Status"/>,
+    /// <see cref="Report.ProcessingAttempts"/> and <see cref="Report.LastProcessingError"/>. The
+    /// other columns (notably the attachment BLOB) are not rewritten. Changes must already have
+    /// been applied through the Report's domain methods, which enforce the rules.
+    /// </summary>
+    Task UpdateProcessingStateAsync(Report report, CancellationToken ct = default);
     Task DeleteAsync(Guid id, CancellationToken ct = default);
 
     /// <summary>

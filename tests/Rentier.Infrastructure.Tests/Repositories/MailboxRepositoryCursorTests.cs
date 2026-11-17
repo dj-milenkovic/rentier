@@ -5,6 +5,7 @@ using Rentier.Domain.Entities;
 using Rentier.Domain.ValueObjects;
 using Rentier.Infrastructure.Persistence;
 using Rentier.Infrastructure.Repositories;
+using Rentier.Tests.Common.Fakes;
 
 namespace Rentier.Infrastructure.Tests.Repositories;
 
@@ -41,7 +42,7 @@ public class MailboxRepositoryCursorTests : IAsyncLifetime
     }
 
     private static Mailbox MakeMailbox(string host = "imap.example.com")
-        => Mailbox.Create(host, 993, "user@example.com");
+        => Mailbox.Create(host, 993, "user@example.com", TestClock.TODAY);
 
     // ── UpdateCursor → UpdateAsync round-trips ─────────────────────────────
 

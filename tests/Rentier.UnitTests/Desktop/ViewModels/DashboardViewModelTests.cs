@@ -6,6 +6,7 @@ using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
+using Rentier.Desktop.Services;
 using Rentier.Desktop.ViewModels;
 using Rentier.Domain.Enums;
 using Xunit;
@@ -44,11 +45,11 @@ public class DashboardViewModelTests
 
     private static DashboardViewModel CreateVm(
         IQueryHandler<GetDashboardQuery, Result<DashboardDto, Error>>? handler = null,
-        Action? navigateToFilings = null)
+        INavigationService? navigation = null)
     {
         return new DashboardViewModel(
             handler ?? MakeHandler(),
-            navigateToFilings ?? (() => { }),
+            navigation ?? Substitute.For<INavigationService>(),
             ImmediateSequencer.Instance);
     }
 
@@ -142,13 +143,13 @@ public class DashboardViewModelTests
     }
 
     [Fact]
-    public void NavigateToFilingsCommand_CallsDelegate()
+    public void NavigateToFilingsCommand_Executed_NavigatesToAllFilings()
     {
-        var called = false;
-        var vm = CreateVm(navigateToFilings: () => called = true);
+        var navigation = Substitute.For<INavigationService>();
+        var vm = CreateVm(navigation: navigation);
 
         vm.NavigateToFilingsCommand.Execute().Subscribe();
 
-        called.Should().BeTrue();
+        navigation.Received(1).NavigateToFilings(null);
     }
 }

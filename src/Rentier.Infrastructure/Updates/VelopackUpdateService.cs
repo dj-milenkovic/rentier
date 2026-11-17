@@ -56,6 +56,8 @@ public sealed class VelopackUpdateService : IUpdateService, IDisposable
         catch (Exception ex)
         {
             // Silent failure — network errors must never surface to the user during startup.
+            // Deliberately broad (and includes cancellation): the result type has no failure
+            // channel and "no update information" is the correct outcome for every failure.
             _logger.LogDebug(ex, "Update check failed silently; the app will continue without update information.");
             return new UpdateCheckResult(false, null);
         }

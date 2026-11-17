@@ -103,6 +103,93 @@ public class ExchangeRateResolverTests
         await fetcher.Received(1).FetchRateAsync(Arg.Any<DateOnly>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
+    // ── A rate that could not be fetched is not a rate that was not published ──
+
+    [Theory]
+    [InlineData("NBS_HTTP_ERROR")]
+    [InlineData("NBS_SCRAPE_ERROR")]
+    public async Task ResolveAsync_ExactDateSourceUnavailable_ReturnsRateSourceUnavailable(string fetcherCode)
+    {
+        var date = new DateOnly(2024, 6, 13);
+        var fetcher = Substitute.For<IExchangeRateFetcher>();
+        fetcher.FetchRateAsync(date, "USD", Arg.Any<CancellationToken>())
+            .Returns(Result<ExchangeRate, Error>.Failure(new Error(fetcherCode, "connection refused")));
+
+        var result = await MakeResolver(fetcher)
+            .ResolveAsync(date, "USD", NoHolidays(), ct: TestContext.Current.CancellationToken);
+
+        result.Error.Code.Should().Be(ErrorCodes.RATE_SOURCE_UNAVAILABLE);
+    }
+
+    [Fact]
+    public async Task ResolveAsync_ExactDateSourceUnavailable_DoesNotFallBackToEarlierDate()
+    {
+        // The exact-date rate may exist; applying an earlier day's rate would be a wrong filing.
+        var date = new DateOnly(2024, 6, 13);
+        var fetcher = Substitute.For<IExchangeRateFetcher>();
+        fetcher.FetchRateAsync(date, "USD", Arg.Any<CancellationToken>())
+            .Returns(Result<ExchangeRate, Error>.Failure(new Error("NBS_HTTP_ERROR", "timeout")));
+        fetcher.FetchRateAsync(date.AddDays(-1), "USD", Arg.Any<CancellationToken>())
+            .Returns(Result<ExchangeRate, Error>.Success(new ExchangeRate(date.AddDays(-1), "USD", 108m)));
+
+        await MakeResolver(fetcher).ResolveAsync(date, "USD", NoHolidays(), ct: TestContext.Current.CancellationToken);
+
+        await fetcher.Received(1).FetchRateAsync(Arg.Any<DateOnly>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ResolveAsync_WalkBackHitsSourceUnavailable_ReturnsRateSourceUnavailable()
+    {
+        var saturday = new DateOnly(2024, 6, 15);
+        var friday = new DateOnly(2024, 6, 14);
+        var fetcher = Substitute.For<IExchangeRateFetcher>();
+        fetcher.FetchRateAsync(saturday, "USD", Arg.Any<CancellationToken>())
+            .Returns(Result<ExchangeRate, Error>.Failure(new Error("RATE_NOT_FOUND", "weekend")));
+        fetcher.FetchRateAsync(friday, "USD", Arg.Any<CancellationToken>())
+            .Returns(Result<ExchangeRate, Error>.Failure(new Error("NBS_HTTP_ERROR", "timeout")));
+
+        var result = await MakeResolver(fetcher)
+            .ResolveAsync(saturday, "USD", NoHolidays(), ct: TestContext.Current.CancellationToken);
+
+        result.Error.Code.Should().Be(ErrorCodes.RATE_SOURCE_UNAVAILABLE);
+    }
+
+    [Fact]
+    public async Task ResolveAsync_WalkBackHitsSourceUnavailable_DoesNotSkipToOlderDate()
+    {
+        var saturday = new DateOnly(2024, 6, 15);
+        var friday = new DateOnly(2024, 6, 14);
+        var thursday = new DateOnly(2024, 6, 13);
+        var fetcher = Substitute.For<IExchangeRateFetcher>();
+        fetcher.FetchRateAsync(saturday, "USD", Arg.Any<CancellationToken>())
+            .Returns(Result<ExchangeRate, Error>.Failure(new Error("RATE_NOT_FOUND", "weekend")));
+        fetcher.FetchRateAsync(friday, "USD", Arg.Any<CancellationToken>())
+            .Returns(Result<ExchangeRate, Error>.Failure(new Error("NBS_HTTP_ERROR", "timeout")));
+        fetcher.FetchRateAsync(thursday, "USD", Arg.Any<CancellationToken>())
+            .Returns(Result<ExchangeRate, Error>.Success(new ExchangeRate(thursday, "USD", 108m)));
+
+        await MakeResolver(fetcher).ResolveAsync(saturday, "USD", NoHolidays(), ct: TestContext.Current.CancellationToken);
+
+        await fetcher.DidNotReceive().FetchRateAsync(thursday, "USD", Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ResolveAsync_WalkBackHitsParseError_ReturnsThatError()
+    {
+        var saturday = new DateOnly(2024, 6, 15);
+        var friday = new DateOnly(2024, 6, 14);
+        var fetcher = Substitute.For<IExchangeRateFetcher>();
+        fetcher.FetchRateAsync(saturday, "USD", Arg.Any<CancellationToken>())
+            .Returns(Result<ExchangeRate, Error>.Failure(new Error("RATE_NOT_FOUND", "weekend")));
+        fetcher.FetchRateAsync(friday, "USD", Arg.Any<CancellationToken>())
+            .Returns(Result<ExchangeRate, Error>.Failure(new Error("NBS_PARSE_ERROR", "bad xml")));
+
+        var result = await MakeResolver(fetcher)
+            .ResolveAsync(saturday, "USD", NoHolidays(), ct: TestContext.Current.CancellationToken);
+
+        result.Error.Code.Should().Be("NBS_PARSE_ERROR");
+    }
+
     [Fact]
     public async Task ResolveAsync_SretenjeHoliday_FallsBackToWednesdayFeb14()
     {

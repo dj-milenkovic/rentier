@@ -4,6 +4,9 @@
       <DataCollector friendlyName="XPlat Code Coverage">
         <Configuration>
           <Format>opencover</Format>
+          <!-- Rentier.Tests.Common is a test-support library referenced by src-facing test projects;
+               IncludeTestAssembly=false does not cover it, so exclude it explicitly. -->
+          <Exclude>[Rentier.Tests.Common]*</Exclude>
           <ExcludeByFile>**/Migrations/**,**/obj/**,**/*.Designer.cs</ExcludeByFile>
           <ExcludeByAttribute>GeneratedCodeAttribute,ExcludeFromCodeCoverageAttribute</ExcludeByAttribute>
           <SingleHit>false</SingleHit>

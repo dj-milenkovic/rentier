@@ -66,7 +66,10 @@ public sealed class NbsExchangeRateFetcher : IExchangeRateFetcher
             // Step 5: Read body
             xml = await response.Content.ReadAsStringAsync(ct);
         }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        // TaskCanceledException is an HttpClient timeout unless the caller cancelled —
+        // caller cancellation must propagate, not become NBS_HTTP_ERROR.
+        catch (Exception ex) when (
+            ex is HttpRequestException || (ex is TaskCanceledException && !ct.IsCancellationRequested))
         {
             return Result<ExchangeRate, Error>.Failure(
                 new Error("NBS_HTTP_ERROR", ex.Message));
@@ -75,7 +78,7 @@ public sealed class NbsExchangeRateFetcher : IExchangeRateFetcher
         // Step 6: Parse XML — LocalName used to avoid namespace binding fragility
         XDocument doc;
         try { doc = XDocument.Parse(xml); }
-        catch (Exception ex)
+        catch (System.Xml.XmlException ex)
         {
             return Result<ExchangeRate, Error>.Failure(
                 new Error("NBS_PARSE_ERROR",

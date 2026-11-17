@@ -112,7 +112,9 @@ and a has-content flag (`HasData`/`HasItems`). Every data-loading View binds all
 
 `CompositionRoot.AddDesktopServices` (`src/Rentier.Desktop/Composition/`) registers
 Application handlers and ViewModels; Infrastructure registers itself via
-`AddInfrastructureServices` in `App.axaml.cs`:
+`AddInfrastructureServicesAsync`, called explicitly from `App.axaml.cs` (and the
+`--smoke-test` path in `Program.cs`). Only this bootstrap code may use Infrastructure
+types; `LayerDependencyTests` fails if a ViewModel/View/Service/Converter does:
 
 - Handlers → `AddTransient<ICommandHandler<TCmd, Result<T, Error>>, THandler>()`
 - ViewModels with in-session state (settings pages, MainWindow) → `AddSingleton`

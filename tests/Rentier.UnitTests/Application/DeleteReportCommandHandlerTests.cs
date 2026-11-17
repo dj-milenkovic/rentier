@@ -5,6 +5,7 @@ using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.Handlers;
 using Rentier.Application.Repositories;
+using Rentier.Tests.Common.Fakes;
 using Xunit;
 
 namespace Rentier.UnitTests.Application;
@@ -13,11 +14,13 @@ public class DeleteReportCommandHandlerTests
 {
     private readonly IReportRepository _reportRepo = Substitute.For<IReportRepository>();
     private readonly IFilingRepository _filingRepo = Substitute.For<IFilingRepository>();
+    private readonly FakeUnitOfWorkFactory _unitOfWorkFactory;
     private readonly DeleteReportCommandHandler _sut;
 
     public DeleteReportCommandHandlerTests()
     {
-        _sut = new DeleteReportCommandHandler(_reportRepo, _filingRepo);
+        _unitOfWorkFactory = new FakeUnitOfWorkFactory(_reportRepo, _filingRepo);
+        _sut = new DeleteReportCommandHandler(_unitOfWorkFactory);
     }
 
     [Fact]
@@ -84,5 +87,42 @@ public class DeleteReportCommandHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("REPORT_DELETE_FAILED");
         result.Error.Message.Should().Contain("Report not deletable");
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenBothDeletesStaged_CommitsExactlyOnce()
+    {
+        await _sut.HandleAsync(new DeleteReportCommand(Guid.NewGuid()), TestContext.Current.CancellationToken);
+
+        _unitOfWorkFactory.CommittedCount.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenDeleteReportThrows_DoesNotCommitStagedFilingDeletes()
+    {
+        _reportRepo.DeleteAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Throws(new InvalidOperationException("Report not deletable"));
+
+        await _sut.HandleAsync(new DeleteReportCommand(Guid.NewGuid()), TestContext.Current.CancellationToken);
+
+        _unitOfWorkFactory.CommittedCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenCommitFails_ReturnsFailure()
+    {
+        _unitOfWorkFactory.SaveFailure = _ => new InvalidOperationException("disk full");
+
+        var result = await _sut.HandleAsync(new DeleteReportCommand(Guid.NewGuid()), TestContext.Current.CancellationToken);
+
+        result.Error.Code.Should().Be("REPORT_DELETE_FAILED");
+    }
+
+    [Fact]
+    public async Task HandleAsync_Always_DisposesUnitOfWork()
+    {
+        await _sut.HandleAsync(new DeleteReportCommand(Guid.NewGuid()), TestContext.Current.CancellationToken);
+
+        _unitOfWorkFactory.DisposedCount.Should().Be(1);
     }
 }

@@ -3,6 +3,7 @@ using Avalonia;
 using ReactiveUI.Avalonia;
 using Microsoft.Extensions.DependencyInjection;
 using Rentier.Application.Interfaces;
+using Rentier.Infrastructure;
 using Velopack;
 
 namespace Rentier.Desktop;
@@ -36,8 +37,16 @@ public static class Program
     {
         try
         {
+            // Deliberate sync-over-async at the process entry point. Main cannot be async:
+            // [STAThread] is not applied to the compiler-generated entry point of an async Main,
+            // and continuations after the first await resume on MTA thread-pool threads, which
+            // breaks Avalonia's Win32 backend (COM/OLE: clipboard, drag-drop, file dialogs).
+            // Blocking is safe here: this headless path runs before any SynchronizationContext
+            // or UI exists, and Task.Run keeps the work off the STA thread. It is the same
+            // bridge the compiler emits for an async Main.
             return Task.Run(SmokeTestAsync).GetAwaiter().GetResult();
         }
+        // Process boundary: any failure becomes a non-zero exit code for the CI smoke step.
         catch (Exception ex)
         {
             Console.Error.WriteLine($"[SMOKE] FAILED: {ex}");
@@ -59,19 +68,9 @@ public static class Program
 
         var services = new ServiceCollection();
 
-        // Reuse the same reflection-based registrar pattern as App.axaml.cs
-        // so the smoke test exercises real infrastructure registration.
-        // Assembly.Load throws FileNotFoundException if missing — no null check needed.
-        var infraAssembly = System.Reflection.Assembly.Load("Rentier.Infrastructure");
-
-        var registrarType = infraAssembly.GetTypes()
-            .FirstOrDefault(t => typeof(IInfrastructureRegistrar).IsAssignableFrom(t)
-                                 && t is { IsClass: true, IsAbstract: false })
-            ?? throw new InvalidOperationException(
-                "No IInfrastructureRegistrar implementation found in Rentier.Infrastructure.");
-
-        var registrar = (IInfrastructureRegistrar)Activator.CreateInstance(registrarType)!;
-        await registrar.RegisterServicesAsync(services, dbPath);
+        // Same explicit registration call as App.axaml.cs, so the smoke test exercises
+        // the real infrastructure wiring.
+        await services.AddInfrastructureServicesAsync(dbPath);
 
         await using var provider = services.BuildServiceProvider();
         await provider.GetRequiredService<IDatabaseInitializer>().InitializeAsync();

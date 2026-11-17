@@ -315,4 +315,61 @@ public sealed class IbkrCsvParserTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("INVALID_FORMAT");
     }
+
+    // ─── CSV reader configuration (guards against library default changes) ───────
+
+    [Fact]
+    public async Task ParseAsync_Utf8BomPrefix_ParsesFirstSectionRow()
+    {
+        var csv = """
+            Dividends,Header,Currency,Date,Description,Amount
+            Dividends,Data,USD,2024-01-15,AAPL(US0378331005) Cash Dividend,24.00
+            """;
+        var bytes = new UTF8Encoding(encoderShouldEmitUTF8Identifier: true).GetPreamble()
+            .Concat(Encoding.UTF8.GetBytes(csv)).ToArray();
+        await using var stream = new MemoryStream(bytes);
+        IStatementParser parser = new IbkrCsvParser();
+
+        var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Dividends.Should().ContainSingle().Which.Amount.Should().Be(24.00m);
+    }
+
+    [Fact]
+    public async Task ParseAsync_QuotedDescriptionWithCommaAndSemicolon_KeepsFieldsAligned()
+    {
+        var csv = """
+            Dividends,Header,Currency,Date,Description,Amount
+            Dividends,Data,USD,2024-01-15,"AAPL(US0378331005) Cash Dividend, USD 0.24; per Share",24.00
+            """;
+        await using var stream = new MemoryStream(Encoding.UTF8.GetBytes(csv));
+        IStatementParser parser = new IbkrCsvParser();
+
+        var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Errors.Should().BeEmpty();
+        var dividend = result.Value.Dividends.Should().ContainSingle().Subject;
+        dividend.EntityName.Should().Be("AAPL");
+        dividend.Amount.Should().Be(24.00m);
+    }
+
+    [Fact]
+    public async Task ParseAsync_SemicolonHeavyLeadingLine_StillSplitsOnCommas()
+    {
+        // A reader that auto-detects the separator would split the whole file on ';'.
+        var csv = """
+            Statement,Data,Title;A;B;C;D;E;F;G;H
+            Dividends,Header,Currency,Date,Description,Amount
+            Dividends,Data,USD,2024-01-15,AAPL(US0378331005) Cash Dividend,24.00
+            """;
+        await using var stream = new MemoryStream(Encoding.UTF8.GetBytes(csv));
+        IStatementParser parser = new IbkrCsvParser();
+
+        var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Dividends.Should().ContainSingle().Which.Amount.Should().Be(24.00m);
+    }
 }

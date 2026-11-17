@@ -411,6 +411,14 @@ public class PpOpoXmlSerializerTests
     }
 
     [Fact]
+    public void Serialize_PaymentNotesWithSerbianDiacritics_PreservedInOstalo()
+    {
+        var bytes = _sut.Serialize(MakeFiling(), MakeProfile(), "Isplata na brokerski račun").Value;
+        var root = ParseRoot(bytes);
+        root.Descendants(Ns1 + "Ostalo").Single().Value.Should().Be("Isplata na brokerski račun");
+    }
+
+    [Fact]
     public void Serialize_NacinIsplate_AlwaysThree()
     {
         var bytes = _sut.Serialize(MakeFiling(), MakeProfile(), string.Empty).Value;

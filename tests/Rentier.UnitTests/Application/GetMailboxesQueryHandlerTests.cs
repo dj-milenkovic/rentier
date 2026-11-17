@@ -5,6 +5,7 @@ using Rentier.Application.Queries;
 using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
 using Xunit;
+using Rentier.Tests.Common.Fakes;
 
 namespace Rentier.UnitTests.Application;
 
@@ -33,8 +34,8 @@ public class GetMailboxesQueryHandlerTests
     [Fact]
     public async Task HandleAsync_WithTwoMailboxes_ReturnsMappedDtos()
     {
-        var m1 = Mailbox.Create("imap.host1.com", 993, "user1@example.com");
-        var m2 = Mailbox.Create("imap.host2.com", 143, "user2@example.com");
+        var m1 = Mailbox.Create("imap.host1.com", 993, "user1@example.com", TestClock.TODAY);
+        var m2 = Mailbox.Create("imap.host2.com", 143, "user2@example.com", TestClock.TODAY);
 
         _repo.GetAllAsync(Arg.Any<CancellationToken>())
             .Returns(new List<Mailbox> { m1, m2 });

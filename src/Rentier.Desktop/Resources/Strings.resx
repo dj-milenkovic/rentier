@@ -644,7 +644,10 @@
     <value>Net Received (optional)</value>
   </data>
   <data name="ManualFiling_PaymentNotes_Label" xml:space="preserve">
-    <value>Payment Notes (optional)</value>
+    <value>Payment Notes</value>
+  </data>
+  <data name="PaymentNotes_DefaultHint" xml:space="preserve">
+    <value>Leave empty to use the default: Isplata na brokerski račun</value>
   </data>
   <data name="ManualFiling_Calculate_Button" xml:space="preserve">
     <value>Calculate</value>

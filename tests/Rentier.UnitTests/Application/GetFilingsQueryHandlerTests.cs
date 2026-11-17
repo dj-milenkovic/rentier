@@ -81,6 +81,21 @@ public class GetFilingsQueryHandlerTests
         result.Value.TotalPages.Should().Be(2); // ceil(45/30) = 2
     }
 
+    [Theory]
+    [InlineData(0, 30, 1)]
+    [InlineData(30, 30, 1)]
+    [InlineData(31, 30, 2)]
+    [InlineData(60, 30, 2)]
+    [InlineData(100, 100, 1)]
+    [InlineData(101, 100, 2)]
+    public async Task HandleAsync_TotalCountAndPageSize_ComputesTotalPagesWithIntegerCeiling(
+        int total, int pageSize, int expectedPages)
+    {
+        SetupPagedReturns(total: total);
+        var result = await _sut.HandleAsync(new GetFilingsQuery(FilingFilterMode.All, 1, pageSize), TestContext.Current.CancellationToken);
+        result.Value.TotalPages.Should().Be(expectedPages);
+    }
+
     [Fact]
     public async Task HandleAsync_WhenNoResults_ReturnsTotalPagesOfOne()
     {

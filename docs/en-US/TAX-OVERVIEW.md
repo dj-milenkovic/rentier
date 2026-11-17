@@ -73,6 +73,7 @@ All amounts are reported in **RSD**. Rentier uses the **NBS middle rate** for th
 - If a rate is not published for that day (weekend/holiday), the last prior business day's rate is used.
 - Rates are cached in the local SQLite database for efficiency.
 - IBKR's own rates (`Base Currency Exchange Rate`) are used only as a fallback for currencies NBS doesn't cover.
+- If NBS **cannot be reached** (network or service outage), Rentier never substitutes an earlier day's rate or an IBKR rate — the NBS rate for that day may well exist. Instead nothing from that statement is saved, and the statement is retried automatically on the next sync. After 3 failed attempts it is marked as **Error**, with the reason shown, so it can be looked at.
 
 ---
 
