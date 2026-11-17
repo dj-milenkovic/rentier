@@ -8,8 +8,6 @@ using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
 using Rentier.Application.Repositories;
 using Rentier.Application.Services;
-using Rentier.Desktop.Dialogs;
-using Rentier.Desktop.Resources;
 using Rentier.Desktop.Services;
 using Rentier.Desktop.ViewModels;
 
@@ -138,48 +136,15 @@ public static class CompositionRoot
             BulkDeleteFilingsCommandHandler>();
         services.AddTransient<FilingsHandlers>();
 
-        // Confirmation delegate for delete — must be explicitly registered so FilingsViewModel resolves
-        services.AddTransient<Func<string, Task<bool>>>(provider => msg =>
-            ConfirmDialogHelper.ShowAsync(
-                Strings.Filings_Delete_Confirmation_Title,
-                msg,
-                Strings.Filings_Delete_Confirm_Button,
-                Strings.Filings_Delete_Cancel_Button));
-
-        // Export file-writer delegate — opens native save dialog and writes bytes to disk
-        services.AddTransient<Func<ExportFilingResult, Task>>(provider =>
-            async (ExportFilingResult result) =>
-            {
-                var lifetime = Avalonia.Application.Current?.ApplicationLifetime
-                    as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime;
-                var topLevel = Avalonia.Controls.TopLevel.GetTopLevel(lifetime?.MainWindow);
-                if (topLevel is null) return;
-
-                var file = await topLevel.StorageProvider.SaveFilePickerAsync(
-                    new Avalonia.Platform.Storage.FilePickerSaveOptions
-                    {
-                        Title = Strings.Filings_Export_SaveDialog_Title,
-                        SuggestedFileName = result.SuggestedFileName,
-                        FileTypeChoices =
-                        [
-                            new Avalonia.Platform.Storage.FilePickerFileType(
-                            Strings.Filings_Export_Filter_Xml) { Patterns = ["*.xml"] }
-                        ]
-                    });
-
-                if (file is null) return;
-
-                await using var stream = await file.OpenWriteAsync();
-                try
-                {
-                    await stream.WriteAsync(result.Bytes);
-                }
-                catch
-                {
-                    await file.DeleteAsync();
-                    throw;
-                }
-            });
+        // UI services ViewModels use instead of ad-hoc delegates: modal confirmation, native save
+        // dialog, report import dialog, and cross-page navigation. NavigationService is one
+        // instance behind both faces — pages raise requests, MainWindowViewModel performs them.
+        services.AddSingleton<IConfirmationService, ConfirmationService>();
+        services.AddSingleton<IFileSaveService, FileSaveService>();
+        services.AddTransient<IReportImportDialogService, ReportImportDialogService>();
+        services.AddSingleton<NavigationService>();
+        services.AddSingleton<INavigationService>(sp => sp.GetRequiredService<NavigationService>());
+        services.AddSingleton<INavigationRequestSource>(sp => sp.GetRequiredService<NavigationService>());
 
         // Manual Filing handlers
         services.AddTransient<
@@ -207,27 +172,7 @@ public static class CompositionRoot
         services.AddTransient<
             ICommandHandler<BulkDeleteReportsCommand, Result<VoidResult, Error>>,
             BulkDeleteReportsCommandHandler>();
-
-        // 2-arg confirmation delegate for report delete (distinct type from 1-arg Func<string,Task<bool>>)
-        services.AddTransient<Func<string, string, Task<bool>>>(provider => (title, msg) =>
-            ConfirmDialogHelper.ShowAsync(
-                title,
-                msg,
-                Strings.Reports_Delete_Confirm_Button,
-                Strings.Reports_Delete_Cancel_Button));
-
-        // CSV file picker + importer selection delegate for report import
-        services.AddTransient<Func<Task<(Guid ImporterId, string FileName, byte[] Content)?>>>(
-            provider => async () =>
-            {
-                var getImporters = provider.GetRequiredService<
-                    IQueryHandler<GetImportersQuery, Result<IReadOnlyList<ImporterDto>, Error>>>();
-                var importersResult = await getImporters.HandleAsync(new GetImportersQuery());
-                IReadOnlyList<ImporterDto> importers = importersResult.IsSuccess
-                    ? importersResult.Value
-                    : [];
-                return await ImportDialogHelper.ShowAsync(importers);
-            });
+        services.AddTransient<ReportsHandlers>();
 
         return services;
     }

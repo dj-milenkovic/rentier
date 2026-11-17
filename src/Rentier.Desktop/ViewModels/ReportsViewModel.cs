@@ -6,46 +6,20 @@ using ReactiveUI;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
-using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
 using Rentier.Desktop.Models;
 using Rentier.Desktop.Resources;
+using Rentier.Desktop.Services;
 using Rentier.Domain.Enums;
 
 namespace Rentier.Desktop.ViewModels;
 
 public sealed class ReportsViewModel : PagedSelectionViewModelBase<ReportRowViewModel>
 {
-    private readonly IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>> _getReports;
-    private readonly ICommandHandler<ImportReportCommand, Result<Guid, Error>> _importReport;
-    private readonly ICommandHandler<DeleteReportCommand, Result<VoidResult, Error>> _deleteReport;
-    private readonly ICommandHandler<BulkDeleteReportsCommand, Result<VoidResult, Error>> _bulkDeleteReports;
-    private readonly Func<string, string, Task<bool>> _confirmDelete;
-    private readonly Func<Task<(Guid ImporterId, string FileName, byte[] Content)?>> _showImportDialog;
-    private readonly Action<Guid> _navigateToFilings;
+    private readonly ReportsHandlers _handlers;
+    private readonly IReportImportDialogService _importDialog;
 
-    private bool _isLoading;
-    private string? _errorMessage;
-    private int _currentPage = 1;
-    private int _totalPages = 1;
-    private int _totalCount;
     private bool _sortDescending = true;
-
-    private readonly ObservableAsPropertyHelper<bool> _hasActiveFilters;
-
-    public bool IsLoading
-    {
-        get => _isLoading;
-        private set => this.RaiseAndSetIfChanged(ref _isLoading, value);
-    }
-
-    public string? ErrorMessage
-    {
-        get => _errorMessage;
-        private set => this.RaiseAndSetIfChanged(ref _errorMessage, value);
-    }
-
-    public bool HasActiveFilters => _hasActiveFilters.Value;
 
     // Filter flyout ViewModels
     public TextFilterFlyoutViewModel NameFilter { get; }
@@ -55,42 +29,11 @@ public sealed class ReportsViewModel : PagedSelectionViewModelBase<ReportRowView
     public TextFilterFlyoutViewModel FilingCountFilter { get; }
     public EnumFilterFlyoutViewModel<ReportStatus> StatusFilter { get; }
 
-    public bool IsEmpty => Rows.Count == 0 && !IsLoading;
+    protected override string PageIndicatorFormat => Strings.Reports_Page_Indicator;
+    protected override string DeleteConfirmButtonText => Strings.Reports_Delete_Confirm_Button;
+    protected override string DeleteCancelButtonText => Strings.Reports_Delete_Cancel_Button;
 
-    public int CurrentPage
-    {
-        get => _currentPage;
-        private set
-        {
-            this.RaiseAndSetIfChanged(ref _currentPage, value);
-            this.RaisePropertyChanged(nameof(HasPreviousPage));
-            this.RaisePropertyChanged(nameof(HasNextPage));
-            this.RaisePropertyChanged(nameof(PageIndicator));
-        }
-    }
-
-    public int TotalPages
-    {
-        get => _totalPages;
-        private set
-        {
-            this.RaiseAndSetIfChanged(ref _totalPages, value);
-            this.RaisePropertyChanged(nameof(HasNextPage));
-            this.RaisePropertyChanged(nameof(PageIndicator));
-        }
-    }
-
-    public int TotalCount
-    {
-        get => _totalCount;
-        private set => this.RaiseAndSetIfChanged(ref _totalCount, value);
-    }
-
-    public bool HasPreviousPage => _currentPage > 1 && !IsLoading;
-    public bool HasNextPage => _currentPage < _totalPages && !IsLoading;
-    public string PageIndicator => string.Format(Strings.Reports_Page_Indicator, _currentPage, _totalPages);
-
-    /// <summary>When true, reports are sorted newest-first. Resetting this property resets the page to 1.</summary>
+    /// <summary>When true, reports are sorted newest-first. Changing this property resets the page to 1.</summary>
     public bool SortDescending
     {
         get => _sortDescending;
@@ -100,40 +43,27 @@ public sealed class ReportsViewModel : PagedSelectionViewModelBase<ReportRowView
                 return;
 
             this.RaiseAndSetIfChanged(ref _sortDescending, value);
-            CurrentPage = 1;
+            Paging.ResetToFirstPage();
         }
     }
 
-    public ReactiveCommand<RxVoid, RxVoid> LoadPageCommand { get; }
-    public ReactiveCommand<RxVoid, RxVoid> PreviousPageCommand { get; }
-    public ReactiveCommand<RxVoid, RxVoid> NextPageCommand { get; }
     public ReactiveCommand<RxVoid, RxVoid> ImportCommand { get; }
     public ReactiveCommand<Guid, RxVoid> DeleteCommand { get; }
     public ReactiveCommand<Guid, RxVoid> ViewFilingsCommand { get; }
-    public ReactiveCommand<RxVoid, RxVoid> ClearErrorCommand { get; }
     public ReactiveCommand<RxVoid, RxVoid> BulkDeleteCommand { get; }
-    public ReactiveCommand<RxVoid, RxVoid> ClearFiltersCommand { get; }
 
     // Keep LoadReportsCommand as an alias for backward compat with existing AXAML / tests
     public ReactiveCommand<RxVoid, RxVoid> LoadReportsCommand => LoadPageCommand;
 
     public ReportsViewModel(
-        IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>> getReports,
-        ICommandHandler<ImportReportCommand, Result<Guid, Error>> importReport,
-        ICommandHandler<DeleteReportCommand, Result<VoidResult, Error>> deleteReport,
-        ICommandHandler<BulkDeleteReportsCommand, Result<VoidResult, Error>> bulkDeleteReports,
-        Func<string, string, Task<bool>> confirmDelete,
-        Func<Task<(Guid ImporterId, string FileName, byte[] Content)?>> showImportDialog,
-        Action<Guid> navigateToFilings,
-        ISequencer? scheduler = null) : base(scheduler ?? RxSchedulers.MainThreadScheduler)
+        ReportsHandlers handlers,
+        IConfirmationService confirmation,
+        IReportImportDialogService importDialog,
+        INavigationService navigation,
+        ISequencer? scheduler = null) : base(confirmation, scheduler ?? RxSchedulers.MainThreadScheduler)
     {
-        _getReports = getReports;
-        _importReport = importReport;
-        _deleteReport = deleteReport;
-        _bulkDeleteReports = bulkDeleteReports;
-        _confirmDelete = confirmDelete;
-        _showImportDialog = showImportDialog;
-        _navigateToFilings = navigateToFilings;
+        _handlers = handlers;
+        _importDialog = importDialog;
 
         NameFilter = new TextFilterFlyoutViewModel();
         ImporterFilter = new TextFilterFlyoutViewModel();
@@ -147,48 +77,8 @@ public sealed class ReportsViewModel : PagedSelectionViewModelBase<ReportRowView
             new CheckableItem<ReportStatus>("Error", ReportStatus.Error),
             new CheckableItem<ReportStatus>("Partial Error", ReportStatus.PartialError),
         });
-
-        _hasActiveFilters = this.WhenAnyValue(x => x.NameFilter.IsActive)
-            .CombineLatest(
-                this.WhenAnyValue(x => x.ImporterFilter.IsActive),
-                this.WhenAnyValue(x => x.ImportDateFilter.IsActive),
-                this.WhenAnyValue(x => x.EmailDateFilter.IsActive),
-                this.WhenAnyValue(x => x.FilingCountFilter.IsActive),
-                this.WhenAnyValue(x => x.StatusFilter.IsActive),
-                (a, b, c, d, e, f) => a || b || c || d || e || f)
-            .ToProperty(this, x => x.HasActiveFilters, scheduler: _scheduler);
-
-        var canGoToPreviousPage = this.WhenAnyValue(
-            x => x.CurrentPage,
-            x => x.IsLoading,
-            (currentPage, isLoading) => currentPage > 1 && !isLoading);
-
-        var canGoToNextPage = this.WhenAnyValue(
-            x => x.CurrentPage,
-            x => x.TotalPages,
-            x => x.IsLoading,
-            (currentPage, totalPages, isLoading) => currentPage < totalPages && !isLoading);
-
-        LoadPageCommand = ReactiveCommand.CreateFromTask(
-            LoadPageAsync, outputScheduler: _scheduler);
-
-        PreviousPageCommand = ReactiveCommand.CreateFromTask(
-            async (CancellationToken ct) =>
-            {
-                CurrentPage--;
-                await LoadPageAsync(ct);
-            },
-            canGoToPreviousPage,
-            outputScheduler: _scheduler);
-
-        NextPageCommand = ReactiveCommand.CreateFromTask(
-            async (CancellationToken ct) =>
-            {
-                CurrentPage++;
-                await LoadPageAsync(ct);
-            },
-            canGoToNextPage,
-            outputScheduler: _scheduler);
+        RegisterFilters(
+            NameFilter, ImporterFilter, ImportDateFilter, EmailDateFilter, FilingCountFilter, StatusFilter);
 
         ImportCommand = ReactiveCommand.CreateFromTask(
             ImportAsync, outputScheduler: _scheduler);
@@ -197,116 +87,42 @@ public sealed class ReportsViewModel : PagedSelectionViewModelBase<ReportRowView
             DeleteAsync, outputScheduler: _scheduler);
 
         ViewFilingsCommand = ReactiveCommand.Create<Guid>(
-            id => _navigateToFilings(id), outputScheduler: _scheduler);
-
-        ClearErrorCommand = ReactiveCommand.Create(
-            () => { ErrorMessage = null; }, outputScheduler: _scheduler);
-
-        ClearFiltersCommand = ReactiveCommand.CreateFromTask(
-            async (CancellationToken ct) =>
-            {
-                NameFilter.Clear();
-                ImporterFilter.Clear();
-                ImportDateFilter.Clear();
-                EmailDateFilter.Clear();
-                FilingCountFilter.Clear();
-                StatusFilter.Clear();
-                CurrentPage = 1;
-                await LoadPageAsync(ct);
-            },
-            this.WhenAnyValue(x => x.HasActiveFilters),
-            outputScheduler: _scheduler);
+            id => navigation.NavigateToFilings(id), outputScheduler: _scheduler);
 
         BulkDeleteCommand = ReactiveCommand.CreateFromTask(
             OnBulkDeleteAsync,
             this.WhenAnyValue(x => x.HasSelection),
             outputScheduler: _scheduler);
-
-        this.WhenActivated((MultipleDisposable disposables) =>
-        {
-            LoadPageCommand.Execute().Subscribe().DisposeWith(disposables);
-
-            // Sort descending change triggers reload
-            this.WhenAnyValue(x => x.SortDescending)
-                .Skip(1)
-                .Select(_ => RxVoid.Default)
-                .InvokeCommand(LoadPageCommand)
-                .DisposeWith(disposables);
-
-            // All flyouts: applied → reset page + reload
-            new[]
-                {
-                    NameFilter.Applied,
-                    ImporterFilter.Applied,
-                    ImportDateFilter.Applied,
-                    EmailDateFilter.Applied,
-                    FilingCountFilter.Applied,
-                    StatusFilter.Applied
-                }
-                .Merge()
-                .Do(_ => CurrentPage = 1)
-                .InvokeCommand(LoadPageCommand)
-                .DisposeWith(disposables);
-
-            // Dispose row subscriptions on deactivation
-            new ActionDisposable(() => _rowSubscriptions.Clear())
-                .DisposeWith(disposables);
-
-            LoadPageCommand.ThrownExceptions
-                .Subscribe(ex => ErrorMessage = ex.Message)
-                .DisposeWith(disposables);
-            ImportCommand.ThrownExceptions
-                .Subscribe(ex => ErrorMessage = ex.Message)
-                .DisposeWith(disposables);
-            DeleteCommand.ThrownExceptions
-                .Subscribe(ex => ErrorMessage = ex.Message)
-                .DisposeWith(disposables);
-            BulkDeleteCommand.ThrownExceptions
-                .Subscribe(ex => ErrorMessage = ex.Message)
-                .DisposeWith(disposables);
-        });
     }
 
-    private async Task LoadPageAsync(CancellationToken ct = default)
+    protected override void OnActivated(MultipleDisposable disposables)
     {
-        IsLoading = true;
-        ErrorMessage = null;
-        try
-        {
-            var filter = BuildFilter();
-            var result = await _getReports.HandleAsync(
-                new GetReportsQuery(_currentPage, 30, _sortDescending, filter), ct);
+        // Sort descending change triggers reload
+        this.WhenAnyValue(x => x.SortDescending)
+            .Skip(1)
+            .Select(_ => RxVoid.Default)
+            .InvokeCommand(LoadPageCommand)
+            .DisposeWith(disposables);
 
-            if (!result.IsSuccess)
-            {
-                ErrorMessage = result.Error.Message;
-                return;
-            }
+        SurfaceErrors(disposables,
+            ImportCommand.ThrownExceptions,
+            DeleteCommand.ThrownExceptions,
+            ViewFilingsCommand.ThrownExceptions,
+            BulkDeleteCommand.ThrownExceptions);
+    }
 
-            var page = result.Value;
-            Rows.Clear();
-            foreach (var dto in page.Rows)
-                Rows.Add(ReportRowViewModel.From(dto));
+    protected override async Task<Result<PageOf<ReportRowViewModel>, Error>> QueryPageAsync(
+        int page, int pageSize, CancellationToken ct)
+    {
+        var result = await _handlers.GetReports.HandleAsync(
+            new GetReportsQuery(page, pageSize, _sortDescending, BuildFilter()), ct);
 
-            TotalCount = page.TotalCount;
-            TotalPages = page.TotalPages;
+        if (!result.IsSuccess)
+            return Result<PageOf<ReportRowViewModel>, Error>.Failure(result.Error);
 
-            // Clamp current page if data reduced total pages
-            var clampedPage = Math.Min(_currentPage, page.TotalPages);
-            if (clampedPage != _currentPage)
-                CurrentPage = clampedPage;
-
-            this.RaisePropertyChanged(nameof(IsEmpty));
-            this.RaisePropertyChanged(nameof(HasItems));
-
-            RebuildRowSubscriptions();
-        }
-        finally
-        {
-            IsLoading = false;
-            this.RaisePropertyChanged(nameof(HasPreviousPage));
-            this.RaisePropertyChanged(nameof(HasNextPage));
-        }
+        var rows = result.Value.Rows.Select(ReportRowViewModel.From).ToList();
+        return Result<PageOf<ReportRowViewModel>, Error>.Success(
+            new PageOf<ReportRowViewModel>(rows, result.Value.TotalCount, result.Value.TotalPages));
     }
 
     private ReportColumnFilter? BuildFilter()
@@ -337,16 +153,15 @@ public sealed class ReportsViewModel : PagedSelectionViewModelBase<ReportRowView
 
     private async Task ImportAsync(CancellationToken ct = default)
     {
-        var dialogResult = await _showImportDialog();
-        if (dialogResult is null)
+        var selection = await _importDialog.PickReportAsync();
+        if (selection is null)
             return;
 
-        var (importerId, fileName, content) = dialogResult.Value;
         IsLoading = true;
         try
         {
-            var result = await _importReport.HandleAsync(
-                new ImportReportCommand(importerId, fileName, content), ct);
+            var result = await _handlers.ImportReport.HandleAsync(
+                new ImportReportCommand(selection.ImporterId, selection.FileName, selection.Content), ct);
             var errorToPreserve = result.IsSuccess ? null : result.Error.Message;
             await LoadPageAsync(ct);
             if (errorToPreserve is not null)
@@ -360,7 +175,8 @@ public sealed class ReportsViewModel : PagedSelectionViewModelBase<ReportRowView
 
     private async Task DeleteAsync(Guid reportId, CancellationToken ct = default)
     {
-        var confirmed = await _confirmDelete(
+        var visibleCount = Rows.Count;
+        var confirmed = await ConfirmDeleteAsync(
             Strings.Reports_Delete_Confirmation_Title,
             Strings.Reports_Delete_Confirmation_Message);
         if (!confirmed)
@@ -369,17 +185,14 @@ public sealed class ReportsViewModel : PagedSelectionViewModelBase<ReportRowView
         IsLoading = true;
         try
         {
-            var result = await _deleteReport.HandleAsync(new DeleteReportCommand(reportId), ct);
+            var result = await _handlers.DeleteReport.HandleAsync(new DeleteReportCommand(reportId), ct);
             if (!result.IsSuccess)
             {
                 ErrorMessage = result.Error.Message;
                 return;
             }
 
-            if (Rows.Count == 1 && _currentPage > 1)
-                CurrentPage--;
-
-            await LoadPageAsync(ct);
+            await ReloadAfterRemovalAsync(removedCount: 1, visibleCount, ct);
         }
         finally
         {
@@ -389,6 +202,7 @@ public sealed class ReportsViewModel : PagedSelectionViewModelBase<ReportRowView
 
     private async Task OnBulkDeleteAsync(CancellationToken ct)
     {
+        var visibleCount = Rows.Count;
         var selectedIds = Rows
             .Where(r => r.IsSelected)
             .Select(r => r.Id)
@@ -398,11 +212,10 @@ public sealed class ReportsViewModel : PagedSelectionViewModelBase<ReportRowView
 
         var message = string.Format(
             Strings.BulkDelete_Reports_Confirmation_Message, selectedIds.Count);
-        var confirmed = await _confirmDelete(
-            Strings.BulkDelete_Reports_Confirmation_Title, message);
-        if (!confirmed) return;
+        if (!await ConfirmDeleteAsync(Strings.BulkDelete_Reports_Confirmation_Title, message))
+            return;
 
-        var result = await _bulkDeleteReports.HandleAsync(
+        var result = await _handlers.BulkDeleteReports.HandleAsync(
             new BulkDeleteReportsCommand(selectedIds), ct);
 
         if (!result.IsSuccess)
@@ -411,9 +224,6 @@ public sealed class ReportsViewModel : PagedSelectionViewModelBase<ReportRowView
             return;
         }
 
-        if (selectedIds.Count == Rows.Count && _currentPage > 1)
-            CurrentPage--;
-
-        await LoadPageAsync(ct);
+        await ReloadAfterRemovalAsync(selectedIds.Count, visibleCount, ct);
     }
 }

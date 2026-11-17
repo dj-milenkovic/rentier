@@ -12,6 +12,7 @@ using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
+using Rentier.Desktop.Services;
 using Rentier.Desktop.ViewModels;
 using Rentier.Desktop.Views;
 using Rentier.Domain.Enums;
@@ -283,6 +284,44 @@ public class ReportsViewHeadlessTests
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     /// <summary>Creates a <see cref="ReportsViewModel"/> with all dependencies mocked.</summary>
+    // ── State shown after a load completes (bindings must refresh once IsLoading turns false) ──
+
+    [AvaloniaFact]
+    public void ReportsView_LoadReturnsNoRows_ShowsEmptyStateText()
+    {
+        var vm = CreateMinimalReportsViewModel(CreateEmptyReportsHandler());
+        var window = new Window { Content = new ReportsView { DataContext = vm }, Width = 800, Height = 600 };
+        window.Show();
+
+        using var activation = vm.Activator.Activate();
+        window.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
+
+        var emptyText = GetLocalizedText("Reports_Empty");
+        window.GetVisualDescendants().OfType<TextBlock>()
+            .Single(t => t.Text == emptyText).IsVisible.Should().BeTrue();
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void ReportsView_LoadReturnsMorePages_EnablesNextPageButton()
+    {
+        var getReports = Substitute.For<IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>>>();
+        getReports.HandleAsync(Arg.Any<GetReportsQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<ReportsPageResult, Error>.Success(
+                new ReportsPageResult([MakeReportRowDto()], 40, 2)));
+        var vm = CreateMinimalReportsViewModel(getReports);
+        var window = new Window { Content = new ReportsView { DataContext = vm }, Width = 800, Height = 600 };
+        window.Show();
+
+        using var activation = vm.Activator.Activate();
+        window.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
+
+        FindButton(window, "Reports_Page_Next").IsEffectivelyEnabled.Should().BeTrue();
+        window.Close();
+    }
+
     private static ReportsViewModel CreateMinimalReportsViewModel(
         IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>>? getReports = null)
     {
@@ -292,13 +331,10 @@ public class ReportsViewHeadlessTests
         var bulkDelete = Substitute.For<ICommandHandler<BulkDeleteReportsCommand, Result<VoidResult, Error>>>();
 
         return new ReportsViewModel(
-            getReports,
-            importReport,
-            deleteReport,
-            bulkDelete,
-            confirmDelete: (_, _) => Task.FromResult(false),
-            showImportDialog: () => Task.FromResult<(Guid ImporterId, string FileName, byte[] Content)?>(null),
-            navigateToFilings: _ => { },
+            new ReportsHandlers(getReports, importReport, deleteReport, bulkDelete),
+            confirmation: DesktopTestDoubles.Confirmation(),
+            importDialog: DesktopTestDoubles.ImportDialog(),
+            navigation: Substitute.For<INavigationService>(),
             scheduler: ImmediateSequencer.Instance);
     }
 

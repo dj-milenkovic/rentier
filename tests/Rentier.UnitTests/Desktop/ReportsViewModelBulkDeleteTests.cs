@@ -7,6 +7,7 @@ using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
+using Rentier.Desktop.Services;
 using Rentier.Desktop.ViewModels;
 using Rentier.Domain.Enums;
 using Xunit;
@@ -43,16 +44,17 @@ public class ReportsViewModelBulkDeleteTests
     private static ReportsViewModel CreateVm(
         IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>>? getReports = null,
         ICommandHandler<BulkDeleteReportsCommand, Result<VoidResult, Error>>? bulkDelete = null,
-        Func<string, string, Task<bool>>? confirmDelete = null)
+        IConfirmationService? confirmation = null)
     {
         return new ReportsViewModel(
-            getReports ?? MockGetReports(),
-            Substitute.For<ICommandHandler<ImportReportCommand, Result<Guid, Error>>>(),
-            Substitute.For<ICommandHandler<DeleteReportCommand, Result<VoidResult, Error>>>(),
-            bulkDelete ?? MockBulkDelete(),
-            confirmDelete ?? ((_, _) => Task.FromResult(false)),
-            () => Task.FromResult<(Guid, string, byte[])?>(null),
-            _ => { },
+            new ReportsHandlers(
+                getReports ?? MockGetReports(),
+                Substitute.For<ICommandHandler<ImportReportCommand, Result<Guid, Error>>>(),
+                Substitute.For<ICommandHandler<DeleteReportCommand, Result<VoidResult, Error>>>(),
+                bulkDelete ?? MockBulkDelete()),
+            confirmation ?? DesktopTestDoubles.Confirmation(),
+            DesktopTestDoubles.ImportDialog(),
+            Substitute.For<INavigationService>(),
             ImmediateSequencer.Instance);
     }
 
@@ -113,20 +115,17 @@ public class ReportsViewModelBulkDeleteTests
     [Fact]
     public void BulkDeleteCommand_ConfirmMessageContainsCascadeWarning()
     {
-        string? capturedMessage = null;
+        var confirmation = DesktopTestDoubles.Confirmation(false);
         var vm = CreateVm(
             getReports: MockGetReports(MakeDto()),
-            confirmDelete: (_, msg) =>
-            {
-                capturedMessage = msg;
-                return Task.FromResult(false);
-            });
+            confirmation: confirmation);
         using var _ = vm.Activator.Activate();
 
         vm.Rows[0].IsSelected = true;
         vm.BulkDeleteCommand.Execute().Subscribe();
 
-        capturedMessage.Should().Contain("linked filings");
+        confirmation.Received(1).ConfirmAsync(
+            Arg.Is<ConfirmationRequest>(r => r.Message.Contains("linked filings")));
     }
 
     [Fact]
@@ -136,7 +135,7 @@ public class ReportsViewModelBulkDeleteTests
         var vm = CreateVm(
             getReports: MockGetReports(MakeDto()),
             bulkDelete: bulkDelete,
-            confirmDelete: (_, _) => Task.FromResult(false));
+            confirmation: DesktopTestDoubles.Confirmation(false));
         using var _ = vm.Activator.Activate();
 
         vm.Rows[0].IsSelected = true;
@@ -155,7 +154,7 @@ public class ReportsViewModelBulkDeleteTests
         var vm = CreateVm(
             getReports: MockGetReports(MakeDto(id1), MakeDto(id2)),
             bulkDelete: bulkDelete,
-            confirmDelete: (_, _) => Task.FromResult(true));
+            confirmation: DesktopTestDoubles.Confirmation(true));
         using var _ = vm.Activator.Activate();
 
         vm.Rows[0].IsSelected = true;
@@ -176,7 +175,7 @@ public class ReportsViewModelBulkDeleteTests
         var vm = CreateVm(
             getReports: MockGetReports(MakeDto()),
             bulkDelete: MockBulkDelete(success: false),
-            confirmDelete: (_, _) => Task.FromResult(true));
+            confirmation: DesktopTestDoubles.Confirmation(true));
         using var _ = vm.Activator.Activate();
 
         vm.Rows[0].IsSelected = true;

@@ -11,6 +11,7 @@ using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
+using Rentier.Desktop.Services;
 using Rentier.Desktop.ViewModels;
 using Rentier.Desktop.Views;
 using Rentier.Domain.Enums;
@@ -200,7 +201,7 @@ public class DashboardViewHeadlessTests
     {
         return new DashboardViewModel(
             handler,
-            navigateToFilings: () => { },
+            navigation: Substitute.For<INavigationService>(),
             scheduler: ImmediateSequencer.Instance);
     }
 

@@ -11,7 +11,7 @@ namespace Rentier.Desktop.ViewModels;
 /// dismiss without Apply → working text is discarded on next open.
 /// </para>
 /// </summary>
-public sealed class TextFilterFlyoutViewModel : ReactiveObject
+public sealed class TextFilterFlyoutViewModel : ReactiveObject, IColumnFilter
 {
     private readonly Signal<RxVoid> _applied = new();
     private bool _isOpen;
