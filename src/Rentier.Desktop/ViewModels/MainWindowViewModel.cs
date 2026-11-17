@@ -340,6 +340,8 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
 
             CurrentUpdateState = UpdateState.Downloaded;
         }
+        // UI boundary: IUpdateService.DownloadUpdateAsync has no Result channel, and any download
+        // failure (network, disk, package) must become the Error state rather than crash the app.
         catch (Exception ex)
         {
             UpdateErrorMessage = ex.Message;

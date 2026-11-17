@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Rentier.Application.DTOs;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
+using Rentier.Domain.ValueObjects;
 using Rentier.Infrastructure.Persistence;
 using Rentier.Infrastructure.Repositories;
 using Rentier.Tests.Common.Fakes;
@@ -82,6 +83,65 @@ public class ReportRepositoryFilterTests : IAsyncLifetime
 
         total.Should().Be(0);
         items.Should().BeEmpty();
+    }
+
+    // ── FilingCountValue ────────────────────────────────────────────────────
+
+    /// <summary>Adds one report per entry in <paramref name="filingCounts"/>, with that many linked filings.</summary>
+    private async Task SeedReportsWithFilingCountsAsync(params int[] filingCounts)
+    {
+        var profile = new TaxpayerProfile(Guid.NewGuid(), "1234567890123", "John Doe", "Belgrade", "018");
+        await _context.TaxpayerProfiles.AddAsync(profile, TestContext.Current.CancellationToken);
+
+        for (var r = 0; r < filingCounts.Length; r++)
+        {
+            var report = Report.Create(_importer.Id, $"r{r}.csv", null, null, TestClock.TODAY);
+            await _context.Reports.AddAsync(report, TestContext.Current.CancellationToken);
+            for (var i = 0; i < filingCounts[r]; i++)
+            {
+                var date = new DateOnly(2024, 1 + i, 15);
+                await _context.Filings.AddAsync(Filing.CreateFromIncome(
+                    new FilingInfo(IncomeType.Dividend, $"Co{r}-{i}", date, 1000m, 0m, 150m, 150m),
+                    profile.Id, date.AddDays(30), new FilingProvenance(ReportId: report.Id)),
+                    TestContext.Current.CancellationToken);
+            }
+        }
+
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task GetPagedAsync_FilingCountValue_TotalCountIncludesOnlyMatchingReports()
+    {
+        await SeedReportsWithFilingCountsAsync(0, 2, 0, 2, 1);
+
+        var (_, total) = await _repository.GetPagedAsync(
+            new ReportColumnFilter(FilingCountValue: 2), 0, 10, true, TestContext.Current.CancellationToken);
+
+        total.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task GetPagedAsync_FilingCountValueZero_MatchesReportsWithoutFilings()
+    {
+        await SeedReportsWithFilingCountsAsync(0, 2, 0, 1);
+
+        var (items, _) = await _repository.GetPagedAsync(
+            new ReportColumnFilter(FilingCountValue: 0), 0, 10, true, TestContext.Current.CancellationToken);
+
+        items.Select(r => r.ReportName).Should().BeEquivalentTo("r0.csv", "r2.csv");
+    }
+
+    [Fact]
+    public async Task GetPagedAsync_FilingCountValue_PagesOverFilteredSet()
+    {
+        // Matching reports are spread out; page 1 of size 1 must still return a match.
+        await SeedReportsWithFilingCountsAsync(0, 0, 0, 3, 0, 3);
+
+        var (items, _) = await _repository.GetPagedAsync(
+            new ReportColumnFilter(FilingCountValue: 3), 0, 1, true, TestContext.Current.CancellationToken);
+
+        items.Should().ContainSingle().Which.ReportName.Should().BeOneOf("r3.csv", "r5.csv");
     }
 
     // ── EmailDateContains ───────────────────────────────────────────────────

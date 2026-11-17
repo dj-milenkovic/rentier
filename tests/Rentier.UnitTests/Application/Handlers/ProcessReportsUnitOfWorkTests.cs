@@ -169,13 +169,18 @@ public class ProcessReportsUnitOfWorkTests
     public async Task HandleAsync_CancelledMidReport_CommitsNothing()
     {
         ArrangeReports(1, Dividend("ACME Corp"), Dividend("Globex"));
+        using var caller = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         var calls = 0;
         _rateFetcher.FetchRateAsync(Arg.Any<DateOnly>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(_ => ++calls == 1
-                ? Result<ExchangeRate, Error>.Success(new ExchangeRate(TEST_DATE, "USD", USD_RATE))
-                : throw new OperationCanceledException());
+            .Returns(_ =>
+            {
+                if (++calls == 1)
+                    return Result<ExchangeRate, Error>.Success(new ExchangeRate(TEST_DATE, "USD", USD_RATE));
+                caller.Cancel();
+                throw new OperationCanceledException(caller.Token);
+            });
 
-        var act = ActAsync;
+        var act = () => _sut.HandleAsync(new ProcessReportsCommand(), caller.Token);
 
         await act.Should().ThrowAsync<OperationCanceledException>();
         _unitOfWorkFactory.CommittedCount.Should().Be(0);

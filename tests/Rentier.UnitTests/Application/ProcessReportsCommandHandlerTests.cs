@@ -17,7 +17,7 @@ using Xunit;
 
 namespace Rentier.UnitTests.Application;
 
-public class ProcessReportsCommandHandlerTests
+public partial class ProcessReportsCommandHandlerTests
 {
     private readonly Guid ProfileId = Guid.NewGuid();
     private static readonly DateOnly TestDate = new(2024, 6, 17);

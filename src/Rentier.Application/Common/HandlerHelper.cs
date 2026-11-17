@@ -41,6 +41,8 @@ public static class HandlerHelper
         {
             return Result<TValue, Error>.Failure(Error.Domain(ex.Message));
         }
+        // Application boundary: an unexpected infrastructure exception becomes an Error value the
+        // ViewModel can show, instead of faulting a ReactiveCommand; cancellation is rethrown above.
         catch (Exception ex)
         {
             logger?.LogError(ex, "[{Caller}] Unexpected failure: {Message}", caller, ex.Message);
