@@ -70,7 +70,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "pwsh -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/graphify-worktree.ps1",
+            "command": "pwsh -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/graphify-session.ps1",
             "timeout": 30
           }
         ]
