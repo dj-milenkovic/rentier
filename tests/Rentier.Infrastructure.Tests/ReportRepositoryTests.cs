@@ -370,4 +370,38 @@ public class ReportRepositoryTests : IAsyncLifetime
         total.Should().Be(1);
         items[0].ReportName.Should().Be("imp1_report.csv");
     }
+
+    [Fact]
+    public async Task GetPagedAsync_EmptyImporterIds_ReturnsNoReports()
+    {
+        // An importer search term that matches no importer resolves to an empty ID list;
+        // it must narrow to nothing, not fall through to "all reports".
+        var importer = MakeImporter();
+        await _context.Importers.AddAsync(importer, TestContext.Current.CancellationToken);
+        await _context.Reports.AddAsync(MakeReport(importer.Id, "a.csv"), TestContext.Current.CancellationToken);
+        await _context.Reports.AddAsync(MakeReport(importer.Id, "b.csv"), TestContext.Current.CancellationToken);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var filter = new ReportColumnFilter(ImporterIds: Array.Empty<Guid>());
+        var (items, total) = await _repository.GetPagedAsync(filter, 0, 10, true, TestContext.Current.CancellationToken);
+
+        total.Should().Be(0);
+        items.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetPagedAsync_NameContainsDifferentCase_MatchesCaseInsensitively()
+    {
+        var importer = MakeImporter();
+        await _context.Importers.AddAsync(importer, TestContext.Current.CancellationToken);
+        await _context.Reports.AddAsync(MakeReport(importer.Id, "IBKR_Q1.csv"), TestContext.Current.CancellationToken);
+        await _context.Reports.AddAsync(MakeReport(importer.Id, "schwab.csv"), TestContext.Current.CancellationToken);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var filter = new ReportColumnFilter(NameContains: "ibkr");
+        var (items, total) = await _repository.GetPagedAsync(filter, 0, 10, true, TestContext.Current.CancellationToken);
+
+        total.Should().Be(1);
+        items[0].ReportName.Should().Be("IBKR_Q1.csv");
+    }
 }
