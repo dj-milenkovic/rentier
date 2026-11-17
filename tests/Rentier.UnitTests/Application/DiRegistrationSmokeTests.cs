@@ -10,6 +10,7 @@ using Rentier.Application.Queries;
 using Rentier.Application.Repositories;
 using Rentier.Desktop.Services;
 using Xunit;
+using Rentier.Tests.Common.Fakes;
 
 namespace Rentier.UnitTests;
 
@@ -111,7 +112,9 @@ public class DiRegistrationSmokeTests
         services.AddSingleton(Substitute.For<IFilingRepository>());
         services.AddSingleton(Substitute.For<IImporterRepository>());
         services.AddSingleton(Substitute.For<IStatementParser>());
+        services.AddSingleton(Substitute.For<IUnitOfWorkFactory>());
         services.AddSingleton(Substitute.For<ICommandHandler<ProcessReportsCommand, Result<ProcessReportsResult, Error>>>());
+        services.AddSingleton<TimeProvider>(TestClock.Provider());
 
         services.AddTransient<
             IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>>,
@@ -122,6 +125,9 @@ public class DiRegistrationSmokeTests
         services.AddTransient<
             ICommandHandler<DeleteReportCommand, Result<VoidResult, Error>>,
             DeleteReportCommandHandler>();
+        services.AddTransient<
+            ICommandHandler<BulkDeleteReportsCommand, Result<VoidResult, Error>>,
+            BulkDeleteReportsCommandHandler>();
 
         var provider = services.BuildServiceProvider();
 
@@ -130,6 +136,8 @@ public class DiRegistrationSmokeTests
         provider.GetRequiredService<ICommandHandler<ImportReportCommand, Result<Guid, Error>>>()
             .Should().NotBeNull();
         provider.GetRequiredService<ICommandHandler<DeleteReportCommand, Result<VoidResult, Error>>>()
+            .Should().NotBeNull();
+        provider.GetRequiredService<ICommandHandler<BulkDeleteReportsCommand, Result<VoidResult, Error>>>()
             .Should().NotBeNull();
     }
 }

@@ -15,29 +15,51 @@ public sealed record SyncParameters
     public DateOnly? ReplayFromDate { get; }
     public Guid? ScopeImporterId { get; }
 
+    /// <summary>
+    /// Creates parameters for an <see cref="SyncMode.Incremental"/> or
+    /// <see cref="SyncMode.FullReplay"/> run. Replay-from-date runs need a date and the
+    /// current date, so they must be created through <see cref="ReplayFrom"/>.
+    /// </summary>
+    /// <param name="mode">Incremental or FullReplay.</param>
+    /// <param name="strategy">How duplicates are handled.</param>
+    /// <param name="scopeImporterId">Optional importer scope.</param>
     public SyncParameters(
         SyncMode mode = SyncMode.Incremental,
         DuplicateStrategy strategy = DuplicateStrategy.SkipExisting,
-        DateOnly? replayFromDate = null,
         Guid? scopeImporterId = null)
+        : this(mode, strategy, null, scopeImporterId)
     {
         if (mode == SyncMode.ReplayFromDate)
-        {
-            if (replayFromDate is null)
-                throw new DomainException("ReplayFromDate is required for ReplayFromDate mode");
-            if (replayFromDate.Value > DateOnly.FromDateTime(DateTime.UtcNow))
-                throw new DomainException("ReplayFromDate cannot be in the future");
-        }
-        else
-        {
-            if (replayFromDate is not null)
-                throw new DomainException("ReplayFromDate must be null for non-ReplayFromDate modes");
-        }
+            throw new DomainException("ReplayFromDate mode must be created with SyncParameters.ReplayFrom");
+    }
 
+    private SyncParameters(
+        SyncMode mode, DuplicateStrategy strategy, DateOnly? replayFromDate, Guid? scopeImporterId)
+    {
         Mode = mode;
         Strategy = strategy;
         ReplayFromDate = replayFromDate;
         ScopeImporterId = scopeImporterId;
+    }
+
+    /// <summary>Creates parameters that re-fetch emails starting at <paramref name="replayFromDate"/>.</summary>
+    /// <param name="replayFromDate">First day to re-fetch; must not be after <paramref name="today"/>.</param>
+    /// <param name="today">
+    /// The current calendar date, supplied by the caller (the value object never reads the
+    /// clock) and not part of the value. The replay date is picked by the user on a local
+    /// calendar, so callers pass the user's <b>local</b> date.
+    /// </param>
+    /// <param name="strategy">How duplicates are handled.</param>
+    /// <param name="scopeImporterId">Optional importer scope.</param>
+    public static SyncParameters ReplayFrom(
+        DateOnly replayFromDate,
+        DateOnly today,
+        DuplicateStrategy strategy = DuplicateStrategy.SkipExisting,
+        Guid? scopeImporterId = null)
+    {
+        if (replayFromDate > today)
+            throw new DomainException("ReplayFromDate cannot be in the future");
+        return new SyncParameters(SyncMode.ReplayFromDate, strategy, replayFromDate, scopeImporterId);
     }
 
     /// <summary>

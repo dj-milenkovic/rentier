@@ -7,8 +7,11 @@ using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
+using Rentier.Desktop.Resources;
+using Rentier.Desktop.Services;
 using Rentier.Desktop.ViewModels;
 using Rentier.Domain.Enums;
+using ReactiveUI;
 using Xunit;
 
 namespace Rentier.UnitTests;
@@ -62,18 +65,20 @@ public class ReportsViewModelTests
         IQueryHandler<GetReportsQuery, Result<ReportsPageResult, Error>>? getReports = null,
         ICommandHandler<ImportReportCommand, Result<Guid, Error>>? importHandler = null,
         ICommandHandler<DeleteReportCommand, Result<VoidResult, Error>>? deleteHandler = null,
-        Func<string, string, Task<bool>>? confirmDelete = null,
-        Func<Task<(Guid ImporterId, string FileName, byte[] Content)?>>? showImportDialog = null,
-        Action<Guid>? navigateToFilings = null)
+        IConfirmationService? confirmation = null,
+        IReportImportDialogService? importDialog = null,
+        INavigationService? navigation = null,
+        ICommandHandler<BulkDeleteReportsCommand, Result<VoidResult, Error>>? bulkDelete = null)
     {
         return new ReportsViewModel(
-            getReports ?? MakeGetReports(),
-            importHandler ?? MakeImportHandler(),
-            deleteHandler ?? MakeDeleteHandler(),
-            MockBulkDeleteReports(),
-            confirmDelete ?? ((_, _) => Task.FromResult(false)),
-            showImportDialog ?? (() => Task.FromResult<(Guid, string, byte[])?>(null)),
-            navigateToFilings ?? (_ => { }),
+            new ReportsHandlers(
+                getReports ?? MakeGetReports(),
+                importHandler ?? MakeImportHandler(),
+                deleteHandler ?? MakeDeleteHandler(),
+                bulkDelete ?? MockBulkDeleteReports()),
+            confirmation ?? DesktopTestDoubles.Confirmation(),
+            importDialog ?? DesktopTestDoubles.ImportDialog(),
+            navigation ?? Substitute.For<INavigationService>(),
             ImmediateSequencer.Instance);
     }
 
@@ -138,7 +143,7 @@ public class ReportsViewModelTests
         var importHandler = MakeImportHandler();
         var vm = CreateVm(
             importHandler: importHandler,
-            showImportDialog: () => Task.FromResult<(Guid, string, byte[])?>(null));
+            importDialog: DesktopTestDoubles.ImportDialog());
 
         await vm.ImportCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
@@ -154,8 +159,8 @@ public class ReportsViewModelTests
         var vm = CreateVm(
             getReports: getReports,
             importHandler: MakeImportHandler(success: true),
-            showImportDialog: () => Task.FromResult<(Guid, string, byte[])?>(
-                (importerId, "test.csv", [1, 2, 3])));
+            importDialog: DesktopTestDoubles.ImportDialog(
+                new ReportImportSelection(importerId, "test.csv", [1, 2, 3])));
 
         await vm.ImportCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
@@ -170,8 +175,8 @@ public class ReportsViewModelTests
         var importerId = Guid.NewGuid();
         var vm = CreateVm(
             importHandler: MakeImportHandler(success: false),
-            showImportDialog: () => Task.FromResult<(Guid, string, byte[])?>(
-                (importerId, "bad.csv", [1, 2, 3])));
+            importDialog: DesktopTestDoubles.ImportDialog(
+                new ReportImportSelection(importerId, "bad.csv", [1, 2, 3])));
 
         await vm.ImportCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
@@ -186,7 +191,7 @@ public class ReportsViewModelTests
         var deleteHandler = MakeDeleteHandler();
         var vm = CreateVm(
             deleteHandler: deleteHandler,
-            confirmDelete: (_, _) => Task.FromResult(false));
+            confirmation: DesktopTestDoubles.Confirmation(false));
 
         await vm.DeleteCommand.Execute(Guid.NewGuid()).FirstAsync(TestContext.Current.CancellationToken);
 
@@ -203,7 +208,7 @@ public class ReportsViewModelTests
         var vm = CreateVm(
             deleteHandler: deleteHandler,
             getReports: getReports,
-            confirmDelete: (_, _) => Task.FromResult(true));
+            confirmation: DesktopTestDoubles.Confirmation(true));
 
         await vm.DeleteCommand.Execute(reportId).FirstAsync(TestContext.Current.CancellationToken);
 
@@ -217,7 +222,7 @@ public class ReportsViewModelTests
     {
         var vm = CreateVm(
             deleteHandler: MakeDeleteHandler(success: false),
-            confirmDelete: (_, _) => Task.FromResult(true));
+            confirmation: DesktopTestDoubles.Confirmation(true));
 
         await vm.DeleteCommand.Execute(Guid.NewGuid()).FirstAsync(TestContext.Current.CancellationToken);
 
@@ -227,15 +232,49 @@ public class ReportsViewModelTests
     // ── US3: View Filings navigation ─────────────────────────────────────────
 
     [Fact]
-    public async Task ViewFilingsCommand_InvokesNavigateToFilingsDelegate()
+    public async Task ViewFilingsCommand_Executed_NavigatesToFilingsOfThatReport()
     {
         var reportId = Guid.NewGuid();
-        Guid? navigatedId = null;
-        var vm = CreateVm(navigateToFilings: id => navigatedId = id);
+        var navigation = Substitute.For<INavigationService>();
+        var vm = CreateVm(navigation: navigation);
 
         await vm.ViewFilingsCommand.Execute(reportId).FirstAsync(TestContext.Current.CancellationToken);
 
-        navigatedId.Should().Be(reportId);
+        navigation.Received(1).NavigateToFilings(reportId);
+    }
+
+    [Fact]
+    public async Task ImportCommand_WithSelection_SendsSelectedImporterFileAndContent()
+    {
+        var importerId = Guid.NewGuid();
+        byte[] content = [1, 2, 3];
+        var importHandler = MakeImportHandler(success: true);
+        var vm = CreateVm(
+            importHandler: importHandler,
+            importDialog: DesktopTestDoubles.ImportDialog(
+                new ReportImportSelection(importerId, "test.csv", content)));
+
+        await vm.ImportCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
+
+        await importHandler.Received(1).HandleAsync(
+            Arg.Is<ImportReportCommand>(c =>
+                c!.ImporterId == importerId && c.FileName == "test.csv" && c.CsvContent == content),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task DeleteCommand_Executed_AsksConfirmationWithLocalizedReportDeleteTexts()
+    {
+        var confirmation = DesktopTestDoubles.Confirmation();
+        var vm = CreateVm(confirmation: confirmation);
+
+        await vm.DeleteCommand.Execute(Guid.NewGuid()).FirstAsync(TestContext.Current.CancellationToken);
+
+        await confirmation.Received(1).ConfirmAsync(new ConfirmationRequest(
+            Strings.Reports_Delete_Confirmation_Title,
+            Strings.Reports_Delete_Confirmation_Message,
+            Strings.Reports_Delete_Confirm_Button,
+            Strings.Reports_Delete_Cancel_Button));
     }
 
     // ── Sync removed from Reports page ───────────────────────────────────────
@@ -378,7 +417,7 @@ public class ReportsViewModelTests
         var vm = CreateVm(
             getReports: getReports,
             deleteHandler: deleteHandler,
-            confirmDelete: (_, _) => Task.FromResult(true));
+            confirmation: DesktopTestDoubles.Confirmation(true));
         using var _activation = vm.Activator.Activate();
 
         // Manually put ViewModel on page 2
@@ -408,20 +447,10 @@ public class ReportsViewModelTests
         bulkDelete.HandleAsync(Arg.Any<BulkDeleteReportsCommand>(), Arg.Any<CancellationToken>())
             .Returns(Result<VoidResult, Error>.Success(VoidResult.Value));
 
-        var vm = CreateVm(
+        var vm2 = CreateVm(
             getReports: getReports,
-            confirmDelete: (_, _) => Task.FromResult(true));
-
-        // Replace the BulkDeleteCommand handler through the factory — use full overload
-        var vm2 = new ReportsViewModel(
-            getReports,
-            MakeImportHandler(),
-            MakeDeleteHandler(),
-            bulkDelete,
-            (_, _) => Task.FromResult(true),
-            () => Task.FromResult<(Guid, string, byte[])?>(null),
-            _ => { },
-            ImmediateSequencer.Instance);
+            confirmation: DesktopTestDoubles.Confirmation(true),
+            bulkDelete: bulkDelete);
 
         using var activation = vm2.Activator.Activate();
 
@@ -461,5 +490,18 @@ public class ReportsViewModelTests
         // activation + next + sort change
         var __ = getReports.Received(3).HandleAsync(Arg.Any<GetReportsQuery>(), Arg.Any<CancellationToken>());
     }
-}
 
+    // ── State re-published when loading ends ─────────────────────────────────
+
+    [Fact]
+    public void IsEmpty_LoadReturnsNoRows_NotifiesTrueWhenLoadingEnds()
+    {
+        var vm = CreateVm(getReports: MakeGetReports());
+        var notified = new List<bool>();
+        using var subscription = vm.WhenAnyValue(x => x.IsEmpty).Subscribe(notified.Add);
+
+        using var _ = vm.Activator.Activate();
+
+        notified.Should().EndWith(true);
+    }
+}

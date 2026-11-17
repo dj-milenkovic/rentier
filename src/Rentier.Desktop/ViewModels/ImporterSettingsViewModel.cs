@@ -10,22 +10,17 @@ using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
-using Rentier.Desktop.Dialogs;
 using Rentier.Desktop.Resources;
+using Rentier.Desktop.Services;
 using Rentier.Domain.Enums;
 
 namespace Rentier.Desktop.ViewModels;
 
 public sealed class ImporterSettingsViewModel : ReactiveObject, IActivatableViewModel
 {
-    private readonly IQueryHandler<GetImportersQuery, Result<IReadOnlyList<ImporterDto>, Error>> _getImporters;
-    private readonly IQueryHandler<GetTaxpayerProfileQuery, Result<TaxpayerProfileDto?, Error>> _getProfile;
-    private readonly IQueryHandler<GetMailboxesQuery, Result<IReadOnlyList<MailboxDto>, Error>> _getMailboxes;
-    private readonly ICommandHandler<AddImporterCommand, Result<Guid, Error>> _addImporter;
-    private readonly ICommandHandler<UpdateImporterCommand, Result<VoidResult, Error>> _updateImporter;
-    private readonly ICommandHandler<DeleteImporterCommand, Result<VoidResult, Error>> _deleteImporter;
+    private readonly ImporterSettingsHandlers _handlers;
     private readonly ISequencer _scheduler;
-    private readonly Func<string, string, string, string, Task<bool>> _confirmAction;
+    private readonly IConfirmationService _confirmation;
 
     // Form fields
     private string _displayName = string.Empty;
@@ -142,17 +137,12 @@ public sealed class ImporterSettingsViewModel : ReactiveObject, IActivatableView
 
     public ImporterSettingsViewModel(
         ImporterSettingsHandlers handlers,
-        ISequencer? scheduler = null,
-        Func<string, string, string, string, Task<bool>>? confirmAction = null)
+        IConfirmationService confirmation,
+        ISequencer? scheduler = null)
     {
-        _getImporters = handlers.GetImporters;
-        _getProfile = handlers.GetProfile;
-        _getMailboxes = handlers.GetMailboxes;
-        _addImporter = handlers.AddImporter;
-        _updateImporter = handlers.UpdateImporter;
-        _deleteImporter = handlers.DeleteImporter;
+        _handlers = handlers;
         _scheduler = scheduler ?? RxSchedulers.MainThreadScheduler;
-        _confirmAction = confirmAction ?? ConfirmDialogHelper.ShowAsync;
+        _confirmation = confirmation;
 
         AddNewCommand = ReactiveCommand.Create(OnAddNew);
         SaveCommand = ReactiveCommand.CreateFromTask(OnSaveAsync);
@@ -231,7 +221,7 @@ public sealed class ImporterSettingsViewModel : ReactiveObject, IActivatableView
                     AttachmentRegex,
                     PaymentNotes);
 
-                var result = await _updateImporter.HandleAsync(cmd, ct);
+                var result = await _handlers.UpdateImporter.HandleAsync(cmd, ct);
                 if (result.IsSuccess)
                     await ReloadReselectAndPopulateAsync(SelectedImporter.Id, ct);
                 else
@@ -249,7 +239,7 @@ public sealed class ImporterSettingsViewModel : ReactiveObject, IActivatableView
                     AttachmentRegex,
                     PaymentNotes);
 
-                var result = await _addImporter.HandleAsync(cmd, ct);
+                var result = await _handlers.AddImporter.HandleAsync(cmd, ct);
                 if (result.IsSuccess)
                     await ReloadReselectAndPopulateAsync(result.Value, ct);
                 else
@@ -266,25 +256,29 @@ public sealed class ImporterSettingsViewModel : ReactiveObject, IActivatableView
     /// reselect the saved item, and repopulate the form (or clear it if it vanished).</summary>
     private async Task ReloadReselectAndPopulateAsync(Guid savedId, CancellationToken ct)
     {
-        await ReloadImportersAsync(ct);
+        var reloadError = await ReloadImportersAsync(ct);
         _selectedImporter = ImporterItems.FirstOrDefault(i => i.Id == savedId);
         this.RaisePropertyChanged(nameof(SelectedImporter));
         if (_selectedImporter != null)
             PopulateFormFromDto(_selectedImporter.Dto);
         else
             ClearForm();
+        // The save itself succeeded; a failed refresh is reported alongside it (after ClearForm,
+        // which resets both messages) so a stale list is never shown silently.
         SuccessMessage = Strings.Importers_Saved_Confirmation;
+        if (reloadError is not null)
+            ErrorMessage = reloadError.Message;
     }
 
     private async Task OnDeleteAsync(CancellationToken ct)
     {
         if (SelectedImporter is null) return;
 
-        var confirmed = await _confirmAction(
+        var confirmed = await _confirmation.ConfirmAsync(new ConfirmationRequest(
             Strings.Importer_Delete_Title,
             string.Format(Strings.Importer_Delete_Message, SelectedImporter.DisplayName),
             Strings.Common_Delete,
-            Strings.Common_Cancel);
+            Strings.Common_Cancel));
         if (!confirmed) return;
 
         IsLoading = true;
@@ -293,11 +287,14 @@ public sealed class ImporterSettingsViewModel : ReactiveObject, IActivatableView
         try
         {
             var cmd = new DeleteImporterCommand(SelectedImporter.Id);
-            var result = await _deleteImporter.HandleAsync(cmd, ct);
+            var result = await _handlers.DeleteImporter.HandleAsync(cmd, ct);
             if (result.IsSuccess)
             {
-                await ReloadImportersAsync(ct);
+                var reloadError = await ReloadImportersAsync(ct);
                 OnAddNew();
+                // Set after OnAddNew, which clears the messages; the list may still show the deleted row.
+                if (reloadError is not null)
+                    ErrorMessage = reloadError.Message;
             }
             else
             {
@@ -317,20 +314,12 @@ public sealed class ImporterSettingsViewModel : ReactiveObject, IActivatableView
         try
         {
             // (1) Load importers
-            var importersResult = await _getImporters.HandleAsync(new GetImportersQuery(), ct);
-            if (importersResult.IsSuccess)
-            {
-                ImporterItems.Clear();
-                foreach (var dto in importersResult.Value)
-                    ImporterItems.Add(ImporterItemViewModel.From(dto));
-            }
-            else
-            {
-                ErrorMessage = importersResult.Error.Message;
-            }
+            var importersError = await ReloadImportersAsync(ct);
+            if (importersError is not null)
+                ErrorMessage = importersError.Message;
 
             // (2) Load profile
-            var profileResult = await _getProfile.HandleAsync(new GetTaxpayerProfileQuery(), ct);
+            var profileResult = await _handlers.GetProfile.HandleAsync(new GetTaxpayerProfileQuery(), ct);
             if (profileResult.IsSuccess && profileResult.Value is not null)
             {
                 AvailableProfiles.Clear();
@@ -338,7 +327,7 @@ public sealed class ImporterSettingsViewModel : ReactiveObject, IActivatableView
             }
 
             // (3) Load mailboxes
-            var mailboxesResult = await _getMailboxes.HandleAsync(new GetMailboxesQuery(), ct);
+            var mailboxesResult = await _handlers.GetMailboxes.HandleAsync(new GetMailboxesQuery(), ct);
             if (mailboxesResult.IsSuccess)
             {
                 AvailableMailboxes.Clear();
@@ -352,14 +341,16 @@ public sealed class ImporterSettingsViewModel : ReactiveObject, IActivatableView
         }
     }
 
-    private async Task ReloadImportersAsync(CancellationToken ct = default)
+    /// <summary>Refreshes <see cref="ImporterItems"/>; returns the error when the query failed.</summary>
+    private async Task<Error?> ReloadImportersAsync(CancellationToken ct = default)
     {
-        var result = await _getImporters.HandleAsync(new GetImportersQuery(), ct);
-        if (result.IsSuccess)
-        {
-            ImporterItems.Clear();
-            foreach (var dto in result.Value)
-                ImporterItems.Add(ImporterItemViewModel.From(dto));
-        }
+        var result = await _handlers.GetImporters.HandleAsync(new GetImportersQuery(), ct);
+        if (!result.IsSuccess)
+            return result.Error;
+
+        ImporterItems.Clear();
+        foreach (var dto in result.Value)
+            ImporterItems.Add(ImporterItemViewModel.From(dto));
+        return null;
     }
 }

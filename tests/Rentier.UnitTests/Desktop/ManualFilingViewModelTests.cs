@@ -10,6 +10,7 @@ using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
 using Rentier.Desktop.Resources;
+using Rentier.Desktop.Services;
 using Rentier.Desktop.ViewModels;
 using Rentier.Domain.Enums;
 using Xunit;
@@ -71,21 +72,24 @@ public class ManualFilingViewModelTests
         ICommandHandler<CalculateManualFilingCommand, Result<ManualFilingPreviewDto, Error>>? calcHandler = null,
         ICommandHandler<CreateManualFilingCommand, Result<Guid, Error>>? createHandler = null,
         IQueryHandler<GetTaxpayerProfileQuery, Result<TaxpayerProfileDto?, Error>>? profileQueryHandler = null,
-        Action? navigateBack = null)
+        INavigationService? navigation = null,
+        IConfirmationService? confirmation = null)
         => new ManualFilingViewModel(
             calcHandler ?? MockCalculateHandler(),
             createHandler ?? MockCreateHandler(),
             profileQueryHandler ?? MockProfileQueryHandler(),
-            navigateBack ?? (() => { }),
+            confirmation ?? DesktopTestDoubles.Confirmation(),
+            navigation ?? Substitute.For<INavigationService>(),
             ImmediateSequencer.Instance);
 
     private static ManualFilingViewModel CreateFilledVm(
         ICommandHandler<CalculateManualFilingCommand, Result<ManualFilingPreviewDto, Error>>? calcHandler = null,
         ICommandHandler<CreateManualFilingCommand, Result<Guid, Error>>? createHandler = null,
         IQueryHandler<GetTaxpayerProfileQuery, Result<TaxpayerProfileDto?, Error>>? profileQueryHandler = null,
-        Action? navigateBack = null)
+        INavigationService? navigation = null,
+        IConfirmationService? confirmation = null)
     {
-        var vm = CreateVm(calcHandler, createHandler, profileQueryHandler, navigateBack);
+        var vm = CreateVm(calcHandler, createHandler, profileQueryHandler, navigation, confirmation);
         vm.Ticker = "AAPL";
         vm.IncomeDate = new DateTimeOffset(TestDate.ToDateTime(TimeOnly.MinValue));
         vm.GrossAmountText = "100.00";
@@ -219,15 +223,15 @@ public class ManualFilingViewModelTests
     // ── Save Flow (US1) ───────────────────────────────────────────────────────
 
     [Fact]
-    public async Task SaveCommand_Execute_CallsNavigateBack()
+    public async Task SaveCommand_Execute_NavigatesBackToAllFilings()
     {
-        var navigateCalled = false;
-        var vm = CreateFilledVm(navigateBack: () => navigateCalled = true);
+        var navigation = Substitute.For<INavigationService>();
+        var vm = CreateFilledVm(navigation: navigation);
 
         await vm.CalculateCommand.Execute();
         await vm.SaveCommand.Execute();
 
-        navigateCalled.Should().BeTrue();
+        navigation.Received(1).NavigateToFilings(null);
     }
 
     [Fact]
@@ -246,17 +250,17 @@ public class ManualFilingViewModelTests
     [Fact]
     public async Task SaveCommand_DuplicateError_SetsErrorMessageAndNoNavigation()
     {
-        var navigateCalled = false;
+        var navigation = Substitute.For<INavigationService>();
         var createHandler = MockCreateHandler(success: false);
         var vm = CreateFilledVm(
             createHandler: createHandler,
-            navigateBack: () => navigateCalled = true);
+            navigation: navigation);
 
         await vm.CalculateCommand.Execute();
         await vm.SaveCommand.Execute();
 
         vm.ErrorMessage.Should().Be("A filing with the same details already exists");
-        navigateCalled.Should().BeFalse();
+        navigation.DidNotReceive().NavigateToFilings(Arg.Any<Guid?>());
     }
 
     // ── Preview Clearing on Input Change (US4) ────────────────────────────────
@@ -346,14 +350,55 @@ public class ManualFilingViewModelTests
     // ── Cancel Navigation (US5) ───────────────────────────────────────────────
 
     [Fact]
-    public async Task CancelCommand_Execute_InvokesNavigateBack()
+    public async Task CancelCommand_CleanForm_NavigatesBackWithoutConfirmation()
     {
-        var navigateCalled = false;
-        var vm = CreateVm(navigateBack: () => navigateCalled = true);
+        var navigation = Substitute.For<INavigationService>();
+        var confirmation = DesktopTestDoubles.Confirmation();
+        var vm = CreateVm(navigation: navigation, confirmation: confirmation);
 
         await vm.CancelCommand.Execute();
 
-        navigateCalled.Should().BeTrue();
+        await confirmation.DidNotReceive().ConfirmAsync(Arg.Any<ConfirmationRequest>());
+        navigation.Received(1).NavigateToFilings(null);
+    }
+
+    [Fact]
+    public async Task CancelCommand_DirtyFormAndUserKeepsEditing_StaysOnForm()
+    {
+        var navigation = Substitute.For<INavigationService>();
+        var vm = CreateFilledVm(
+            navigation: navigation, confirmation: DesktopTestDoubles.Confirmation(false));
+
+        await vm.CancelCommand.Execute();
+
+        navigation.DidNotReceive().NavigateToFilings(Arg.Any<Guid?>());
+    }
+
+    [Fact]
+    public async Task CancelCommand_DirtyFormAndUserDiscards_NavigatesBack()
+    {
+        var navigation = Substitute.For<INavigationService>();
+        var vm = CreateFilledVm(
+            navigation: navigation, confirmation: DesktopTestDoubles.Confirmation(true));
+
+        await vm.CancelCommand.Execute();
+
+        navigation.Received(1).NavigateToFilings(null);
+    }
+
+    [Fact]
+    public async Task CancelCommand_DirtyForm_AsksWithLocalizedDiscardTexts()
+    {
+        var confirmation = DesktopTestDoubles.Confirmation();
+        var vm = CreateFilledVm(confirmation: confirmation);
+
+        await vm.CancelCommand.Execute();
+
+        await confirmation.Received(1).ConfirmAsync(new ConfirmationRequest(
+            Strings.ManualFiling_Cancel_Discard_Title,
+            Strings.ManualFiling_Cancel_Discard_Message,
+            Strings.ManualFiling_Cancel_Discard_Confirm,
+            Strings.ManualFiling_Cancel_Discard_Keep));
     }
 
     [Fact]
@@ -423,12 +468,55 @@ public class ManualFilingViewModelTests
             .Returns(Result<Guid, Error>.Success(Guid.NewGuid()));
 
         var vm = CreateFilledVm(createHandler: createHandler);
+        vm.PaymentNotesText = "   ";
 
         await vm.CalculateCommand.Execute();
         await vm.SaveCommand.Execute();
 
         capturedCmd.Should().NotBeNull();
         capturedCmd!.PaymentNotes.Should().BeNull();
+    }
+
+    [Fact]
+    public void PaymentNotesText_NewForm_DefaultsToBrokerAccountPayout()
+    {
+        var vm = CreateVm();
+
+        vm.PaymentNotesText.Should().Be("Isplata na brokerski račun");
+    }
+
+    [Fact]
+    public void PaymentNotesText_SetToSameValue_DoesNotMarkFormDirty()
+    {
+        var vm = CreateVm();
+
+        vm.PaymentNotesText = "Isplata na brokerski račun";
+
+        vm.IsDirty.Should().BeFalse();
+    }
+
+    [Fact]
+    public void PaymentNotesText_NewForm_IsNotDirty()
+    {
+        var vm = CreateVm();
+
+        vm.IsDirty.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task SaveCommand_WithDefaultPaymentNotesText_SendsDefaultPaymentNotesToHandler()
+    {
+        CreateManualFilingCommand? capturedCmd = null;
+        var createHandler = Substitute.For<ICommandHandler<CreateManualFilingCommand, Result<Guid, Error>>>();
+        createHandler.HandleAsync(Arg.Do<CreateManualFilingCommand>(c => capturedCmd = c), Arg.Any<CancellationToken>())
+            .Returns(Result<Guid, Error>.Success(Guid.NewGuid()));
+
+        var vm = CreateFilledVm(createHandler: createHandler);
+
+        await vm.CalculateCommand.Execute();
+        await vm.SaveCommand.Execute();
+
+        capturedCmd!.PaymentNotes.Should().Be("Isplata na brokerski račun");
     }
 
     [Fact]

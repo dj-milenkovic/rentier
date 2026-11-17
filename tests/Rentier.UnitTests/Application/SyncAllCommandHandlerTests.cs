@@ -8,6 +8,7 @@ using Rentier.Application.Interfaces;
 using Rentier.Domain.ValueObjects;
 using Rentier.UnitTests.Application.Common;
 using Xunit;
+using Rentier.Tests.Common.Fakes;
 
 namespace Rentier.UnitTests.Application;
 
@@ -38,7 +39,8 @@ public class SyncAllCommandHandlerTests
         ICommandHandler<ProcessReportsCommand, Result<ProcessReportsResult, Error>>? processHandler = null)
         => new(
             syncHandler ?? MakeSyncMailboxHandler(),
-            processHandler ?? MakeProcessReportsHandler());
+            processHandler ?? MakeProcessReportsHandler(),
+            TestClock.Provider());
 
     private static IProgress<SyncProgressEntry> NoProgress() =>
         Substitute.For<IProgress<SyncProgressEntry>>();
@@ -46,6 +48,24 @@ public class SyncAllCommandHandlerTests
     private static SyncAllCommand DefaultCommand() => new(SyncParameters.Default);
 
     // ── Tests ────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task HandleAsync_ProgressEntries_AreStampedWithClockLocalTime()
+    {
+        var clock = new FixedTimeProvider(
+            new DateTimeOffset(2025, 12, 31, 23, 30, 0, TimeSpan.Zero),
+            FixedTimeProvider.FixedOffsetZone(TimeSpan.FromHours(1)));
+        var handler = new SyncAllCommandHandler(MakeSyncMailboxHandler(), MakeProcessReportsHandler(), clock);
+        var entries = new List<SyncProgressEntry>();
+        var progress = Substitute.For<IProgress<SyncProgressEntry>>();
+        progress.Report(Arg.Do<SyncProgressEntry>(entries.Add));
+
+        await handler.HandleAsync(DefaultCommand(), progress, TestContext.Current.CancellationToken);
+
+        entries.Should().NotBeEmpty().And.OnlyContain(e =>
+            e.Timestamp == new DateTimeOffset(2026, 1, 1, 0, 30, 0, TimeSpan.FromHours(1))
+            && e.Timestamp.Offset == TimeSpan.FromHours(1));
+    }
 
     [Fact]
     public async Task HandleAsync_BothSucceed_ReturnsCombinedResult()
@@ -170,6 +190,60 @@ public class SyncAllCommandHandlerTests
         await handler.HandleAsync(DefaultCommand(), progress, TestContext.Current.CancellationToken);
 
         progress.Entries.Should().Contain(e => e.Message == "No new reports to process.");
+    }
+
+    // ── Failed attempts must reach the result, not just the live log ────────
+
+    private static ProcessReportsResult ResultWithPendingRetry() => new(
+        0, 0, 0, [], ReportsPendingRetry: 1,
+        FailedAttempts: [new ReportFailedAttempt(Guid.NewGuid(), "stmt.csv", "NBS unreachable", 1, FailedAttemptKind.PendingRetry)]);
+
+    [Fact]
+    public async Task HandleAsync_ReportPendingRetry_AddsFailureToResultErrors()
+    {
+        var handler = CreateHandler(processHandler: MakeProcessReportsHandler(
+            Result<ProcessReportsResult, Error>.Success(ResultWithPendingRetry())));
+
+        var result = await handler.HandleAsync(DefaultCommand(), NoProgress(), TestContext.Current.CancellationToken);
+
+        result.Value.Errors.Should().ContainSingle(e => e.Contains("stmt.csv") && e.Contains("NBS unreachable"));
+    }
+
+    [Fact]
+    public async Task HandleAsync_ReportPendingRetry_DoesNotReportNoNewReports()
+    {
+        var progress = new SynchronousProgress<SyncProgressEntry>();
+        var handler = CreateHandler(processHandler: MakeProcessReportsHandler(
+            Result<ProcessReportsResult, Error>.Success(ResultWithPendingRetry())));
+
+        await handler.HandleAsync(DefaultCommand(), progress, TestContext.Current.CancellationToken);
+
+        progress.Entries.Should().NotContain(e => e.Message == "No new reports to process.");
+    }
+
+    [Fact]
+    public async Task HandleAsync_ReportPendingRetry_SummaryWarnsItWillBeRetried()
+    {
+        var progress = new SynchronousProgress<SyncProgressEntry>();
+        var handler = CreateHandler(processHandler: MakeProcessReportsHandler(
+            Result<ProcessReportsResult, Error>.Success(ResultWithPendingRetry())));
+
+        await handler.HandleAsync(DefaultCommand(), progress, TestContext.Current.CancellationToken);
+
+        progress.Entries.Should().Contain(e =>
+            e.Severity == SyncProgressSeverity.Warning && e.Message.Contains("will be retried on the next sync"));
+    }
+
+    [Fact]
+    public async Task HandleAsync_ReportErrored_SummaryDoesNotReportNoNewReports()
+    {
+        var progress = new SynchronousProgress<SyncProgressEntry>();
+        var handler = CreateHandler(processHandler: MakeProcessReportsHandler(
+            Result<ProcessReportsResult, Error>.Success(new ProcessReportsResult(0, 0, 1, []))));
+
+        await handler.HandleAsync(DefaultCommand(), progress, TestContext.Current.CancellationToken);
+
+        progress.Entries.Should().Contain(e => e.Message.Contains("1 report(s) failed and need attention"));
     }
 
     [Fact]

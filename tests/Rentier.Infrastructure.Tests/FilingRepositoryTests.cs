@@ -8,6 +8,7 @@ using Rentier.Domain.Enums;
 using Rentier.Domain.ValueObjects;
 using Rentier.Infrastructure.Persistence;
 using Rentier.Infrastructure.Repositories;
+using Rentier.Tests.Common.Fakes;
 
 namespace Rentier.Infrastructure.Tests;
 
@@ -171,7 +172,7 @@ public class FilingRepositoryTests : IAsyncLifetime
         await _context.Importers.AddAsync(importer, TestContext.Current.CancellationToken);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var report = Report.Create(importer.Id, "report.csv", null, null);
+        var report = Report.Create(importer.Id, "report.csv", null, null, TestClock.TODAY);
         await _context.Reports.AddAsync(report, TestContext.Current.CancellationToken);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
@@ -449,7 +450,7 @@ public class FilingRepositoryTests : IAsyncLifetime
         await _context.Importers.AddAsync(importer);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var report = Report.Create(importer.Id, "stmt.csv", null, null);
+        var report = Report.Create(importer.Id, "stmt.csv", null, null, TestClock.TODAY);
         await _context.Reports.AddAsync(report);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
@@ -548,7 +549,7 @@ public class FilingRepositoryTests : IAsyncLifetime
         var importer2 = Importer.Create("Other");
         await _context.Importers.AddAsync(importer2, TestContext.Current.CancellationToken);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
-        var report2 = Report.Create(importer2.Id, "other.csv", null, null);
+        var report2 = Report.Create(importer2.Id, "other.csv", null, null, TestClock.TODAY);
         await _context.Reports.AddAsync(report2, TestContext.Current.CancellationToken);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
@@ -566,6 +567,66 @@ public class FilingRepositoryTests : IAsyncLifetime
         var remaining = await _repository.GetByReportIdAsync(report2.Id, TestContext.Current.CancellationToken);
         remaining.Should().HaveCount(1);
         remaining[0].Id.Should().Be(f2.Id);
+    }
+
+    // ── DeleteByReportIdsAsync: one query for many reports ──────────────────
+
+    private async Task<(Report Report1, Report Report2, Report Report3)> SeedThreeReportsWithOneFilingEachAsync()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (_, report1, profile) = await SeedReportAsync();
+        var importer = Importer.Create("Other");
+        await _context.Importers.AddAsync(importer, ct);
+        var report2 = Report.Create(importer.Id, "second.csv", null, null, TestClock.TODAY);
+        var report3 = Report.Create(importer.Id, "third.csv", null, null, TestClock.TODAY);
+        await _context.Reports.AddRangeAsync([report2, report3], ct);
+        await _context.SaveChangesAsync(ct);
+
+        var month = 1;
+        foreach (var report in new[] { report1, report2, report3 })
+        {
+            await _repository.AddAsync(Filing.CreateFromIncome(
+                new FilingInfo(IncomeType.Dividend, $"Co{month}", new DateOnly(2024, month, 15), 1000m, 0m, 150m, 150m),
+                profile.Id, new DateOnly(2024, month + 1, 15), new FilingProvenance(ReportId: report.Id)), ct);
+            month++;
+        }
+
+        return (report1, report2, report3);
+    }
+
+    [Fact]
+    public async Task DeleteByReportIdsAsync_SeveralReports_DeletesTheirFilings()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (report1, report2, _) = await SeedThreeReportsWithOneFilingEachAsync();
+
+        await _repository.DeleteByReportIdsAsync([report1.Id, report2.Id], ct);
+
+        var remaining = await _repository.GetAllAsync(ct);
+        remaining.Select(f => f.ReportId).Should().NotContain([report1.Id, report2.Id]);
+    }
+
+    [Fact]
+    public async Task DeleteByReportIdsAsync_SeveralReports_KeepsFilingsOfOtherReports()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (report1, report2, report3) = await SeedThreeReportsWithOneFilingEachAsync();
+
+        await _repository.DeleteByReportIdsAsync([report1.Id, report2.Id], ct);
+
+        var remaining = await _repository.GetAllAsync(ct);
+        remaining.Should().ContainSingle().Which.ReportId.Should().Be(report3.Id);
+    }
+
+    [Fact]
+    public async Task DeleteByReportIdsAsync_EmptyList_DeletesNothing()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await SeedThreeReportsWithOneFilingEachAsync();
+
+        await _repository.DeleteByReportIdsAsync([], ct);
+
+        (await _repository.GetAllAsync(ct)).Should().HaveCount(3);
     }
 
     // ── GetByTaxPeriodAsync tests ────────────────────────────────────────────

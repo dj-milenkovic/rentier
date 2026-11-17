@@ -5,7 +5,9 @@ using ReactiveUI.Primitives.Disposables;
 using Rentier.Desktop.Extensions;
 using ReactiveUI;
 using Rentier.Application.Commands;
+using Rentier.Application.Common;
 using Rentier.Domain.Enums;
+using Rentier.Domain.Exceptions;
 using Rentier.Domain.ValueObjects;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
@@ -18,6 +20,7 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
 
     private readonly ISyncAllCommandHandler _handler;
     private readonly ISequencer _scheduler;
+    private readonly TimeProvider _timeProvider;
     private CancellationTokenSource? _cts;
 
     // ── Running state ────────────────────────────────────────────────────────
@@ -89,9 +92,13 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
             ? DateOnly.FromDateTime(ReplayFromDateOffset.Value.DateTime)
             : null;
 
-    /// <summary>Upper bound for the DatePicker — today in local time as UTC-offset.</summary>
-    public DateTimeOffset TodayOffset { get; } = new DateTimeOffset(
-        DateTime.UtcNow.Date, TimeSpan.Zero);
+    /// <summary>
+    /// Upper bound for the DatePicker — today's <b>local</b> calendar date (the picker shows a
+    /// local calendar), carried as a zero-offset value so its date part is never shifted.
+    /// Evaluated on every read so it never goes stale if the app stays open past midnight.
+    /// </summary>
+    public DateTimeOffset TodayOffset =>
+        new(_timeProvider.GetLocalToday().ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
 
     // ── Derived observables ──────────────────────────────────────────────────
     private readonly ObservableAsPropertyHelper<bool> _isReplayFromDateMode;
@@ -113,9 +120,11 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
     public ReactiveCommand<RxVoid, RxVoid> SyncCommand { get; }
     public ReactiveCommand<RxVoid, RxVoid> CancelCommand { get; }
 
-    public SyncViewModel(ISyncAllCommandHandler handler, ISequencer? scheduler = null)
+    public SyncViewModel(
+        ISyncAllCommandHandler handler, TimeProvider timeProvider, ISequencer? scheduler = null)
     {
         _handler = handler;
+        _timeProvider = timeProvider;
         var effectiveScheduler = scheduler ?? RxSchedulers.MainThreadScheduler;
         _scheduler = effectiveScheduler;
 
@@ -141,7 +150,7 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
             {
                 if (d == null) return Resources.Strings.Sync_Validation_DateRequired;
                 var date = DateOnly.FromDateTime(d.Value.DateTime);
-                if (date > DateOnly.FromDateTime(DateTime.UtcNow))
+                if (date > _timeProvider.GetLocalToday())
                     return Resources.Strings.Sync_Validation_DateNotFuture;
             }
             return (string?)null;
@@ -226,10 +235,12 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
                 entry => LogEntries.Add(new SyncProgressEntryViewModel(entry)),
                 _scheduler);
 
-            var parameters = new SyncParameters(
-                SelectedSyncMode,
-                SelectedDuplicateStrategy,
-                SelectedSyncMode == SyncMode.ReplayFromDate ? ReplayFromDate : null);
+            var parameters = SelectedSyncMode == SyncMode.ReplayFromDate
+                ? SyncParameters.ReplayFrom(
+                    ReplayFromDate ?? throw new DomainException("ReplayFromDate is required for ReplayFromDate mode"),
+                    _timeProvider.GetLocalToday(),
+                    SelectedDuplicateStrategy)
+                : new SyncParameters(SelectedSyncMode, SelectedDuplicateStrategy);
 
             var result = await _handler.HandleAsync(new SyncAllCommand(parameters), progress, _cts.Token);
 
@@ -248,7 +259,7 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
         catch (OperationCanceledException)
         {
             LogEntries.Add(new SyncProgressEntryViewModel(
-                new SyncProgressEntry(DateTimeOffset.Now, "Sync cancelled by user.", SyncProgressSeverity.Warning)));
+                new SyncProgressEntry(_timeProvider.GetLocalNow(), "Sync cancelled by user.", SyncProgressSeverity.Warning)));
             SummaryMessage = "Sync cancelled by user.";
         }
         finally

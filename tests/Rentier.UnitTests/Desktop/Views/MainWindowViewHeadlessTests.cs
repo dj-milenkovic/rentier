@@ -16,6 +16,7 @@ using Rentier.Application.Queries;
 using Rentier.Desktop.Services;
 using Rentier.Desktop.ViewModels;
 using Rentier.Desktop.Views;
+using Rentier.Tests.Common.Fakes;
 using Xunit;
 using ReactiveUI.Primitives.Signals;
 
@@ -34,6 +35,7 @@ public class MainWindowViewHeadlessTests
     private static IServiceProvider BuildProvider()
     {
         var services = new ServiceCollection();
+        services.AddSingleton<TimeProvider>(TestClock.Provider());
 
         services.AddSingleton(_ => Substitute.For<IUpdateService>());
 
@@ -55,8 +57,7 @@ public class MainWindowViewHeadlessTests
             Substitute.For<ICommandHandler<ExportFilingCommand, Result<ExportFilingResult, Error>>>());
         services.AddTransient(_ =>
             Substitute.For<ICommandHandler<BulkDeleteFilingsCommand, Result<VoidResult, Error>>>());
-        services.AddTransient<Func<string, Task<bool>>>(_ => _ => Task.FromResult(false));
-        services.AddTransient<Func<ExportFilingResult, Task>>(_ => _ => Task.CompletedTask);
+        DesktopTestDoubles.AddUiServiceDoubles(services);
         services.AddTransient<FilingsHandlers>();
 
         services.AddTransient(_ =>
@@ -82,9 +83,7 @@ public class MainWindowViewHeadlessTests
             Substitute.For<ICommandHandler<DeleteReportCommand, Result<VoidResult, Error>>>());
         services.AddTransient(_ =>
             Substitute.For<ICommandHandler<BulkDeleteReportsCommand, Result<VoidResult, Error>>>());
-        services.AddTransient<Func<string, string, Task<bool>>>(_ => (_, _) => Task.FromResult(false));
-        services.AddTransient<Func<Task<(Guid ImporterId, string FileName, byte[] Content)?>>>(
-            _ => () => Task.FromResult<(Guid, string, byte[])?>(null));
+        services.AddTransient<ReportsHandlers>();
 
         services.AddTransient(_ =>
             Substitute.For<ISyncAllCommandHandler>());
@@ -133,7 +132,8 @@ public class MainWindowViewHeadlessTests
         return new ImporterSettingsViewModel(
             new ImporterSettingsHandlers(
                 getImporters, getProfile, getMailboxes,
-                addImporter, updateImporter, deleteImporter));
+                addImporter, updateImporter, deleteImporter),
+            DesktopTestDoubles.Confirmation());
     }
 
     private static AppearanceSettingsViewModel BuildAppearanceVm()
@@ -177,7 +177,8 @@ public class MainWindowViewHeadlessTests
     {
         var provider = BuildProvider();
         var updateService = provider.GetRequiredService<IUpdateService>();
-        return new(provider, BuildLocalizationService(), updateService, BuildAppVersionService());
+        return new(provider, BuildLocalizationService(), updateService, BuildAppVersionService(),
+            provider.GetRequiredService<INavigationRequestSource>());
     }
 
     [AvaloniaFact]

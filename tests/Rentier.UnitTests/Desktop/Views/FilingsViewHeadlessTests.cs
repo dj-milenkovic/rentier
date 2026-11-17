@@ -15,6 +15,7 @@ using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
 using Rentier.Desktop.Resources;
+using Rentier.Desktop.Services;
 using Rentier.Desktop.ViewModels;
 using Rentier.Desktop.Views;
 using Rentier.Domain.Enums;
@@ -757,6 +758,44 @@ public class FilingsViewHeadlessTests
     /// Finds the report filter chip <see cref="Border"/> in the visual tree.
     /// The chip is the Border whose direct child is a StackPanel containing a TextBlock and a Button (✕).
     /// </summary>
+    // ── State shown after a load completes (bindings must refresh once IsLoading turns false) ──
+
+    [AvaloniaFact]
+    public void FilingsView_LoadReturnsNoRows_ShowsEmptyStateHint()
+    {
+        var vm = CreateMinimalFilingsViewModel();
+        var window = new Window { Content = new FilingsView { DataContext = vm }, Width = 1200, Height = 600 };
+        window.Show();
+
+        using var activation = vm.Activator.Activate();
+        window.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
+
+        window.GetVisualDescendants().OfType<TextBlock>()
+            .Single(t => t.Name == "EmptyStateHint").IsVisible.Should().BeTrue();
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void FilingsView_LoadReturnsMorePages_EnablesNextPageButton()
+    {
+        var getFilings = Substitute.For<IQueryHandler<GetFilingsQuery, Result<FilingsPageResult, Error>>>();
+        getFilings.HandleAsync(Arg.Any<GetFilingsQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<FilingsPageResult, Error>.Success(
+                new FilingsPageResult([MakeFilingRowDto()], 40, 2)));
+        var vm = CreateFilingsViewModelWith(getFilings);
+        var window = new Window { Content = new FilingsView { DataContext = vm }, Width = 1200, Height = 600 };
+        window.Show();
+
+        using var activation = vm.Activator.Activate();
+        window.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
+
+        window.GetVisualDescendants().OfType<Button>()
+            .Single(b => ReferenceEquals(b.Command, vm.NextPageCommand)).IsEffectivelyEnabled.Should().BeTrue();
+        window.Close();
+    }
+
     private static Border? FindChipBorder(Window window)
     {
         return window.GetVisualDescendants()
@@ -825,9 +864,9 @@ public class FilingsViewHeadlessTests
                 Substitute.For<ICommandHandler<DeleteFilingCommand, Result<VoidResult, Error>>>(),
                 Substitute.For<ICommandHandler<ExportFilingCommand, Result<ExportFilingResult, Error>>>(),
                 Substitute.For<ICommandHandler<BulkDeleteFilingsCommand, Result<VoidResult, Error>>>()),
-            confirmDelete: _ => Task.FromResult(false),
-            saveFile: _ => Task.CompletedTask,
-            navigateToManualFiling: () => { },
+            confirmation: DesktopTestDoubles.Confirmation(),
+            fileSave: DesktopTestDoubles.FileSave(),
+            navigation: Substitute.For<INavigationService>(),
             scheduler: ImmediateSequencer.Instance);
 
         var view = new FilingsView { DataContext = vm };
@@ -874,9 +913,9 @@ public class FilingsViewHeadlessTests
                 deleteFiling,
                 exportFiling,
                 bulkDelete),
-            confirmDelete: _ => Task.FromResult(false),
-            saveFile: _ => Task.CompletedTask,
-            navigateToManualFiling: () => { },
+            confirmation: DesktopTestDoubles.Confirmation(),
+            fileSave: DesktopTestDoubles.FileSave(),
+            navigation: Substitute.For<INavigationService>(),
             scheduler: ImmediateSequencer.Instance);
     }
 

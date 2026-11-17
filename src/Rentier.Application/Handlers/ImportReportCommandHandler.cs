@@ -17,12 +17,15 @@ public sealed class ImportReportCommandHandler
     private readonly IReportRepository _reportRepository;
     private readonly IStatementParser _statementParser;
     private readonly ICommandHandler<ProcessReportsCommand, Result<ProcessReportsResult, Error>> _processReports;
+    private readonly TimeProvider _timeProvider;
 
     public ImportReportCommandHandler(
         IReportRepository reportRepository,
         IStatementParser statementParser,
-        ICommandHandler<ProcessReportsCommand, Result<ProcessReportsResult, Error>> processReports)
+        ICommandHandler<ProcessReportsCommand, Result<ProcessReportsResult, Error>> processReports,
+        TimeProvider timeProvider)
     {
+        _timeProvider = timeProvider;
         _reportRepository = reportRepository;
         _statementParser = statementParser;
         _processReports = processReports;
@@ -49,13 +52,28 @@ public sealed class ImportReportCommandHandler
                             $"A report named ''{command.FileName}'' already exists for this importer."));
 
                 // Step 3: Persist
-                var report = Report.Create(command.ImporterId, command.FileName, command.CsvContent, null);
+                var report = Report.Create(
+                    command.ImporterId, command.FileName, command.CsvContent, null,
+                    importDate: _timeProvider.GetLocalToday());
                 await _reportRepository.AddAsync(report, ct);
 
                 // Step 4: Run pipeline for all Init reports
                 var processResult = await _processReports.HandleAsync(new ProcessReportsCommand(), ct);
                 if (!processResult.IsSuccess)
                     return Result<Guid, Error>.Failure(processResult.Error);
+
+                // The report is saved either way, but if its own processing failed without
+                // persisting anything the user must be told — it is not a successful import.
+                var failedAttempt = processResult.Value.FailedAttempts?
+                    .FirstOrDefault(a => a.ReportId == report.Id && a.Kind != FailedAttemptKind.ReportGone);
+                if (failedAttempt is not null)
+                {
+                    var code = failedAttempt.WillBeRetried
+                        ? ErrorCodes.REPORT_PROCESS_DEFERRED
+                        : ErrorCodes.REPORT_PROCESS_ATTEMPTS_EXHAUSTED;
+                    return Result<Guid, Error>.Failure(new Error(code,
+                        $"'{command.FileName}' was imported, but {failedAttempt.ToLogMessage()}"));
+                }
 
                 return Result<Guid, Error>.Success(report.Id);
             },

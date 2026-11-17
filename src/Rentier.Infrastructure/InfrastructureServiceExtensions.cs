@@ -17,11 +17,20 @@ namespace Rentier.Infrastructure;
 
 public static class InfrastructureServiceExtensions
 {
+    /// <summary>
+    /// Registers all infrastructure services (DbContext, repositories, HTTP clients, credential
+    /// store, parsers, serializers, sync, updates, database initializer). This is the single
+    /// entry point the composition root (Rentier.Desktop bootstrap) calls. Async because the
+    /// platform credential store is probed during registration.
+    /// </summary>
+    /// <param name="services">The DI service collection to register into.</param>
+    /// <param name="dbPath">Absolute path to the SQLite database file.</param>
     public static async Task AddInfrastructureServicesAsync(
         this IServiceCollection services, string dbPath)
     {
         // Transient lifetime is intentional: this is a desktop (Avalonia) app with no DI request scope.
-        // Each service gets its own DbContext; callers that need unit-of-work must manage scope explicitly.
+        // Each service gets its own DbContext, so a repository resolved from DI commits each write on its own.
+        // Operations that must commit several writes atomically go through IUnitOfWorkFactory instead.
         services.AddDbContext<AppDbContext>(
             opt => opt.UseSqlite($"Data Source={dbPath}"),
             ServiceLifetime.Transient);
@@ -56,9 +65,11 @@ public static class InfrastructureServiceExtensions
         services.AddTransient<IStatementParser, IbkrCsvParser>();
         services.AddTransient<IReportRepository, ReportRepository>();
         services.AddTransient<IFilingRepository, FilingRepository>();
+        services.AddTransient<IUnitOfWorkFactory, EfUnitOfWorkFactory>();
         services.AddTransient<IUserPreferenceRepository, UserPreferenceRepository>();
         services.AddTransient<IXmlFilingSerializer, PpOpoXmlSerializer>();
         services.AddTransient<IMailboxSyncService, ImapMailboxSyncService>();
         services.AddSingleton<IUpdateService, VelopackUpdateService>();
+        services.AddTransient<IDatabaseInitializer, DatabaseInitializer>();
     }
 }

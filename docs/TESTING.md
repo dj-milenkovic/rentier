@@ -102,7 +102,7 @@ public sealed class FilingRepositoryTests : IAsyncLifetime
 ## 2.4 E2E — scenario tests
 
 `Rentier.Scenarios.Tests` is the real E2E suite. It builds the service provider from the
-**production `CompositionRoot`/`InfrastructureRegistrar`**, overriding only true externals:
+**production `CompositionRoot`/`AddInfrastructureServicesAsync`**, overriding only true externals:
 
 | External | Test override |
 |----------|--------------|

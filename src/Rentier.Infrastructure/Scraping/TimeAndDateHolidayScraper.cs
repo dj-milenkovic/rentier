@@ -30,7 +30,11 @@ internal sealed class TimeAndDateHolidayScraper : IHolidayImporter
             response.EnsureSuccessStatusCode();
             html = await response.Content.ReadAsStringAsync(cancellationToken);
         }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        // TaskCanceledException is an HttpClient timeout unless the caller cancelled —
+        // caller cancellation must propagate, not become HOLIDAY_IMPORT_FAILED.
+        catch (Exception ex) when (
+            ex is HttpRequestException
+            || (ex is TaskCanceledException && !cancellationToken.IsCancellationRequested))
         {
             return Result<IReadOnlyList<HolidayEntryDto>, Error>.Failure(
                 new Error("HOLIDAY_IMPORT_FAILED", $"Failed to fetch holidays: {ex.Message}"));
@@ -55,7 +59,9 @@ internal sealed class TimeAndDateHolidayScraper : IHolidayImporter
 
             return Result<IReadOnlyList<HolidayEntryDto>, Error>.Success(results);
         }
-        catch (Exception ex)
+        // Boundary translation: scraping third-party HTML can fail in ways that cannot be
+        // enumerated, so everything except cancellation becomes HOLIDAY_PARSE_ERROR.
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             return Result<IReadOnlyList<HolidayEntryDto>, Error>.Failure(
                 new Error("HOLIDAY_PARSE_ERROR", $"Failed to parse holidays: {ex.Message}"));

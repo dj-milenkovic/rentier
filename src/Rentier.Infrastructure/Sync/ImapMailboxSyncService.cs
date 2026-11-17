@@ -20,7 +20,8 @@ namespace Rentier.Infrastructure.Sync;
 public class ImapMailboxSyncService(
     IReportRepository reportRepository,
     IMailboxRepository mailboxRepository,
-    ICredentialStore credentialStore)
+    ICredentialStore credentialStore,
+    TimeProvider timeProvider)
     : IMailboxSyncService
 {
     /// <summary>Seam for unit tests — override to return a pre-configured or mocked client.</summary>
@@ -58,9 +59,12 @@ public class ImapMailboxSyncService(
 
             var cursor = mailbox.Cursor;
             long? maxUid = null;
+            long? lowestFailedUid = null;
+            var anyImporterIncomplete = false;
 
             // Build base time/uid search query using SyncParameters
-            var baseQuery = BuildBaseQuery(cursor, parameters);
+            var utcNow = timeProvider.GetUtcNow();
+            var baseQuery = BuildBaseQuery(cursor, parameters, utcNow);
 
             // Process each importer within this mailbox. A single importer's failure is
             // recorded in `errors` and does not abort the remaining importers.
@@ -76,25 +80,72 @@ public class ImapMailboxSyncService(
                 // Track the highest UID seen across all importers
                 if (importerResult.MaxUid is { } importerMaxUid && (maxUid == null || importerMaxUid > maxUid.Value))
                     maxUid = importerMaxUid;
+
+                // Track the lowest UID that failed in any importer (UIDs are per folder, shared)
+                if (importerResult.LowestFailedUid is { } failedUid && (lowestFailedUid == null || failedUid < lowestFailedUid.Value))
+                    lowestFailedUid = failedUid;
+
+                anyImporterIncomplete |= importerResult.Incomplete;
             }
 
             await inbox.CloseAsync(expunge: false, ct);
             await client.DisconnectAsync(quit: true, ct);
 
-            // Update cursor after all importers processed successfully
-            var newCursor = new MailboxCursor.SyncedTo(
-                DateOnly.FromDateTime(DateTime.UtcNow),
-                maxUid ?? (cursor is MailboxCursor.SyncedTo s ? s.Uid : null));
-            mailbox.UpdateCursor(newCursor);
-            await mailboxRepository.UpdateAsync(mailbox, ct);
+            // Cursor dates are UTC calendar dates, consistent with email dates (normalised to UTC below).
+            // The cursor must never move past a message that failed: an incremental sync only
+            // searches UIDs above it, so a skipped message (and its income) would be lost for good.
+            var newCursor = NextCursor(
+                cursor, DateOnly.FromDateTime(utcNow.UtcDateTime), maxUid, lowestFailedUid, anyImporterIncomplete);
+            if (newCursor is not null)
+            {
+                mailbox.UpdateCursor(newCursor);
+                await mailboxRepository.UpdateAsync(mailbox, ct);
+            }
 
             return Result<SyncResult, Error>.Success(new SyncResult(reportsCreated, errors));
         }
-        catch (Exception ex)
+        // Boundary translation: MailKit surfaces connection, protocol, authentication and
+        // socket failures through unrelated exception hierarchies, so everything except caller
+        // cancellation (an internal timeout is not one) becomes an infrastructure Result failure.
+        catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
         {
             return Result<SyncResult, Error>.Failure(
                 Error.Infrastructure($"IMAP sync failed for mailbox {mailbox.Id}: {ex.Message}"));
         }
+    }
+
+    /// <summary>
+    /// The cursor to save after a sync, or null to keep the current one.
+    /// </summary>
+    /// <remarks>
+    /// <list type="bullet">
+    /// <item>An importer that failed as a whole (invalid regex, failed search) has an unknown set
+    /// of unprocessed messages, so the cursor is left unchanged and the next run re-scans them.</item>
+    /// <item>A failed message caps the UID cursor just below it, so the next incremental run
+    /// retries it. Messages above it that did succeed are re-scanned but skipped as already
+    /// imported (reports are de-duplicated by importer and name).</item>
+    /// </list>
+    /// A message that fails permanently therefore holds the cursor back (and is reported as an
+    /// error on every run) rather than being skipped silently.
+    /// </remarks>
+    internal static MailboxCursor? NextCursor(
+        MailboxCursor current, DateOnly today, long? maxUid, long? lowestFailedUid, bool anyImporterIncomplete)
+    {
+        if (anyImporterIncomplete)
+            return null;
+
+        var previousUid = current is MailboxCursor.SyncedTo s ? s.Uid : null;
+
+        if (lowestFailedUid is { } failed)
+        {
+            var cappedUid = failed - 1;
+            var uid = maxUid is { } max && max < cappedUid ? max : cappedUid;
+            if (previousUid is { } prev && uid < prev)
+                uid = prev;
+            return new MailboxCursor.SyncedTo(today, uid);
+        }
+
+        return new MailboxCursor.SyncedTo(today, maxUid ?? previousUid);
     }
 
     /// <summary>
@@ -113,6 +164,8 @@ public class ImapMailboxSyncService(
         var errors = new List<string>();
         var reportsCreated = 0;
         long? maxUid = null;
+        long? lowestFailedUid = null;
+        var incomplete = false;
 
         try
         {
@@ -135,7 +188,7 @@ public class ImapMailboxSyncService(
                     var subject = message.Subject ?? string.Empty;
                     processed++;
                     progress?.Report(new SyncProgressEntry(
-                        DateTimeOffset.Now,
+                        timeProvider.GetLocalNow(),
                         $"Downloading email {processed}/{total}: {subject}",
                         SyncProgressSeverity.Info));
 
@@ -146,18 +199,23 @@ public class ImapMailboxSyncService(
                     if (maxUid == null || uid.Id > maxUid.Value)
                         maxUid = uid.Id;
                 }
-                catch (Exception ex)
+                // Per-message isolation: one bad message is recorded and the rest continue.
+                catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
                 {
                     errors.Add($"Importer {importer.Id} UID {uid.Id}: {ex.Message}");
+                    if (lowestFailedUid == null || uid.Id < lowestFailedUid.Value)
+                        lowestFailedUid = uid.Id;
                 }
             }
         }
-        catch (Exception ex)
+        // Per-importer isolation (invalid regex, failed search): recorded, other importers continue.
+        catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
         {
             errors.Add($"Importer {importer.Id}: {ex.Message}");
+            incomplete = true;
         }
 
-        return new ImporterSyncResult(reportsCreated, maxUid, errors);
+        return new ImporterSyncResult(reportsCreated, maxUid, errors, lowestFailedUid, incomplete);
     }
 
     /// <summary>
@@ -192,7 +250,7 @@ public class ImapMailboxSyncService(
             var rawDate = message.Date;
             // Guard against missing/default Date header (MimeKit returns DateTimeOffset.MinValue).
             // Use Unix epoch as a stable sentinel so the report name is deterministic
-            // across replays — DateTime.UtcNow would produce a different name each run.
+            // across replays — the current time would produce a different name each run.
             var emailDate = rawDate == default
                 ? DateOnly.FromDateTime(DateTime.UnixEpoch)
                 : DateOnly.FromDateTime(rawDate.UtcDateTime);
@@ -208,16 +266,23 @@ public class ImapMailboxSyncService(
                 await attachment.Content.DecodeToAsync(ms, ct);
             var content = ms.ToArray();
 
-            var report = Report.Create(importer.Id, reportName, content, uid.Id, emailDate);
+            var report = Report.Create(
+                importer.Id, reportName, content, uid.Id,
+                importDate: timeProvider.GetLocalToday(), emailDate: emailDate);
             await reportRepository.AddAsync(report, ct);
             onReportCreated();
         }
     }
 
-    /// <summary>Per-importer outcome of <see cref="ProcessImporterAsync"/>: reports created, the highest UID seen, and any errors encountered.</summary>
-    private readonly record struct ImporterSyncResult(int ReportsCreated, long? MaxUid, IReadOnlyList<string> Errors);
+    /// <summary>
+    /// Per-importer outcome of <see cref="ProcessImporterAsync"/>: reports created, the highest UID
+    /// processed, any errors, the lowest UID that failed, and whether the importer failed as a
+    /// whole (<see cref="Incomplete"/>: its unprocessed messages are unknown).
+    /// </summary>
+    private readonly record struct ImporterSyncResult(
+        int ReportsCreated, long? MaxUid, IReadOnlyList<string> Errors, long? LowestFailedUid, bool Incomplete);
 
-    private static SearchQuery BuildBaseQuery(MailboxCursor cursor, SyncParameters parameters)
+    private static SearchQuery BuildBaseQuery(MailboxCursor cursor, SyncParameters parameters, DateTimeOffset utcNow)
     {
         var effectiveDate = parameters.GetEffectiveStartDate(cursor);
 
@@ -236,7 +301,7 @@ public class ImapMailboxSyncService(
 
         // Otherwise: use date filter
         var sinceDate = effectiveDate?.ToDateTime(TimeOnly.MinValue)
-            ?? DateTime.UtcNow.AddDays(-90);
+            ?? utcNow.UtcDateTime.AddDays(-Mailbox.DEFAULT_LOOKBACK_DAYS);
         return SearchQuery.DeliveredAfter(sinceDate);
     }
 

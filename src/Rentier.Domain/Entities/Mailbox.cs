@@ -48,9 +48,21 @@ public sealed class Mailbox
         UpdateCursor(cursor);
     }
 
-    public static Mailbox Create(string host, int port, string username)
+    /// <summary>Number of days a brand-new mailbox looks back on its first sync.</summary>
+    public const int DEFAULT_LOOKBACK_DAYS = 90;
+
+    /// <summary>
+    /// Creates a new mailbox whose cursor starts <see cref="DEFAULT_LOOKBACK_DAYS"/> days
+    /// before <paramref name="today"/>.
+    /// </summary>
+    /// <param name="today">
+    /// The current calendar date, supplied by the caller (the entity never reads the clock).
+    /// Cursor dates are <b>UTC</b> calendar dates — the same convention the mailbox sync
+    /// uses when it advances the cursor — so callers pass today's UTC date.
+    /// </param>
+    public static Mailbox Create(string host, int port, string username, DateOnly today)
     {
-        var defaultStart = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-90);
+        var defaultStart = today.AddDays(-DEFAULT_LOOKBACK_DAYS);
         return new Mailbox(
             Guid.NewGuid(),
             host,

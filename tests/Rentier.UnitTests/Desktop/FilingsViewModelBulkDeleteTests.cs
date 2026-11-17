@@ -7,6 +7,7 @@ using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
+using Rentier.Desktop.Services;
 using Rentier.Desktop.ViewModels;
 using Rentier.Domain.Enums;
 using Xunit;
@@ -43,7 +44,7 @@ public class FilingsViewModelBulkDeleteTests
     private static FilingsViewModel CreateVm(
         IQueryHandler<GetFilingsQuery, Result<FilingsPageResult, Error>>? getFilings = null,
         ICommandHandler<BulkDeleteFilingsCommand, Result<VoidResult, Error>>? bulkDelete = null,
-        Func<string, Task<bool>>? confirmDelete = null)
+        IConfirmationService? confirmation = null)
     {
         return new FilingsViewModel(
             new FilingsHandlers(
@@ -53,9 +54,9 @@ public class FilingsViewModelBulkDeleteTests
                 Substitute.For<ICommandHandler<DeleteFilingCommand, Result<VoidResult, Error>>>(),
                 Substitute.For<ICommandHandler<ExportFilingCommand, Result<ExportFilingResult, Error>>>(),
                 bulkDelete ?? MockBulkDelete()),
-            confirmDelete ?? (_ => Task.FromResult(false)),
-            _ => Task.CompletedTask,
-            () => { },
+            confirmation ?? DesktopTestDoubles.Confirmation(),
+            DesktopTestDoubles.FileSave(),
+            Substitute.For<INavigationService>(),
             ImmediateSequencer.Instance);
     }
 
@@ -150,7 +151,7 @@ public class FilingsViewModelBulkDeleteTests
         var vm = CreateVm(
             getFilings: MockGetFilings(MakeDto()),
             bulkDelete: bulkDelete,
-            confirmDelete: _ => Task.FromResult(false));
+            confirmation: DesktopTestDoubles.Confirmation(false));
         using var _ = vm.Activator.Activate();
 
         vm.Rows[0].IsSelected = true;
@@ -169,7 +170,7 @@ public class FilingsViewModelBulkDeleteTests
         var vm = CreateVm(
             getFilings: MockGetFilings(MakeDto(id1), MakeDto(id2)),
             bulkDelete: bulkDelete,
-            confirmDelete: _ => Task.FromResult(true));
+            confirmation: DesktopTestDoubles.Confirmation(true));
         using var _ = vm.Activator.Activate();
 
         vm.Rows[0].IsSelected = true;
@@ -191,7 +192,7 @@ public class FilingsViewModelBulkDeleteTests
         var vm = CreateVm(
             getFilings: getFilings,
             bulkDelete: MockBulkDelete(success: true),
-            confirmDelete: _ => Task.FromResult(true));
+            confirmation: DesktopTestDoubles.Confirmation(true));
         using var _ = vm.Activator.Activate();
 
         vm.Rows[0].IsSelected = true;
@@ -207,7 +208,7 @@ public class FilingsViewModelBulkDeleteTests
         var vm = CreateVm(
             getFilings: MockGetFilings(MakeDto()),
             bulkDelete: MockBulkDelete(success: false),
-            confirmDelete: _ => Task.FromResult(true));
+            confirmation: DesktopTestDoubles.Confirmation(true));
         using var _ = vm.Activator.Activate();
 
         vm.Rows[0].IsSelected = true;
@@ -349,5 +350,36 @@ public class FilingsViewModelBulkDeleteTests
         vm.SelectedCount.Should().Be(0);
         vm.IsAllSelected.Should().BeFalse();
     }
-}
 
+    [Fact]
+    public void BulkDeleteCommand_RowsReplacedWhileDeleting_StepsBackFromEmptiedPage()
+    {
+        // Page 2 shows two rows; the user selects and deletes both. While the delete is awaited
+        // another reload replaces Rows with three rows — the step-back decision must still be
+        // based on the two rows the user acted on.
+        FilingsViewModel vm = null!;
+        var getFilings = Substitute.For<IQueryHandler<GetFilingsQuery, Result<FilingsPageResult, Error>>>();
+        getFilings.HandleAsync(Arg.Any<GetFilingsQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<FilingsPageResult, Error>.Success(
+                new FilingsPageResult([MakeDto(), MakeDto()], 32, 2)));
+        var bulkDelete = Substitute.For<ICommandHandler<BulkDeleteFilingsCommand, Result<VoidResult, Error>>>();
+        bulkDelete.HandleAsync(Arg.Any<BulkDeleteFilingsCommand>(), Arg.Any<CancellationToken>())
+            .Returns(_ =>
+            {
+                getFilings.HandleAsync(Arg.Any<GetFilingsQuery>(), Arg.Any<CancellationToken>())
+                    .Returns(Result<FilingsPageResult, Error>.Success(
+                        new FilingsPageResult([MakeDto(), MakeDto(), MakeDto()], 33, 2)));
+                vm.LoadPageCommand.Execute().Subscribe();
+                return Result<VoidResult, Error>.Success(VoidResult.Value);
+            });
+        vm = CreateVm(getFilings: getFilings, bulkDelete: bulkDelete,
+            confirmation: DesktopTestDoubles.Confirmation(true));
+        using var _ = vm.Activator.Activate();
+        vm.NextPageCommand.Execute().Subscribe();
+        vm.SelectAllCommand.Execute().Subscribe();
+
+        vm.BulkDeleteCommand.Execute().Subscribe();
+
+        vm.CurrentPage.Should().Be(1);
+    }
+}

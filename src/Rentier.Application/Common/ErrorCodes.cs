@@ -67,4 +67,14 @@ public static class ErrorCodes
     public const string NET_NEGATIVE = "NET_NEGATIVE";
     public const string NETWORK_FAILURE = "NETWORK_FAILURE";
     public const string RATE_NOT_FOUND = "RATE_NOT_FOUND";
+
+    /// <summary>
+    /// The exchange-rate source could not be reached or read (temporary). Unlike
+    /// <see cref="RATE_NOT_FOUND"/>, the rate may exist; report processing defers and retries.
+    /// </summary>
+    public const string RATE_SOURCE_UNAVAILABLE = "RATE_SOURCE_UNAVAILABLE";
+
+    // ── Report processing retry ────────────────────────────────────────────
+    public const string REPORT_PROCESS_DEFERRED = "REPORT_PROCESS_DEFERRED";
+    public const string REPORT_PROCESS_ATTEMPTS_EXHAUSTED = "REPORT_PROCESS_ATTEMPTS_EXHAUSTED";
 }

@@ -1,6 +1,7 @@
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
 using Rentier.Domain.ValueObjects;
+using Rentier.Tests.Common.Fakes;
 
 namespace Rentier.Tests.Common.Builders;
 
@@ -99,11 +100,11 @@ public static class SeedDataBuilder
         var content = "Id,ActivityCode,Symbol,Date,Description,Amount,Currency\n"u8.ToArray();
         return
         [
-            Report.Create(importerId, "U12345678_20240301.csv", content, 1001,
+            Report.Create(importerId, "U12345678_20240301.csv", content, 1001, TestClock.TODAY,
                 emailDate: new DateOnly(2024, 3, 1)),
-            Report.Create(importerId, "U12345678_20240401.csv", content, 1002,
+            Report.Create(importerId, "U12345678_20240401.csv", content, 1002, TestClock.TODAY,
                 emailDate: new DateOnly(2024, 4, 1)),
-            Report.Create(importerId, "U12345678_20240501.csv", content, 1003,
+            Report.Create(importerId, "U12345678_20240501.csv", content, 1003, TestClock.TODAY,
                 emailDate: null),
         ];
     }
