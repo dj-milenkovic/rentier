@@ -400,7 +400,9 @@ public sealed class ProcessReportsCommandHandler
                 new Error(ErrorCodes.REPORT_PROCESS_PARSE_FAILED, parseResult.Error.Message));
 
         var parsed = parseResult.Value;
-        var rateProvider = BuildRateProvider(parsed, holidays, ct);
+        // The statement's own FX rates apply only to currencies NBS does not publish (cross-rate).
+        Func<DateOnly, string, Task<Result<RateResolution, Error>>> rateProvider = (date, currency) =>
+            _exchangeRateResolver.ResolveAsync(date, currency, holidays, brokerRates: parsed.EmbeddedRates, ct: ct);
         var created = 0;
         var succeeded = 0;
         var failed = 0;
@@ -588,47 +590,6 @@ public sealed class ProcessReportsCommandHandler
 
         public static IncomeEventOutcome SourceUnavailable(string reason)
             => new(IncomeEventOutcomeKind.SourceUnavailable, reason);
-    }
-
-    private Func<DateOnly, string, Task<Result<RateResolution, Error>>> BuildRateProvider(
-        StatementParseResult parsed, HolidayConf holidays, CancellationToken ct)
-    {
-        return async (date, currency) =>
-        {
-            var result = await _exchangeRateResolver.ResolveAsync(date, currency, holidays, ct: ct);
-            if (result.IsSuccess)
-                return Result<RateResolution, Error>.Success(result.Value);
-
-            // NBS unreachable: its rate for this currency may exist, so an IBKR cross-rate must
-            // not replace it (IBKR rates are a fallback only for currencies NBS does not publish).
-            if (result.Error.Code == ErrorCodes.RATE_SOURCE_UNAVAILABLE)
-                return Result<RateResolution, Error>.Failure(result.Error);
-
-            // Cross-rate fallback: find IBKR rate for this currency to USD
-            var ibkrRate = parsed.EmbeddedRates
-                .FirstOrDefault(r => r.FromCurrency.Equals(currency, StringComparison.OrdinalIgnoreCase));
-            if (ibkrRate != null)
-            {
-                var usdResult = await _exchangeRateResolver.ResolveAsync(date, "USD", holidays, ct: ct);
-                if (!usdResult.IsSuccess && usdResult.Error.Code == ErrorCodes.RATE_SOURCE_UNAVAILABLE)
-                    return Result<RateResolution, Error>.Failure(usdResult.Error);
-
-                if (usdResult.IsSuccess)
-                {
-                    var syntheticRateValue = ibkrRate.Rate * usdResult.Value.Rate.RateToRsd;
-                    if (syntheticRateValue <= 0)
-                        return Result<RateResolution, Error>.Failure(
-                            new Error(ErrorCodes.INVALID_EXCHANGE_RATE,
-                                $"Synthetic cross-rate for '{currency}' on {date:yyyy-MM-dd} is not positive ({syntheticRateValue})."));
-
-                    var syntheticRate = new ExchangeRate(usdResult.Value.SourceDate, currency, syntheticRateValue);
-                    return Result<RateResolution, Error>.Success(
-                        new RateResolution(syntheticRate, usdResult.Value.SourceDate, usdResult.Value.SourceType));
-                }
-            }
-
-            return Result<RateResolution, Error>.Failure(result.Error);
-        };
     }
 }
 

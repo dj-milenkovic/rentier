@@ -4,6 +4,7 @@ using NSubstitute.ExceptionExtensions;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
+using Rentier.Application.Parsing;
 using Rentier.Application.Repositories;
 using Rentier.Application.Services;
 using Rentier.Domain.Enums;
@@ -36,7 +37,7 @@ public class ManualFilingCalculatorTests
         var resolver = Substitute.For<IExchangeRateResolver>();
         resolver.ResolveAsync(
                 Arg.Any<DateOnly>(), Arg.Any<string>(), Arg.Any<HolidayConf>(),
-                Arg.Any<int>(), Arg.Any<CancellationToken>())
+                Arg.Any<int>(), Arg.Any<IReadOnlyList<IbkrExchangeRate>?>(), Arg.Any<CancellationToken>())
             .ThrowsAsync(new HttpRequestException("Connection refused"));
 
         var calculator = new ManualFilingCalculator(resolver, MakeHolidayRepo());

@@ -11,7 +11,7 @@ public sealed class CompositeExchangeRateFetcher : IExchangeRateFetcher
 
     // Error codes that trigger fallback to secondary
     private static readonly HashSet<string> FallbackTriggers =
-        new(StringComparer.OrdinalIgnoreCase) { "NBS_HTTP_ERROR", "NBS_PARSE_ERROR" };
+        new(StringComparer.OrdinalIgnoreCase) { ErrorCodes.NBS_HTTP_ERROR, ErrorCodes.NBS_PARSE_ERROR };
 
     public CompositeExchangeRateFetcher(IExchangeRateFetcher primary, IExchangeRateFetcher secondary)
     {

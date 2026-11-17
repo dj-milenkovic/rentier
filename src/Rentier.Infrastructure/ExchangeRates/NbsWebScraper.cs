@@ -44,7 +44,7 @@ public sealed class NbsWebScraper : IExchangeRateFetcher
             using var response = await _http.GetAsync(url, ct);
             if (!response.IsSuccessStatusCode)
                 return Result<ExchangeRate, Error>.Failure(
-                    new Error("NBS_HTTP_ERROR",
+                    new Error(ErrorCodes.NBS_HTTP_ERROR,
                         $"NBS web app returned {(int)response.StatusCode} for {date:yyyy-MM-dd}."));
             html = await response.Content.ReadAsStringAsync(ct);
         }
@@ -54,7 +54,7 @@ public sealed class NbsWebScraper : IExchangeRateFetcher
             ex is HttpRequestException || (ex is TaskCanceledException && !ct.IsCancellationRequested))
         {
             return Result<ExchangeRate, Error>.Failure(
-                new Error("NBS_HTTP_ERROR", ex.Message));
+                new Error(ErrorCodes.NBS_HTTP_ERROR, ex.Message));
         }
 
         // Parse with AngleSharp
@@ -71,7 +71,7 @@ public sealed class NbsWebScraper : IExchangeRateFetcher
 
             if (allRates.Count == 0)
                 return Result<ExchangeRate, Error>.Failure(
-                    new Error("RATE_NOT_FOUND",
+                    new Error(ErrorCodes.RATE_NOT_FOUND,
                         $"No exchange rates published for {date:yyyy-MM-dd} (NBS web app)."));
 
             // Cache all rates - swallow cache write failures (non-fatal), but re-throw cancellation
@@ -83,7 +83,7 @@ public sealed class NbsWebScraper : IExchangeRateFetcher
             return result is not null
                 ? Result<ExchangeRate, Error>.Success(result)
                 : Result<ExchangeRate, Error>.Failure(
-                    new Error("RATE_NOT_FOUND",
+                    new Error(ErrorCodes.RATE_NOT_FOUND,
                         $"Currency '{upperCurrency}' not found in NBS web app for {date:yyyy-MM-dd}."));
         }
         // Boundary translation: scraping third-party HTML can fail in ways that cannot be
@@ -92,7 +92,7 @@ public sealed class NbsWebScraper : IExchangeRateFetcher
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             return Result<ExchangeRate, Error>.Failure(
-                new Error("NBS_SCRAPE_ERROR", $"Failed to parse NBS web app HTML: {ex.Message}"));
+                new Error(ErrorCodes.NBS_SCRAPE_ERROR, $"Failed to parse NBS web app HTML: {ex.Message}"));
         }
     }
 

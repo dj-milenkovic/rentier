@@ -74,6 +74,22 @@ public static class ErrorCodes
     /// </summary>
     public const string RATE_SOURCE_UNAVAILABLE = "RATE_SOURCE_UNAVAILABLE";
 
+    // ── Exchange-rate sources (IExchangeRateFetcher adapters) ───────────────
+    // The resolver's retry/fallback decisions key off these, so adapters must use the
+    // constants, never literals.
+
+    /// <summary>NBS does not publish this currency; the only case where a broker cross-rate may apply.</summary>
+    public const string UNSUPPORTED_CURRENCY = "UNSUPPORTED_CURRENCY";
+
+    /// <summary>The NBS XML service could not be reached (network/HTTP failure).</summary>
+    public const string NBS_HTTP_ERROR = "NBS_HTTP_ERROR";
+
+    /// <summary>The NBS XML service answered with a document that could not be parsed.</summary>
+    public const string NBS_PARSE_ERROR = "NBS_PARSE_ERROR";
+
+    /// <summary>The NBS web-app fallback returned a page that could not be read.</summary>
+    public const string NBS_SCRAPE_ERROR = "NBS_SCRAPE_ERROR";
+
     // ── Report processing retry ────────────────────────────────────────────
     public const string REPORT_PROCESS_DEFERRED = "REPORT_PROCESS_DEFERRED";
     public const string REPORT_PROCESS_ATTEMPTS_EXHAUSTED = "REPORT_PROCESS_ATTEMPTS_EXHAUSTED";

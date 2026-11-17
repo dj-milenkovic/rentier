@@ -206,7 +206,8 @@ public sealed class ReportProcessingAtomicityScenario : IAsyncLifetime
         private int _calls;
 
         public Task<Result<RateResolution, Error>> ResolveAsync(
-            DateOnly date, string currency, HolidayConf holidays, int maxLookbackDays = 10, CancellationToken ct = default)
+            DateOnly date, string currency, HolidayConf holidays, int maxLookbackDays = 10,
+            IReadOnlyList<IbkrExchangeRate>? brokerRates = null, CancellationToken ct = default)
         {
             if (++_calls >= interruptOnCall)
             {
@@ -214,7 +215,7 @@ public sealed class ReportProcessingAtomicityScenario : IAsyncLifetime
                 throw new OperationCanceledException("Simulated interruption mid-report.", caller.Token);
             }
 
-            return inner.ResolveAsync(date, currency, holidays, maxLookbackDays, ct);
+            return inner.ResolveAsync(date, currency, holidays, maxLookbackDays, brokerRates, ct);
         }
     }
 }

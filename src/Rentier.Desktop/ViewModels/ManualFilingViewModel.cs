@@ -21,8 +21,7 @@ public sealed class ManualFilingViewModel : ReactiveObject, IActivatableViewMode
 
     // ── Static lists ─────────────────────────────────────────────────────────
 
-    public static IReadOnlyList<string> AvailableCurrencies { get; } =
-        ["USD", "EUR", "GBP", "CHF", "AUD", "CAD", "CZK", "DKK", "HUF", "JPY", "NOK", "PLN", "SEK", "TRY", "AED"];
+    public static IReadOnlyList<string> AvailableCurrencies => NbsCurrencies.All;
 
     // ── Backing fields ───────────────────────────────────────────────────────
 

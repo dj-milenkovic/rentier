@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
+using Rentier.Application.Parsing;
 using Rentier.Domain.Enums;
 using Rentier.Domain.Services;
 using Rentier.Domain.ValueObjects;
@@ -17,7 +18,7 @@ public sealed class ExchangeRateResolver : IExchangeRateResolver
     // NBS_HTTP_ERROR (network/HTTP failure) and NBS_SCRAPE_ERROR (the web-app fallback, used
     // after the primary API failed, returned an unreadable page).
     private static readonly HashSet<string> TRANSIENT_SOURCE_ERRORS =
-        new(StringComparer.OrdinalIgnoreCase) { "NBS_HTTP_ERROR", "NBS_SCRAPE_ERROR" };
+        new(StringComparer.OrdinalIgnoreCase) { ErrorCodes.NBS_HTTP_ERROR, ErrorCodes.NBS_SCRAPE_ERROR };
 
     public ExchangeRateResolver(IExchangeRateFetcher fetcher, ILogger<ExchangeRateResolver> logger)
     {
@@ -30,7 +31,74 @@ public sealed class ExchangeRateResolver : IExchangeRateResolver
         string currency,
         HolidayConf holidays,
         int maxLookbackDays = 10,
+        IReadOnlyList<IbkrExchangeRate>? brokerRates = null,
         CancellationToken ct = default)
+    {
+        var nbs = await ResolveNbsAsync(date, currency, holidays, maxLookbackDays, ct);
+
+        // Broker statement rates are a fallback ONLY for currencies NBS does not publish. Any other
+        // failure (NBS unreachable, no rate within the look-back) must surface: NBS's own rate for
+        // the currency is authoritative and may exist.
+        if (nbs.IsSuccess || brokerRates is null || nbs.Error.Code != ErrorCodes.UNSUPPORTED_CURRENCY)
+            return nbs;
+
+        return await ResolveCrossRateAsync(date, currency, holidays, maxLookbackDays, brokerRates, nbs.Error, ct);
+    }
+
+    /// <summary>
+    /// Synthesizes a rate for a currency NBS does not publish from the broker's rate to a pivot
+    /// currency (the statement's <c>ToCurrency</c>, usually the account base currency) × the NBS
+    /// rate of that pivot. Falls back to <paramref name="original"/> when no broker rate exists or
+    /// the pivot has no NBS rate; a pivot whose source is unavailable defers like any NBS outage.
+    /// </summary>
+    private async Task<Result<RateResolution, Error>> ResolveCrossRateAsync(
+        DateOnly date,
+        string currency,
+        HolidayConf holidays,
+        int maxLookbackDays,
+        IReadOnlyList<IbkrExchangeRate> brokerRates,
+        Error original,
+        CancellationToken ct)
+    {
+        var candidates = brokerRates
+            .Where(r => r.FromCurrency.Equals(currency, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        var brokerRate = candidates.FirstOrDefault(r => r.Date == date) ?? candidates.FirstOrDefault();
+        if (brokerRate is null)
+            return Result<RateResolution, Error>.Failure(original);
+
+        var pivot = await ResolveNbsAsync(date, brokerRate.ToCurrency, holidays, maxLookbackDays, ct);
+        if (!pivot.IsSuccess)
+        {
+            return pivot.Error.Code == ErrorCodes.RATE_SOURCE_UNAVAILABLE
+                ? pivot
+                : Result<RateResolution, Error>.Failure(original);
+        }
+
+        var syntheticValue = brokerRate.Rate * pivot.Value.Rate.RateToRsd;
+        if (syntheticValue <= 0)
+        {
+            return Result<RateResolution, Error>.Failure(
+                new Error(ErrorCodes.INVALID_EXCHANGE_RATE,
+                    $"Synthetic cross-rate for '{currency}' on {date:yyyy-MM-dd} is not positive ({syntheticValue})."));
+        }
+
+        _logger.LogWarning(
+            "Rate resolved (cross-rate): {Currency} on {Date} = {BrokerRate} {Pivot} x NBS {PivotRate} ({PivotDate})",
+            currency, date, brokerRate.Rate, brokerRate.ToCurrency, pivot.Value.Rate.RateToRsd, pivot.Value.SourceDate);
+
+        return Result<RateResolution, Error>.Success(new RateResolution(
+            new ExchangeRate(pivot.Value.SourceDate, currency, syntheticValue),
+            pivot.Value.SourceDate,
+            ExchangeRateSourceType.CrossRate));
+    }
+
+    private async Task<Result<RateResolution, Error>> ResolveNbsAsync(
+        DateOnly date,
+        string currency,
+        HolidayConf holidays,
+        int maxLookbackDays,
+        CancellationToken ct)
     {
         // Step 1: Try exact date
         var exactResult = await _fetcher.FetchRateAsync(date, currency, ct);
