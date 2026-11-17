@@ -468,12 +468,45 @@ public class ManualFilingViewModelTests
             .Returns(Result<Guid, Error>.Success(Guid.NewGuid()));
 
         var vm = CreateFilledVm(createHandler: createHandler);
+        vm.PaymentNotesText = "   ";
 
         await vm.CalculateCommand.Execute();
         await vm.SaveCommand.Execute();
 
         capturedCmd.Should().NotBeNull();
         capturedCmd!.PaymentNotes.Should().BeNull();
+    }
+
+    [Fact]
+    public void PaymentNotesText_NewForm_DefaultsToBrokerAccountPayout()
+    {
+        var vm = CreateVm();
+
+        vm.PaymentNotesText.Should().Be("Isplata na brokerski račun");
+    }
+
+    [Fact]
+    public void PaymentNotesText_NewForm_IsNotDirty()
+    {
+        var vm = CreateVm();
+
+        vm.IsDirty.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task SaveCommand_WithDefaultPaymentNotesText_SendsDefaultPaymentNotesToHandler()
+    {
+        CreateManualFilingCommand? capturedCmd = null;
+        var createHandler = Substitute.For<ICommandHandler<CreateManualFilingCommand, Result<Guid, Error>>>();
+        createHandler.HandleAsync(Arg.Do<CreateManualFilingCommand>(c => capturedCmd = c), Arg.Any<CancellationToken>())
+            .Returns(Result<Guid, Error>.Success(Guid.NewGuid()));
+
+        var vm = CreateFilledVm(createHandler: createHandler);
+
+        await vm.CalculateCommand.Execute();
+        await vm.SaveCommand.Execute();
+
+        capturedCmd!.PaymentNotes.Should().Be("Isplata na brokerski račun");
     }
 
     [Fact]

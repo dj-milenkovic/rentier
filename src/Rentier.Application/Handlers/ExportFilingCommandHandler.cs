@@ -55,7 +55,11 @@ public sealed class ExportFilingCommandHandler
         }
         else
         {
-            paymentNotes = filing.PaymentNotes ?? string.Empty;
+            // Manual filings: fall back to the default 3.3 "Ostalo" text when none was entered,
+            // so filings saved before the form was pre-filled still export a populated field.
+            paymentNotes = string.IsNullOrWhiteSpace(filing.PaymentNotes)
+                ? PpOpoDefaults.MANUAL_PAYMENT_NOTES
+                : filing.PaymentNotes;
         }
 
         var serializeResult = _serializer.Serialize(filing, profile, paymentNotes);
