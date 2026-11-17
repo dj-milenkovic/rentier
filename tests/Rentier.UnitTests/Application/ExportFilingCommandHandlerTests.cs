@@ -74,7 +74,7 @@ public class ExportFilingCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_NullReportId_UsesEmptyPaymentNotes()
+    public async Task HandleAsync_NullReportIdWithoutPaymentNotes_UsesDefaultManualPaymentNotes()
     {
         var filing = MakeFiling(reportId: null);
         var profile = MakeProfile();
@@ -84,7 +84,18 @@ public class ExportFilingCommandHandlerTests
         var result = await _sut.HandleAsync(new ExportFilingCommand(filing.Id), TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
-        _serializer.Received(1).Serialize(filing, profile, string.Empty);
+        _serializer.Received(1).Serialize(filing, profile, "Isplata na brokerski račun");
+    }
+
+    [Fact]
+    public async Task HandleAsync_NullReportId_DoesNotLookUpReport()
+    {
+        var filing = MakeFiling(reportId: null);
+        _filings.GetByIdAsync(filing.Id, Arg.Any<CancellationToken>()).Returns(filing);
+        _profiles.GetAsync(Arg.Any<CancellationToken>()).Returns(MakeProfile());
+
+        await _sut.HandleAsync(new ExportFilingCommand(filing.Id), TestContext.Current.CancellationToken);
+
         await _reports.DidNotReceive().GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
 
@@ -122,6 +133,49 @@ public class ExportFilingCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         _serializer.Received(1).Serialize(filing, profile, "Importer payment notes");
+    }
+
+    [Fact]
+    public async Task HandleAsync_ReportBackedFilingWithEmptyImporterNotes_UsesDefaultPaymentNotes()
+    {
+        var report = Report.Create(Guid.NewGuid(), "report.csv", null, null, TestClock.TODAY);
+        var filing = MakeFiling(reportId: report.Id);
+        var profile = MakeProfile();
+        var importer = Importer.Create("Test Importer");
+        _filings.GetByIdAsync(filing.Id, Arg.Any<CancellationToken>()).Returns(filing);
+        _profiles.GetAsync(Arg.Any<CancellationToken>()).Returns(profile);
+        _reports.GetByIdAsync(report.Id, Arg.Any<CancellationToken>()).Returns(report);
+        _importers.GetByIdAsync(report.ImporterId, Arg.Any<CancellationToken>()).Returns(importer);
+
+        await _sut.HandleAsync(new ExportFilingCommand(filing.Id), TestContext.Current.CancellationToken);
+
+        _serializer.Received(1).Serialize(filing, profile, "Isplata na brokerski račun");
+    }
+
+    [Fact]
+    public async Task HandleAsync_ReportBackedFilingWithMissingReport_UsesDefaultPaymentNotes()
+    {
+        var filing = MakeFiling(reportId: Guid.NewGuid());
+        var profile = MakeProfile();
+        _filings.GetByIdAsync(filing.Id, Arg.Any<CancellationToken>()).Returns(filing);
+        _profiles.GetAsync(Arg.Any<CancellationToken>()).Returns(profile);
+
+        await _sut.HandleAsync(new ExportFilingCommand(filing.Id), TestContext.Current.CancellationToken);
+
+        _serializer.Received(1).Serialize(filing, profile, "Isplata na brokerski račun");
+    }
+
+    [Fact]
+    public async Task HandleAsync_ManualFilingWithWhitespaceNotes_UsesDefaultPaymentNotes()
+    {
+        var filing = MakeFiling(reportId: null, paymentNotes: "   ");
+        var profile = MakeProfile();
+        _filings.GetByIdAsync(filing.Id, Arg.Any<CancellationToken>()).Returns(filing);
+        _profiles.GetAsync(Arg.Any<CancellationToken>()).Returns(profile);
+
+        await _sut.HandleAsync(new ExportFilingCommand(filing.Id), TestContext.Current.CancellationToken);
+
+        _serializer.Received(1).Serialize(filing, profile, "Isplata na brokerski račun");
     }
 
     // ── T013: New filename convention tests ───────────────────────────────────
