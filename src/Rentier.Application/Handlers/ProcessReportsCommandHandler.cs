@@ -406,6 +406,24 @@ public sealed class ProcessReportsCommandHandler
         var failed = 0;
         var errors = new List<FilingCreationError>();
 
+        // A row the parser could not use (bad amount/date, unpaired withholding) is income that
+        // never became an event: count it as a failed event so the report cannot end as Processed
+        // with tax silently under- or over-stated.
+        foreach (var parseError in parsed.Errors)
+        {
+            if (parseError.Severity == ParseSeverity.Error)
+            {
+                errors.Add(FilingCreationError.ForStatementRow(parseError));
+                failed++;
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "Report {ReportId} row {Row}: [{Code}] {Message}",
+                    report.Id, parseError.RowNumber, parseError.Code, parseError.Message);
+            }
+        }
+
         // Dividends first, then credit-side interest — same order as before the merge,
         // preserving error-list ordering.
         foreach (var ev in BuildIncomeEvents(parsed, taxpayerProfileId, report.Id, holidays))
@@ -438,29 +456,22 @@ public sealed class ProcessReportsCommandHandler
 
     /// <summary>
     /// Flattens the parsed statement into a single ordered event stream: all dividends
-    /// first, then credit-side interest. Withholding matching differs between the two —
-    /// dividends match on currency as well, interest does not.
+    /// first, then credit-side interest (debit interest is never taxable income). The parser
+    /// has already paired each event's withholding.
     /// </summary>
     private static IEnumerable<IncomeEventRequest> BuildIncomeEvents(
         StatementParseResult parsed, Guid taxpayerProfileId, Guid reportId, HolidayConf holidays)
     {
         foreach (var div in parsed.Dividends)
         {
-            var wht = parsed.Withholdings.FirstOrDefault(w =>
-                w.Date == div.Date && w.EntityName == div.EntityName && w.Currency == div.Currency);
-
-            yield return new IncomeEventRequest(IncomeType.Dividend, div.EntityName, div.Date, div.Currency, div.Amount, wht,
-                taxpayerProfileId, reportId, holidays);
+            yield return new IncomeEventRequest(IncomeType.Dividend, div.EntityName, div.Date, div.Currency, div.Amount,
+                div.Withholding, taxpayerProfileId, reportId, holidays);
         }
 
-        // Interest - credit entries only
         foreach (var interest in parsed.Interest.Where(i => i.Type == InterestType.Credit))
         {
-            var wht = parsed.Withholdings.FirstOrDefault(w =>
-                w.Date == interest.Date && w.EntityName == interest.EntityName);
-
-            yield return new IncomeEventRequest(IncomeType.Interest, interest.EntityName, interest.Date, interest.Currency, interest.Amount, wht,
-                taxpayerProfileId, reportId, holidays);
+            yield return new IncomeEventRequest(IncomeType.Interest, interest.EntityName, interest.Date, interest.Currency,
+                interest.Amount, interest.Withholding, taxpayerProfileId, reportId, holidays);
         }
     }
 
@@ -488,7 +499,7 @@ public sealed class ProcessReportsCommandHandler
         DateOnly Date,
         string Currency,
         decimal Amount,
-        WithholdingTaxRecord? Wht,
+        decimal Withholding,
         Guid TaxpayerProfileId,
         Guid ReportId,
         HolidayConf Holidays);
@@ -520,7 +531,7 @@ public sealed class ProcessReportsCommandHandler
 
         var info = await TaxCalculationService.CalculateAsync(
             new IncomeTaxInput(request.IncomeType, request.EntityName, request.Date, request.Amount, request.Currency,
-                request.Wht?.Amount ?? 0m, request.Wht?.Currency ?? request.Currency),
+                request.Withholding, request.Currency),
             (_, _) => Task.FromResult(resolution.Rate), ct);
 
         // The unit-of-work repository includes filings staged earlier in this report, so a

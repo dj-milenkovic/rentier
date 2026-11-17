@@ -74,7 +74,7 @@ public class ProcessReportsCommandHandlerPartialSuccessTests
         var parser = Substitute.For<IStatementParser>();
         parser.ParseAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
             .Returns(Result<StatementParseResult, Error>.Success(
-                new StatementParseResult(dividends, [], [], [], [])));
+                new StatementParseResult(dividends, [], [], [])));
 
         var fetcher = Substitute.For<IExchangeRateFetcher>();
         fetcher.FetchRateAsync(Arg.Any<DateOnly>(), "USD", Arg.Any<CancellationToken>())
@@ -117,7 +117,7 @@ public class ProcessReportsCommandHandlerPartialSuccessTests
         var parser = Substitute.For<IStatementParser>();
         parser.ParseAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
             .Returns(Result<StatementParseResult, Error>.Success(
-                new StatementParseResult(dividends, [], [], [], [])));
+                new StatementParseResult(dividends, [], [], [])));
 
         var fetcher = Substitute.For<IExchangeRateFetcher>();
         fetcher.FetchRateAsync(Arg.Any<DateOnly>(), "USD", Arg.Any<CancellationToken>())
@@ -163,7 +163,7 @@ public class ProcessReportsCommandHandlerPartialSuccessTests
         var parser = Substitute.For<IStatementParser>();
         parser.ParseAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
             .Returns(Result<StatementParseResult, Error>.Success(
-                new StatementParseResult(dividends, [], [], [], [])));
+                new StatementParseResult(dividends, [], [], [])));
 
         var fetcher = Substitute.For<IExchangeRateFetcher>();
         fetcher.FetchRateAsync(Arg.Any<DateOnly>(), "CHF", Arg.Any<CancellationToken>())
@@ -196,7 +196,7 @@ public class ProcessReportsCommandHandlerPartialSuccessTests
         var parser = Substitute.For<IStatementParser>();
         parser.ParseAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
             .Returns(Result<StatementParseResult, Error>.Success(
-                new StatementParseResult([], [], [], [], [])));
+                new StatementParseResult([], [], [], [])));
 
         var fetcher = Substitute.For<IExchangeRateFetcher>();
         var filingRepo = Substitute.For<IFilingRepository>();
@@ -230,7 +230,7 @@ public class ProcessReportsCommandHandlerPartialSuccessTests
         var parser = Substitute.For<IStatementParser>();
         parser.ParseAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
             .Returns(Result<StatementParseResult, Error>.Success(
-                new StatementParseResult(dividends, [], [], [], [])));
+                new StatementParseResult(dividends, [], [], [])));
 
         var fetcher = Substitute.For<IExchangeRateFetcher>();
         fetcher.FetchRateAsync(Arg.Any<DateOnly>(), "USD", Arg.Any<CancellationToken>())

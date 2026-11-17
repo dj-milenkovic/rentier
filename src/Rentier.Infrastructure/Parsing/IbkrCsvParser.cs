@@ -43,19 +43,21 @@ public sealed partial class IbkrCsvParser : IStatementParser
             var (dividends, divErrors) = ParseDividends(rows);
             allErrors.AddRange(divErrors);
 
-            var (withholdings, whtErrors) = ParseWithholdingTax(rows, dividends);
-            allErrors.AddRange(whtErrors);
-
             var (interest, intErrors) = ParseInterest(rows);
             allErrors.AddRange(intErrors);
 
+            // Withholding is paired onto the income events here, in one place, so consumers never
+            // re-match it. Unpaired withholding is an Error diagnostic, never silently dropped.
+            allErrors.AddRange(PairWithholdingTax(rows, dividends, interest));
+
+            // FX rates only feed the cross-rate fallback; a bad row there loses no income (an
+            // event that then lacks a rate fails visibly on its own), so these are warnings.
             var (fxRates, fxErrors) = ParseExchangeRates(rows);
-            allErrors.AddRange(fxErrors);
+            allErrors.AddRange(fxErrors.Select(e => e with { Severity = ParseSeverity.Warning }));
 
             return Result<StatementParseResult, Error>.Success(new StatementParseResult(
                 dividends.Values.ToList().AsReadOnly(),
                 interest.Values.ToList().AsReadOnly(),
-                withholdings,
                 fxRates,
                 allErrors.AsReadOnly()));
         }
@@ -144,12 +146,17 @@ public sealed partial class IbkrCsvParser : IStatementParser
         return (dict, errors);
     }
 
-    private static (IReadOnlyList<WithholdingTaxRecord> withholdings, List<ParseError> errors)
-        ParseWithholdingTax(
-            List<string[]> rows,
-            Dictionary<(string Entity, DateOnly Date, string Currency), DividendRecord> dividends)
+    /// <summary>
+    /// Reads the "Withholding Tax" section and adds each row's amount onto the income event it
+    /// belongs to: a dividend on (entity, date, currency), or — for rows describing withholding on
+    /// credit interest — the credit interest on (currency, date). A row that matches no income event
+    /// is returned as an Error diagnostic.
+    /// </summary>
+    private static List<ParseError> PairWithholdingTax(
+        List<string[]> rows,
+        Dictionary<(string Entity, DateOnly Date, string Currency), DividendRecord> dividends,
+        Dictionary<(string Currency, DateOnly Date, InterestType Type), InterestRecord> interest)
     {
-        var accumulator = new Dictionary<(string Entity, DateOnly Date, string Currency), decimal>();
         var errors = new List<ParseError>();
         int rowIndex = 0;
 
@@ -168,17 +175,19 @@ public sealed partial class IbkrCsvParser : IStatementParser
                 continue;
             }
 
-            AccumulateOrErrorWht(
-                (StripIsin(description), date, currency), Math.Abs(rawAmount),
-                rowIndex, dividends, accumulator, errors);
+            var absAmount = Math.Abs(rawAmount);
+            if (IsInterestWithholding(description))
+                PairInterestWithholding((currency, date, InterestType.Credit), absAmount, rowIndex, interest, errors);
+            else
+                PairDividendWithholding((StripIsin(description), date, currency), absAmount, rowIndex, dividends, errors);
         }
 
-        var result = accumulator
-            .Select(kvp => new WithholdingTaxRecord(kvp.Key.Date, kvp.Key.Currency, kvp.Key.Entity, kvp.Value))
-            .ToList();
-
-        return (result.AsReadOnly(), errors);
+        return errors;
     }
+
+    /// <summary>IBKR describes withholding on interest as e.g. "Withholding @ 20% on Credit Interest for Jan-2024".</summary>
+    private static bool IsInterestWithholding(string description)
+        => description.Contains("Credit Interest", StringComparison.OrdinalIgnoreCase);
 
     private static (Dictionary<(string Currency, DateOnly Date, InterestType Type), InterestRecord> interest,
                     List<ParseError> errors)
@@ -325,18 +334,29 @@ public sealed partial class IbkrCsvParser : IStatementParser
         return false;
     }
 
-    private static void AccumulateOrErrorWht(
-        (string Entity, DateOnly Date, string Currency) key, decimal absAmount, int rowIndex,
-        Dictionary<(string Entity, DateOnly Date, string Currency), DividendRecord> dividends,
-        Dictionary<(string Entity, DateOnly Date, string Currency), decimal> accumulator,
+    private static void PairInterestWithholding(
+        (string Currency, DateOnly Date, InterestType Type) key, decimal absAmount, int rowIndex,
+        Dictionary<(string Currency, DateOnly Date, InterestType Type), InterestRecord> interest,
         List<ParseError> errors)
     {
-        if (dividends.TryGetValue(key, out _))
+        if (interest.TryGetValue(key, out var credit))
         {
-            if (accumulator.TryGetValue(key, out var existing))
-                accumulator[key] = existing + absAmount;
-            else
-                accumulator[key] = absAmount;
+            interest[key] = credit with { Withholding = credit.Withholding + absAmount };
+            return;
+        }
+
+        errors.Add(new ParseError("WHT_UNMATCHED",
+            $"No credit interest found for interest WHT entry: date={key.Date:yyyy-MM-dd}, currency='{key.Currency}'.", rowIndex));
+    }
+
+    private static void PairDividendWithholding(
+        (string Entity, DateOnly Date, string Currency) key, decimal absAmount, int rowIndex,
+        Dictionary<(string Entity, DateOnly Date, string Currency), DividendRecord> dividends,
+        List<ParseError> errors)
+    {
+        if (dividends.TryGetValue(key, out var dividend))
+        {
+            dividends[key] = dividend with { Withholding = dividend.Withholding + absAmount };
         }
         else
         {

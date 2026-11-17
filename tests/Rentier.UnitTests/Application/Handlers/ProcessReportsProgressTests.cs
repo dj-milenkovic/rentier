@@ -73,7 +73,7 @@ public class ProcessReportsProgressTests
             var p = Substitute.For<IStatementParser>();
             p.ParseAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
                 .Returns(Result<StatementParseResult, Error>.Success(
-                    new StatementParseResult([], [], [], [], [])));
+                    new StatementParseResult([], [], [], [])));
             parser = p;
         }
 
@@ -108,7 +108,7 @@ public class ProcessReportsProgressTests
         var parser = Substitute.For<IStatementParser>();
         parser.ParseAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
             .Returns(Result<StatementParseResult, Error>.Success(
-                new StatementParseResult(dividends, [], [], [], [])));
+                new StatementParseResult(dividends, [], [], [])));
 
         var filingRepo = Substitute.For<IFilingRepository>();
         filingRepo.GetByIncomeEventAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<DateOnly>(),
@@ -154,7 +154,7 @@ public class ProcessReportsProgressTests
         var parser = Substitute.For<IStatementParser>();
         parser.ParseAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
             .Returns(Result<StatementParseResult, Error>.Success(
-                new StatementParseResult(dividends, [], [], [], [])));
+                new StatementParseResult(dividends, [], [], [])));
 
         var fetcher = Substitute.For<IExchangeRateFetcher>();
         fetcher.FetchRateAsync(Arg.Any<DateOnly>(), "USD", Arg.Any<CancellationToken>())
@@ -205,7 +205,7 @@ public class ProcessReportsProgressTests
         var parser = Substitute.For<IStatementParser>();
         parser.ParseAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
             .Returns(Result<StatementParseResult, Error>.Success(
-                new StatementParseResult(dividends, [], [], [], [])));
+                new StatementParseResult(dividends, [], [], [])));
 
         var fetcher = Substitute.For<IExchangeRateFetcher>();
         fetcher.FetchRateAsync(Arg.Any<DateOnly>(), "CHF", Arg.Any<CancellationToken>())

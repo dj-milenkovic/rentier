@@ -93,7 +93,7 @@ public partial class ProcessReportsCommandHandlerTests
         public void ParserReturns(params DividendRecord[] dividends)
             => Parser.ParseAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
                 .Returns(Result<StatementParseResult, Error>.Success(
-                    new StatementParseResult(dividends, [], [], [], [])));
+                    new StatementParseResult(dividends, [], [], [])));
 
         /// <summary>A shallow copy of <paramref name="report"/> as the database would hold it.</summary>
         private static Report StoredCopyOf(Report report)

@@ -26,7 +26,7 @@ public partial class ProcessReportsCommandHandlerTests
         => new HolidayConfDto([], 2024, 2024);
 
     private static StatementParseResult MakeEmptyParseResult()
-        => new StatementParseResult([], [], [], [], []);
+        => new StatementParseResult([], [], [], []);
 
     private Importer MakeImporter(Guid? profileId = null)
     {
@@ -206,7 +206,7 @@ public partial class ProcessReportsCommandHandlerTests
         importerRepo.GetByIdAsync(importer.Id, Arg.Any<CancellationToken>()).Returns(importer);
 
         var dividends = new[] { new DividendRecord(TestDate, "USD", "ACME Corp", 100m) };
-        var parseResult = new StatementParseResult(dividends, [], [], [], []);
+        var parseResult = new StatementParseResult(dividends, [], [], []);
         var parser = Substitute.For<IStatementParser>();
         parser.ParseAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
             .Returns(Result<StatementParseResult, Error>.Success(parseResult));
@@ -246,7 +246,7 @@ public partial class ProcessReportsCommandHandlerTests
         importerRepo.GetByIdAsync(importer.Id, Arg.Any<CancellationToken>()).Returns(importer);
 
         var dividends = new[] { new DividendRecord(TestDate, "USD", "ACME Corp", 100m) };
-        var parseResult = new StatementParseResult(dividends, [], [], [], []);
+        var parseResult = new StatementParseResult(dividends, [], [], []);
         var parser = Substitute.For<IStatementParser>();
         parser.ParseAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
             .Returns(Result<StatementParseResult, Error>.Success(parseResult));
@@ -288,7 +288,7 @@ public partial class ProcessReportsCommandHandlerTests
         importerRepo.GetByIdAsync(importer.Id, Arg.Any<CancellationToken>()).Returns(importer);
 
         var dividends = new[] { new DividendRecord(TestDate, "USD", "ACME Corp", 100m) };
-        var parseResult = new StatementParseResult(dividends, [], [], [], []);
+        var parseResult = new StatementParseResult(dividends, [], [], []);
         var parser = Substitute.For<IStatementParser>();
         parser.ParseAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
             .Returns(Result<StatementParseResult, Error>.Success(parseResult));
@@ -332,7 +332,7 @@ public partial class ProcessReportsCommandHandlerTests
         importerRepo.GetByIdAsync(importer.Id, Arg.Any<CancellationToken>()).Returns(importer);
 
         var interests = new[] { new InterestRecord(TestDate, "USD", "IB LLC", 50m, InterestType.Credit) };
-        var parseResult = new StatementParseResult([], interests, [], [], []);
+        var parseResult = new StatementParseResult([], interests, [], []);
         var parser = Substitute.For<IStatementParser>();
         parser.ParseAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
             .Returns(Result<StatementParseResult, Error>.Success(parseResult));
@@ -374,7 +374,7 @@ public partial class ProcessReportsCommandHandlerTests
         importerRepo.GetByIdAsync(importer.Id, Arg.Any<CancellationToken>()).Returns(importer);
 
         var interests = new[] { new InterestRecord(TestDate, "USD", "IB", 10m, InterestType.Debit) };
-        var parseResult = new StatementParseResult([], interests, [], [], []);
+        var parseResult = new StatementParseResult([], interests, [], []);
         var parser = Substitute.For<IStatementParser>();
         parser.ParseAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
             .Returns(Result<StatementParseResult, Error>.Success(parseResult));
@@ -404,7 +404,7 @@ public partial class ProcessReportsCommandHandlerTests
         importerRepo.GetByIdAsync(importer.Id, Arg.Any<CancellationToken>()).Returns(importer);
 
         var interests = new[] { new InterestRecord(TestDate, "USD", "IB LLC", 50m, InterestType.Credit) };
-        var parseResult = new StatementParseResult([], interests, [], [], []);
+        var parseResult = new StatementParseResult([], interests, [], []);
         var parser = Substitute.For<IStatementParser>();
         parser.ParseAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
             .Returns(Result<StatementParseResult, Error>.Success(parseResult));
@@ -444,7 +444,7 @@ public partial class ProcessReportsCommandHandlerTests
         importerRepo.GetByIdAsync(importer.Id, Arg.Any<CancellationToken>()).Returns(importer);
 
         var dividends = new[] { new DividendRecord(TestDate, "CHF", "Swiss Co", 100m) };
-        var parseResult = new StatementParseResult(dividends, [], [], [], []);
+        var parseResult = new StatementParseResult(dividends, [], [], []);
         var parser = Substitute.For<IStatementParser>();
         parser.ParseAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
             .Returns(Result<StatementParseResult, Error>.Success(parseResult));
@@ -480,7 +480,7 @@ public partial class ProcessReportsCommandHandlerTests
 
         var dividends = new[] { new DividendRecord(TestDate, "CHF", "Swiss Co", 100m) };
         var ibkrRates = new[] { new IbkrExchangeRate(TestDate, "CHF", "USD", 1.1m) };
-        var parseResult = new StatementParseResult(dividends, [], [], ibkrRates, []);
+        var parseResult = new StatementParseResult(dividends, [], ibkrRates, []);
         var parser = Substitute.For<IStatementParser>();
         parser.ParseAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
             .Returns(Result<StatementParseResult, Error>.Success(parseResult));
@@ -528,7 +528,7 @@ public partial class ProcessReportsCommandHandlerTests
         var parser = Substitute.For<IStatementParser>();
         parser.ParseAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
             .Returns(Result<StatementParseResult, Error>.Success(
-                new StatementParseResult(dividends, [], [], [], [])));
+                new StatementParseResult(dividends, [], [], [])));
 
         var rateFetcher = Substitute.For<IExchangeRateFetcher>();
         rateFetcher.FetchRateAsync(Arg.Any<DateOnly>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
@@ -551,7 +551,7 @@ public partial class ProcessReportsCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_DividendWithMatchingWht_UsesWhtInFiling()
+    public async Task HandleAsync_DividendWithPairedWht_UsesWhtInFiling()
     {
         var importer = MakeImporter();
         var report = MakeReportWithContent(importer.Id);
@@ -563,15 +563,9 @@ public partial class ProcessReportsCommandHandlerTests
         var importerRepo = Substitute.For<IImporterRepository>();
         importerRepo.GetByIdAsync(importer.Id, Arg.Any<CancellationToken>()).Returns(importer);
 
-        var dividends = new[] { new DividendRecord(TestDate, "USD", "ACME Corp", 100m) };
-        var withholdings = new[]
-        {
-            // Matching WHT: same (Date, EntityName, Currency)
-            new WithholdingTaxRecord(TestDate, "USD", "ACME Corp", 15m),
-            // Non-matching WHT: different EntityName
-            new WithholdingTaxRecord(TestDate, "USD", "OTHER Corp", 20m),
-        };
-        var parseResult = new StatementParseResult(dividends, [], withholdings, [], []);
+        // The parser pairs withholding onto the dividend; the handler must apply it.
+        var dividends = new[] { new DividendRecord(TestDate, "USD", "ACME Corp", 100m, Withholding: 15m) };
+        var parseResult = new StatementParseResult(dividends, [], [], []);
         var parser = Substitute.For<IStatementParser>();
         parser.ParseAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
             .Returns(Result<StatementParseResult, Error>.Success(parseResult));
@@ -591,10 +585,101 @@ public partial class ProcessReportsCommandHandlerTests
 
         await handler.HandleAsync(new ProcessReportsCommand(), TestContext.Current.CancellationToken);
 
-        // WHT of 15 USD * 117 RSD/USD = 1755 RSD — verify WHT was applied (not zero)
+        // WHT of 15 USD * 117 RSD/USD = 1755 RSD
         await filingRepo.Received(1).AddAsync(
-            Arg.Is<Filing>(f => f!.WhtPaidRsd > 0m),
+            Arg.Is<Filing>(f => f!.WhtPaidRsd == 1755m),
             Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_ParseErrorDiagnostic_ReportIsPartialErrorNotProcessed()
+    {
+        var importer = MakeImporter();
+        var report = MakeReportWithContent(importer.Id);
+
+        var reportRepo = Substitute.For<IReportRepository>();
+        reportRepo.GetByStatusAsync(ReportStatus.Init, Arg.Any<CancellationToken>())
+            .Returns(new[] { report });
+
+        var importerRepo = Substitute.For<IImporterRepository>();
+        importerRepo.GetByIdAsync(importer.Id, Arg.Any<CancellationToken>()).Returns(importer);
+
+        // One good dividend, one dividend row the parser could not read.
+        var dividends = new[] { new DividendRecord(TestDate, "USD", "ACME Corp", 100m) };
+        var parseResult = new StatementParseResult(dividends, [], [],
+            [new ParseError("ROW_AMOUNT_INVALID", "Cannot parse amount 'abc'.", 7)]);
+        var parser = Substitute.For<IStatementParser>();
+        parser.ParseAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
+            .Returns(Result<StatementParseResult, Error>.Success(parseResult));
+
+        var rateFetcher = Substitute.For<IExchangeRateFetcher>();
+        rateFetcher.FetchRateAsync(Arg.Any<DateOnly>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(Result<ExchangeRate, Error>.Success(new ExchangeRate(TestDate, "USD", 117m)));
+
+        var filingRepo = Substitute.For<IFilingRepository>();
+        filingRepo.GetByIncomeEventAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<DateOnly>(),
+                Arg.Any<CancellationToken>())
+            .Returns(Array.Empty<Filing>());
+
+        var handler = MakeHandler(
+            reportRepo: reportRepo, importerRepo: importerRepo,
+            filingRepo: filingRepo, rateFetcher: rateFetcher, parser: parser);
+
+        var result = await handler.HandleAsync(new ProcessReportsCommand(), TestContext.Current.CancellationToken);
+
+        result.Value.ReportsPartialError.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task HandleAsync_ParseErrorDiagnostic_SurfacedAsEventErrorWithRow()
+    {
+        var importer = MakeImporter();
+        var report = MakeReportWithContent(importer.Id);
+
+        var reportRepo = Substitute.For<IReportRepository>();
+        reportRepo.GetByStatusAsync(ReportStatus.Init, Arg.Any<CancellationToken>())
+            .Returns(new[] { report });
+
+        var importerRepo = Substitute.For<IImporterRepository>();
+        importerRepo.GetByIdAsync(importer.Id, Arg.Any<CancellationToken>()).Returns(importer);
+
+        var parseResult = new StatementParseResult([], [], [],
+            [new ParseError("WHT_UNMATCHED", "No dividend found for WHT entry.", 9)]);
+        var parser = Substitute.For<IStatementParser>();
+        parser.ParseAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
+            .Returns(Result<StatementParseResult, Error>.Success(parseResult));
+
+        var handler = MakeHandler(reportRepo: reportRepo, importerRepo: importerRepo, parser: parser);
+
+        var result = await handler.HandleAsync(new ProcessReportsCommand(), TestContext.Current.CancellationToken);
+
+        result.Value.EventErrors.Should().ContainSingle(e => e.ErrorCode == "WHT_UNMATCHED" && e.RowNumber == 9);
+    }
+
+    [Fact]
+    public async Task HandleAsync_ParseWarningOnly_ReportIsProcessed()
+    {
+        var importer = MakeImporter();
+        var report = MakeReportWithContent(importer.Id);
+
+        var reportRepo = Substitute.For<IReportRepository>();
+        reportRepo.GetByStatusAsync(ReportStatus.Init, Arg.Any<CancellationToken>())
+            .Returns(new[] { report });
+
+        var importerRepo = Substitute.For<IImporterRepository>();
+        importerRepo.GetByIdAsync(importer.Id, Arg.Any<CancellationToken>()).Returns(importer);
+
+        var parseResult = new StatementParseResult([], [], [],
+            [new ParseError("RATE_DUPLICATE", "Duplicate FX rate.", 4, ParseSeverity.Warning)]);
+        var parser = Substitute.For<IStatementParser>();
+        parser.ParseAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
+            .Returns(Result<StatementParseResult, Error>.Success(parseResult));
+
+        var handler = MakeHandler(reportRepo: reportRepo, importerRepo: importerRepo, parser: parser);
+
+        var result = await handler.HandleAsync(new ProcessReportsCommand(), TestContext.Current.CancellationToken);
+
+        result.Value.ReportsProcessed.Should().Be(1);
     }
 
 

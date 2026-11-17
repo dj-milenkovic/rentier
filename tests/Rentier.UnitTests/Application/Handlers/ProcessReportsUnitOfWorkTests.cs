@@ -83,7 +83,7 @@ public class ProcessReportsUnitOfWorkTests
 
         _parser.ParseAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
             .Returns(Result<StatementParseResult, Error>.Success(
-                new StatementParseResult(dividends, [], [], [], [])));
+                new StatementParseResult(dividends, [], [], [])));
         return reports;
     }
 

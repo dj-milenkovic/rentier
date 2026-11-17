@@ -85,7 +85,7 @@ public class CrossRateSynthesisTests
         // CHF fails (non-retryable), IBKR rate exists, USD also fails
         var dividends = new[] { new DividendRecord(TestDate, "CHF", "Swiss Corp", 100m) };
         var ibkrRates = new[] { new IbkrExchangeRate(TestDate, "CHF", "USD", 1.1m) };
-        var parseResult = new StatementParseResult(dividends, [], [], ibkrRates, []);
+        var parseResult = new StatementParseResult(dividends, [], ibkrRates, []);
         var parser = MakeParserReturning(parseResult);
 
         var rateFetcher = Substitute.For<IExchangeRateFetcher>();
@@ -126,7 +126,7 @@ public class CrossRateSynthesisTests
 
         var dividends = new[] { new DividendRecord(TestDate, "CHF", "Swiss Corp", 100m) };
         var ibkrRates = new[] { new IbkrExchangeRate(TestDate, "CHF", "USD", 1.1m) };
-        var parser = MakeParserReturning(new StatementParseResult(dividends, [], [], ibkrRates, []));
+        var parser = MakeParserReturning(new StatementParseResult(dividends, [], ibkrRates, []));
 
         var rateFetcher = Substitute.For<IExchangeRateFetcher>();
         rateFetcher.FetchRateAsync(Arg.Any<DateOnly>(), "CHF", Arg.Any<CancellationToken>())
@@ -188,7 +188,7 @@ public class CrossRateSynthesisTests
         // CHF fails (non-retryable), IBKR rate = 0 (so synthetic = 0 * usdRate = 0)
         var dividends = new[] { new DividendRecord(TestDate, "CHF", "Swiss Corp", 100m) };
         var ibkrRates = new[] { new IbkrExchangeRate(TestDate, "CHF", "USD", 0m) };
-        var parseResult = new StatementParseResult(dividends, [], [], ibkrRates, []);
+        var parseResult = new StatementParseResult(dividends, [], ibkrRates, []);
         var parser = MakeParserReturning(parseResult);
 
         var rateFetcher = Substitute.For<IExchangeRateFetcher>();
@@ -228,7 +228,7 @@ public class CrossRateSynthesisTests
 
         // No IBKR rates at all
         var dividends = new[] { new DividendRecord(TestDate, "CHF", "Swiss Corp", 100m) };
-        var parseResult = new StatementParseResult(dividends, [], [], [], []);
+        var parseResult = new StatementParseResult(dividends, [], [], []);
         var parser = MakeParserReturning(parseResult);
 
         var rateFetcher = Substitute.For<IExchangeRateFetcher>();
@@ -267,7 +267,7 @@ public class CrossRateSynthesisTests
         var dividends = new[] { new DividendRecord(TestDate, "EUR", "Euro Corp", 100m) };
         // Provide an IBKR cross-rate that would yield a different value — it should be ignored
         var ibkrRates = new[] { new IbkrExchangeRate(TestDate, "EUR", "USD", 99m) };
-        var parseResult = new StatementParseResult(dividends, [], [], ibkrRates, []);
+        var parseResult = new StatementParseResult(dividends, [], ibkrRates, []);
         var parser = MakeParserReturning(parseResult);
 
         var rateFetcher = Substitute.For<IExchangeRateFetcher>();
