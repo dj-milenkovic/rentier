@@ -11,6 +11,7 @@ using Rentier.Desktop.Resources;
 using Rentier.Desktop.Services;
 using Rentier.Desktop.ViewModels;
 using Rentier.Domain.Enums;
+using ReactiveUI;
 using Xunit;
 
 namespace Rentier.UnitTests;
@@ -489,5 +490,18 @@ public class ReportsViewModelTests
         // activation + next + sort change
         var __ = getReports.Received(3).HandleAsync(Arg.Any<GetReportsQuery>(), Arg.Any<CancellationToken>());
     }
-}
 
+    // ── State re-published when loading ends ─────────────────────────────────
+
+    [Fact]
+    public void IsEmpty_LoadReturnsNoRows_NotifiesTrueWhenLoadingEnds()
+    {
+        var vm = CreateVm(getReports: MakeGetReports());
+        var notified = new List<bool>();
+        using var subscription = vm.WhenAnyValue(x => x.IsEmpty).Subscribe(notified.Add);
+
+        using var _ = vm.Activator.Activate();
+
+        notified.Should().EndWith(true);
+    }
+}

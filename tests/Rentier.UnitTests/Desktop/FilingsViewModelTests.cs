@@ -13,6 +13,7 @@ using Rentier.Desktop.Services;
 using Rentier.Desktop.ViewModels;
 using Rentier.Domain.Enums;
 using Rentier.Application.Enums;
+using ReactiveUI;
 using Xunit;
 
 namespace Rentier.UnitTests;
@@ -959,5 +960,44 @@ public class FilingsViewModelTests
         vm.ReportIdFilter = Guid.NewGuid();
 
         getFilings.DidNotReceive().HandleAsync(Arg.Any<GetFilingsQuery>(), Arg.Any<CancellationToken>());
+    }
+
+    // ── State re-published when loading ends ─────────────────────────────────
+    // Bindings only re-read on PropertyChanged, so these must be raised after IsLoading turns false.
+
+    [Fact]
+    public void IsEmpty_LoadReturnsNoRows_NotifiesTrueWhenLoadingEnds()
+    {
+        var vm = CreateVm(getFilings: MockGetFilings());
+        var notified = new List<bool>();
+        using var subscription = vm.WhenAnyValue(x => x.IsEmpty).Subscribe(notified.Add);
+
+        using var _ = vm.Activator.Activate();
+
+        notified.Should().EndWith(true);
+    }
+
+    [Fact]
+    public void HasNextPage_LoadReturnsMorePages_NotifiesTrueWhenLoadingEnds()
+    {
+        var vm = CreateVm(getFilings: MockGetFilings(new FilingsPageResult([MakeDto()], 40, 2)));
+        var notified = new List<bool>();
+        using var subscription = vm.WhenAnyValue(x => x.HasNextPage).Subscribe(notified.Add);
+
+        using var _ = vm.Activator.Activate();
+
+        notified.Should().EndWith(true);
+    }
+
+    [Fact]
+    public void NextPageCommand_AfterLoadWithMorePages_CanExecute()
+    {
+        var vm = CreateVm(getFilings: MockGetFilings(new FilingsPageResult([MakeDto()], 40, 2)));
+        var canExecute = new List<bool>();
+        using var subscription = vm.NextPageCommand.CanExecute.Subscribe(canExecute.Add);
+
+        using var _ = vm.Activator.Activate();
+
+        canExecute.Should().EndWith(true);
     }
 }
