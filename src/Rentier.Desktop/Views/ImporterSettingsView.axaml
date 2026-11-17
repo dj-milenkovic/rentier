@@ -80,6 +80,7 @@
 
         <TextBlock Text="{Binding [Importers_PaymentNotes_Label], Source={StaticResource Localizer}}" />
         <TextBox Text="{Binding PaymentNotes}"
+                 PlaceholderText="{Binding [PaymentNotes_DefaultHint], Source={StaticResource Localizer}}"
                  AcceptsReturn="True"
                  MinLines="3" />
 

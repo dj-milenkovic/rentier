@@ -486,6 +486,16 @@ public class ManualFilingViewModelTests
     }
 
     [Fact]
+    public void PaymentNotesText_SetToSameValue_DoesNotMarkFormDirty()
+    {
+        var vm = CreateVm();
+
+        vm.PaymentNotesText = "Isplata na brokerski račun";
+
+        vm.IsDirty.Should().BeFalse();
+    }
+
+    [Fact]
     public void PaymentNotesText_NewForm_IsNotDirty()
     {
         var vm = CreateVm();

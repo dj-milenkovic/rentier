@@ -32,7 +32,7 @@ public sealed class ManualFilingViewModel : ReactiveObject, IActivatableViewMode
     private string _selectedCurrency = "USD";
     private string _grossAmountText = "";
     private string _netReceivedText = "";
-    private string _paymentNotesText = PpOpoDefaults.MANUAL_PAYMENT_NOTES;
+    private string _paymentNotesText = PpOpoDefaults.DEFAULT_PAYMENT_NOTES;
     private ManualFilingPreviewDto? _preview = null;
     private string? _errorMessage = null;
     private bool _isLoading = false;
@@ -91,13 +91,14 @@ public sealed class ManualFilingViewModel : ReactiveObject, IActivatableViewMode
 
     /// <summary>
     /// Free-text payment notes stored on the filing and exported into PP-OPO field 3.3 ("Ostalo").
-    /// Pre-filled with <see cref="PpOpoDefaults.MANUAL_PAYMENT_NOTES"/>.
+    /// Pre-filled with <see cref="PpOpoDefaults.DEFAULT_PAYMENT_NOTES"/>.
     /// </summary>
     public string PaymentNotesText
     {
         get => _paymentNotesText;
         set
         {
+            if (_paymentNotesText == value) return;
             this.RaiseAndSetIfChanged(ref _paymentNotesText, value);
             IsDirty = true;
         }

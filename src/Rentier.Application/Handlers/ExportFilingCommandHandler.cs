@@ -43,24 +43,7 @@ public sealed class ExportFilingCommandHandler
             return Result<ExportFilingResult, Error>.Failure(
                 Error.Domain("Taxpayer profile is required before exporting."));
 
-        var paymentNotes = string.Empty;
-        if (filing.ReportId.HasValue)
-        {
-            var report = await _reports.GetByIdAsync(filing.ReportId.Value, ct);
-            if (report is not null)
-            {
-                var importer = await _importers.GetByIdAsync(report.ImporterId, ct);
-                paymentNotes = importer?.PaymentNotes ?? string.Empty;
-            }
-        }
-        else
-        {
-            // Manual filings: fall back to the default 3.3 "Ostalo" text when none was entered,
-            // so filings saved before the form was pre-filled still export a populated field.
-            paymentNotes = string.IsNullOrWhiteSpace(filing.PaymentNotes)
-                ? PpOpoDefaults.MANUAL_PAYMENT_NOTES
-                : filing.PaymentNotes;
-        }
+        var paymentNotes = await ResolvePaymentNotesAsync(filing, ct);
 
         var serializeResult = _serializer.Serialize(filing, profile, paymentNotes);
         if (!serializeResult.IsSuccess)
@@ -70,6 +53,29 @@ public sealed class ExportFilingCommandHandler
 
         return Result<ExportFilingResult, Error>.Success(
             new ExportFilingResult(serializeResult.Value, suggestedFileName));
+    }
+
+    /// <summary>
+    /// Resolves the text for PP-OPO field 3.3 ("Ostalo"): the importer's notes for
+    /// report-backed filings, the filing's own notes for manual ones. NacinIsplate is
+    /// always 3 ("other"), so 3.3 must never be empty — blank notes fall back to
+    /// <see cref="PpOpoDefaults.DEFAULT_PAYMENT_NOTES"/>.
+    /// </summary>
+    private async Task<string> ResolvePaymentNotesAsync(Filing filing, CancellationToken ct)
+    {
+        string? notes;
+        if (filing.ReportId.HasValue)
+        {
+            var report = await _reports.GetByIdAsync(filing.ReportId.Value, ct);
+            var importer = report is null ? null : await _importers.GetByIdAsync(report.ImporterId, ct);
+            notes = importer?.PaymentNotes;
+        }
+        else
+        {
+            notes = filing.PaymentNotes;
+        }
+
+        return string.IsNullOrWhiteSpace(notes) ? PpOpoDefaults.DEFAULT_PAYMENT_NOTES : notes;
     }
 
     /// <summary>

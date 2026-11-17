@@ -100,7 +100,7 @@
         <TextBox Text="{Binding PaymentNotesText, Mode=TwoWay}"
                  IsEnabled="{Binding IsLoading, Converter={x:Static local:InvertBoolConverter.Instance}}"
                  AcceptsReturn="True" TextWrapping="Wrap" Height="60"
-                 PlaceholderText="e.g. Isplata na brokerski račun" />
+                 PlaceholderText="{Binding [PaymentNotes_DefaultHint], Source={StaticResource Localizer}}" />
       </StackPanel>
 
       <!-- Action Buttons -->
