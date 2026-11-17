@@ -139,6 +139,10 @@ public sealed class ReportRepository : UnitOfWorkAwareRepository, IReportReposit
 
             if (filter.ImporterIds is { Count: > 0 })
                 query = query.Where(r => filter.ImporterIds.Contains(r.ImporterId));
+
+            // Filtered in SQL (correlated count) so TotalCount and paging reflect the filter.
+            if (filter.FilingCountValue is { } filingCount)
+                query = query.Where(r => Db.Filings.Count(f => f.ReportId == r.Id) == filingCount);
         }
 
         query = sortDescending

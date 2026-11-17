@@ -56,14 +56,7 @@ public sealed class ProcessReportsCommandHandler
 
         var initReports = await _reportRepository.GetByStatusAsync(ReportStatus.Init, ct);
 
-        var allEventErrors = new List<FilingCreationError>();
-        var reportDetails = new List<ReportProcessingDetail>();
-        var filingsCreated = 0;
-        var reportsProcessed = 0;
-        var reportsErrored = 0;
-        var reportsPartialError = 0;
-        var reportsPendingRetry = 0;
-        var failedAttempts = new List<ReportFailedAttempt>();
+        var tally = new ProcessingTally();
 
         foreach (var report in initReports)
         {
@@ -77,98 +70,152 @@ public sealed class ProcessReportsCommandHandler
             {
                 outcome = await ProcessAndCommitReportAsync(report, holidays, ct);
             }
-            catch (OperationCanceledException)
+            // Only the caller's cancellation stops the run. An OperationCanceledException without
+            // it (e.g. an internal timeout) is an unexpected failure of this report, handled below.
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
             {
                 throw;
             }
+            // Per-report isolation boundary: one report failing unexpectedly (DB error, a failed
+            // commit, a bug) must not abort the remaining reports. The catch only classifies —
+            // all I/O for the outcome happens in RecordOutcomeAsync, which never throws.
             catch (Exception ex)
             {
-                // Unexpected failure (DB error, a failed commit, a bug). The report's unit of work
-                // is already disposed, so everything it staged (filings, status) was discarded.
+                // The report's unit of work is already disposed, so everything it staged
+                // (filings, status) was discarded.
                 _logger.LogError(ex, "Report {ReportId} failed unexpectedly: {Message}", report.Id, ex.Message);
                 outcome = new ReportOutcome.AttemptFailed(ex.Message);
             }
 
-            switch (outcome)
-            {
-                case ReportOutcome.AttemptFailed failedAttempt:
-                    {
-                        // Nothing was persisted. Record the attempt so the failure is visible and
-                        // bounded: the report stays Init and is retried by the next run, until
-                        // MAX_PROCESSING_ATTEMPTS failures move it to Error for manual attention.
-                        var attempt = await RecordFailedAttemptAsync(report, failedAttempt.Reason, ct);
-                        switch (attempt.Kind)
-                        {
-                            case FailedAttemptKind.PendingRetry:
-                            case FailedAttemptKind.NotRecorded:
-                                reportsPendingRetry++;
-                                break;
-                            case FailedAttemptKind.Exhausted:
-                                reportsErrored++;
-                                break;
-                        }
+            await RecordOutcomeAsync(report, outcome, tally, command.Progress, ct);
+        }
 
-                        if (attempt.Kind != FailedAttemptKind.ReportGone)
-                            failedAttempts.Add(attempt);
+        return Result<ProcessReportsResult, Error>.Success(
+            new ProcessReportsResult(tally.FilingsCreated, tally.ReportsProcessed, tally.ReportsErrored,
+                tally.EventErrors, tally.ReportsPartialError, tally.ReportDetails, tally.ReportsPendingRetry,
+                tally.FailedAttempts));
+    }
 
-                        var attemptSeverity = attempt.Kind == FailedAttemptKind.Exhausted
-                            ? SyncProgressSeverity.Error
-                            : SyncProgressSeverity.Warning;
-                        command.Progress?.Report(new SyncProgressEntry(
-                            _timeProvider.GetLocalNow(), attempt.ToLogMessage(), attemptSeverity));
-                        reportDetails.Add(new ReportProcessingDetail(report.ReportName, 0, 0, attemptSeverity));
-                        break;
-                    }
+    /// <summary>
+    /// The single place where a report's outcome becomes observable: records a failed attempt
+    /// when nothing was committed, then updates the run counters, logs, reports progress and adds
+    /// the <see cref="ReportProcessingDetail"/>. Expected failures never escape it, so one report
+    /// cannot stop the remaining reports; it throws only on cancellation, if the caller's progress
+    /// callback throws, or on an unhandled <see cref="ReportOutcome"/> subtype (a programming error).
+    /// </summary>
+    private async Task RecordOutcomeAsync(
+        Report report,
+        ReportOutcome outcome,
+        ProcessingTally tally,
+        IProgress<SyncProgressEntry>? progress,
+        CancellationToken ct)
+    {
+        string message;
+        SyncProgressSeverity severity;
+        var created = 0;
+        var failed = 0;
 
-                // ── Committed outcomes: bookkeeping only from here on ──
-                case ReportOutcome.Rejected rejected:
-                    // Data integrity failure (no attachment, missing importer, parse error) — not an unexpected exception
-                    reportsErrored++;
-                    _logger.LogWarning(
-                        "Report {ReportId} rejected: [{Code}] {Message}",
-                        report.Id, rejected.Error.Code, rejected.Error.Message);
-                    command.Progress?.Report(new SyncProgressEntry(
-                        _timeProvider.GetLocalNow(),
-                        $"Report '{report.ReportName}': processing error — {rejected.Error.Message}.",
-                        SyncProgressSeverity.Error));
-                    reportDetails.Add(new ReportProcessingDetail(report.ReportName, 0, 0, SyncProgressSeverity.Error));
+        switch (outcome)
+        {
+            case ReportOutcome.AttemptFailed failedAttempt:
+                {
+                    // Nothing was persisted. Record the attempt so the failure is visible and
+                    // bounded: the report stays Init and is retried by the next run, until
+                    // MAX_PROCESSING_ATTEMPTS failures move it to Error for manual attention.
+                    var attempt = await RecordFailedAttemptAsync(report, failedAttempt.Reason, ct);
+                    tally.Count(attempt);
+                    severity = attempt.Kind == FailedAttemptKind.Exhausted
+                        ? SyncProgressSeverity.Error
+                        : SyncProgressSeverity.Warning;
+                    message = attempt.ToLogMessage();
                     break;
+                }
 
-                case ReportOutcome.Committed committed:
-                    filingsCreated += committed.Created;
-                    allEventErrors.AddRange(committed.EventErrors);
-                    switch (committed.Status)
-                    {
-                        case ReportStatus.Processed:
-                            reportsProcessed++;
-                            break;
-                        case ReportStatus.PartialError:
-                            reportsPartialError++;
-                            break;
-                        default:
-                            reportsErrored++;
-                            break;
-                    }
+            // ── Committed outcomes: bookkeeping only from here on ──
+            case ReportOutcome.Rejected rejected:
+                // Data integrity failure (no attachment, missing importer, parse error) — not an unexpected exception
+                tally.Count(ReportStatus.Error);
+                _logger.LogWarning(
+                    "Report {ReportId} rejected: [{Code}] {Message}",
+                    report.Id, rejected.Error.Code, rejected.Error.Message);
+                severity = SyncProgressSeverity.Error;
+                message = $"Report '{report.ReportName}': processing error — {rejected.Error.Message}.";
+                break;
 
-                    if (_logger.IsEnabled(LogLevel.Information))
-                    {
-                        _logger.LogInformation(
-                            "Report {ReportId}: {Total} events, {Created} filings, {Failed} failed -> {Status}",
-                            report.Id, committed.Succeeded + committed.Failed, committed.Created, committed.Failed,
-                            committed.Status);
-                    }
+            case ReportOutcome.Committed committed:
+                tally.FilingsCreated += committed.Created;
+                tally.EventErrors.AddRange(committed.EventErrors);
+                tally.Count(committed.Status);
 
-                    var severity = ReportProcessingDetail.ClassifySeverity(committed.Created, committed.Failed);
-                    var detail = new ReportProcessingDetail(report.ReportName, committed.Created, committed.Failed, severity);
-                    command.Progress?.Report(new SyncProgressEntry(_timeProvider.GetLocalNow(), detail.ToLogMessage(), severity));
-                    reportDetails.Add(detail);
+                if (_logger.IsEnabled(LogLevel.Information))
+                {
+                    _logger.LogInformation(
+                        "Report {ReportId}: {Total} events, {Created} filings, {Failed} failed -> {Status}",
+                        report.Id, committed.Succeeded + committed.Failed, committed.Created, committed.Failed,
+                        committed.Status);
+                }
+
+                created = committed.Created;
+                failed = committed.Failed;
+                severity = ReportProcessingDetail.ClassifySeverity(created, failed);
+                message = new ReportProcessingDetail(report.ReportName, created, failed, severity).ToLogMessage();
+                break;
+
+            default:
+                throw new System.Diagnostics.UnreachableException(
+                    $"Unhandled report outcome {outcome.GetType().Name}.");
+        }
+
+        progress?.Report(new SyncProgressEntry(_timeProvider.GetLocalNow(), message, severity));
+        tally.ReportDetails.Add(new ReportProcessingDetail(report.ReportName, created, failed, severity));
+    }
+
+    /// <summary>Running totals for one <see cref="HandleAsync"/> invocation.</summary>
+    private sealed class ProcessingTally
+    {
+        public int FilingsCreated { get; set; }
+        public int ReportsProcessed { get; private set; }
+        public int ReportsErrored { get; private set; }
+        public int ReportsPartialError { get; private set; }
+        public int ReportsPendingRetry { get; private set; }
+        public List<FilingCreationError> EventErrors { get; } = [];
+        public List<ReportProcessingDetail> ReportDetails { get; } = [];
+        public List<ReportFailedAttempt> FailedAttempts { get; } = [];
+
+        /// <summary>Counts a committed report by its final status.</summary>
+        public void Count(ReportStatus status)
+        {
+            switch (status)
+            {
+                case ReportStatus.Processed:
+                    ReportsProcessed++;
+                    break;
+                case ReportStatus.PartialError:
+                    ReportsPartialError++;
+                    break;
+                default:
+                    ReportsErrored++;
                     break;
             }
         }
 
-        return Result<ProcessReportsResult, Error>.Success(
-            new ProcessReportsResult(filingsCreated, reportsProcessed, reportsErrored, allEventErrors, reportsPartialError,
-                reportDetails, reportsPendingRetry, failedAttempts));
+        /// <summary>Counts a report whose attempt failed without committing anything.</summary>
+        public void Count(ReportFailedAttempt attempt)
+        {
+            switch (attempt.Kind)
+            {
+                case FailedAttemptKind.PendingRetry:
+                case FailedAttemptKind.NotRecorded:
+                    ReportsPendingRetry++;
+                    break;
+                case FailedAttemptKind.Exhausted:
+                    ReportsErrored++;
+                    break;
+            }
+
+            if (attempt.Kind != FailedAttemptKind.ReportGone)
+                FailedAttempts.Add(attempt);
+        }
     }
 
     /// <summary>
@@ -202,8 +249,22 @@ public sealed class ProcessReportsCommandHandler
         if (processing is ReportProcessing.Rejected rejection)
         {
             report.Reject(rejection.Error.Message);
-            await unitOfWork.Reports.UpdateProcessingStateAsync(report, ct);
-            await unitOfWork.SaveChangesAsync(ct);
+            try
+            {
+                await unitOfWork.Reports.UpdateProcessingStateAsync(report, ct);
+                await unitOfWork.SaveChangesAsync(ct);
+            }
+            // Repositories do not return Result, so a failure to save the rejection is translated
+            // here: the rejection — not the storage error — stays the reason recorded on the
+            // failed attempt, so the cause is not masked. Cancellation propagates.
+            catch (Exception persistEx) when (persistEx is not OperationCanceledException)
+            {
+                _logger.LogError(persistEx,
+                    "Report {ReportId}: rejection [{Code}] could not be saved: {Message}",
+                    report.Id, rejection.Error.Code, persistEx.Message);
+                return new ReportOutcome.AttemptFailed(rejection.Error.Message);
+            }
+
             return new ReportOutcome.Rejected(rejection.Error);
         }
 
@@ -260,10 +321,12 @@ public sealed class ProcessReportsCommandHandler
             return new ReportFailedAttempt(report.Id, report.ReportName, reason, persisted.ProcessingAttempts,
                 exhausted ? FailedAttemptKind.Exhausted : FailedAttemptKind.PendingRetry);
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
             throw;
         }
+        // Deliberately broad: this runs on the failure path, so its own failure must not replace
+        // the original reason or stop the run; the report simply stays Init and is retried.
         catch (Exception ex)
         {
             _logger.LogError(ex, "Report {ReportId}: the failed attempt could not be recorded; it stays pending", report.Id);

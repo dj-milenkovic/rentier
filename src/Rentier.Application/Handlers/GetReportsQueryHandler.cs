@@ -50,7 +50,7 @@ public sealed class GetReportsQueryHandler
                     ? null
                     : (query.Filter ?? new ReportColumnFilter()) with { ImporterIds = importerIds };
 
-                var skip = (query.Page - 1) * query.PageSize;
+                var skip = PageMath.Skip(query.Page, query.PageSize);
                 var (pageReports, totalCount) = await _reports.GetPagedAsync(
                     effectiveFilter, skip, query.PageSize, query.SortDescending, ct);
 
@@ -67,14 +67,7 @@ public sealed class GetReportsQueryHandler
                     dtos.Add(new ReportRowDto(r.Id, r.ReportName, r.ImportDate, r.EmailDate, importerName, r.Status, count, displayName, earliest));
                 }
 
-                // Post-filter by filing count (computed, not in DB)
-                if (query.Filter?.FilingCountValue.HasValue == true)
-                {
-                    var fcVal = query.Filter.FilingCountValue.Value;
-                    dtos = dtos.Where(d => d.FilingCount == fcVal).ToList();
-                }
-
-                var totalPages = Math.Max(1, (int)Math.Ceiling((double)totalCount / query.PageSize));
+                var totalPages = PageMath.TotalPages(totalCount, query.PageSize);
                 return Result<ReportsPageResult, Error>.Success(
                     new ReportsPageResult(dtos.AsReadOnly(), totalCount, totalPages));
             },

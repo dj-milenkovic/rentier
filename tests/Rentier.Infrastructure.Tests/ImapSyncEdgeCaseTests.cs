@@ -95,6 +95,36 @@ public class ImapSyncEdgeCaseTests
         return client;
     }
 
+    // ── Cursor never moves past a failed message ──────────────────────────────
+
+    [Fact]
+    public async Task SyncAsync_LowerUidFailsHigherUidSucceeds_SavesCursorBelowFailedUid()
+    {
+        var mailbox = MakeMailbox();
+        var importer = MakeImporter(mailbox.Id);
+        var (reportRepo, mailboxRepo, credStore) = MakeDefaultDependencies();
+
+        var good = new MimeMessage { Subject = "Dividend statement", Date = DateTimeOffset.UtcNow };
+        var bodyBuilder = new BodyBuilder { TextBody = "body" };
+        bodyBuilder.Attachments.Add("statement.csv", Encoding.UTF8.GetBytes("col1,col2\n1,2"));
+        good.Body = bodyBuilder.ToMessageBody();
+
+        var client = MakeImapClient(mailbox, good);
+        var failedUid = new UniqueId(100);
+        var goodUid = new UniqueId(101);
+        client.Inbox.SearchAsync(Arg.Any<SearchQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IList<UniqueId>>(new[] { failedUid, goodUid }));
+        client.Inbox.GetMessageAsync(failedUid, Arg.Any<CancellationToken>())
+            .Returns<Task<MimeMessage>>(_ => throw new IOException("connection reset"));
+        client.Inbox.GetMessageAsync(goodUid, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(good));
+        var svc = new TestableService(reportRepo, mailboxRepo, credStore, client);
+
+        await svc.SyncAsync(mailbox, new[] { importer }, SyncParameters.Default, null, CancellationToken.None);
+
+        mailbox.Cursor.Should().BeOfType<MailboxCursor.SyncedTo>().Which.Uid.Should().Be(99);
+    }
+
     // ── BuildReportName static helpers ────────────────────────────────────────
 
     /// <summary>S16: Non-ASCII (Serbian Cyrillic) subject is preserved in the report name.</summary>

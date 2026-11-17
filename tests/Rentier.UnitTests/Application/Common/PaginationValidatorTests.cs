@@ -38,6 +38,25 @@ public class PaginationValidatorTests
         result.Should().BeNull("page=1 is the minimum valid page number");
     }
 
+    [Theory]
+    [InlineData(100_000_000, 30)]
+    [InlineData(int.MaxValue, 100)]
+    public void Validate_PageWhoseOffsetOverflowsInt_ReturnsValidationFailure(int page, int pageSize)
+    {
+        var result = PaginationValidator.Validate<string>(new FakeQuery(page, pageSize));
+
+        result!.Error.Code.Should().Be(ErrorCodes.PAGINATION_VALIDATION_FAILED);
+    }
+
+    [Fact]
+    public void Validate_LargestPageWhoseOffsetFits_ReturnsNull()
+    {
+        // (21474837 - 1) * 100 = 2147483600 <= int.MaxValue
+        var result = PaginationValidator.Validate<string>(new FakeQuery(21_474_837, 100));
+
+        result.Should().BeNull();
+    }
+
     [Fact]
     public void Page_Two_ReturnsNull()
     {
