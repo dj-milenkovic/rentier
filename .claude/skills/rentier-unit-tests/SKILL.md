@@ -30,26 +30,14 @@ require no database, and cover the business rules that matter most. Write them f
 **Never use `Substitute.For<>()` in a domain test.** If you reach for a mock, the domain
 class has an external dependency it shouldn't. Fix the design instead.
 
-Domain services that need external data (e.g. exchange rates) receive a `Func<>` delegate —
-pass a lambda in the test, not an interface mock:
+Domain services take already-resolved values (e.g. the exchange rate, looked up by the
+Application layer) — construct them in the test, no mock and no async:
 
 ```csharp
-Func<DateOnly, string, Task<ExchangeRate>> fixedRate =
-    (date, currency) => Task.FromResult(new ExchangeRate(date, currency, 117.21m));
-
-var result = await TaxCalculationService.CalculateAsync(
-    IncomeType.Dividend, "AAPL", new DateOnly(2024, 1, 15),
-    100m, "USD", 15m, "USD",
-    fixedRate);
-```
-
-To capture what the delegate received, use a closure variable:
-```csharp
-string? capturedCurrency = null;
-Func<DateOnly, string, Task<ExchangeRate>> capturingRate = (date, currency) => {
-    capturedCurrency = currency;
-    return Task.FromResult(new ExchangeRate(date, currency, 117m));
-};
+var result = TaxCalculationService.Calculate(
+    new IncomeTaxInput(IncomeType.Dividend, "AAPL", new DateOnly(2024, 1, 15),
+        100m, "USD", 15m, "USD"),
+    new ExchangeRate(new DateOnly(2024, 1, 15), "USD", 117.21m));
 ```
 
 ### Financial Precision
@@ -93,9 +81,13 @@ public void Calculate_NegativeInput_Throws(double rawTax) // ❌
 var act = () => filing.MarkFiled();
 act.Should().Throw<DomainException>().WithMessage("*Invalid*");
 
-// Async throw
-var act = () => TaxCalculationService.CalculateAsync(...);
-await act.Should().ThrowAsync<DomainException>().WithMessage("*negative*");
+// Synchronous throw from a domain service
+var act = () => TaxCalculationService.Calculate(input, rate);
+act.Should().Throw<DomainException>().WithMessage("*negative*");
+
+// Async throw (Application handlers)
+var act = () => handler.HandleAsync(command, ct);
+await act.Should().ThrowAsync<OperationCanceledException>();
 ```
 
 Use `*keyword*` wildcards — not the full message string. Messages can be reworded;
