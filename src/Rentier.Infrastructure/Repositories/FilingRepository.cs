@@ -6,6 +6,7 @@ using Rentier.Application.Queries;
 using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
+using Rentier.Domain.Services;
 using Rentier.Infrastructure.Persistence;
 
 namespace Rentier.Infrastructure.Repositories;
@@ -154,6 +155,12 @@ public sealed class FilingRepository : UnitOfWorkAwareRepository, IFilingReposit
         }
     }
 
+    /// <summary>
+    /// SQL form of <see cref="FilingLifecycle.IsOutstanding"/> — the one definition of "unpaid"
+    /// used by the Unpaid filter, upcoming/overdue deadlines and the unpaid total.
+    /// </summary>
+    private static readonly Expression<Func<Filing, bool>> IS_OUTSTANDING = f => f.Status != FilingStatus.Paid;
+
     public async Task<(IReadOnlyList<Filing> Items, int TotalCount)> GetPagedAsync(
         FilingFilterMode filter, int skip, int take,
         FilingSortColumn sortColumn = FilingSortColumn.FilingDeadline,
@@ -164,8 +171,7 @@ public sealed class FilingRepository : UnitOfWorkAwareRepository, IFilingReposit
         var query = Db.Filings.AsNoTracking();
 
         if (filter == FilingFilterMode.Unpaid)
-            query = query.Where(f =>
-                f.Status == FilingStatus.Init || f.Status == FilingStatus.Filed);
+            query = query.Where(IS_OUTSTANDING);
 
         query = ApplyColumnFilters(query, columnFilter);
 
@@ -262,9 +268,8 @@ public sealed class FilingRepository : UnitOfWorkAwareRepository, IFilingReposit
     {
         var limit = today.AddDays(days);
         var list = await Db.Filings.AsNoTracking()
-            .Where(f => (f.Status == FilingStatus.Init || f.Status == FilingStatus.Filed)
-                     && f.FilingDeadline >= today
-                     && f.FilingDeadline <= limit)
+            .Where(IS_OUTSTANDING)
+            .Where(f => f.FilingDeadline >= today && f.FilingDeadline <= limit)
             .OrderBy(f => f.FilingDeadline)
             .ToListAsync(ct);
         return list.AsReadOnly();
@@ -273,7 +278,8 @@ public sealed class FilingRepository : UnitOfWorkAwareRepository, IFilingReposit
     public async Task<IReadOnlyList<Filing>> GetOverdueAsync(DateOnly today, CancellationToken ct = default)
     {
         var list = await Db.Filings.AsNoTracking()
-            .Where(f => f.Status != FilingStatus.Paid && f.FilingDeadline < today)
+            .Where(IS_OUTSTANDING)
+            .Where(f => f.FilingDeadline < today)
             .OrderBy(f => f.FilingDeadline)
             .ToListAsync(ct);
         return list.AsReadOnly();
@@ -289,7 +295,7 @@ public sealed class FilingRepository : UnitOfWorkAwareRepository, IFilingReposit
         // SQLite cannot SUM decimal columns server-side; fetch only the relevant
         // values and aggregate in memory.
         var unpaidAmounts = await Db.Filings.AsNoTracking()
-            .Where(f => f.Status != FilingStatus.Paid)
+            .Where(IS_OUTSTANDING)
             .Select(f => f.TaxPayableRsd)
             .ToListAsync(ct);
 

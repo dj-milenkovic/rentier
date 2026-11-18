@@ -796,8 +796,10 @@ public class FilingRepositoryTests : IAsyncLifetime
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var fAlpha = MakeFiling(profile.Id, date: new DateOnly(2024, 1, 1));
+        fAlpha.AdvanceStatus(FilingStatus.Filed);
         fAlpha.SetPaymentReference("AAA-001");
         var fZeta = MakeFiling(profile.Id, date: new DateOnly(2024, 2, 1));
+        fZeta.AdvanceStatus(FilingStatus.Filed);
         fZeta.SetPaymentReference("ZZZ-999");
         await _repository.AddAsync(fAlpha, TestContext.Current.CancellationToken);
         await _repository.AddAsync(fZeta, TestContext.Current.CancellationToken);

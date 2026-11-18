@@ -103,6 +103,7 @@ public class PpOpoXmlSerializerSnapshotTests
             filingDeadline: new DateOnly(2025, 4, 30),
             provenance: new FilingProvenance());
 
+        filing.AdvanceStatus(FilingStatus.Filed);
         filing.SetPaymentReference("REF-12345");
 
         var bytes = _sut.Serialize(filing, MakeProfile(), "REF-12345").Value;
@@ -133,6 +134,7 @@ public class PpOpoXmlSerializerSnapshotTests
             filingDeadline: new DateOnly(2025, 4, 15),
             provenance: new FilingProvenance());
 
+        filing.AdvanceStatus(FilingStatus.Filed);
         filing.SetPaymentReference("IBAN: RS35170006000987654321 Model: 97 Poziv: 2025-0042");
 
         var bytes = _sut.Serialize(filing, MakeProfile(), "IBAN: RS35170006000987654321 Model: 97 Poziv: 2025-0042").Value;

@@ -16,7 +16,15 @@ namespace Rentier.UnitTests;
 /// </summary>
 public class PaymentReferenceProperties
 {
-    private static Filing MakeFiling() =>
+    /// <summary>A filed filing — the earliest status that accepts a payment reference.</summary>
+    private static Filing MakeFiling()
+    {
+        var filing = MakeInitFiling();
+        filing.AdvanceStatus(FilingStatus.Filed);
+        return filing;
+    }
+
+    private static Filing MakeInitFiling() =>
         Filing.CreateFromIncome(
             new FilingInfo(
                 incomeType: IncomeType.Dividend,

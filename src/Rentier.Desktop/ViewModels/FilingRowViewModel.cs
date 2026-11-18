@@ -6,6 +6,7 @@ using Rentier.Application.DTOs;
 using Rentier.Desktop.Extensions;
 using Rentier.Desktop.Resources;
 using Rentier.Domain.Enums;
+using Rentier.Domain.Services;
 
 namespace Rentier.Desktop.ViewModels;
 
@@ -45,18 +46,14 @@ public sealed class FilingRowViewModel : ReactiveObject, ISelectableRow
 
     /// <summary>
     /// Payment reference is editable once the filing is Filed, and stays editable in Paid so a
-    /// reference forgotten during Filed can still be recorded (issue #65). Init is not editable:
-    /// nothing has been submitted, so no payment slip exists yet.
+    /// reference forgotten during Filed can still be recorded (issue #65). The rule lives in
+    /// <see cref="FilingLifecycle"/> and is enforced by the Filing entity; this only mirrors it.
     /// </summary>
-    public bool IsPaymentReferenceEditable => Status is FilingStatus.Filed or FilingStatus.Paid;
+    public bool IsPaymentReferenceEditable => FilingLifecycle.AcceptsPaymentReference(Status);
 
     /// <summary>Valid status options a user can advance to from the current status.</summary>
-    public IReadOnlyList<FilingStatus> AvailableNextStatuses => Status switch
-    {
-        FilingStatus.Init => [FilingStatus.Filed],
-        FilingStatus.Filed => [FilingStatus.Paid],
-        _ => []
-    };
+    public IReadOnlyList<FilingStatus> AvailableNextStatuses =>
+        FilingLifecycle.NextStatus(Status) is { } next ? [next] : [];
 
     /// <summary>True when there is at least one valid next status to advance to.</summary>
     public bool HasNextStatus => AvailableNextStatuses.Count > 0;
