@@ -372,6 +372,25 @@ public class ReportRepositoryTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task GetByIdAsync_OriginalReportIdInDatabase_IsMaterialized()
+    {
+        // OriginalReportId is getter-only; EF Core must still read it from the column
+        // (through the auto-property backing field) for existing revision rows.
+        var importer = MakeImporter();
+        await _context.Importers.AddAsync(importer, TestContext.Current.CancellationToken);
+        var original = MakeReport(importer.Id, "original.csv");
+        var revision = MakeReport(importer.Id, "revision.csv");
+        await _context.Reports.AddRangeAsync([original, revision], TestContext.Current.CancellationToken);
+        _context.Entry(revision).Property(r => r.OriginalReportId).CurrentValue = original.Id;
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        _context.ChangeTracker.Clear();
+
+        var loaded = await _repository.GetByIdAsync(revision.Id, TestContext.Current.CancellationToken);
+
+        loaded!.OriginalReportId.Should().Be(original.Id);
+    }
+
+    [Fact]
     public async Task GetPagedAsync_EmptyImporterIds_ReturnsNoReports()
     {
         // An importer search term that matches no importer resolves to an empty ID list;

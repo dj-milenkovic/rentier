@@ -21,7 +21,9 @@ public sealed class Report
     public string ReportName { get; private set; } = string.Empty;
     public byte[]? AttachmentContent { get; private set; }
     public long? MailboxMessageId { get; private set; }
-    public Guid? OriginalReportId { get; private set; }
+    // Read-only: no current workflow creates report revisions; EF Core fills it from the column
+    // (explicitly mapped in ReportConfiguration) through the auto-property backing field.
+    public Guid? OriginalReportId { get; }
     public DateOnly? EmailDate { get; private set; }
 
     /// <summary>Maximum stored length of <see cref="LastProcessingError"/>.</summary>

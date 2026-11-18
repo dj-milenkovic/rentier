@@ -77,12 +77,13 @@ public sealed class FilingRepository : UnitOfWorkAwareRepository, IFilingReposit
 
     // The database query and the staged-change lookup must fold case identically, or duplicate
     // detection within a unit of work would drift from detection across statements. SQLite's
-    // upper() (what EF translates string.ToUpper() to) folds ASCII letters only, so the in-memory
-    // side uses AsciiUpper rather than the culture-sensitive string.ToUpper().
+    // NOCASE collation folds ASCII letters only, so the in-memory side (MATCHES_INCOME_EVENT)
+    // uses AsciiUpper rather than the culture-sensitive string.ToUpper() or OrdinalIgnoreCase.
+    // SQL only (EF.Functions cannot run in memory).
     private static readonly Expression<Func<Filing, IncomeEventKey, bool>> SAME_INCOME_EVENT =
         (f, key) =>
             f.TaxpayerProfileId == key.TaxpayerProfileId &&
-            f.PayingEntity.ToUpper() == key.PayingEntityUpper &&
+            EF.Functions.Collate(f.PayingEntity, "NOCASE") == key.PayingEntityUpper &&
             f.IncomeDate == key.IncomeDate;
 
     private static bool MATCHES_INCOME_EVENT(Filing f, IncomeEventKey key)
