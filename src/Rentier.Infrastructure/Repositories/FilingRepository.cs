@@ -35,13 +35,6 @@ public sealed class FilingRepository : UnitOfWorkAwareRepository, IFilingReposit
         return list.AsReadOnly();
     }
 
-    public async Task<Filing?> GetByTaxPeriodAsync(Guid taxpayerProfileId, DateOnly taxPeriod, CancellationToken ct = default)
-        => await Db.Filings
-            .AsNoTracking()
-            .FirstOrDefaultAsync(f =>
-                f.TaxpayerProfileId == taxpayerProfileId &&
-                f.TaxPeriod == taxPeriod, ct);
-
     public async Task<IReadOnlyList<Filing>> GetByIncomeEventAsync(
         Guid taxpayerProfileId,
         string payingEntity,
@@ -237,9 +230,6 @@ public sealed class FilingRepository : UnitOfWorkAwareRepository, IFilingReposit
             _ => throw new ArgumentOutOfRangeException(nameof(sortColumn))
         };
 
-    public async Task<int> GetFilingCountByReportIdAsync(Guid reportId, CancellationToken ct = default)
-        => await Db.Filings.AsNoTracking().CountAsync(f => f.ReportId == reportId, ct);
-
     public async Task DeleteByReportIdsAsync(IReadOnlyList<Guid> reportIds, CancellationToken ct = default)
     {
         if (reportIds.Count == 0)
@@ -305,12 +295,6 @@ public sealed class FilingRepository : UnitOfWorkAwareRepository, IFilingReposit
         var totalUnpaid = unpaidAmounts.Sum();
         return (initCount, filedCount, paidCount, totalUnpaid);
     }
-
-    public async Task<DateOnly?> GetEarliestIncomeDateByReportIdAsync(Guid reportId, CancellationToken ct = default)
-        => await Db.Filings.AsNoTracking()
-            .Where(f => f.ReportId == reportId)
-            .Select(f => (DateOnly?)f.IncomeDate)
-            .MinAsync(ct);
 
     public async Task<IReadOnlyDictionary<Guid, (int Count, DateOnly? EarliestDate)>> GetAggregatesByReportIdsAsync(
         IReadOnlyList<Guid> reportIds, CancellationToken ct = default)

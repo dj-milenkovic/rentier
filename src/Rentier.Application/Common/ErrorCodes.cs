@@ -65,7 +65,6 @@ public static class ErrorCodes
     public const string TICKER_REQUIRED = "TICKER_REQUIRED";
     public const string NET_EXCEEDS_GROSS = "NET_EXCEEDS_GROSS";
     public const string NET_NEGATIVE = "NET_NEGATIVE";
-    public const string NETWORK_FAILURE = "NETWORK_FAILURE";
     public const string RATE_NOT_FOUND = "RATE_NOT_FOUND";
 
     /// <summary>

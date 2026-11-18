@@ -8,7 +8,6 @@ public interface IFilingRepository
 {
     Task<Filing?> GetByIdAsync(Guid id, CancellationToken ct = default);
     Task<IReadOnlyList<Filing>> GetAllAsync(CancellationToken ct = default);
-    Task<Filing?> GetByTaxPeriodAsync(Guid taxpayerProfileId, DateOnly taxPeriod, CancellationToken ct = default);
 
     /// <summary>
     /// Returns all filings for the same income event identified by (taxpayer, paying entity, income date),
@@ -36,14 +35,6 @@ public interface IFilingRepository
         FilingColumnFilter? columnFilter = null,
         CancellationToken ct = default);
 
-    /// <summary>
-    /// Returns the count of Filing records linked to the given Report.
-    /// Used by GetReportsQueryHandler to populate ReportRowDto.FilingCount without
-    /// loading full Filing entities (count-only EF query).
-    /// </summary>
-    Task<int> GetFilingCountByReportIdAsync(
-        Guid reportId,
-        CancellationToken ct = default);
 
     /// <summary>
     /// Deletes all Filing records whose ReportId matches reportId.
@@ -85,11 +76,6 @@ public interface IFilingRepository
     /// </summary>
     Task<(int InitCount, int FiledCount, int PaidCount, decimal TotalUnpaidRsd)> GetFilingStatsAsync(CancellationToken ct = default);
 
-    /// <summary>
-    /// Returns the earliest IncomeDate among filings linked to the given Report, or null if no filings exist.
-    /// Used by GetReportsQueryHandler to derive a human-readable display name.
-    /// </summary>
-    Task<DateOnly?> GetEarliestIncomeDateByReportIdAsync(Guid reportId, CancellationToken ct = default);
 
     /// <summary>
     /// Returns filing count and earliest IncomeDate per Report ID in a single GROUP BY query.

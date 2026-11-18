@@ -445,7 +445,7 @@ public class FilingRepositoryTests : IAsyncLifetime
         ids.Should().Equal(sorted);
     }
 
-    // ── GetFilingCountByReportIdAsync tests (feature 014) ───────────────────
+    // ── Report-linked filing helpers ─────────────────────────────────────────
 
     private async Task<(Importer importer, Report report, TaxpayerProfile profile)> SeedReportAsync()
     {
@@ -462,41 +462,6 @@ public class FilingRepositoryTests : IAsyncLifetime
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         return (importer, report, profile);
-    }
-
-    [Fact]
-    public async Task GetFilingCountByReportIdAsync_WhenNoFilingsExist_ReturnsZero()
-    {
-        var (_, report, _) = await SeedReportAsync();
-
-        var count = await _repository.GetFilingCountByReportIdAsync(report.Id, TestContext.Current.CancellationToken);
-
-        count.Should().Be(0);
-    }
-
-    [Fact]
-    public async Task GetFilingCountByReportIdAsync_WhenFilingsLinked_ReturnsCorrectCount()
-    {
-        var (_, report, profile) = await SeedReportAsync();
-        for (var i = 0; i < 3; i++)
-        {
-            var f = Filing.CreateFromIncome(
-                new FilingInfo(IncomeType.Dividend, $"Co{i}", new DateOnly(2024, 1 + i, 15), 1000m, 0m, 150m, 150m),
-                profile.Id, new DateOnly(2024, 2 + i, 15), new FilingProvenance(ReportId: report.Id));
-            await _repository.AddAsync(f, TestContext.Current.CancellationToken);
-        }
-
-        var count = await _repository.GetFilingCountByReportIdAsync(report.Id, TestContext.Current.CancellationToken);
-
-        count.Should().Be(3);
-    }
-
-    [Fact]
-    public async Task GetFilingCountByReportIdAsync_WithUnknownReportId_ReturnsZero()
-    {
-        var count = await _repository.GetFilingCountByReportIdAsync(Guid.NewGuid(), TestContext.Current.CancellationToken);
-
-        count.Should().Be(0);
     }
 
     // ── DeleteByReportIdAsync tests (feature 014) ────────────────────────────
@@ -630,84 +595,6 @@ public class FilingRepositoryTests : IAsyncLifetime
         await _repository.DeleteByReportIdsAsync([], ct);
 
         (await _repository.GetAllAsync(ct)).Should().HaveCount(3);
-    }
-
-    // ── GetByTaxPeriodAsync tests ────────────────────────────────────────────
-
-    [Fact]
-    public async Task GetByTaxPeriodAsync_WithMatchingFiling_ReturnsIt()
-    {
-        var profile = MakeProfile();
-        await _context.TaxpayerProfiles.AddAsync(profile, TestContext.Current.CancellationToken);
-        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
-
-        // TaxPeriod is derived from incomeDate in CreateFromIncome
-        var incomeDate = new DateOnly(2024, 6, 15);
-        var filing = MakeFiling(profile.Id, date: incomeDate);
-        await _repository.AddAsync(filing, TestContext.Current.CancellationToken);
-
-        var result = await _repository.GetByTaxPeriodAsync(profile.Id, incomeDate, TestContext.Current.CancellationToken);
-
-        result.Should().NotBeNull();
-        result!.Id.Should().Be(filing.Id);
-    }
-
-    [Fact]
-    public async Task GetByTaxPeriodAsync_WithNoMatch_ReturnsNull()
-    {
-        var result = await _repository.GetByTaxPeriodAsync(Guid.NewGuid(), new DateOnly(2024, 6, 15), TestContext.Current.CancellationToken);
-
-        result.Should().BeNull();
-    }
-
-    [Fact]
-    public async Task GetByTaxPeriodAsync_MatchesByProfileIdAndTaxPeriod()
-    {
-        // Two profiles with filings on the same date — each should only see their own
-        var profile1 = new TaxpayerProfile(Guid.NewGuid(), "1111111111111", "Alice", "Belgrade", "018");
-        var profile2 = new TaxpayerProfile(Guid.NewGuid(), "2222222222222", "Bob", "Novi Sad", "021");
-        await _context.TaxpayerProfiles.AddRangeAsync(profile1, profile2);
-        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
-
-        var incomeDate = new DateOnly(2024, 6, 15);
-        var f1 = MakeFiling(profile1.Id, date: incomeDate);
-        var f2 = MakeFiling(profile2.Id, date: incomeDate);
-        await _repository.AddAsync(f1, TestContext.Current.CancellationToken);
-        await _repository.AddAsync(f2, TestContext.Current.CancellationToken);
-
-        var result = await _repository.GetByTaxPeriodAsync(profile1.Id, incomeDate, TestContext.Current.CancellationToken);
-
-        result.Should().NotBeNull();
-        result!.Id.Should().Be(f1.Id);
-    }
-
-    // ── GetEarliestIncomeDateByReportIdAsync tests ───────────────────────────
-
-    [Fact]
-    public async Task GetEarliestIncomeDateByReportIdAsync_WithMultipleFilings_ReturnsEarliest()
-    {
-        var (_, report, profile) = await SeedReportAsync();
-
-        var dates = new[] { new DateOnly(2024, 6, 1), new DateOnly(2024, 1, 1), new DateOnly(2024, 3, 1) };
-        foreach (var d in dates)
-        {
-            var f = Filing.CreateFromIncome(
-                new FilingInfo(IncomeType.Dividend, $"Co-{d.Month}", d, 1000m, 0m, 150m, 150m),
-                profile.Id, d.AddDays(30), new FilingProvenance(ReportId: report.Id));
-            await _repository.AddAsync(f, TestContext.Current.CancellationToken);
-        }
-
-        var result = await _repository.GetEarliestIncomeDateByReportIdAsync(report.Id, TestContext.Current.CancellationToken);
-
-        result.Should().Be(new DateOnly(2024, 1, 1));
-    }
-
-    [Fact]
-    public async Task GetEarliestIncomeDateByReportIdAsync_WithNoFilings_ReturnsNull()
-    {
-        var result = await _repository.GetEarliestIncomeDateByReportIdAsync(Guid.NewGuid(), TestContext.Current.CancellationToken);
-
-        result.Should().BeNull();
     }
 
     // ── DeleteManyAsync tests ────────────────────────────────────────────────

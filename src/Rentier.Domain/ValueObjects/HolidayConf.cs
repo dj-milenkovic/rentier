@@ -11,7 +11,7 @@ public sealed record HolidayConf
 {
     public IReadOnlyList<DateOnly> Holidays { get; }
 
-    // Pre-built set for O(1) holiday lookups in BusinessDayResolver.
+    // Pre-built set for O(1) holiday lookups.
     private readonly HashSet<DateOnly> _holidaySet;
 
     public HolidayConf(IReadOnlyList<DateOnly> holidays)
@@ -23,4 +23,11 @@ public sealed record HolidayConf
 
     /// <summary>Returns true when <paramref name="date"/> is in the configured holiday list.</summary>
     public bool ContainsHoliday(DateOnly date) => _holidaySet.Contains(date);
+
+    /// <summary>
+    /// The one definition of a Serbian working day, used for the filing deadline and the
+    /// exchange-rate walk-back: not Saturday, not Sunday, not a configured public holiday.
+    /// </summary>
+    public bool IsWorkingDay(DateOnly date)
+        => date.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday) && !ContainsHoliday(date);
 }

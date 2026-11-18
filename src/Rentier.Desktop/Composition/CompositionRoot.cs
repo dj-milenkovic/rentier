@@ -76,9 +76,6 @@ public static class CompositionRoot
             ICommandHandler<SaveHolidayConfCommand, Result<VoidResult, Error>>,
             SaveHolidayConfCommandHandler>();
         services.AddTransient<
-            ICommandHandler<ImportHolidaysFromWebCommand, Result<IReadOnlyList<HolidayEntryDto>, Error>>,
-            ImportHolidaysFromWebCommandHandler>();
-        services.AddTransient<
             ICommandHandler<FetchHolidaysFromWebCommand, Result<IReadOnlyList<HolidayEntryDto>, Error>>,
             FetchHolidaysFromWebCommandHandler>();
         services.AddSingleton<HolidaySettingsViewModel>();
