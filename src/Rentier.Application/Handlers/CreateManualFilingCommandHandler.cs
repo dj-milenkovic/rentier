@@ -1,72 +1,64 @@
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
+using Rentier.Application.Filings;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Repositories;
-using Rentier.Application.Services;
-using Rentier.Domain.Entities;
-using Rentier.Domain.ValueObjects;
 
 namespace Rentier.Application.Handlers;
 
 /// <summary>
-/// Validates inputs, resolves exchange rate, computes tax, checks for duplicate filings,
-/// persists the new Filing, and returns its ID.
+/// Validates a manual entry and files it through <see cref="IncomeEventFiler"/> — the same rate,
+/// tax, deadline and duplicate rules as statement imports — and returns the new filing's ID.
 /// </summary>
 public sealed class CreateManualFilingCommandHandler
     : ICommandHandler<CreateManualFilingCommand, Result<Guid, Error>>
 {
-    private readonly ManualFilingCalculator _calculator;
+    private readonly IncomeEventFiler _filer;
+    private readonly IHolidayRepository _holidayRepository;
     private readonly IFilingRepository _filingRepository;
 
     public CreateManualFilingCommandHandler(
-        ManualFilingCalculator calculator,
+        IExchangeRateResolver exchangeRateResolver,
+        IHolidayRepository holidayRepository,
         IFilingRepository filingRepository)
     {
-        _calculator = calculator;
+        _filer = new IncomeEventFiler(exchangeRateResolver);
+        _holidayRepository = holidayRepository;
         _filingRepository = filingRepository;
     }
 
     public async Task<Result<Guid, Error>> HandleAsync(
         CreateManualFilingCommand command, CancellationToken ct = default)
     {
-        var calcResult = await _calculator.CalculateAsync(
-            command.IncomeType,
-            command.Ticker,
-            command.IncomeDate,
-            command.Currency,
-            command.GrossAmount,
-            command.NetReceived,
-            ct);
+        var incomeEvent = IncomeEvent.FromManualEntry(
+            command.IncomeType, command.Ticker, command.IncomeDate,
+            command.Currency, command.GrossAmount, command.NetReceived);
+        if (!incomeEvent.IsSuccess)
+            return Result<Guid, Error>.Failure(incomeEvent.Error);
 
-        if (!calcResult.IsSuccess)
-            return Result<Guid, Error>.Failure(calcResult.Error);
+        var holidays = await _holidayRepository.GetHolidayCalendarAsync(ct);
+        var context = new FilingContext(command.TaxpayerProfileId, holidays);
 
-        var r = calcResult.Value;
+        var outcome = await _filer.FileAsync(
+            incomeEvent.Value, context, _filingRepository, command.PaymentNotes, ct);
 
-        // ── Duplicate check ──────────────────────────────────────────────
-        var exists = await _filingRepository.ExistsByIncomeAsync(
-            command.TaxpayerProfileId, r.TickerUpper, command.IncomeDate, r.TaxInfo.GrossIncomeRsd, ct);
+        return outcome switch
+        {
+            FilingOutcome.Created created => Result<Guid, Error>.Success(created.Filing.Id),
 
-        if (exists)
-            return Result<Guid, Error>.Failure(
-                new Error(ErrorCodes.FILING_CREATE_DUPLICATE, "A filing with the same details already exists"));
+            FilingOutcome.AlreadyFiled => Result<Guid, Error>.Failure(
+                new Error(ErrorCodes.FILING_CREATE_DUPLICATE, "A filing with the same details already exists")),
 
-        // ── Persist filing ───────────────────────────────────────────────
-        var filing = Filing.CreateFromIncome(
-            r.TaxInfo,
-            command.TaxpayerProfileId,
-            r.Deadline,
-            new FilingProvenance(
-                ReportId: null,
-                ExchangeRateSourceDate: r.Rate.SourceDate,
-                ExchangeRateSourceType: r.Rate.SourceType,
-                Ticker: r.TickerUpper,
-                PaymentNotes: command.PaymentNotes));
+            FilingOutcome.CorrectionDetected correction => Result<Guid, Error>.Failure(
+                new Error(ErrorCodes.FILING_CORRECTION_DETECTED,
+                    $"A filing for '{incomeEvent.Value.PayingEntity}' on {incomeEvent.Value.Date:yyyy-MM-dd} already " +
+                    $"exists with gross {correction.Existing.GrossIncomeRsd} RSD (this entry: " +
+                    $"{correction.NewGrossIncomeRsd} RSD). Edit or delete that filing instead of adding a second one.")),
 
-        await _filingRepository.AddAsync(filing, ct);
+            FilingOutcome.Failed failed => Result<Guid, Error>.Failure(failed.Error),
 
-        return Result<Guid, Error>.Success(filing.Id);
+            _ => throw new System.Diagnostics.UnreachableException(
+                $"Unhandled filing outcome {outcome.GetType().Name}."),
+        };
     }
 }
-
-

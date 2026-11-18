@@ -91,25 +91,28 @@ public class FilingRepositoryTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task ExistsByIncomeAsync_Existing_ReturnsTrue()
+    public async Task GetByIncomeEventAsync_EntityDiffersOnlyInCase_ReturnsFiling()
     {
+        // A manual "Interactive Brokers" entry (upper-cased to "INTERACTIVE BROKERS") and an
+        // imported "Interactive Brokers" interest filing are the same income event.
         var profile = MakeProfile();
         await _context.TaxpayerProfiles.AddAsync(profile, TestContext.Current.CancellationToken);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var date = new DateOnly(2024, 6, 15);
-        var filing = MakeFiling(profile.Id, "ACME", date, 1000m);
-        await _repository.AddAsync(filing, TestContext.Current.CancellationToken);
+        await _repository.AddAsync(MakeFiling(profile.Id, "Interactive Brokers", date, 1000m), TestContext.Current.CancellationToken);
 
-        var exists = await _repository.ExistsByIncomeAsync(profile.Id, "ACME", date, filing.GrossIncomeRsd, TestContext.Current.CancellationToken);
-        exists.Should().BeTrue();
+        var result = await _repository.GetByIncomeEventAsync(profile.Id, "INTERACTIVE BROKERS", date, TestContext.Current.CancellationToken);
+
+        result.Should().ContainSingle();
     }
 
     [Fact]
-    public async Task ExistsByIncomeAsync_Missing_ReturnsFalse()
+    public async Task GetByIncomeEventAsync_UnknownTaxpayer_ReturnsEmpty()
     {
-        var exists = await _repository.ExistsByIncomeAsync(Guid.NewGuid(), "ACME", new DateOnly(2024, 1, 1), 999m, TestContext.Current.CancellationToken);
-        exists.Should().BeFalse();
+        var result = await _repository.GetByIncomeEventAsync(Guid.NewGuid(), "ACME", new DateOnly(2024, 1, 1), TestContext.Current.CancellationToken);
+
+        result.Should().BeEmpty();
     }
 
     [Fact]

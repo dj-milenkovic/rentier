@@ -9,12 +9,12 @@ public interface IFilingRepository
     Task<Filing?> GetByIdAsync(Guid id, CancellationToken ct = default);
     Task<IReadOnlyList<Filing>> GetAllAsync(CancellationToken ct = default);
     Task<Filing?> GetByTaxPeriodAsync(Guid taxpayerProfileId, DateOnly taxPeriod, CancellationToken ct = default);
-    Task<bool> ExistsByIncomeAsync(Guid taxpayerProfileId, string payingEntity, DateOnly incomeDate, decimal grossIncomeRsd, CancellationToken ct = default);
 
     /// <summary>
     /// Returns all filings for the same income event identified by (taxpayer, paying entity, income date),
-    /// regardless of amount. Used by report processing to distinguish an exact duplicate (same gross —
-    /// skip) from a broker correction (different gross — flag for manual review).
+    /// regardless of amount; the paying entity is compared case-insensitively (ASCII). Used by
+    /// <see cref="Rentier.Application.Filings.IncomeEventFiler"/> to distinguish an exact duplicate
+    /// (same gross — skip) from a correction (different gross — flag for manual review).
     /// When obtained from an <see cref="Rentier.Application.Interfaces.IUnitOfWork"/>, the result also reflects changes
     /// staged in that unit of work (staged inserts included, staged deletes excluded), so
     /// duplicates within one operation are detected before it commits.

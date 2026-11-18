@@ -44,12 +44,27 @@ public class CreateManualFilingCommandHandlerTests
         return new ExchangeRateResolver(fetcher, NullLogger<ExchangeRateResolver>.Instance);
     }
 
-    private static IFilingRepository MakeFilingRepo(bool exists = false)
+    // 100.00 USD at 108.50 (MakeResolver's default) = 10,850.00 RSD gross.
+    private const decimal VALID_COMMAND_GROSS_RSD = 10850.00m;
+
+    /// <param name="existingGrossRsd">When set, a filing for the same income event already exists with this gross.</param>
+    private static IFilingRepository MakeFilingRepo(decimal? existingGrossRsd = null)
     {
         var repo = Substitute.For<IFilingRepository>();
-        repo.ExistsByIncomeAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<decimal>(), Arg.Any<CancellationToken>())
-            .Returns(exists);
+        IReadOnlyList<Filing> existing = existingGrossRsd is { } gross
+            ? [ExistingFiling(gross)]
+            : [];
+        repo.GetByIncomeEventAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(existing);
         return repo;
+    }
+
+    private static Filing ExistingFiling(decimal grossRsd)
+    {
+        var grossTax = Math.Round(grossRsd * 0.15m, 2, MidpointRounding.AwayFromZero);
+        return Filing.CreateFromIncome(
+            new FilingInfo(IncomeType.Dividend, "AAPL", TestDate, grossRsd, 0m, grossTax, grossTax),
+            ProfileId, TestDate.AddDays(30), new FilingProvenance(Ticker: "AAPL"));
     }
 
     private static CreateManualFilingCommandHandler MakeHandler(
@@ -57,8 +72,8 @@ public class CreateManualFilingCommandHandlerTests
         IHolidayRepository? holidayRepo = null,
         IFilingRepository? filingRepo = null)
     {
-        var calculator = new ManualFilingCalculator(MakeResolver(fetcher), holidayRepo ?? MakeHolidayRepo());
-        return new CreateManualFilingCommandHandler(calculator, filingRepo ?? MakeFilingRepo());
+
+        return new CreateManualFilingCommandHandler(MakeResolver(fetcher), holidayRepo ?? MakeHolidayRepo(), filingRepo ?? MakeFilingRepo());
     }
 
     private static CreateManualFilingCommand ValidCommand(decimal? netReceived = 85.00m)
@@ -69,7 +84,7 @@ public class CreateManualFilingCommandHandlerTests
     [Fact]
     public async Task HandleAsync_ValidCommandWithWht_ReturnsSuccessWithFilingId()
     {
-        var filingRepo = MakeFilingRepo(exists: false);
+        var filingRepo = MakeFilingRepo();
         var handler = MakeHandler(filingRepo: filingRepo);
         var cmd = ValidCommand(netReceived: 85.00m);
 
@@ -82,7 +97,7 @@ public class CreateManualFilingCommandHandlerTests
     [Fact]
     public async Task HandleAsync_ValidCommandWithWht_CallsAddAsyncOnce()
     {
-        var filingRepo = MakeFilingRepo(exists: false);
+        var filingRepo = MakeFilingRepo();
         var handler = MakeHandler(filingRepo: filingRepo);
         var cmd = ValidCommand(netReceived: 85.00m);
 
@@ -94,7 +109,7 @@ public class CreateManualFilingCommandHandlerTests
     [Fact]
     public async Task HandleAsync_ValidCommandWithWht_TickerIsUppercasedInFiling()
     {
-        var filingRepo = MakeFilingRepo(exists: false);
+        var filingRepo = MakeFilingRepo();
         var handler = MakeHandler(filingRepo: filingRepo);
         var cmd = new CreateManualFilingCommand(ProfileId, IncomeType.Dividend, "aapl", TestDate, "USD", 100.00m, 85.00m);
 
@@ -108,7 +123,7 @@ public class CreateManualFilingCommandHandlerTests
     [Fact]
     public async Task HandleAsync_ValidCommandWithWht_FilingHasReportIdNull()
     {
-        var filingRepo = MakeFilingRepo(exists: false);
+        var filingRepo = MakeFilingRepo();
         var handler = MakeHandler(filingRepo: filingRepo);
         var cmd = ValidCommand(netReceived: 85.00m);
 
@@ -122,7 +137,7 @@ public class CreateManualFilingCommandHandlerTests
     [Fact]
     public async Task HandleAsync_ValidCommandWithWht_FilingStatusIsInit()
     {
-        var filingRepo = MakeFilingRepo(exists: false);
+        var filingRepo = MakeFilingRepo();
         var handler = MakeHandler(filingRepo: filingRepo);
         var cmd = ValidCommand(netReceived: 85.00m);
 
@@ -138,7 +153,7 @@ public class CreateManualFilingCommandHandlerTests
     [Fact]
     public async Task HandleAsync_WithPaymentNotes_FilingHasPaymentNotes()
     {
-        var filingRepo = MakeFilingRepo(exists: false);
+        var filingRepo = MakeFilingRepo();
         var handler = MakeHandler(filingRepo: filingRepo);
         var cmd = new CreateManualFilingCommand(
             ProfileId, IncomeType.Dividend, "AAPL", TestDate, "USD", 100.00m, 85.00m,
@@ -154,7 +169,7 @@ public class CreateManualFilingCommandHandlerTests
     [Fact]
     public async Task HandleAsync_WithoutPaymentNotes_FilingPaymentNotesIsNull()
     {
-        var filingRepo = MakeFilingRepo(exists: false);
+        var filingRepo = MakeFilingRepo();
         var handler = MakeHandler(filingRepo: filingRepo);
         var cmd = ValidCommand();
 
@@ -170,7 +185,7 @@ public class CreateManualFilingCommandHandlerTests
     [Fact]
     public async Task HandleAsync_NoWht_FilingWhtPaidRsdIsZero()
     {
-        var filingRepo = MakeFilingRepo(exists: false);
+        var filingRepo = MakeFilingRepo();
         var handler = MakeHandler(filingRepo: filingRepo);
         var cmd = ValidCommand(netReceived: null);
 
@@ -184,7 +199,7 @@ public class CreateManualFilingCommandHandlerTests
     [Fact]
     public async Task HandleAsync_NoWht_ReturnsSuccess()
     {
-        var handler = MakeHandler(filingRepo: MakeFilingRepo(exists: false));
+        var handler = MakeHandler(filingRepo: MakeFilingRepo());
         var cmd = ValidCommand(netReceived: null);
 
         var result = await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
@@ -197,7 +212,7 @@ public class CreateManualFilingCommandHandlerTests
     [Fact]
     public async Task HandleAsync_DuplicateFiling_ReturnsDuplicateFilingError()
     {
-        var filingRepo = MakeFilingRepo(exists: true);
+        var filingRepo = MakeFilingRepo(existingGrossRsd: VALID_COMMAND_GROSS_RSD);
         var handler = MakeHandler(filingRepo: filingRepo);
         var cmd = ValidCommand();
 
@@ -210,11 +225,33 @@ public class CreateManualFilingCommandHandlerTests
     [Fact]
     public async Task HandleAsync_DuplicateFiling_AddAsyncNotCalled()
     {
-        var filingRepo = MakeFilingRepo(exists: true);
+        var filingRepo = MakeFilingRepo(existingGrossRsd: VALID_COMMAND_GROSS_RSD);
         var handler = MakeHandler(filingRepo: filingRepo);
         var cmd = ValidCommand();
 
         await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
+
+        await filingRepo.DidNotReceive().AddAsync(Arg.Any<Filing>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_ExistingFilingWithDifferentGross_ReturnsCorrectionDetectedError()
+    {
+        // Same as an import: a second filing for the same entity and date is never created silently.
+        var handler = MakeHandler(filingRepo: MakeFilingRepo(existingGrossRsd: 9000m));
+
+        var result = await handler.HandleAsync(ValidCommand(), TestContext.Current.CancellationToken);
+
+        result.Error.Code.Should().Be(ErrorCodes.FILING_CORRECTION_DETECTED);
+    }
+
+    [Fact]
+    public async Task HandleAsync_ExistingFilingWithDifferentGross_AddAsyncNotCalled()
+    {
+        var filingRepo = MakeFilingRepo(existingGrossRsd: 9000m);
+        var handler = MakeHandler(filingRepo: filingRepo);
+
+        await handler.HandleAsync(ValidCommand(), TestContext.Current.CancellationToken);
 
         await filingRepo.DidNotReceive().AddAsync(Arg.Any<Filing>(), Arg.Any<CancellationToken>());
     }
@@ -284,18 +321,17 @@ public class CreateManualFilingCommandHandlerTests
 
 
     [Fact]
-    public async Task HandleAsync_NetworkError_ReturnsNetworkFailureError()
+    public async Task HandleAsync_NbsUnreachable_ReturnsRateSourceUnavailableError()
     {
         var fetcher = Substitute.For<IExchangeRateFetcher>();
         fetcher.FetchRateAsync(Arg.Any<DateOnly>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns<Result<ExchangeRate, Error>>(_ => throw new HttpRequestException("network down"));
+            .Returns(Result<ExchangeRate, Error>.Failure(new Error(ErrorCodes.NBS_HTTP_ERROR, "network down")));
 
         var handler = MakeHandler(fetcher: fetcher);
         var cmd = ValidCommand();
 
         var result = await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("NETWORK_FAILURE");
+        result.Error.Code.Should().Be(ErrorCodes.RATE_SOURCE_UNAVAILABLE);
     }
 }

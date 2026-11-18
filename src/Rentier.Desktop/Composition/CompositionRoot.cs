@@ -44,7 +44,6 @@ public static class CompositionRoot
             SetUserPreferenceCommandHandler>();
 
         // Application shared services
-        services.AddTransient<ManualFilingCalculator>();
 
         // Application handlers
         services.AddTransient<

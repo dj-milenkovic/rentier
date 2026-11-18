@@ -47,8 +47,8 @@ public class CalculateManualFilingCommandHandlerTests
         IExchangeRateFetcher? fetcher = null,
         IHolidayRepository? holidayRepo = null)
     {
-        var calculator = new ManualFilingCalculator(MakeResolver(fetcher), holidayRepo ?? MakeHolidayRepo());
-        return new CalculateManualFilingCommandHandler(calculator);
+
+        return new CalculateManualFilingCommandHandler(MakeResolver(fetcher), holidayRepo ?? MakeHolidayRepo());
     }
 
     private static CalculateManualFilingCommand ValidCommand(decimal? netReceived = 85.00m)
@@ -210,18 +210,19 @@ public class CalculateManualFilingCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_RateFetchThrowsHttpRequestException_ReturnsNetworkFailureError()
+    public async Task HandleAsync_NbsUnreachable_ReturnsRateSourceUnavailableError()
     {
+        // Rate adapters report network failures as NBS_HTTP_ERROR; the resolver's message (not a
+        // generic RATE_NOT_FOUND) must reach the user.
         var fetcher = Substitute.For<IExchangeRateFetcher>();
         fetcher.FetchRateAsync(Arg.Any<DateOnly>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns<Result<ExchangeRate, Error>>(_ => throw new HttpRequestException("network down"));
+            .Returns(Result<ExchangeRate, Error>.Failure(new Error(ErrorCodes.NBS_HTTP_ERROR, "network down")));
 
         var handler = MakeHandler(fetcher: fetcher);
         var cmd = ValidCommand();
 
         var result = await handler.HandleAsync(cmd, TestContext.Current.CancellationToken);
 
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("NETWORK_FAILURE");
+        result.Error.Code.Should().Be(ErrorCodes.RATE_SOURCE_UNAVAILABLE);
     }
 }

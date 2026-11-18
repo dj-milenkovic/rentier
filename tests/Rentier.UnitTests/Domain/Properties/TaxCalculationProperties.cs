@@ -16,11 +16,7 @@ public class TaxCalculationProperties
     private const decimal FixedRateToRsd = 117.21m;
     private static readonly DateOnly FixedIncomeDate = new(2024, 1, 15);
 
-    /// <summary>
-    /// Creates a fake rate provider that always returns a fixed exchange rate.
-    /// </summary>
-    private static Func<DateOnly, string, Task<ExchangeRate>> CreateFixedRateProvider() =>
-        (date, currency) => Task.FromResult(new ExchangeRate(date, currency, FixedRateToRsd));
+    private static readonly ExchangeRate FixedUsdRate = new(FixedIncomeDate, "USD", FixedRateToRsd);
 
     /// <summary>
     /// Verifies that TaxPayableRsd is never negative for any valid positive income and WHT amounts.
@@ -32,10 +28,9 @@ public class TaxCalculationProperties
         var incomeAmount = incomeInt.Get / 100m;
         var whtAmount = whtInt.Get / 100m;
 
-        var result = TaxCalculationService.CalculateAsync(
+        var result = TaxCalculationService.Calculate(
             new IncomeTaxInput(IncomeType.Dividend, "TEST_ENTITY", FixedIncomeDate, incomeAmount, "USD", whtAmount, "USD"),
-            CreateFixedRateProvider())
-            .GetAwaiter().GetResult();
+            FixedUsdRate);
 
         return (result.TaxPayableRsd >= 0m).ToProperty();
     }
@@ -50,10 +45,9 @@ public class TaxCalculationProperties
         var incomeAmount = incomeInt.Get / 100m;
         var whtAmount = whtInt.Get / 100m;
 
-        var result = TaxCalculationService.CalculateAsync(
+        var result = TaxCalculationService.Calculate(
             new IncomeTaxInput(IncomeType.Dividend, "TEST_ENTITY", FixedIncomeDate, incomeAmount, "USD", whtAmount, "USD"),
-            CreateFixedRateProvider())
-            .GetAwaiter().GetResult();
+            FixedUsdRate);
 
         return (result.TaxPayableRsd <= result.GrossTaxPayableRsd).ToProperty();
     }
@@ -69,10 +63,9 @@ public class TaxCalculationProperties
         // Ensure rate is positive and varied
         var rate = (rateInt.Get % 1000) / 100m + 0.01m;
 
-        var result = TaxCalculationService.CalculateAsync(
+        var result = TaxCalculationService.Calculate(
             new IncomeTaxInput(IncomeType.Interest, "TEST_ENTITY", FixedIncomeDate, incomeAmount, "EUR", 0m, "EUR"),
-            (date, currency) => Task.FromResult(new ExchangeRate(date, currency, rate)))
-            .GetAwaiter().GetResult();
+            new ExchangeRate(FixedIncomeDate, "EUR", rate));
 
         // Check that value equals itself when rounded to 2 decimal places
         var rounded = Math.Round(result.GrossIncomeRsd, 2, MidpointRounding.AwayFromZero);

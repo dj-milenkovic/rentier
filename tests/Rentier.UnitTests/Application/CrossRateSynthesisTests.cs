@@ -18,7 +18,7 @@ using Xunit;
 namespace Rentier.UnitTests.Application;
 
 /// <summary>
-/// Tests for the cross-rate synthesis logic inside BuildRateProvider
+/// End-to-end tests (through ProcessReports) for the broker cross-rate fallback in ExchangeRateResolver
 /// (ProcessReportsCommandHandler): CHF→USD→RSD synthetic rate path.
 /// </summary>
 public class CrossRateSynthesisTests
@@ -67,7 +67,7 @@ public class CrossRateSynthesisTests
     /// <summary>
     /// CHF has no NBS rate (UNSUPPORTED_CURRENCY = non-retryable),
     /// IBKR CHF→USD rate is present, but USD NBS rate is also unavailable.
-    /// Expected: BuildRateProvider falls through to return the original CHF failure.
+    /// Expected: the resolver falls through to return the original CHF failure.
     /// </summary>
     [Fact]
     public async Task HandleAsync_CrossRate_UsdPivotFails_AddsEventError()
@@ -169,7 +169,7 @@ public class CrossRateSynthesisTests
 
     /// <summary>
     /// CHF has no NBS rate, IBKR CHF→USD rate has value 0 (edge case — parser
-    /// would normally reject this, but tests the guard inside BuildRateProvider).
+    /// would normally reject this, but tests the resolver's guard).
     /// Expected: synthetic rate = 0 * usdRate ≤ 0 → INVALID_EXCHANGE_RATE error.
     /// </summary>
     [Fact]
@@ -211,7 +211,7 @@ public class CrossRateSynthesisTests
 
     /// <summary>
     /// CHF has no NBS rate and no IBKR cross-rate is available either.
-    /// Expected: BuildRateProvider returns the original CHF RATE_NOT_FOUND error.
+    /// Expected: the resolver returns the original CHF RATE_NOT_FOUND error.
     /// </summary>
     [Fact]
     public async Task HandleAsync_CrossRate_NoIbkrRateAndNbsFails_AddsRateNotFoundError()

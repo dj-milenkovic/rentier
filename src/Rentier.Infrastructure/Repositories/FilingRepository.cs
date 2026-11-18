@@ -41,27 +41,13 @@ public sealed class FilingRepository : UnitOfWorkAwareRepository, IFilingReposit
                 f.TaxpayerProfileId == taxpayerProfileId &&
                 f.TaxPeriod == taxPeriod, ct);
 
-    public async Task<bool> ExistsByIncomeAsync(
-        Guid taxpayerProfileId,
-        string payingEntity,
-        DateOnly incomeDate,
-        decimal grossIncomeRsd,
-        CancellationToken ct = default)
-        => await Db.Filings
-            .AsNoTracking()
-            .AnyAsync(f =>
-                f.TaxpayerProfileId == taxpayerProfileId &&
-                f.PayingEntity == payingEntity &&
-                f.IncomeDate == incomeDate &&
-                f.GrossIncomeRsd == grossIncomeRsd, ct);
-
     public async Task<IReadOnlyList<Filing>> GetByIncomeEventAsync(
         Guid taxpayerProfileId,
         string payingEntity,
         DateOnly incomeDate,
         CancellationToken ct = default)
     {
-        var key = new IncomeEventKey(taxpayerProfileId, payingEntity, incomeDate);
+        var key = new IncomeEventKey(taxpayerProfileId, AsciiUpper(payingEntity), incomeDate);
 
         var persisted = await Db.Filings
             .AsNoTracking()
@@ -88,19 +74,35 @@ public sealed class FilingRepository : UnitOfWorkAwareRepository, IFilingReposit
         return fromDatabase.Concat(fromTracker).ToList().AsReadOnly();
     }
 
-    /// <summary>The identity of an income event for duplicate/correction detection.</summary>
-    private sealed record IncomeEventKey(Guid TaxpayerProfileId, string PayingEntity, DateOnly IncomeDate);
+    /// <summary>
+    /// The identity of an income event for duplicate/correction detection. The paying entity is
+    /// compared case-insensitively (a manual "aapl" and an imported "AAPL" are the same event), so
+    /// <see cref="PayingEntityUpper"/> holds it upper-cased with <see cref="AsciiUpper"/>.
+    /// </summary>
+    private sealed record IncomeEventKey(Guid TaxpayerProfileId, string PayingEntityUpper, DateOnly IncomeDate);
 
-    // One predicate for both the database query and the staged-change lookup, so duplicate
-    // detection within a unit of work can never drift from detection across statements.
-    // SQLite's default BINARY collation matches ordinal C# string equality. Compiled once.
+    // The database query and the staged-change lookup must fold case identically, or duplicate
+    // detection within a unit of work would drift from detection across statements. SQLite's
+    // upper() (what EF translates string.ToUpper() to) folds ASCII letters only, so the in-memory
+    // side uses AsciiUpper rather than the culture-sensitive string.ToUpper().
     private static readonly Expression<Func<Filing, IncomeEventKey, bool>> SAME_INCOME_EVENT =
         (f, key) =>
             f.TaxpayerProfileId == key.TaxpayerProfileId &&
-            f.PayingEntity == key.PayingEntity &&
+            f.PayingEntity.ToUpper() == key.PayingEntityUpper &&
             f.IncomeDate == key.IncomeDate;
 
-    private static readonly Func<Filing, IncomeEventKey, bool> MATCHES_INCOME_EVENT = SAME_INCOME_EVENT.Compile();
+    private static bool MATCHES_INCOME_EVENT(Filing f, IncomeEventKey key)
+        => f.TaxpayerProfileId == key.TaxpayerProfileId &&
+           AsciiUpper(f.PayingEntity) == key.PayingEntityUpper &&
+           f.IncomeDate == key.IncomeDate;
+
+    /// <summary>Upper-cases ASCII letters only, exactly like SQLite's built-in upper().</summary>
+    private static string AsciiUpper(string value)
+        => string.Create(value.Length, value, static (span, source) =>
+        {
+            for (var i = 0; i < source.Length; i++)
+                span[i] = source[i] is >= 'a' and <= 'z' ? (char)(source[i] - 32) : source[i];
+        });
 
     /// <summary>
     /// Binds <paramref name="key"/> into <see cref="SAME_INCOME_EVENT"/> for LINQ-to-Entities.
