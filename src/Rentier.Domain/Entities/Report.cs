@@ -131,39 +131,4 @@ public sealed class Report
         return text.Length <= MAX_PROCESSING_ERROR_LENGTH ? text : text[..MAX_PROCESSING_ERROR_LENGTH];
     }
 
-    /// <summary>Creates a new revision of an existing report linked via OriginalReportId.</summary>
-    /// <param name="original">The report being revised.</param>
-    /// <param name="newContent">Attachment content of the revision.</param>
-    /// <param name="importDate">
-    /// The calendar date of the revision — the user's <b>local</b> date, same semantics as
-    /// <see cref="Create"/>.
-    /// </param>
-    /// <param name="revisedAt">
-    /// The instant of the revision. Only used to build the <c>_revyyyyMMddHHmmss</c> name
-    /// suffix, which is always rendered in <b>UTC</b> so revision names sort chronologically
-    /// and are unaffected by time zone or DST changes.
-    /// </param>
-    public static Report CreateRevision(
-        Report original, byte[]? newContent, DateOnly importDate, DateTimeOffset revisedAt)
-    {
-        if (original is null) throw new DomainException("Original report must not be null");
-        var suffix = string.Create(CultureInfo.InvariantCulture, $"_rev{revisedAt.UtcDateTime:yyyyMMddHHmmss}");
-        var baseName = original.ReportName.Length + suffix.Length > 500
-            ? original.ReportName[..(500 - suffix.Length)]
-            : original.ReportName;
-        var revName = baseName + suffix;
-
-        return new Report
-        {
-            Id = Guid.NewGuid(),
-            ImporterId = original.ImporterId,
-            ImportDate = importDate,
-            Status = ReportStatus.Init,
-            ReportName = revName,
-            AttachmentContent = newContent,
-            MailboxMessageId = original.MailboxMessageId,
-            OriginalReportId = original.Id,
-            EmailDate = original.EmailDate
-        };
-    }
 }

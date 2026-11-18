@@ -173,9 +173,6 @@ public static class Strings
     public static string Sync_Mode_Incremental => "Incremental";
     public static string Sync_Mode_ReplayFromDate => "Replay from Date";
     public static string Sync_Mode_FullReplay => "Full Replay";
-    public static string Sync_Strategy_SkipExisting => "Skip Existing";
-    public static string Sync_Strategy_CreateNewRevision => "Create New Revision";
-    public static string Sync_Strategy_ReprocessInPlace => "Reprocess in Place";
     public static string Sync_ReplayDate_Watermark => "Select replay start date";
     public static string Sync_Validation_DateRequired => "Replay date is required for this mode";
     public static string Sync_Validation_DateNotFuture => "Replay date cannot be in the future";
@@ -244,7 +241,6 @@ public static class Strings
     public static string Profile_OpstinaCode_Helper => "3-digit municipality code (šifra opštine), e.g. 049 for Kragujevac, 018 for Stari Grad";
     public static string Holidays_YearRange_Error => "End year must be \u2265 Start year";
     public static string Sync_Mode_Label => "Sync Mode";
-    public static string Sync_Duplicates_Label => "Duplicates";
     public static string Sync_ReplayFrom_Label => "Replay From";
     public static string Sync_PartialSuccess_Message => "Sync completed with errors. Check the log above for details.";
     public static string ManualFiling_Cancel_Discard_Title => "Discard Changes?";

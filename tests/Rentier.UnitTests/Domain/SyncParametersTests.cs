@@ -12,14 +12,12 @@ public class SyncParametersTests
     private static readonly DateOnly TODAY = TestClock.TODAY;
 
     [Fact]
-    public void Default_CreatesIncrementalSkipExisting()
+    public void Default_CreatesIncremental()
     {
         var p = SyncParameters.Default;
 
         p.Mode.Should().Be(SyncMode.Incremental);
-        p.Strategy.Should().Be(DuplicateStrategy.SkipExisting);
         p.ReplayFromDate.Should().BeNull();
-        p.ScopeImporterId.Should().BeNull();
     }
 
     [Fact]
@@ -30,16 +28,12 @@ public class SyncParametersTests
     }
 
     [Fact]
-    public void ReplayFrom_ValidDate_SetsModeStrategyAndScope()
+    public void ReplayFrom_ValidDate_SetsModeAndDate()
     {
-        var importerId = Guid.NewGuid();
-
-        var p = SyncParameters.ReplayFrom(
-            new DateOnly(2024, 1, 1), TODAY, DuplicateStrategy.CreateNewRevision, importerId);
+        var p = SyncParameters.ReplayFrom(new DateOnly(2024, 1, 1), TODAY);
 
         p.Mode.Should().Be(SyncMode.ReplayFromDate);
-        p.Strategy.Should().Be(DuplicateStrategy.CreateNewRevision);
-        p.ScopeImporterId.Should().Be(importerId);
+        p.ReplayFromDate.Should().Be(new DateOnly(2024, 1, 1));
     }
 
     [Fact]
@@ -119,14 +113,6 @@ public class SyncParametersTests
         var result = p.GetEffectiveStartDate(cursor);
 
         result.Should().BeNull();
-    }
-
-    [Fact]
-    public void Constructor_IncrementalWithScopeImporterId_Succeeds()
-    {
-        var importerId = Guid.NewGuid();
-        var p = new SyncParameters(SyncMode.Incremental, scopeImporterId: importerId);
-        p.ScopeImporterId.Should().Be(importerId);
     }
 
     [Fact]

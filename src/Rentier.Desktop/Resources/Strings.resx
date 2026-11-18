@@ -541,15 +541,6 @@
   <data name="Sync_Mode_FullReplay" xml:space="preserve">
     <value>Full Replay</value>
   </data>
-  <data name="Sync_Strategy_SkipExisting" xml:space="preserve">
-    <value>Skip Existing</value>
-  </data>
-  <data name="Sync_Strategy_CreateNewRevision" xml:space="preserve">
-    <value>Create New Revision</value>
-  </data>
-  <data name="Sync_Strategy_ReprocessInPlace" xml:space="preserve">
-    <value>Reprocess in Place</value>
-  </data>
   <data name="Sync_ReplayDate_Watermark" xml:space="preserve">
     <value>Select replay start date</value>
   </data>
@@ -751,9 +742,6 @@
   </data>
   <data name="Sync_Mode_Label" xml:space="preserve">
     <value>Sync Mode</value>
-  </data>
-  <data name="Sync_Duplicates_Label" xml:space="preserve">
-    <value>Duplicates</value>
   </data>
   <data name="Sync_ReplayFrom_Label" xml:space="preserve">
     <value>Replay From</value>
