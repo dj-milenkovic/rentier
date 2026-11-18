@@ -62,22 +62,14 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
     private readonly ObservableAsPropertyHelper<string?> _errorSummaryMessage;
     public string? ErrorSummaryMessage => _errorSummaryMessage.Value;
 
-    // ── Sync mode / strategy selection ──────────────────────────────────────
+    // ── Sync mode selection ─────────────────────────────────────────────────
     public SyncMode[] AvailableSyncModes { get; } = Enum.GetValues<SyncMode>();
-    public DuplicateStrategy[] AvailableDuplicateStrategies { get; } = Enum.GetValues<DuplicateStrategy>();
 
     private SyncMode _selectedSyncMode = SyncMode.Incremental;
     public SyncMode SelectedSyncMode
     {
         get => _selectedSyncMode;
         set => this.RaiseAndSetIfChanged(ref _selectedSyncMode, value);
-    }
-
-    private DuplicateStrategy _selectedDuplicateStrategy = DuplicateStrategy.SkipExisting;
-    public DuplicateStrategy SelectedDuplicateStrategy
-    {
-        get => _selectedDuplicateStrategy;
-        set => this.RaiseAndSetIfChanged(ref _selectedDuplicateStrategy, value);
     }
 
     private DateTimeOffset? _replayFromDateOffset;
@@ -129,7 +121,6 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
         _scheduler = effectiveScheduler;
 
         var modeStream = this.WhenAnyValue(x => x.SelectedSyncMode);
-        var strategyStream = this.WhenAnyValue(x => x.SelectedDuplicateStrategy);
         var dateStream = this.WhenAnyValue(x => x.ReplayFromDateOffset);
 
         _isReplayFromDateMode = modeStream
@@ -156,29 +147,15 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
             return (string?)null;
         }).ToProperty(this, x => x.ValidationError);
 
-        _impactSummary = modeStream.CombineLatest(strategyStream, dateStream, (m, s, d) =>
+        // Already-imported reports are always skipped: the summary must not promise anything else.
+        _impactSummary = modeStream.CombineLatest(dateStream, (m, d) =>
         {
             var dateStr = d.HasValue ? DateOnly.FromDateTime(d.Value.DateTime).ToString("yyyy-MM-dd") : "...";
-            return (m, s) switch
+            return m switch
             {
-                (SyncMode.Incremental, DuplicateStrategy.SkipExisting) =>
-                    "Fetches new emails since last sync. Duplicates are skipped.",
-                (SyncMode.Incremental, DuplicateStrategy.CreateNewRevision) =>
-                    "Fetches new emails since last sync. Duplicates create new revisions.",
-                (SyncMode.Incremental, DuplicateStrategy.ReprocessInPlace) =>
-                    "Fetches new emails since last sync. Existing reports are reprocessed.",
-                (SyncMode.ReplayFromDate, DuplicateStrategy.SkipExisting) =>
-                    $"Re-fetches emails from {dateStr}. Duplicates are skipped.",
-                (SyncMode.ReplayFromDate, DuplicateStrategy.CreateNewRevision) =>
-                    $"Re-fetches emails from {dateStr}. Duplicates create new revisions.",
-                (SyncMode.ReplayFromDate, DuplicateStrategy.ReprocessInPlace) =>
-                    $"Re-fetches emails from {dateStr}. Existing reports are reprocessed.",
-                (SyncMode.FullReplay, DuplicateStrategy.SkipExisting) =>
-                    "Fetches ALL emails in the mailbox. Duplicates are skipped.",
-                (SyncMode.FullReplay, DuplicateStrategy.CreateNewRevision) =>
-                    "Fetches ALL emails in the mailbox. Duplicates create new revisions.",
-                (SyncMode.FullReplay, DuplicateStrategy.ReprocessInPlace) =>
-                    "Fetches ALL emails. Existing reports are reprocessed (safe fallback to revision if filed).",
+                SyncMode.Incremental => "Fetches new emails since last sync. Duplicates are skipped.",
+                SyncMode.ReplayFromDate => $"Re-fetches emails from {dateStr}. Duplicates are skipped.",
+                SyncMode.FullReplay => "Fetches ALL emails in the mailbox. Duplicates are skipped.",
                 _ => string.Empty
             };
         }).ToProperty(this, x => x.ImpactSummary, initialValue: string.Empty);
@@ -238,9 +215,8 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
             var parameters = SelectedSyncMode == SyncMode.ReplayFromDate
                 ? SyncParameters.ReplayFrom(
                     ReplayFromDate ?? throw new DomainException("ReplayFromDate is required for ReplayFromDate mode"),
-                    _timeProvider.GetLocalToday(),
-                    SelectedDuplicateStrategy)
-                : new SyncParameters(SelectedSyncMode, SelectedDuplicateStrategy);
+                    _timeProvider.GetLocalToday())
+                : new SyncParameters(SelectedSyncMode);
 
             var result = await _handler.HandleAsync(new SyncAllCommand(parameters), progress, _cts.Token);
 

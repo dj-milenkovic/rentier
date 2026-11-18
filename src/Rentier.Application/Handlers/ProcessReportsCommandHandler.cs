@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
+using Rentier.Application.Filings;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Parsing;
 using Rentier.Application.Repositories;
@@ -20,7 +21,7 @@ public sealed class ProcessReportsCommandHandler
     private readonly IReportRepository _reportRepository;
     private readonly IImporterRepository _importerRepository;
     private readonly IUnitOfWorkFactory _unitOfWorkFactory;
-    private readonly IExchangeRateResolver _exchangeRateResolver;
+    private readonly IncomeEventFiler _filer;
     private readonly IHolidayRepository _holidayRepository;
     private readonly IStatementParser _statementParser;
     private readonly ILogger<ProcessReportsCommandHandler> _logger;
@@ -42,7 +43,7 @@ public sealed class ProcessReportsCommandHandler
         _reportRepository = reportRepository;
         _importerRepository = importerRepository;
         _unitOfWorkFactory = unitOfWorkFactory;
-        _exchangeRateResolver = exchangeRateResolver;
+        _filer = new IncomeEventFiler(exchangeRateResolver);
         _holidayRepository = holidayRepository;
         _statementParser = statementParser;
         _logger = logger;
@@ -51,8 +52,7 @@ public sealed class ProcessReportsCommandHandler
     public async Task<Result<ProcessReportsResult, Error>> HandleAsync(
         ProcessReportsCommand command, CancellationToken ct = default)
     {
-        var holidayDto = await _holidayRepository.GetHolidayConfAsync(ct);
-        var holidays = new HolidayConf(holidayDto.Holidays.Select(h => h.Date).ToList());
+        var holidays = await _holidayRepository.GetHolidayCalendarAsync(ct);
 
         var initReports = await _reportRepository.GetByStatusAsync(ReportStatus.Init, ct);
 
@@ -400,36 +400,64 @@ public sealed class ProcessReportsCommandHandler
                 new Error(ErrorCodes.REPORT_PROCESS_PARSE_FAILED, parseResult.Error.Message));
 
         var parsed = parseResult.Value;
-        var rateProvider = BuildRateProvider(parsed, holidays, ct);
+        var context = new FilingContext(taxpayerProfileId, holidays, report.Id, parsed.EmbeddedRates);
         var created = 0;
         var succeeded = 0;
         var failed = 0;
         var errors = new List<FilingCreationError>();
 
-        // Dividends first, then credit-side interest — same order as before the merge,
-        // preserving error-list ordering.
-        foreach (var ev in BuildIncomeEvents(parsed, taxpayerProfileId, report.Id, holidays))
+        // A row the parser could not use (bad amount/date, unpaired withholding) is income that
+        // never became an event: count it as a failed event so the report cannot end as Processed
+        // with tax silently under- or over-stated.
+        foreach (var parseError in parsed.Errors)
+        {
+            if (parseError.Severity == ParseSeverity.Error)
+            {
+                errors.Add(FilingCreationError.ForStatementRow(parseError));
+                failed++;
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "Report {ReportId} row {Row}: [{Code}] {Message}",
+                    report.Id, parseError.RowNumber, parseError.Code, parseError.Message);
+            }
+        }
+
+        // Dividends first, then credit-side interest, preserving error-list ordering. The unit of
+        // work's filing repository includes filings staged earlier in this report, so a repeated or
+        // corrected event inside the same statement is detected before commit. Storage failures are
+        // not caught: they fail the whole report, which is retried, instead of losing an event.
+        foreach (var incomeEvent in ToIncomeEvents(parsed))
         {
             ct.ThrowIfCancellationRequested();
-            try
+
+            switch (await _filer.FileAsync(incomeEvent, context, filings, ct: ct))
             {
-                var outcome = await ProcessIncomeEventAsync(ev, rateProvider, filings, errors, ct);
-                if (outcome.Kind == IncomeEventOutcomeKind.SourceUnavailable)
-                {
+                case FilingOutcome.Created:
+                    created++;
+                    succeeded++;
+                    break;
+
+                case FilingOutcome.AlreadyFiled:
+                    // Same income event imported from an earlier statement — idempotent skip.
+                    succeeded++;
+                    break;
+
+                case FilingOutcome.Failed { Error.Code: ErrorCodes.RATE_SOURCE_UNAVAILABLE } unavailable:
                     // The rate may exist but could not be fetched: committing now would turn a
                     // temporary outage into a permanent event failure. Defer the whole report.
-                    return new ReportProcessing.Deferred(outcome.Reason!);
-                }
+                    return new ReportProcessing.Deferred(unavailable.Error.Message);
 
-                ApplyOutcome(outcome.Kind, ref created, ref succeeded, ref failed);
-            }
-            catch (DomainException ex)
-            {
-                // A business-rule violation for this one event (validation, tax calculation,
-                // deadline). Anything else (e.g. a database error) is not caught here: it fails
-                // the whole report, which is then retried, instead of losing this event forever.
-                errors.Add(new FilingCreationError(ev.EntityName, ev.Date, ev.Currency, ev.Amount, ErrorCodes.DOMAIN_ERROR, ex.Message));
-                failed++;
+                case FilingOutcome.Failed rejected:
+                    errors.Add(ToEventError(incomeEvent, rejected.Error));
+                    failed++;
+                    break;
+
+                case FilingOutcome.CorrectionDetected correction:
+                    errors.Add(ToEventError(incomeEvent, correction.Error));
+                    failed++;
+                    break;
             }
         }
 
@@ -438,186 +466,22 @@ public sealed class ProcessReportsCommandHandler
 
     /// <summary>
     /// Flattens the parsed statement into a single ordered event stream: all dividends
-    /// first, then credit-side interest. Withholding matching differs between the two —
-    /// dividends match on currency as well, interest does not.
+    /// first, then credit-side interest (debit interest is never taxable income). The parser
+    /// has already paired each event's withholding.
     /// </summary>
-    private static IEnumerable<IncomeEventRequest> BuildIncomeEvents(
-        StatementParseResult parsed, Guid taxpayerProfileId, Guid reportId, HolidayConf holidays)
+    private static IEnumerable<IncomeEvent> ToIncomeEvents(StatementParseResult parsed)
     {
         foreach (var div in parsed.Dividends)
-        {
-            var wht = parsed.Withholdings.FirstOrDefault(w =>
-                w.Date == div.Date && w.EntityName == div.EntityName && w.Currency == div.Currency);
+            yield return new IncomeEvent(IncomeType.Dividend, div.EntityName, div.Date, div.Currency, div.Amount, div.Withholding);
 
-            yield return new IncomeEventRequest(IncomeType.Dividend, div.EntityName, div.Date, div.Currency, div.Amount, wht,
-                taxpayerProfileId, reportId, holidays);
-        }
-
-        // Interest - credit entries only
         foreach (var interest in parsed.Interest.Where(i => i.Type == InterestType.Credit))
         {
-            var wht = parsed.Withholdings.FirstOrDefault(w =>
-                w.Date == interest.Date && w.EntityName == interest.EntityName);
-
-            yield return new IncomeEventRequest(IncomeType.Interest, interest.EntityName, interest.Date, interest.Currency, interest.Amount, wht,
-                taxpayerProfileId, reportId, holidays);
+            yield return new IncomeEvent(IncomeType.Interest, interest.EntityName, interest.Date, interest.Currency,
+                interest.Amount, interest.Withholding);
         }
     }
 
-    private static void ApplyOutcome(IncomeEventOutcomeKind outcome, ref int created, ref int succeeded, ref int failed)
-    {
-        switch (outcome)
-        {
-            case IncomeEventOutcomeKind.Created:
-                created++;
-                succeeded++;
-                break;
-            case IncomeEventOutcomeKind.SkippedIdempotent:
-                succeeded++;
-                break;
-            case IncomeEventOutcomeKind.Failed:
-                failed++;
-                break;
-        }
-    }
-
-    /// <summary>Groups the per-event data needed to process a single dividend or interest entry.</summary>
-    private sealed record IncomeEventRequest(
-        IncomeType IncomeType,
-        string EntityName,
-        DateOnly Date,
-        string Currency,
-        decimal Amount,
-        WithholdingTaxRecord? Wht,
-        Guid TaxpayerProfileId,
-        Guid ReportId,
-        HolidayConf Holidays);
-
-    /// <summary>
-    /// Resolves the exchange rate, computes tax, and either creates a filing, skips a
-    /// duplicate (idempotent re-import), or flags a broker correction for manual review.
-    /// Shared tail for both the dividend and interest processing loops; the caller
-    /// supplies the already-matched WHT record (the matching rule differs per income type).
-    /// </summary>
-    private static async Task<IncomeEventOutcome> ProcessIncomeEventAsync(
-        IncomeEventRequest request,
-        Func<DateOnly, string, Task<Result<RateResolution, Error>>> rateProvider,
-        IFilingRepository filings,
-        List<FilingCreationError> errors,
-        CancellationToken ct)
-    {
-        var rateResult = await rateProvider(request.Date, request.Currency);
-        if (!rateResult.IsSuccess)
-        {
-            if (rateResult.Error.Code == ErrorCodes.RATE_SOURCE_UNAVAILABLE)
-                return IncomeEventOutcome.SourceUnavailable(rateResult.Error.Message);
-
-            errors.Add(new FilingCreationError(request.EntityName, request.Date, request.Currency, request.Amount,
-                rateResult.Error.Code, rateResult.Error.Message));
-            return IncomeEventOutcome.Failed;
-        }
-        var resolution = rateResult.Value;
-
-        var info = await TaxCalculationService.CalculateAsync(
-            new IncomeTaxInput(request.IncomeType, request.EntityName, request.Date, request.Amount, request.Currency,
-                request.Wht?.Amount ?? 0m, request.Wht?.Currency ?? request.Currency),
-            (_, _) => Task.FromResult(resolution.Rate), ct);
-
-        // The unit-of-work repository includes filings staged earlier in this report, so a
-        // repeated or corrected event inside the same statement is detected before commit.
-        var existingFilings = await filings.GetByIncomeEventAsync(
-            request.TaxpayerProfileId, request.EntityName, request.Date, ct);
-
-        if (existingFilings.Count == 0)
-        {
-            var deadline = FilingDeadlineCalculator.CalculateDeadline(request.Date, request.Holidays);
-            var filing = Filing.CreateFromIncome(
-                info, request.TaxpayerProfileId, deadline,
-                new FilingProvenance(
-                    ReportId: request.ReportId,
-                    ExchangeRateSourceDate: resolution.SourceDate,
-                    ExchangeRateSourceType: resolution.SourceType,
-                    Ticker: request.EntityName));
-
-            await filings.AddAsync(filing, ct);
-            return IncomeEventOutcome.Created;
-        }
-
-        if (existingFilings.Any(f => f.GrossIncomeRsd == info.GrossIncomeRsd))
-        {
-            // Same income event already imported from an earlier statement — idempotent skip
-            return IncomeEventOutcome.SkippedIdempotent;
-        }
-
-        // Same entity + income date but a different gross: the broker issued a
-        // correction (reversal + re-book) in a later statement. Never silently
-        // create a second filing for the same income event — flag for review.
-        errors.Add(new FilingCreationError(request.EntityName, request.Date, request.Currency, request.Amount,
-            ErrorCodes.FILING_CORRECTION_DETECTED,
-            $"Broker correction detected for '{request.EntityName}' on {request.Date:yyyy-MM-dd}: " +
-            $"an existing filing has gross {existingFilings[0].GrossIncomeRsd} RSD, this statement " +
-            $"yields {info.GrossIncomeRsd} RSD. Review and adjust the filing manually."));
-        return IncomeEventOutcome.Failed;
-    }
-
-    private enum IncomeEventOutcomeKind
-    {
-        Created,
-        SkippedIdempotent,
-        Failed,
-        SourceUnavailable,
-    }
-
-    /// <summary>Per-event result; <see cref="Reason"/> is set only for <see cref="IncomeEventOutcomeKind.SourceUnavailable"/>.</summary>
-    private readonly record struct IncomeEventOutcome(IncomeEventOutcomeKind Kind, string? Reason = null)
-    {
-        public static readonly IncomeEventOutcome Created = new(IncomeEventOutcomeKind.Created);
-        public static readonly IncomeEventOutcome SkippedIdempotent = new(IncomeEventOutcomeKind.SkippedIdempotent);
-        public static readonly IncomeEventOutcome Failed = new(IncomeEventOutcomeKind.Failed);
-
-        public static IncomeEventOutcome SourceUnavailable(string reason)
-            => new(IncomeEventOutcomeKind.SourceUnavailable, reason);
-    }
-
-    private Func<DateOnly, string, Task<Result<RateResolution, Error>>> BuildRateProvider(
-        StatementParseResult parsed, HolidayConf holidays, CancellationToken ct)
-    {
-        return async (date, currency) =>
-        {
-            var result = await _exchangeRateResolver.ResolveAsync(date, currency, holidays, ct: ct);
-            if (result.IsSuccess)
-                return Result<RateResolution, Error>.Success(result.Value);
-
-            // NBS unreachable: its rate for this currency may exist, so an IBKR cross-rate must
-            // not replace it (IBKR rates are a fallback only for currencies NBS does not publish).
-            if (result.Error.Code == ErrorCodes.RATE_SOURCE_UNAVAILABLE)
-                return Result<RateResolution, Error>.Failure(result.Error);
-
-            // Cross-rate fallback: find IBKR rate for this currency to USD
-            var ibkrRate = parsed.EmbeddedRates
-                .FirstOrDefault(r => r.FromCurrency.Equals(currency, StringComparison.OrdinalIgnoreCase));
-            if (ibkrRate != null)
-            {
-                var usdResult = await _exchangeRateResolver.ResolveAsync(date, "USD", holidays, ct: ct);
-                if (!usdResult.IsSuccess && usdResult.Error.Code == ErrorCodes.RATE_SOURCE_UNAVAILABLE)
-                    return Result<RateResolution, Error>.Failure(usdResult.Error);
-
-                if (usdResult.IsSuccess)
-                {
-                    var syntheticRateValue = ibkrRate.Rate * usdResult.Value.Rate.RateToRsd;
-                    if (syntheticRateValue <= 0)
-                        return Result<RateResolution, Error>.Failure(
-                            new Error(ErrorCodes.INVALID_EXCHANGE_RATE,
-                                $"Synthetic cross-rate for '{currency}' on {date:yyyy-MM-dd} is not positive ({syntheticRateValue})."));
-
-                    var syntheticRate = new ExchangeRate(usdResult.Value.SourceDate, currency, syntheticRateValue);
-                    return Result<RateResolution, Error>.Success(
-                        new RateResolution(syntheticRate, usdResult.Value.SourceDate, usdResult.Value.SourceType));
-                }
-            }
-
-            return Result<RateResolution, Error>.Failure(result.Error);
-        };
-    }
+    private static FilingCreationError ToEventError(IncomeEvent incomeEvent, Error error)
+        => new(incomeEvent.PayingEntity, incomeEvent.Date, incomeEvent.Currency, incomeEvent.Amount, error.Code, error.Message);
 }
 

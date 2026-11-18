@@ -64,7 +64,7 @@ public sealed class SyncAllCommandHandler : ISyncAllCommandHandler
             reportsProcessed = processResult.Value.ReportsProcessed;
             foreach (var e in processResult.Value.EventErrors)
             {
-                var eventMsg = $"{e.EntityName} {e.IncomeDate:yyyy-MM-dd}: {e.ErrorCode} - {e.Message}";
+                var eventMsg = e.ToLogMessage();
                 errors.Add(eventMsg);
                 progress.Report(new SyncProgressEntry(_timeProvider.GetLocalNow(), eventMsg, SyncProgressSeverity.Warning));
             }

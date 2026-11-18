@@ -4,16 +4,14 @@ using Rentier.Domain.Exceptions;
 namespace Rentier.Domain.ValueObjects;
 
 /// <summary>
-/// Immutable value object that controls how a single sync run behaves:
-/// which emails to fetch (<see cref="Mode"/>), how duplicates are handled (<see cref="Strategy"/>),
-/// an optional date override for ReplayFromDate mode, and an optional importer scope for FullReplay mode.
+/// Immutable value object that controls how a single sync run behaves: which emails to fetch
+/// (<see cref="Mode"/>) and, for ReplayFromDate mode, the date to start from. Reports already
+/// imported are always skipped (de-duplicated by importer and name).
 /// </summary>
 public sealed record SyncParameters
 {
     public SyncMode Mode { get; }
-    public DuplicateStrategy Strategy { get; }
     public DateOnly? ReplayFromDate { get; }
-    public Guid? ScopeImporterId { get; }
 
     /// <summary>
     /// Creates parameters for an <see cref="SyncMode.Incremental"/> or
@@ -21,25 +19,17 @@ public sealed record SyncParameters
     /// current date, so they must be created through <see cref="ReplayFrom"/>.
     /// </summary>
     /// <param name="mode">Incremental or FullReplay.</param>
-    /// <param name="strategy">How duplicates are handled.</param>
-    /// <param name="scopeImporterId">Optional importer scope.</param>
-    public SyncParameters(
-        SyncMode mode = SyncMode.Incremental,
-        DuplicateStrategy strategy = DuplicateStrategy.SkipExisting,
-        Guid? scopeImporterId = null)
-        : this(mode, strategy, null, scopeImporterId)
+    public SyncParameters(SyncMode mode = SyncMode.Incremental)
+        : this(mode, null)
     {
         if (mode == SyncMode.ReplayFromDate)
             throw new DomainException("ReplayFromDate mode must be created with SyncParameters.ReplayFrom");
     }
 
-    private SyncParameters(
-        SyncMode mode, DuplicateStrategy strategy, DateOnly? replayFromDate, Guid? scopeImporterId)
+    private SyncParameters(SyncMode mode, DateOnly? replayFromDate)
     {
         Mode = mode;
-        Strategy = strategy;
         ReplayFromDate = replayFromDate;
-        ScopeImporterId = scopeImporterId;
     }
 
     /// <summary>Creates parameters that re-fetch emails starting at <paramref name="replayFromDate"/>.</summary>
@@ -49,17 +39,11 @@ public sealed record SyncParameters
     /// clock) and not part of the value. The replay date is picked by the user on a local
     /// calendar, so callers pass the user's <b>local</b> date.
     /// </param>
-    /// <param name="strategy">How duplicates are handled.</param>
-    /// <param name="scopeImporterId">Optional importer scope.</param>
-    public static SyncParameters ReplayFrom(
-        DateOnly replayFromDate,
-        DateOnly today,
-        DuplicateStrategy strategy = DuplicateStrategy.SkipExisting,
-        Guid? scopeImporterId = null)
+    public static SyncParameters ReplayFrom(DateOnly replayFromDate, DateOnly today)
     {
         if (replayFromDate > today)
             throw new DomainException("ReplayFromDate cannot be in the future");
-        return new SyncParameters(SyncMode.ReplayFromDate, strategy, replayFromDate, scopeImporterId);
+        return new SyncParameters(SyncMode.ReplayFromDate, replayFromDate);
     }
 
     /// <summary>
@@ -74,6 +58,6 @@ public sealed record SyncParameters
             _ => throw new InvalidOperationException($"Unknown SyncMode: {Mode}")
         };
 
-    /// <summary>Default incremental sync parameters (SkipExisting duplicate strategy).</summary>
+    /// <summary>Default incremental sync parameters.</summary>
     public static SyncParameters Default => new();
 }

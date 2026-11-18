@@ -1,50 +1,54 @@
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
+using Rentier.Application.Filings;
 using Rentier.Application.Interfaces;
-using Rentier.Application.Services;
+using Rentier.Application.Repositories;
 
 namespace Rentier.Application.Handlers;
 
 /// <summary>
-/// Validates inputs, resolves NBS exchange rate, computes PP-OPO tax, and returns a preview DTO.
-/// No data is persisted — this is a pure calculation step.
+/// Previews a manual entry: the tax, deadline and exchange rate <see cref="IncomeEventFiler"/>
+/// would file. Nothing is persisted.
 /// </summary>
 public sealed class CalculateManualFilingCommandHandler
     : ICommandHandler<CalculateManualFilingCommand, Result<ManualFilingPreviewDto, Error>>
 {
-    private readonly ManualFilingCalculator _calculator;
+    private readonly IncomeEventFiler _filer;
+    private readonly IHolidayRepository _holidayRepository;
 
-    public CalculateManualFilingCommandHandler(ManualFilingCalculator calculator)
+    public CalculateManualFilingCommandHandler(
+        IExchangeRateResolver exchangeRateResolver,
+        IHolidayRepository holidayRepository)
     {
-        _calculator = calculator;
+        _filer = new IncomeEventFiler(exchangeRateResolver);
+        _holidayRepository = holidayRepository;
     }
 
     public async Task<Result<ManualFilingPreviewDto, Error>> HandleAsync(
         CalculateManualFilingCommand command, CancellationToken ct = default)
     {
-        var calcResult = await _calculator.CalculateAsync(
-            command.IncomeType,
-            command.Ticker,
-            command.IncomeDate,
-            command.Currency,
-            command.GrossAmount,
-            command.NetReceived,
-            ct);
+        var incomeEvent = IncomeEvent.FromManualEntry(
+            command.IncomeType, command.Ticker, command.IncomeDate,
+            command.Currency, command.GrossAmount, command.NetReceived);
+        if (!incomeEvent.IsSuccess)
+            return Result<ManualFilingPreviewDto, Error>.Failure(incomeEvent.Error);
 
-        if (!calcResult.IsSuccess)
-            return Result<ManualFilingPreviewDto, Error>.Failure(calcResult.Error);
+        var holidays = await _holidayRepository.GetHolidayCalendarAsync(ct);
+        var assessment = await _filer.AssessAsync(
+            incomeEvent.Value, new FilingContext(command.TaxpayerProfileId, holidays), ct);
+        if (!assessment.IsSuccess)
+            return Result<ManualFilingPreviewDto, Error>.Failure(assessment.Error);
 
-        var r = calcResult.Value;
+        var (tax, rate, deadline) = assessment.Value;
         return Result<ManualFilingPreviewDto, Error>.Success(new ManualFilingPreviewDto(
-            r.TaxInfo.GrossIncomeRsd,
-            r.TaxInfo.WhtPaidRsd,
-            r.TaxInfo.GrossTaxPayableRsd,
-            r.TaxInfo.TaxPayableRsd,
-            r.Deadline,
-            r.Rate.Rate.RateToRsd,
-            r.Rate.SourceDate,
-            r.Rate.SourceType));
+            tax.GrossIncomeRsd,
+            tax.WhtPaidRsd,
+            tax.GrossTaxPayableRsd,
+            tax.TaxPayableRsd,
+            deadline,
+            rate.Rate.RateToRsd,
+            rate.SourceDate,
+            rate.SourceType));
     }
 }
-

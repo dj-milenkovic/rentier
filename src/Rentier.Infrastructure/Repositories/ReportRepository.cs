@@ -119,7 +119,11 @@ public sealed class ReportRepository : UnitOfWorkAwareRepository, IReportReposit
         if (filter is not null)
         {
             if (!string.IsNullOrWhiteSpace(filter.NameContains))
-                query = query.Where(r => r.ReportName.Contains(filter.NameContains));
+            {
+                // LIKE (not Contains/instr) so the match is case-insensitive, like the Filings page.
+                var term = filter.NameContains;
+                query = query.Where(r => EF.Functions.Like(r.ReportName, $"%{term}%"));
+            }
 
             if (!string.IsNullOrWhiteSpace(filter.ImportDateContains))
             {
@@ -137,7 +141,9 @@ public sealed class ReportRepository : UnitOfWorkAwareRepository, IReportReposit
             if (filter.StatusFilters is { Count: > 0 })
                 query = query.Where(r => filter.StatusFilters.Contains(r.Status));
 
-            if (filter.ImporterIds is { Count: > 0 })
+            // null = no importer filter; an empty list = the importer filter matched no importer,
+            // so no report can match (it must not fall through to "all reports").
+            if (filter.ImporterIds is not null)
                 query = query.Where(r => filter.ImporterIds.Contains(r.ImporterId));
 
             // Filtered in SQL (correlated count) so TotalCount and paging reflect the filter.

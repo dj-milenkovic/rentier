@@ -69,7 +69,7 @@ public sealed class IbkrCsvParserTests
         result.IsSuccess.Should().BeTrue();
         var value = result.Value;
         value.Dividends.Count.Should().Be(1);
-        value.Withholdings.Count.Should().Be(1);
+        value.Dividends[0].Withholding.Should().Be(3.60m);
         value.Interest.Count.Should().Be(1);
         value.EmbeddedRates.Count.Should().Be(1);
         value.Errors.Should().BeEmpty();
@@ -124,8 +124,7 @@ public sealed class IbkrCsvParserTests
         var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.Withholdings.Count.Should().Be(1);
-        result.Value.Withholdings[0].Amount.Should().Be(3.60m);
+        result.Value.Dividends[0].Withholding.Should().Be(3.60m);
         result.Value.Errors.Should().BeEmpty();
     }
 
@@ -151,9 +150,7 @@ public sealed class IbkrCsvParserTests
         result.Value.Dividends[0].Currency.Should().Be("USD");
         result.Value.Dividends[0].Amount.Should().Be(0.35m); // 0.09 + 0.26
 
-        result.Value.Withholdings.Count.Should().Be(1);
-        result.Value.Withholdings[0].EntityName.Should().Be("ACME");
-        result.Value.Withholdings[0].Amount.Should().Be(0.11m); // 0.03 + 0.08
+        result.Value.Dividends[0].Withholding.Should().Be(0.11m); // 0.03 + 0.08
     }
 
     /// <summary>
@@ -175,8 +172,7 @@ public sealed class IbkrCsvParserTests
         result.Value.Dividends.Count.Should().Be(1);
         result.Value.Dividends[0].Amount.Should().Be(0.35m);
 
-        result.Value.Withholdings.Count.Should().Be(1);
-        result.Value.Withholdings[0].Amount.Should().Be(0.11m);
+        result.Value.Dividends[0].Withholding.Should().Be(0.11m);
 
         // Custom-statement FX rows are 4-column (no date) — silently skipped, not an error
         result.Value.EmbeddedRates.Should().BeEmpty();
@@ -209,7 +205,7 @@ public sealed class IbkrCsvParserTests
         var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.Withholdings.Count.Should().Be(0);
+        result.Value.Dividends[0].Withholding.Should().Be(0m);
         result.Value.Errors.Count.Should().Be(1);
         result.Value.Errors[0].Code.Should().Be("WHT_CURRENCY_MISMATCH");
     }
@@ -223,7 +219,7 @@ public sealed class IbkrCsvParserTests
         var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.Withholdings.Count.Should().Be(0);
+        result.Value.Dividends[0].Withholding.Should().Be(0m);
         result.Value.Errors.Count.Should().Be(1);
         result.Value.Errors[0].Code.Should().Be("WHT_UNMATCHED");
     }
@@ -254,7 +250,6 @@ public sealed class IbkrCsvParserTests
         result.IsSuccess.Should().BeTrue();
         result.Value.Dividends.Should().BeEmpty();
         result.Value.Interest.Should().BeEmpty();
-        result.Value.Withholdings.Should().BeEmpty();
         result.Value.EmbeddedRates.Should().BeEmpty();
         result.Value.Errors.Should().BeEmpty();
     }
@@ -276,7 +271,7 @@ public sealed class IbkrCsvParserTests
         var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.Withholdings.Should().BeEmpty();
+        result.Value.Dividends[0].Withholding.Should().Be(0m);
         result.Value.Errors.Should().ContainSingle(e => e.Code == "WHT_POSITIVE_AMOUNT");
     }
 
@@ -371,5 +366,81 @@ public sealed class IbkrCsvParserTests
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Dividends.Should().ContainSingle().Which.Amount.Should().Be(24.00m);
+    }
+
+    // ─── Contract clause: withholding on credit interest is paired onto the interest event
+
+    private const string INTEREST_WITH_WHT_CSV = """
+        Interest,Header,Currency,Date,Description,Amount
+        Interest,Data,USD,2024-01-31,Credit Interest for Jan-2024,5.42
+        Interest,Total,USD,,Total,5.42
+        Withholding Tax,Header,Currency,Date,Description,Amount
+        Withholding Tax,Data,USD,2024-01-31,Withholding @ 20% on Credit Interest for Jan-2024,-1.08
+        Withholding Tax,Total,USD,,Total,-1.08
+        """;
+
+    [Fact]
+    public async Task ParseAsync_WhtOnCreditInterest_PairsOntoInterest()
+    {
+        await using var stream = new MemoryStream(Encoding.UTF8.GetBytes(INTEREST_WITH_WHT_CSV));
+        IStatementParser parser = new IbkrCsvParser();
+
+        var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
+
+        result.Value.Interest.Should().ContainSingle().Which.Withholding.Should().Be(1.08m);
+    }
+
+    [Fact]
+    public async Task ParseAsync_WhtOnCreditInterest_ProducesNoErrors()
+    {
+        await using var stream = new MemoryStream(Encoding.UTF8.GetBytes(INTEREST_WITH_WHT_CSV));
+        IStatementParser parser = new IbkrCsvParser();
+
+        var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
+
+        result.Value.Errors.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ParseAsync_WhtOnCreditInterestWithoutInterest_AddsUnmatchedError()
+    {
+        var csv = """
+            Withholding Tax,Header,Currency,Date,Description,Amount
+            Withholding Tax,Data,USD,2024-01-31,Withholding @ 20% on Credit Interest for Jan-2024,-1.08
+            """;
+        await using var stream = new MemoryStream(Encoding.UTF8.GetBytes(csv));
+        IStatementParser parser = new IbkrCsvParser();
+
+        var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
+
+        result.Value.Errors.Should().ContainSingle(e => e.Code == "WHT_UNMATCHED" && e.Severity == ParseSeverity.Error);
+    }
+
+    // ─── Contract clause: severity — lost income is an Error, FX-rate problems are Warnings
+
+    [Fact]
+    public async Task ParseAsync_MalformedDividendRow_ErrorSeverity()
+    {
+        IStatementParser parser = new IbkrCsvParser();
+        await using var stream = LoadFixture("malformed_row.csv");
+
+        var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
+
+        result.Value.Errors.Should().ContainSingle().Which.Severity.Should().Be(ParseSeverity.Error);
+    }
+
+    [Fact]
+    public async Task ParseAsync_FxRateNonPositive_WarningSeverity()
+    {
+        var csv = """
+            Base Currency Exchange Rate,Header,FromCurrency,Date,Description,ToCurrency,ExchangeRate
+            Base Currency Exchange Rate,Data,EUR,2024-01-15,EUR.USD 01/15/2024,USD,-1.0943
+            """;
+        await using var stream = new MemoryStream(Encoding.UTF8.GetBytes(csv));
+        IStatementParser parser = new IbkrCsvParser();
+
+        var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
+
+        result.Value.Errors.Should().ContainSingle().Which.Severity.Should().Be(ParseSeverity.Warning);
     }
 }

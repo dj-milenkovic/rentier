@@ -4,13 +4,15 @@
       Date: Date_1,
       Currency: USD,
       EntityName: AAPL,
-      Amount: 24.00
+      Amount: 24.00,
+      Withholding: 3.60
     },
     {
       Date: Date_2,
       Currency: EUR,
       EntityName: MSFT,
-      Amount: 75.00
+      Amount: 75.00,
+      Withholding: 11.25
     }
   ],
   Interest: [
@@ -26,20 +28,6 @@
       EntityName: Interactive Brokers,
       Amount: 2.10,
       Type: Debit
-    }
-  ],
-  Withholdings: [
-    {
-      Date: Date_1,
-      Currency: USD,
-      EntityName: AAPL,
-      Amount: 3.60
-    },
-    {
-      Date: Date_2,
-      Currency: EUR,
-      EntityName: MSFT,
-      Amount: 11.25
     }
   ],
   EmbeddedRates: [

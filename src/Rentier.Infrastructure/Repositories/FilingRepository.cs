@@ -6,6 +6,7 @@ using Rentier.Application.Queries;
 using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
 using Rentier.Domain.Enums;
+using Rentier.Domain.Services;
 using Rentier.Infrastructure.Persistence;
 
 namespace Rentier.Infrastructure.Repositories;
@@ -34,34 +35,13 @@ public sealed class FilingRepository : UnitOfWorkAwareRepository, IFilingReposit
         return list.AsReadOnly();
     }
 
-    public async Task<Filing?> GetByTaxPeriodAsync(Guid taxpayerProfileId, DateOnly taxPeriod, CancellationToken ct = default)
-        => await Db.Filings
-            .AsNoTracking()
-            .FirstOrDefaultAsync(f =>
-                f.TaxpayerProfileId == taxpayerProfileId &&
-                f.TaxPeriod == taxPeriod, ct);
-
-    public async Task<bool> ExistsByIncomeAsync(
-        Guid taxpayerProfileId,
-        string payingEntity,
-        DateOnly incomeDate,
-        decimal grossIncomeRsd,
-        CancellationToken ct = default)
-        => await Db.Filings
-            .AsNoTracking()
-            .AnyAsync(f =>
-                f.TaxpayerProfileId == taxpayerProfileId &&
-                f.PayingEntity == payingEntity &&
-                f.IncomeDate == incomeDate &&
-                f.GrossIncomeRsd == grossIncomeRsd, ct);
-
     public async Task<IReadOnlyList<Filing>> GetByIncomeEventAsync(
         Guid taxpayerProfileId,
         string payingEntity,
         DateOnly incomeDate,
         CancellationToken ct = default)
     {
-        var key = new IncomeEventKey(taxpayerProfileId, payingEntity, incomeDate);
+        var key = new IncomeEventKey(taxpayerProfileId, AsciiUpper(payingEntity), incomeDate);
 
         var persisted = await Db.Filings
             .AsNoTracking()
@@ -88,19 +68,36 @@ public sealed class FilingRepository : UnitOfWorkAwareRepository, IFilingReposit
         return fromDatabase.Concat(fromTracker).ToList().AsReadOnly();
     }
 
-    /// <summary>The identity of an income event for duplicate/correction detection.</summary>
-    private sealed record IncomeEventKey(Guid TaxpayerProfileId, string PayingEntity, DateOnly IncomeDate);
+    /// <summary>
+    /// The identity of an income event for duplicate/correction detection. The paying entity is
+    /// compared case-insensitively (a manual "aapl" and an imported "AAPL" are the same event), so
+    /// <see cref="PayingEntityUpper"/> holds it upper-cased with <see cref="AsciiUpper"/>.
+    /// </summary>
+    private sealed record IncomeEventKey(Guid TaxpayerProfileId, string PayingEntityUpper, DateOnly IncomeDate);
 
-    // One predicate for both the database query and the staged-change lookup, so duplicate
-    // detection within a unit of work can never drift from detection across statements.
-    // SQLite's default BINARY collation matches ordinal C# string equality. Compiled once.
+    // The database query and the staged-change lookup must fold case identically, or duplicate
+    // detection within a unit of work would drift from detection across statements. SQLite's
+    // NOCASE collation folds ASCII letters only, so the in-memory side (MATCHES_INCOME_EVENT)
+    // uses AsciiUpper rather than the culture-sensitive string.ToUpper() or OrdinalIgnoreCase.
+    // SQL only (EF.Functions cannot run in memory).
     private static readonly Expression<Func<Filing, IncomeEventKey, bool>> SAME_INCOME_EVENT =
         (f, key) =>
             f.TaxpayerProfileId == key.TaxpayerProfileId &&
-            f.PayingEntity == key.PayingEntity &&
+            EF.Functions.Collate(f.PayingEntity, "NOCASE") == key.PayingEntityUpper &&
             f.IncomeDate == key.IncomeDate;
 
-    private static readonly Func<Filing, IncomeEventKey, bool> MATCHES_INCOME_EVENT = SAME_INCOME_EVENT.Compile();
+    private static bool MATCHES_INCOME_EVENT(Filing f, IncomeEventKey key)
+        => f.TaxpayerProfileId == key.TaxpayerProfileId &&
+           AsciiUpper(f.PayingEntity) == key.PayingEntityUpper &&
+           f.IncomeDate == key.IncomeDate;
+
+    /// <summary>Upper-cases ASCII letters only, exactly like SQLite's built-in upper().</summary>
+    private static string AsciiUpper(string value)
+        => string.Create(value.Length, value, static (span, source) =>
+        {
+            for (var i = 0; i < source.Length; i++)
+                span[i] = source[i] is >= 'a' and <= 'z' ? (char)(source[i] - 32) : source[i];
+        });
 
     /// <summary>
     /// Binds <paramref name="key"/> into <see cref="SAME_INCOME_EVENT"/> for LINQ-to-Entities.
@@ -152,6 +149,12 @@ public sealed class FilingRepository : UnitOfWorkAwareRepository, IFilingReposit
         }
     }
 
+    /// <summary>
+    /// SQL form of <see cref="FilingLifecycle.IsOutstanding"/> — the one definition of "unpaid"
+    /// used by the Unpaid filter, upcoming/overdue deadlines and the unpaid total.
+    /// </summary>
+    private static readonly Expression<Func<Filing, bool>> IS_OUTSTANDING = f => f.Status != FilingStatus.Paid;
+
     public async Task<(IReadOnlyList<Filing> Items, int TotalCount)> GetPagedAsync(
         FilingFilterMode filter, int skip, int take,
         FilingSortColumn sortColumn = FilingSortColumn.FilingDeadline,
@@ -162,8 +165,7 @@ public sealed class FilingRepository : UnitOfWorkAwareRepository, IFilingReposit
         var query = Db.Filings.AsNoTracking();
 
         if (filter == FilingFilterMode.Unpaid)
-            query = query.Where(f =>
-                f.Status == FilingStatus.Init || f.Status == FilingStatus.Filed);
+            query = query.Where(IS_OUTSTANDING);
 
         query = ApplyColumnFilters(query, columnFilter);
 
@@ -229,9 +231,6 @@ public sealed class FilingRepository : UnitOfWorkAwareRepository, IFilingReposit
             _ => throw new ArgumentOutOfRangeException(nameof(sortColumn))
         };
 
-    public async Task<int> GetFilingCountByReportIdAsync(Guid reportId, CancellationToken ct = default)
-        => await Db.Filings.AsNoTracking().CountAsync(f => f.ReportId == reportId, ct);
-
     public async Task DeleteByReportIdsAsync(IReadOnlyList<Guid> reportIds, CancellationToken ct = default)
     {
         if (reportIds.Count == 0)
@@ -260,9 +259,8 @@ public sealed class FilingRepository : UnitOfWorkAwareRepository, IFilingReposit
     {
         var limit = today.AddDays(days);
         var list = await Db.Filings.AsNoTracking()
-            .Where(f => (f.Status == FilingStatus.Init || f.Status == FilingStatus.Filed)
-                     && f.FilingDeadline >= today
-                     && f.FilingDeadline <= limit)
+            .Where(IS_OUTSTANDING)
+            .Where(f => f.FilingDeadline >= today && f.FilingDeadline <= limit)
             .OrderBy(f => f.FilingDeadline)
             .ToListAsync(ct);
         return list.AsReadOnly();
@@ -271,7 +269,8 @@ public sealed class FilingRepository : UnitOfWorkAwareRepository, IFilingReposit
     public async Task<IReadOnlyList<Filing>> GetOverdueAsync(DateOnly today, CancellationToken ct = default)
     {
         var list = await Db.Filings.AsNoTracking()
-            .Where(f => f.Status != FilingStatus.Paid && f.FilingDeadline < today)
+            .Where(IS_OUTSTANDING)
+            .Where(f => f.FilingDeadline < today)
             .OrderBy(f => f.FilingDeadline)
             .ToListAsync(ct);
         return list.AsReadOnly();
@@ -287,7 +286,7 @@ public sealed class FilingRepository : UnitOfWorkAwareRepository, IFilingReposit
         // SQLite cannot SUM decimal columns server-side; fetch only the relevant
         // values and aggregate in memory.
         var unpaidAmounts = await Db.Filings.AsNoTracking()
-            .Where(f => f.Status != FilingStatus.Paid)
+            .Where(IS_OUTSTANDING)
             .Select(f => f.TaxPayableRsd)
             .ToListAsync(ct);
 
@@ -297,12 +296,6 @@ public sealed class FilingRepository : UnitOfWorkAwareRepository, IFilingReposit
         var totalUnpaid = unpaidAmounts.Sum();
         return (initCount, filedCount, paidCount, totalUnpaid);
     }
-
-    public async Task<DateOnly?> GetEarliestIncomeDateByReportIdAsync(Guid reportId, CancellationToken ct = default)
-        => await Db.Filings.AsNoTracking()
-            .Where(f => f.ReportId == reportId)
-            .Select(f => (DateOnly?)f.IncomeDate)
-            .MinAsync(ct);
 
     public async Task<IReadOnlyDictionary<Guid, (int Count, DateOnly? EarliestDate)>> GetAggregatesByReportIdsAsync(
         IReadOnlyList<Guid> reportIds, CancellationToken ct = default)

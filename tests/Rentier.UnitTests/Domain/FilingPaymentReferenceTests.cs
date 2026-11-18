@@ -9,7 +9,15 @@ namespace Rentier.UnitTests;
 
 public class FilingPaymentReferenceTests
 {
-    private static Filing MakeFiling() =>
+    /// <summary>A filed filing — the earliest status that accepts a payment reference.</summary>
+    private static Filing MakeFiling()
+    {
+        var filing = MakeInitFiling();
+        filing.AdvanceStatus(FilingStatus.Filed);
+        return filing;
+    }
+
+    private static Filing MakeInitFiling() =>
         Filing.CreateFromIncome(
             new FilingInfo(
                 incomeType: IncomeType.Dividend,
@@ -73,6 +81,39 @@ public class FilingPaymentReferenceTests
         var act = () => filing.SetPaymentReference(tooLong);
         act.Should().Throw<DomainException>()
             .WithMessage("*200*");
+    }
+
+    [Fact]
+    public void SetPaymentReference_OnInitFiling_ThrowsDomainException()
+    {
+        // Nothing has been submitted yet, so there is no payment to reference (issue #65).
+        var filing = MakeInitFiling();
+
+        var act = () => filing.SetPaymentReference("REF-001");
+
+        act.Should().Throw<DomainException>().WithMessage("*filed*");
+    }
+
+    [Fact]
+    public void SetPaymentReference_ClearOnInitFiling_StoresNull()
+    {
+        var filing = MakeInitFiling();
+
+        filing.SetPaymentReference(null);
+
+        filing.PaymentReference.Should().BeNull();
+    }
+
+    [Fact]
+    public void SetPaymentReference_OnPaidFiling_Stores()
+    {
+        // A reference forgotten while Filed can still be recorded after payment.
+        var filing = MakeFiling();
+        filing.AdvanceStatus(FilingStatus.Paid);
+
+        filing.SetPaymentReference("REF-LATE");
+
+        filing.PaymentReference.Should().Be("REF-LATE");
     }
 
     [Fact]

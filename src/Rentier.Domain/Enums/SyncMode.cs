@@ -9,6 +9,6 @@ public enum SyncMode
     Incremental = 0,
     /// <summary>Fetch all messages delivered on or after the specified <c>ReplayFromDate</c>, ignoring the cursor.</summary>
     ReplayFromDate = 1,
-    /// <summary>Fetch all messages in the mailbox (no date filter). Optionally scoped to one importer via <c>ScopeImporterId</c>.</summary>
+    /// <summary>Fetch all messages in the mailbox (no date filter).</summary>
     FullReplay = 2
 }

@@ -1,5 +1,6 @@
 using Rentier.Domain.Enums;
 using Rentier.Domain.Exceptions;
+using Rentier.Domain.Services;
 using Rentier.Domain.ValueObjects;
 
 namespace Rentier.Domain.Entities;
@@ -111,14 +112,7 @@ public sealed class Filing
     /// </summary>
     public void AdvanceStatus(FilingStatus newStatus)
     {
-        var isValid = (Status, newStatus) switch
-        {
-            (FilingStatus.Init, FilingStatus.Filed) => true,
-            (FilingStatus.Filed, FilingStatus.Paid) => true,
-            _ => false
-        };
-
-        if (!isValid)
+        if (FilingLifecycle.NextStatus(Status) != newStatus)
             throw new DomainException($"Invalid Filing status transition: {Status} → {newStatus}");
 
         Status = newStatus;
@@ -126,13 +120,17 @@ public sealed class Filing
 
     /// <summary>
     /// Sets the payment reference. Trims whitespace, stores null when empty after trim.
-    /// Throws DomainException when the value exceeds 200 characters.
+    /// Throws DomainException when the value exceeds 200 characters, or when a reference is set
+    /// on a filing that has not been filed yet (clearing is always allowed).
     /// </summary>
     public void SetPaymentReference(string? reference)
     {
         var trimmed = reference?.Trim();
         if (trimmed?.Length > 200)
             throw new DomainException("PaymentReference must not exceed 200 characters.");
+        if (!string.IsNullOrEmpty(trimmed) && !FilingLifecycle.AcceptsPaymentReference(Status))
+            throw new DomainException(
+                $"A payment reference can only be set once the filing is filed (current status: {Status}).");
         PaymentReference = string.IsNullOrEmpty(trimmed) ? null : trimmed;
     }
 }

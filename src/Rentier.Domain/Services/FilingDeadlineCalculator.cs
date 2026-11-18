@@ -14,7 +14,7 @@ public static class FilingDeadlineCalculator
 
     /// <summary>
     /// Returns the filing deadline: the first working day on or after incomeDate + 30 days.
-    /// Working day = not Saturday, not Sunday, not in holidays.Holidays.
+    /// Working day = <see cref="HolidayConf.IsWorkingDay"/>.
     /// </summary>
     public static DateOnly CalculateDeadline(DateOnly incomeDate, HolidayConf holidays)
     {
@@ -25,14 +25,12 @@ public static class FilingDeadlineCalculator
 
         for (int i = 0; i < MaxIterations; i++)
         {
-            if (candidate.DayOfWeek == DayOfWeek.Saturday)
-                candidate = candidate.AddDays(2);
-            else if (candidate.DayOfWeek == DayOfWeek.Sunday)
-                candidate = candidate.AddDays(1);
-            else if (holidays.Holidays.Contains(candidate))
-                candidate = candidate.AddDays(1);
-            else
+            if (holidays.IsWorkingDay(candidate))
                 return candidate;
+
+            // Saturday jumps straight to Monday; Sunday or a holiday moves one day. Re-checked
+            // each step, since a shift can land on another holiday or weekend.
+            candidate = candidate.AddDays(candidate.DayOfWeek == DayOfWeek.Saturday ? 2 : 1);
         }
 
         throw new DomainException(

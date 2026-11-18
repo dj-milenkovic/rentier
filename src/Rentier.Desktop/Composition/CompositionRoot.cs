@@ -44,7 +44,6 @@ public static class CompositionRoot
             SetUserPreferenceCommandHandler>();
 
         // Application shared services
-        services.AddTransient<ManualFilingCalculator>();
 
         // Application handlers
         services.AddTransient<
@@ -76,9 +75,6 @@ public static class CompositionRoot
         services.AddTransient<
             ICommandHandler<SaveHolidayConfCommand, Result<VoidResult, Error>>,
             SaveHolidayConfCommandHandler>();
-        services.AddTransient<
-            ICommandHandler<ImportHolidaysFromWebCommand, Result<IReadOnlyList<HolidayEntryDto>, Error>>,
-            ImportHolidaysFromWebCommandHandler>();
         services.AddTransient<
             ICommandHandler<FetchHolidaysFromWebCommand, Result<IReadOnlyList<HolidayEntryDto>, Error>>,
             FetchHolidaysFromWebCommandHandler>();

@@ -52,7 +52,8 @@ Srpski porez = max(bruto srpski porez − WHT u RSD, 0)
 
 - Kredit ne može biti veći od srpskog poreza.  
 - Ako je inostrana stopa ≥ 15%, dodatni porez u Srbiji nije potreban.  
-- Ako je niža (npr. 10% na američke dividende prema sporazumu Srbija–SAD), plaća se razlika u Srbiji.
+- Ako je niža (npr. 10% na američke dividende prema sporazumu Srbija–SAD), plaća se razlika u Srbiji.  
+- WHT se vezuje za isplatu kojoj pripada: WHT na dividendu za tu dividendu, a WHT na pripisanu kamatu za kamatu tog meseca.
 
 **Primer:**
 
@@ -73,7 +74,7 @@ Svi iznosi se prijavljuju u **RSD**. Rentier koristi **srednji kurs NBS** na dat
 
 - Ako kurs za taj dan nije objavljen (vikend/praznik), koristi se poslednji prethodni radni dan.  
 - Kursevi se čuvaju u lokalnoj SQLite bazi radi optimizacije.  
-- IBKR kursevi (`Base Currency Exchange Rate`) koriste se samo kao rezerva za valute koje NBS ne pokriva.
+- IBKR kursevi (`Base Currency Exchange Rate`) koriste se samo za valute koje NBS uopšte ne objavljuje: kurs iz izveštaja prema osnovnoj valuti računa × NBS kurs te osnovne valute. Takve prijave su označene kao obračunate unakrsnim kursom. Valuta koju NBS objavljuje nikada ne prelazi na IBKR kurs — čak ni kada NBS kurs nije pronađen u periodu unazad; ta prijava tada prijavljuje grešku.
 - Ako NBS **nije dostupna** (prekid mreže ili servisa), Rentier nikada ne koristi kurs nekog ranijeg dana niti IBKR kurs — NBS kurs za taj dan možda postoji. Umesto toga, ništa iz tog izveštaja se ne čuva, a izveštaj se automatski ponovo obrađuje pri sledećoj sinhronizaciji. Posle 3 neuspela pokušaja označava se kao **Greška**, uz prikazan razlog, kako bi mogao da se pregleda.
 
 ---
@@ -148,7 +149,7 @@ Svaka isplata zahteva zasebnu prijavu.
   Svaka se konvertuje nezavisno po kursu NBS.  
 
 - **Šta ako NBS nema kurs za valutu?**  
-  Koristi se IBKR kurs; ako ni on nije dostupan, prijava prijavljuje grešku i kurs se unosi ručno.  
+  Ako NBS uopšte ne objavljuje valutu, unakrsni kurs se računa iz IBKR kursa iz izveštaja (vidi Kursni listovi). Ako ni on nije dostupan — ili NBS objavljuje valutu, ali kurs nije pronađen — prijava prijavljuje grešku i unosi se ručno.  
 
 - **Postoji li ugovor Srbija–SAD?**  
   Da, stopa je obično 10% (umesto 30%), što se kreditira u Srbiji.  
@@ -157,7 +158,10 @@ Svaka isplata zahteva zasebnu prijavu.
   Rentier ne blokira podnošenje; kazne određuje Poreska uprava.  
 
 - **Šta ako broker ispravi dividendu?**  
-  Rentier detektuje korekciju i označava je u logu; prijava se ručno prilagođava. Duplikati se ignorišu.
+  Rentier detektuje korekciju i označava je u logu; prijava se ručno prilagođava. Duplikati se ignorišu. Isto pravilo važi i za ručni unos: dodavanje prijave za isplatioca i datum za koje prijava već postoji (bez obzira na velika i mala slova) se odbija — izmenite ili obrišite postojeću prijavu.  
+
+- **Šta ako red u izveštaju ne može da se pročita?**  
+  Ostatak izveštaja se i dalje obrađuje, ali se izveštaj označava kao **Delimična greška** (ili **Greška** ako nijedna prijava nije kreirana), a nečitljiv red se navodi u logu sinhronizacije, tako da nijedan dohodak ne bude prećutno izostavljen iz prijava.
 
 ---
 

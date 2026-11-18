@@ -14,11 +14,6 @@ public sealed class NbsExchangeRateFetcher : IExchangeRateFetcher
     private readonly IExchangeRateCacheRepository _cache;
     private readonly ILogger<NbsExchangeRateFetcher> _logger;
 
-    public static readonly IReadOnlySet<string> SupportedCurrencies =
-        new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        { "EUR", "USD", "GBP", "CHF", "AUD", "CAD", "CZK", "DKK",
-          "HUF", "JPY", "NOK", "PLN", "SEK", "TRY", "AED" };
-
     public NbsExchangeRateFetcher(
         HttpClient http,
         IExchangeRateCacheRepository cache,
@@ -34,9 +29,9 @@ public sealed class NbsExchangeRateFetcher : IExchangeRateFetcher
     {
         // Step 1: Validate currency
         var upperCurrency = currency.ToUpperInvariant();
-        if (!SupportedCurrencies.Contains(upperCurrency))
+        if (!NbsCurrencies.IsSupported(upperCurrency))
             return Result<ExchangeRate, Error>.Failure(
-                new Error("UNSUPPORTED_CURRENCY",
+                new Error(ErrorCodes.UNSUPPORTED_CURRENCY,
                     $"Currency '{upperCurrency}' is not supported by NBS."));
 
         // Step 2: Cache lookup
@@ -60,7 +55,7 @@ public sealed class NbsExchangeRateFetcher : IExchangeRateFetcher
             using var response = await _http.GetAsync(url, ct);
             if (!response.IsSuccessStatusCode)
                 return Result<ExchangeRate, Error>.Failure(
-                    new Error("NBS_HTTP_ERROR",
+                    new Error(ErrorCodes.NBS_HTTP_ERROR,
                         $"NBS returned {(int)response.StatusCode} {response.StatusCode}."));
 
             // Step 5: Read body
@@ -72,7 +67,7 @@ public sealed class NbsExchangeRateFetcher : IExchangeRateFetcher
             ex is HttpRequestException || (ex is TaskCanceledException && !ct.IsCancellationRequested))
         {
             return Result<ExchangeRate, Error>.Failure(
-                new Error("NBS_HTTP_ERROR", ex.Message));
+                new Error(ErrorCodes.NBS_HTTP_ERROR, ex.Message));
         }
 
         // Step 6: Parse XML — LocalName used to avoid namespace binding fragility
@@ -81,7 +76,7 @@ public sealed class NbsExchangeRateFetcher : IExchangeRateFetcher
         catch (System.Xml.XmlException ex)
         {
             return Result<ExchangeRate, Error>.Failure(
-                new Error("NBS_PARSE_ERROR",
+                new Error(ErrorCodes.NBS_PARSE_ERROR,
                     $"Failed to parse NBS XML: {ex.Message}"));
         }
 
@@ -92,7 +87,7 @@ public sealed class NbsExchangeRateFetcher : IExchangeRateFetcher
 
         if (allRates.Count == 0)
             return Result<ExchangeRate, Error>.Failure(
-                new Error("RATE_NOT_FOUND",
+                new Error(ErrorCodes.RATE_NOT_FOUND,
                     $"No NBS exchange rate published for {date:yyyy-MM-dd}."));
 
         // Step 9: Batch cache all rates for this date — non-fatal if write fails
@@ -110,12 +105,12 @@ public sealed class NbsExchangeRateFetcher : IExchangeRateFetcher
         return result is not null
             ? Result<ExchangeRate, Error>.Success(result)
             : Result<ExchangeRate, Error>.Failure(
-                new Error("RATE_NOT_FOUND",
+                new Error(ErrorCodes.RATE_NOT_FOUND,
                     $"Currency '{upperCurrency}' not found in NBS response for {date:yyyy-MM-dd}."));
     }
 
     // Extracted from FetchRateAsync (S3776 cognitive complexity) — parses the
-    // <ExchangeRateXml> entries and keeps only rates for SupportedCurrencies.
+    // <ExchangeRateXml> entries and keeps only rates for NbsCurrencies.
     private static List<ExchangeRate> ParseRatesFromXml(XDocument doc, DateOnly date)
     {
         var entries = doc.Descendants()
@@ -127,7 +122,7 @@ public sealed class NbsExchangeRateFetcher : IExchangeRateFetcher
         {
             var code = entry.Elements()
                 .FirstOrDefault(e => e.Name.LocalName == "CurrencyCodeCo")?.Value;
-            if (code is null || !SupportedCurrencies.Contains(code)) continue;
+            if (code is null || !NbsCurrencies.IsSupported(code)) continue;
 
             var unitStr = entry.Elements()
                 .FirstOrDefault(e => e.Name.LocalName == "Unit")?.Value;

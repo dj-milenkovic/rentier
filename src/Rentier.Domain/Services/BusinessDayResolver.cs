@@ -13,9 +13,7 @@ public static class BusinessDayResolver
     public static bool IsBusinessDay(DateOnly date, HolidayConf holidays)
     {
         if (holidays is null) throw new DomainException("HolidayConf must not be null");
-        return date.DayOfWeek != DayOfWeek.Saturday
-            && date.DayOfWeek != DayOfWeek.Sunday
-            && !holidays.ContainsHoliday(date);
+        return holidays.IsWorkingDay(date);
     }
 
     /// <summary>

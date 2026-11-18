@@ -30,7 +30,7 @@ public class ImportReportCommandHandlerTests
         // Default: parse succeeds with empty result
         _parser.ParseAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
             .Returns(Result<StatementParseResult, Error>.Success(
-                new StatementParseResult([], [], [], [], [])));
+                new StatementParseResult([], [], [], [])));
 
         // Default: no duplicate
         _reportRepo.ExistsByImporterAndNameAsync(

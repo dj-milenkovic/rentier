@@ -428,17 +428,16 @@ public class SyncViewModelTests
     public void ImpactSummary_IncrementalSkipExisting_ShowsCorrectText()
     {
         var vm = CreateVm();
-        // Default: Incremental + SkipExisting
+        // Default: Incremental
 
         vm.ImpactSummary.Should().Be("Fetches new emails since last sync. Duplicates are skipped.");
     }
 
     [Fact]
-    public void ImpactSummary_FullReplaySkipExisting_ShowsAllEmailsText()
+    public void ImpactSummary_FullReplay_ShowsAllEmailsText()
     {
         var vm = CreateVm();
         vm.SelectedSyncMode = SyncMode.FullReplay;
-        vm.SelectedDuplicateStrategy = DuplicateStrategy.SkipExisting;
 
         vm.ImpactSummary.Should().Be("Fetches ALL emails in the mailbox. Duplicates are skipped.");
     }

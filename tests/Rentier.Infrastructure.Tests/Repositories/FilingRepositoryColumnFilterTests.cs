@@ -201,6 +201,7 @@ public class FilingRepositoryColumnFilterTests : IAsyncLifetime
     public async Task GetPagedAsync_FilterByPaymentReference_ReturnsMatchingFilings()
     {
         var fWithRef = MakeDividend("Co1", new DateOnly(2024, 1, 1));
+        fWithRef.AdvanceStatus(FilingStatus.Filed);
         fWithRef.SetPaymentReference("2024-0001-ABC");
         var fNoRef = MakeDividend("Co2", new DateOnly(2024, 2, 1));
 

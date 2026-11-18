@@ -33,7 +33,7 @@ Rentier.Domain            (no external dependencies)
                       HolidayConf, SyncParameters
   └── Services/       TaxCalculationService, FilingDeadlineCalculator (pure logic)
   └── Enums/          FilingStatus, IncomeType, ReportStatus, ReportType,
-                      SyncMode, DuplicateStrategy, ExchangeRateSourceType
+                      SyncMode, ExchangeRateSourceType
   └── Exceptions/     DomainException (business-rule violations)
 
 Rentier.Application       (references Domain only)

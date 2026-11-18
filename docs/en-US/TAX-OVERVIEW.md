@@ -52,6 +52,7 @@ Serbian tax due = max(gross Serbian tax − WHT in RSD, 0)
 - The credit cannot exceed the computed Serbian tax.
 - If the foreign rate is ≥ 15%, no additional Serbian tax is due.
 - If it is lower (e.g. 10% on US dividends under the Serbia–US treaty), you pay the difference in Serbia.
+- Withholding is matched to the payment it belongs to: a dividend's WHT to that dividend, and WHT on credit interest to that month's interest.
 
 **Example:**
 
@@ -72,7 +73,7 @@ All amounts are reported in **RSD**. Rentier uses the **NBS middle rate** for th
 
 - If a rate is not published for that day (weekend/holiday), the last prior business day's rate is used.
 - Rates are cached in the local SQLite database for efficiency.
-- IBKR's own rates (`Base Currency Exchange Rate`) are used only as a fallback for currencies NBS doesn't cover.
+- IBKR's own rates (`Base Currency Exchange Rate`) are used only for currencies NBS doesn't publish at all: the statement's rate to your account's base currency × the NBS rate of that base currency. Such filings are marked as using a cross-rate. A currency NBS does publish never falls back to an IBKR rate — not even when no NBS rate is found within the look-back period; that filing reports an error instead.
 - If NBS **cannot be reached** (network or service outage), Rentier never substitutes an earlier day's rate or an IBKR rate — the NBS rate for that day may well exist. Instead nothing from that statement is saved, and the statement is retried automatically on the next sync. After 3 failed attempts it is marked as **Error**, with the reason shown, so it can be looked at.
 
 ---
@@ -146,7 +147,7 @@ Yes, filing is mandatory even for informational purposes.
 Each one is converted independently at the NBS rate.
 
 **What if NBS doesn't have a rate for a currency?**
-The IBKR-provided rate is used instead; if that's not available either, the filing reports an error and the rate must be entered manually.
+If NBS doesn't publish the currency at all, a cross-rate is built from the statement's IBKR rate (see Exchange Rates). If that's not available either — or the currency is one NBS publishes but no rate was found — the filing reports an error and must be entered manually.
 
 **Is there a Serbia–US tax treaty?**
 Yes, the rate is typically 10% (instead of 30%), which is credited in Serbia.
@@ -155,7 +156,10 @@ Yes, the rate is typically 10% (instead of 30%), which is credited in Serbia.
 Rentier does not block late filing; penalties are determined by the Tax Administration.
 
 **What if my broker corrects a dividend?**
-Rentier detects the correction and flags it in the log; the filing must be adjusted manually. Duplicates are ignored.
+Rentier detects the correction and flags it in the log; the filing must be adjusted manually. Duplicates are ignored. Manual entries follow the same rule: adding a filing for a paying entity and date that already has one (in any letter case) is refused — edit or delete the existing filing instead.
+
+**What if a row in my statement can't be read?**
+The rest of the statement is still processed, but the statement is marked **Partial Error** (or **Error** if nothing could be filed) and the unreadable row is listed in the sync log, so no income is silently left out of your filings.
 
 ---
 
