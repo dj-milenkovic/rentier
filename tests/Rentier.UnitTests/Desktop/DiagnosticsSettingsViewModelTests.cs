@@ -4,6 +4,7 @@ using NSubstitute;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.Interfaces;
+using Rentier.Desktop.Resources;
 using Rentier.Desktop.Services;
 using Rentier.Desktop.ViewModels;
 using Xunit;
@@ -38,8 +39,78 @@ public class DiagnosticsSettingsViewModelTests
                 : Result<VoidResult, Error>.Failure(new Error("INFRASTRUCTURE_ERROR", "db unavailable")));
 
         return new Harness(
-            new DiagnosticsSettingsViewModel(diagnostics, launcher, setPreference),
+            new DiagnosticsSettingsViewModel(diagnostics, launcher, setPreference, new LocalizationService()),
             diagnostics, launcher, setPreference);
+    }
+
+    // ── Toggling while a save is still running ─────────────────────────────────
+
+    /// <summary>
+    /// Turns Debug on, then off again while the first preference write is still pending, then
+    /// lets the write finish. Returns the harness and the preference values saved, in order.
+    /// </summary>
+    private static async Task<(Harness H, List<string> Saved)> ToggleTwiceDuringPendingSaveAsync()
+    {
+        var h = Build();
+        var firstSave = new TaskCompletionSource<Result<VoidResult, Error>>();
+        var saved = new List<string>();
+        h.SetPreference.HandleAsync(Arg.Any<SetUserPreferenceCommand>(), Arg.Any<CancellationToken>())
+            .Returns(
+                _ => firstSave.Task,
+                _ => Task.FromResult(Result<VoidResult, Error>.Success(VoidResult.Value)));
+        h.SetPreference.When(x => x.HandleAsync(Arg.Any<SetUserPreferenceCommand>(), Arg.Any<CancellationToken>()))
+            .Do(ci => saved.Add(ci.Arg<SetUserPreferenceCommand>().Value));
+
+        h.Vm.IsDebugLoggingEnabled = true;   // first save is now in flight
+        h.Vm.IsDebugLoggingEnabled = false;  // must be queued, not dropped
+        firstSave.SetResult(Result<VoidResult, Error>.Success(VoidResult.Value));
+
+        for (var i = 0; i < 100 && saved.Count < 2; i++)
+            await Task.Delay(10);
+
+        return (h, saved);
+    }
+
+    [Fact]
+    public async Task IsDebugLoggingEnabled_ToggledWhilePreviousSaveRuns_PersistsEveryValueInOrder()
+    {
+        var (_, saved) = await ToggleTwiceDuringPendingSaveAsync();
+
+        saved.Should().Equal("true", "false");
+    }
+
+    [Fact]
+    public async Task IsDebugLoggingEnabled_ToggledWhilePreviousSaveRuns_LeavesServiceAtLatestValue()
+    {
+        var (h, _) = await ToggleTwiceDuringPendingSaveAsync();
+
+        Received.InOrder(() =>
+        {
+            h.Diagnostics.SetDebugLogging(true);
+            h.Diagnostics.SetDebugLogging(false);
+        });
+    }
+
+    // ── Localised messages ─────────────────────────────────────────────────────
+
+    [Fact]
+    public void IsDebugLoggingEnabled_PreferenceSaveFails_ShowsMessageInCurrentCulture()
+    {
+        var h = Build(preferenceSaves: false);
+
+        h.Vm.IsDebugLoggingEnabled = true;
+
+        h.Vm.ErrorMessage.Should().Be(SrLatnStrings.All["Diagnostics_SaveFailed"]);
+    }
+
+    [Fact]
+    public void OpenLogsFolderCommand_LauncherFails_ShowsMessageInCurrentCulture()
+    {
+        var h = Build(launcherOpens: false);
+
+        h.Vm.OpenLogsFolderCommand.Execute().Subscribe();
+
+        h.Vm.ErrorMessage.Should().StartWith(SrLatnStrings.All["Diagnostics_OpenFolderFailed"]);
     }
 
     // ── Initial state ──────────────────────────────────────────────────────────

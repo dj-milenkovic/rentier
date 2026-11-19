@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
@@ -14,7 +13,7 @@ public sealed class GetReportsQueryHandler
     private readonly IReportRepository _reports;
     private readonly IImporterRepository _importers;
     private readonly IFilingRepository _filings;
-    private readonly ILogger<GetReportsQueryHandler> _logger;
+    private readonly ILogger<GetReportsQueryHandler>? _logger;
 
     public GetReportsQueryHandler(
         IReportRepository reports,
@@ -22,7 +21,7 @@ public sealed class GetReportsQueryHandler
         IFilingRepository filings,
         ILogger<GetReportsQueryHandler>? logger = null)
     {
-        _logger = logger ?? NullLogger<GetReportsQueryHandler>.Instance;
+        _logger = logger;
         _reports = reports;
         _importers = importers;
         _filings = filings;

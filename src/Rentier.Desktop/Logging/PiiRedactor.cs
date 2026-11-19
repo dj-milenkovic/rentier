@@ -25,12 +25,23 @@ internal static partial class PiiRedactor
     [GeneratedRegex(@"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}", RegexOptions.CultureInvariant, TIMEOUT_MS)]
     private static partial Regex EmailAddress();
 
-    // Interactive Brokers account ids look like U1234567 (sometimes with a leading letter).
-    [GeneratedRegex(@"\b[UuDdFf]\d{6,9}\b", RegexOptions.CultureInvariant, TIMEOUT_MS)]
+    // Interactive Brokers account ids: U1234567, F1234567, paper accounts DU1234567 / DF1234567.
+    // Lookarounds instead of \b so ids inside statement file names (U1234567_20250101.csv) match.
+    [GeneratedRegex(@"(?<![A-Za-z0-9])(?:[Dd]?[UuFf]|[Dd])\d{6,9}(?!\d)", RegexOptions.CultureInvariant, TIMEOUT_MS)]
     private static partial Regex BrokerAccountId();
 
+    // IBAN: country code, check digits, 11–30 alphanumerics, compact or in groups of four
+    // (RS35260005601001611379, RS35 2600 0560 1001 6113 79). Minimum length excludes ISINs.
+    [GeneratedRegex(@"\b[A-Z]{2}\d{2}(?:[A-Z0-9]{11,30}|(?: [A-Z0-9]{4}){2,7}(?: [A-Z0-9]{1,4})?)\b", RegexOptions.CultureInvariant, TIMEOUT_MS)]
+    private static partial Regex Iban();
+
+    // Serbian bank account numbers in dashed form: bank-account-control (160-0000000123456-78).
+    [GeneratedRegex(@"(?<![\w-])\d{3}-\d{1,13}-\d{2}(?![\w-])", RegexOptions.CultureInvariant, TIMEOUT_MS)]
+    private static partial Regex SerbianBankAccount();
+
     // 8+ digit runs. Neighbouring '-' or letters are excluded so GUID segments, dates such as
-    // 2026-11-19 and file-name stamps are left alone.
+    // 2026-11-19 and file-name stamps are left alone; IBANs and dashed account numbers are
+    // caught by the dedicated patterns above.
     [GeneratedRegex(@"(?<![\w-])\d{8,}(?![\w-])", RegexOptions.CultureInvariant, TIMEOUT_MS)]
     private static partial Regex LongDigitRun();
 
@@ -61,6 +72,8 @@ internal static partial class PiiRedactor
             text = UnixProfilePath().Replace(text, "${prefix}<user>");
             text = EmailAddress().Replace(text, "[email]");
             text = BrokerAccountId().Replace(text, "[account]");
+            text = Iban().Replace(text, "[number]");
+            text = SerbianBankAccount().Replace(text, "[number]");
             text = LongDigitRun().Replace(text, "[number]");
             return text;
         }

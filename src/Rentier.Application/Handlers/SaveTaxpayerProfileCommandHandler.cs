@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.Interfaces;
@@ -13,11 +12,11 @@ public sealed class SaveTaxpayerProfileCommandHandler
     : ICommandHandler<SaveTaxpayerProfileCommand, Result<VoidResult, Error>>
 {
     private readonly ITaxpayerProfileRepository _repository;
-    private readonly ILogger<SaveTaxpayerProfileCommandHandler> _logger;
+    private readonly ILogger<SaveTaxpayerProfileCommandHandler>? _logger;
 
     public SaveTaxpayerProfileCommandHandler(ITaxpayerProfileRepository repository, ILogger<SaveTaxpayerProfileCommandHandler>? logger = null)
     {
-        _logger = logger ?? NullLogger<SaveTaxpayerProfileCommandHandler>.Instance;
+        _logger = logger;
         _repository = repository;
     }
 

@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.Interfaces;
@@ -13,11 +12,11 @@ public sealed class UpdateImporterCommandHandler
     : ICommandHandler<UpdateImporterCommand, Result<VoidResult, Error>>
 {
     private readonly IImporterRepository _repository;
-    private readonly ILogger<UpdateImporterCommandHandler> _logger;
+    private readonly ILogger<UpdateImporterCommandHandler>? _logger;
 
     public UpdateImporterCommandHandler(IImporterRepository repository, ILogger<UpdateImporterCommandHandler>? logger = null)
     {
-        _logger = logger ?? NullLogger<UpdateImporterCommandHandler>.Instance;
+        _logger = logger;
         _repository = repository;
     }
 

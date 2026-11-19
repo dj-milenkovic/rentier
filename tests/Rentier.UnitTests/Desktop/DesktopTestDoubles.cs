@@ -68,7 +68,7 @@ internal static class DesktopTestDoubles
         setPreference.HandleAsync(Arg.Any<SetUserPreferenceCommand>(), Arg.Any<CancellationToken>())
             .Returns(Result<VoidResult, Error>.Success(VoidResult.Value));
 
-        return new DiagnosticsSettingsViewModel(diagnostics, FolderLauncher(), setPreference);
+        return new DiagnosticsSettingsViewModel(diagnostics, FolderLauncher(), setPreference, new LocalizationService());
     }
 
     /// <summary>An import dialog returning <paramref name="selection"/> (<c>null</c> = user cancelled).</summary>

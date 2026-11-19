@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.Interfaces;
@@ -12,12 +11,12 @@ public sealed class BulkDeleteFilingsCommandHandler
     : ICommandHandler<BulkDeleteFilingsCommand, Result<VoidResult, Error>>
 {
     private readonly IFilingRepository _filingRepository;
-    private readonly ILogger<BulkDeleteFilingsCommandHandler> _logger;
+    private readonly ILogger<BulkDeleteFilingsCommandHandler>? _logger;
 
     public BulkDeleteFilingsCommandHandler(IFilingRepository filingRepository, ILogger<BulkDeleteFilingsCommandHandler>? logger = null)
     {
         _filingRepository = filingRepository;
-        _logger = logger ?? NullLogger<BulkDeleteFilingsCommandHandler>.Instance;
+        _logger = logger;
     }
 
     public Task<Result<VoidResult, Error>> HandleAsync(

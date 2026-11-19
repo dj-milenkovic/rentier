@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Rentier.Application.Common;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
@@ -11,11 +10,11 @@ public sealed class GetUserPreferenceQueryHandler
     : IQueryHandler<GetUserPreferenceQuery, Result<string?, Error>>
 {
     private readonly IUserPreferenceRepository _repository;
-    private readonly ILogger<GetUserPreferenceQueryHandler> _logger;
+    private readonly ILogger<GetUserPreferenceQueryHandler>? _logger;
 
     public GetUserPreferenceQueryHandler(IUserPreferenceRepository repository, ILogger<GetUserPreferenceQueryHandler>? logger = null)
     {
-        _logger = logger ?? NullLogger<GetUserPreferenceQueryHandler>.Instance;
+        _logger = logger;
         _repository = repository;
     }
 

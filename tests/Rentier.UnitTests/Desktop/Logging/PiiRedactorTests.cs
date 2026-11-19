@@ -43,6 +43,10 @@ public class PiiRedactorTests
     [Theory]
     [InlineData("account U1234567 rejected", "account [account] rejected")]
     [InlineData("account u12345678 rejected", "account [account] rejected")]
+    [InlineData("paper account DU1234567 rejected", "paper account [account] rejected")]
+    [InlineData("paper account DF1234567 rejected", "paper account [account] rejected")]
+    [InlineData("imported U1234567_20250101_20251231.csv", "imported [account]_20250101_20251231.csv")]
+    [InlineData("imported stmt_DU1234567.csv", "imported stmt_[account].csv")]
     public void Redact_BrokerAccountId_ReplacesWithPlaceholder(string input, string expected)
     {
         PiiRedactor.Redact(input, HOME).Should().Be(expected);
@@ -58,6 +62,25 @@ public class PiiRedactorTests
     }
 
     [Theory]
+    [InlineData("IBAN RS35260005601001611379 invalid", "IBAN [number] invalid")]
+    [InlineData("IBAN RS35 2600 0560 1001 6113 79 invalid", "IBAN [number] invalid")]
+    [InlineData("IBAN DE89370400440532013000.", "IBAN [number].")]
+    public void Redact_Iban_ReplacesWithPlaceholder(string input, string expected)
+    {
+        PiiRedactor.Redact(input, HOME).Should().Be(expected);
+    }
+
+    [Theory]
+    [InlineData("account 160-0000000123456-78 invalid", "account [number] invalid")]
+    [InlineData("account 265-1234-56 invalid", "account [number] invalid")]
+    public void Redact_SerbianDashedBankAccount_ReplacesWithPlaceholder(string input, string expected)
+    {
+        PiiRedactor.Redact(input, HOME).Should().Be(expected);
+    }
+
+    [Theory]
+    [InlineData("isin US0378331005 parsed")]
+    [InlineData("deadline 2026-12-21 computed")]
     [InlineData("2026-11-19 12:00:00.123 +01:00 [INF] started")]
     [InlineData("report 3f2504e0-4f89-11d3-9a0c-0305e82c3301 imported")]
     [InlineData("report 12345678-4f89-11d3-9a0c-030512345678 imported")]

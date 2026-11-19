@@ -12,20 +12,54 @@ namespace Rentier.Desktop.Logging;
 [ExcludeFromCodeCoverage(Justification = "Process-level wiring; exercised by running the app.")]
 internal static class GlobalExceptionLogging
 {
+    // One crash travels through several hooks (ReactiveUI → UI thread → AppDomain). The first
+    // hook to log it tags the exception so the later ones stay silent.
+    private const string LOGGED_MARKER = "Rentier.Logging.Logged";
+
     public static void Attach()
     {
         AppDomain.CurrentDomain.UnhandledException += (_, e) =>
         {
-            Log.Fatal(e.ExceptionObject as Exception, "Unhandled exception (terminating: {IsTerminating})", e.IsTerminating);
+            if (MarkLogged(e.ExceptionObject as Exception))
+                Log.Fatal(e.ExceptionObject as Exception, "Unhandled exception (terminating: {IsTerminating})", e.IsTerminating);
             if (e.IsTerminating)
                 Log.CloseAndFlush();
         };
 
         TaskScheduler.UnobservedTaskException += (_, e) =>
-            Log.Error(e.Exception, "Unobserved task exception");
+        {
+            if (MarkLogged(e.Exception))
+                Log.Error(e.Exception, "Unobserved task exception");
+        };
 
         Dispatcher.UIThread.UnhandledException += (_, e) =>
-            Log.Fatal(e.Exception, "Unhandled UI-thread exception");
+        {
+            if (MarkLogged(e.Exception))
+                Log.Fatal(e.Exception, "Unhandled UI-thread exception");
+        };
+    }
+
+    /// <summary>
+    /// Tags <paramref name="exception"/> as logged. Returns <c>false</c> when an earlier hook
+    /// already logged it. Untaggable or null exceptions are always logged.
+    /// </summary>
+    internal static bool MarkLogged(Exception? exception)
+    {
+        if (exception is null)
+            return true;
+
+        try
+        {
+            if (exception.Data.Contains(LOGGED_MARKER))
+                return false;
+            exception.Data[LOGGED_MARKER] = true;
+        }
+        catch (Exception ex) when (ex is NotSupportedException or ArgumentException)
+        {
+            // Read-only or restricted Data dictionary: logging twice beats not logging.
+        }
+
+        return true;
     }
 
     /// <summary>
@@ -36,13 +70,15 @@ internal static class GlobalExceptionLogging
     {
         public void OnNext(Exception value)
         {
-            Log.Fatal(value, "Unhandled ReactiveUI exception");
+            if (MarkLogged(value))
+                Log.Fatal(value, "Unhandled ReactiveUI exception");
             Dispatcher.UIThread.Post(() => ExceptionDispatchInfo.Capture(value).Throw());
         }
 
         public void OnError(Exception error)
         {
-            Log.Fatal(error, "ReactiveUI exception stream failed");
+            if (MarkLogged(error))
+                Log.Fatal(error, "ReactiveUI exception stream failed");
             ExceptionDispatchInfo.Capture(error).Throw();
         }
 

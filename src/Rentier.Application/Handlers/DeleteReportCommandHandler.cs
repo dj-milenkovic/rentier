@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.Interfaces;
@@ -17,11 +16,11 @@ public sealed class DeleteReportCommandHandler
     : ICommandHandler<DeleteReportCommand, Result<VoidResult, Error>>
 {
     private readonly IUnitOfWorkFactory _unitOfWorkFactory;
-    private readonly ILogger<DeleteReportCommandHandler> _logger;
+    private readonly ILogger<DeleteReportCommandHandler>? _logger;
 
     public DeleteReportCommandHandler(IUnitOfWorkFactory unitOfWorkFactory, ILogger<DeleteReportCommandHandler>? logger = null)
     {
-        _logger = logger ?? NullLogger<DeleteReportCommandHandler>.Instance;
+        _logger = logger;
         _unitOfWorkFactory = unitOfWorkFactory;
     }
 

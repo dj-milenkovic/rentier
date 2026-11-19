@@ -17,28 +17,35 @@ public sealed class DiagnosticsSettingsViewModel : ReactiveObject
     private readonly IDiagnosticsService _diagnostics;
     private readonly IFolderLauncher _folderLauncher;
     private readonly ICommandHandler<SetUserPreferenceCommand, Result<VoidResult, Error>> _setPreferenceHandler;
+    private readonly ILocalizationService _localization;
     private bool _isDebugLoggingEnabled;
     private string _errorMessage = string.Empty;
 
     public DiagnosticsSettingsViewModel(
         IDiagnosticsService diagnostics,
         IFolderLauncher folderLauncher,
-        ICommandHandler<SetUserPreferenceCommand, Result<VoidResult, Error>> setPreferenceHandler)
+        ICommandHandler<SetUserPreferenceCommand, Result<VoidResult, Error>> setPreferenceHandler,
+        ILocalizationService localization)
     {
         _diagnostics = diagnostics;
         _folderLauncher = folderLauncher;
         _setPreferenceHandler = setPreferenceHandler;
+        _localization = localization;
         _isDebugLoggingEnabled = diagnostics.IsDebugLoggingEnabled;
 
         OpenLogsFolderCommand = ReactiveCommand.CreateFromTask(ExecuteOpenLogsFolderAsync);
         SetDebugLoggingCommand = ReactiveCommand.CreateFromTask<bool>(ExecuteSetDebugLoggingAsync);
 
-        // Auto-apply, like the Appearance page: no Save button. InvokeCommand keeps the
-        // subscription owned by the property pipeline instead of an ad-hoc Subscribe().
+        // Auto-apply, like the Appearance page: no Save button. Execute + Concat queues every
+        // toggle and runs them in order; InvokeCommand would drop a toggle that arrives while the
+        // previous preference write is still running (CanExecute is false during execution),
+        // leaving the switch, the active level and the saved preference out of step.
         this.WhenAnyValue(x => x.IsDebugLoggingEnabled)
             .Skip(1)
             .DistinctUntilChanged()
-            .InvokeCommand(SetDebugLoggingCommand);
+            .Select(enabled => SetDebugLoggingCommand.Execute(enabled))
+            .Concat()
+            .Subscribe();
     }
 
     public bool IsDebugLoggingEnabled
@@ -66,7 +73,7 @@ public sealed class DiagnosticsSettingsViewModel : ReactiveObject
 
         var opened = await _folderLauncher.OpenAsync(LogDirectory);
         if (!opened)
-            ErrorMessage = $"{Strings.Diagnostics_OpenFolderFailed} {LogDirectory}";
+            ErrorMessage = $"{_localization[nameof(Strings.Diagnostics_OpenFolderFailed)]} {LogDirectory}";
     }
 
     private async Task ExecuteSetDebugLoggingAsync(bool enabled)
@@ -80,6 +87,6 @@ public sealed class DiagnosticsSettingsViewModel : ReactiveObject
             new SetUserPreferenceCommand(UserPreferenceKeys.DEBUG_LOGGING, enabled ? "true" : "false"));
 
         if (!result.IsSuccess)
-            ErrorMessage = Strings.Diagnostics_SaveFailed;
+            ErrorMessage = _localization[nameof(Strings.Diagnostics_SaveFailed)];
     }
 }

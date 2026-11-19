@@ -16,6 +16,10 @@ internal sealed class RedactingTextFormatter(string? homeFolder = null) : ITextF
     private const string SOURCE_CONTEXT_PROPERTY = "SourceContext";
     private const string TIMESTAMP_FORMAT = "yyyy-MM-dd HH:mm:ss.fff zzz";
 
+    // Resolved once: the profile folder never changes during the process.
+    private readonly string _homeFolder =
+        homeFolder ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+
     public void Format(LogEvent logEvent, TextWriter output)
     {
         var sb = new StringBuilder();
@@ -35,7 +39,7 @@ internal sealed class RedactingTextFormatter(string? homeFolder = null) : ITextF
             sb.AppendLine().Append(SafeExceptionRenderer.Render(logEvent.Exception).TrimEnd());
         }
 
-        output.WriteLine(PiiRedactor.Redact(sb.ToString(), homeFolder));
+        output.WriteLine(PiiRedactor.Redact(sb.ToString(), _homeFolder));
     }
 
     private static string LevelCode(LogEventLevel level) => level switch
