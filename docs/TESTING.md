@@ -152,6 +152,14 @@ Gotchas (each of these has broken the weekly run before):
   workflow on the PR (it triggers automatically when the config, manifest or workflow changes).
 - The `dashboard` reporter needs a `STRYKER_DASHBOARD_API_KEY` secret. It is not
   configured, so don't add that reporter back without one.
+- **Test runner is `mtp` (Microsoft Testing Platform), not `vstest`.** xUnit v3 runs tests
+  in a separate process, so the VSTest runner can't capture per-test coverage ("coverage
+  capture failed"). Without coverage, every mutant runs all 1,300+ unit tests, so a full
+  run takes ~1 hour. With `mtp` it takes ~3 minutes. Stryker marks its MTP runner as
+  *preview*. If scores look suspicious, re-run a single file with
+  `--test-runner vstest --mutate "**/File.cs"` and compare.
+- **Don't use the `progress` reporter.** Its console progress bar crashes Stryker after the
+  run when there is no real terminal (CI), before any report is written. Use `cleartext`.
 
 ---
 

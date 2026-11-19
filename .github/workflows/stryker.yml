@@ -56,6 +56,8 @@ jobs:
       # Run from the test project's directory: at the repo root Stryker detects
       # Rentier.slnx, switches to solution mode and refuses a single test project.
       # `--output` is CLI-only; it is not a valid stryker-config.json key.
+      # The test runner (mtp) and reporters are set in stryker-config.json;
+      # see docs/TESTING.md §2.5 for why.
       - name: Run Stryker
         working-directory: tests/Rentier.UnitTests
         run: dotnet tool run dotnet-stryker --config-file ../../stryker-config.json --output ../../mutation-report

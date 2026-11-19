@@ -1,7 +1,8 @@
 {
   "stryker-config": {
     "project": "Rentier.Domain.csproj",
-    "reporters": ["html", "json", "markdown", "progress"],
+    "test-runner": "mtp",
+    "reporters": ["html", "json", "markdown", "cleartext"],
     "mutation-level": "Standard",
     "thresholds": {
       "high": 90,
