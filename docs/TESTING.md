@@ -131,15 +131,27 @@ navigation to each page doesn't throw. That's the entire pixels-level E2E budget
 Run **weekly + on demand** (not per-PR — too slow for the inner loop).
 
 ```bash
-# Install once:
-dotnet tool install -g dotnet-stryker
+# Restore the pinned Stryker version from .config/dotnet-tools.json:
+dotnet tool restore
 
-# Run against Domain:
-dotnet stryker --config-file stryker-config.json
+# Run against Domain (from the test project directory, see below):
+cd tests/Rentier.UnitTests
+dotnet tool run dotnet-stryker --config-file ../../stryker-config.json --output ../../mutation-report
 ```
 
 Config lives in `stryker-config.json` at the repo root. Break threshold: **85**.
-HTML report uploaded as a CI artifact from the weekly `stryker.yml` workflow.
+HTML/JSON reports are uploaded as a CI artifact from the weekly `stryker.yml` workflow,
+and the Markdown summary is shown on the run page.
+
+Gotchas (each of these has broken the weekly run before):
+- **Run from `tests/Rentier.UnitTests`.** At the repo root Stryker finds `Rentier.slnx`,
+  switches to solution mode and rejects a single test project.
+- **`--output` is CLI-only.** It is not a valid `stryker-config.json` key, and Stryker
+  rejects unknown keys.
+- **Stryker is pinned** in `.config/dotnet-tools.json`. Bump it deliberately and run the
+  workflow on the PR (it triggers automatically when the config, manifest or workflow changes).
+- The `dashboard` reporter needs a `STRYKER_DASHBOARD_API_KEY` secret. It is not
+  configured, so don't add that reporter back without one.
 
 ---
 

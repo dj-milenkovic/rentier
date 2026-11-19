@@ -4,9 +4,19 @@ on:
   schedule:
     - cron: '0 3 * * 1'   # Monday 03:00 UTC
   workflow_dispatch:
+  # Validate the mutation setup itself whenever it changes, so a broken config is
+  # caught on the PR instead of silently failing the next Monday-night run.
+  pull_request:
+    paths:
+      - 'stryker-config.json'
+      - '.config/dotnet-tools.json'
+      - '.github/workflows/stryker.yml'
+
+permissions:
+  contents: read
 
 concurrency:
-  group: stryker
+  group: stryker-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -18,6 +28,7 @@ jobs:
   mutation:
     name: Stryker.NET — Rentier.Domain
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
@@ -37,15 +48,28 @@ jobs:
       - name: Restore
         run: dotnet restore Rentier.slnx
 
-      - name: Install dotnet-stryker
-        run: dotnet tool install -g dotnet-stryker
+      # Version pinned in .config/dotnet-tools.json. An unpinned global install
+      # silently picked up a Stryker release that rejects keys the config used.
+      - name: Restore dotnet tools
+        run: dotnet tool restore
 
+      # Run from the test project's directory: at the repo root Stryker detects
+      # Rentier.slnx, switches to solution mode and refuses a single test project.
+      # `--output` is CLI-only; it is not a valid stryker-config.json key.
       - name: Run Stryker
-        run: dotnet stryker --config-file stryker-config.json
+        working-directory: tests/Rentier.UnitTests
+        run: dotnet tool run dotnet-stryker --config-file ../../stryker-config.json --output ../../mutation-report
+
+      - name: Publish mutation summary
+        if: always()
+        run: |
+          report=mutation-report/reports/mutation-report.md
+          if [ -f "$report" ]; then cat "$report" >> "$GITHUB_STEP_SUMMARY"; fi
 
       - name: Upload mutation report
         if: always()
         uses: actions/upload-artifact@v7.0.1
         with:
           name: mutation-report
-          path: mutation-report/
+          path: mutation-report/reports/
+          if-no-files-found: error

@@ -1,14 +1,12 @@
 {
   "stryker-config": {
-    "project": "src/Rentier.Domain/Rentier.Domain.csproj",
-    "test-projects": ["tests/Rentier.UnitTests/Rentier.UnitTests.csproj"],
-    "reporters": ["html", "progress", "dashboard"],
+    "project": "Rentier.Domain.csproj",
+    "reporters": ["html", "json", "markdown", "progress"],
     "mutation-level": "Standard",
     "thresholds": {
       "high": 90,
       "low": 85,
       "break": 85
-    },
-    "output-path": "mutation-report"
+    }
   }
 }
