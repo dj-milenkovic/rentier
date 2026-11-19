@@ -108,4 +108,16 @@ internal static partial class InfrastructureLog
 
     [LoggerMessage(6001, LogLevel.Error, "Transaction rollback failed after a holiday save error.")]
     public static partial void HolidayRollbackFailed(this ILogger logger, Exception exception);
+
+    [LoggerMessage(6002, LogLevel.Information, "Database is up to date; no migrations to apply")]
+    public static partial void DatabaseUpToDate(this ILogger logger);
+
+    [LoggerMessage(6003, LogLevel.Information, "Migrating database: {Pending} pending migrations")]
+    public static partial void MigrationStarted(this ILogger logger, int pending);
+
+    [LoggerMessage(6004, LogLevel.Information, "Database migrated: {Pending} migrations applied in {ElapsedMs} ms")]
+    public static partial void MigrationCompleted(this ILogger logger, int pending, long elapsedMs);
+
+    [LoggerMessage(6005, LogLevel.Error, "Database migration timed out after {TimeoutSeconds} s with {Pending} pending migrations; an interrupted earlier migration probably left a lock in __EFMigrationsLock")]
+    public static partial void MigrationTimedOut(this ILogger logger, int timeoutSeconds, int pending);
 }

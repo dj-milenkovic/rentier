@@ -1,8 +1,11 @@
 using FluentAssertions;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Rentier.Infrastructure.Persistence;
 using Rentier.Infrastructure.Tests.Migrations;
+using Rentier.Tests.Common.Fakes;
 
 namespace Rentier.Infrastructure.Tests;
 
@@ -28,7 +31,7 @@ public sealed class DatabaseInitializerTests : IAsyncDisposable
     public async Task InitializeAsync_FreshDatabase_AppliesAllMigrationsWithoutError()
     {
         await using var ctx = CreateContext();
-        var sut = new DatabaseInitializer(ctx);
+        var sut = new DatabaseInitializer(ctx, NullLogger<DatabaseInitializer>.Instance);
 
         await sut.InitializeAsync(TestContext.Current.CancellationToken);
 
@@ -40,7 +43,7 @@ public sealed class DatabaseInitializerTests : IAsyncDisposable
     public async Task InitializeAsync_FreshDatabase_ProducesNonEmptyMigrationHistory()
     {
         await using var ctx = CreateContext();
-        var sut = new DatabaseInitializer(ctx);
+        var sut = new DatabaseInitializer(ctx, NullLogger<DatabaseInitializer>.Instance);
 
         await sut.InitializeAsync(TestContext.Current.CancellationToken);
 
@@ -52,11 +55,11 @@ public sealed class DatabaseInitializerTests : IAsyncDisposable
     public async Task InitializeAsync_CalledTwice_IsIdempotent()
     {
         await using var ctx1 = CreateContext();
-        await new DatabaseInitializer(ctx1).InitializeAsync(TestContext.Current.CancellationToken);
+        await new DatabaseInitializer(ctx1, NullLogger<DatabaseInitializer>.Instance).InitializeAsync(TestContext.Current.CancellationToken);
 
         await using var ctx2 = CreateContext();
         var act = async () =>
-            await new DatabaseInitializer(ctx2).InitializeAsync(TestContext.Current.CancellationToken);
+            await new DatabaseInitializer(ctx2, NullLogger<DatabaseInitializer>.Instance).InitializeAsync(TestContext.Current.CancellationToken);
 
         await act.Should().NotThrowAsync(
             because: "MigrateAsync on an already-migrated database must be idempotent");
@@ -71,7 +74,7 @@ public sealed class DatabaseInitializerTests : IAsyncDisposable
         var ctx = factory.OpenContext();
         await using (ctx)
         {
-            var sut = new DatabaseInitializer(ctx);
+            var sut = new DatabaseInitializer(ctx, NullLogger<DatabaseInitializer>.Instance);
 
             await sut.InitializeAsync(TestContext.Current.CancellationToken);
 
@@ -89,7 +92,7 @@ public sealed class DatabaseInitializerTests : IAsyncDisposable
         var ctx = factory.OpenContext();
         await using (ctx)
         {
-            var sut = new DatabaseInitializer(ctx);
+            var sut = new DatabaseInitializer(ctx, NullLogger<DatabaseInitializer>.Instance);
 
             await sut.InitializeAsync(TestContext.Current.CancellationToken);
 
@@ -98,6 +101,108 @@ public sealed class DatabaseInitializerTests : IAsyncDisposable
             pending.Should().BeEmpty(
                 because: "upgrade from 0014 baseline must apply the out-of-sequence 0011 migration");
         }
+    }
+
+    // ── Interrupted migration (stale __EFMigrationsLock row) ──────────────────
+
+    private static readonly TimeSpan SHORT_TIMEOUT = TimeSpan.FromSeconds(1);
+
+    /// <summary>
+    /// Leaves the lock row an interrupted migration leaves behind: EF Core's SQLite provider
+    /// takes the migration lock by inserting this row and only deletes it when it finishes.
+    /// </summary>
+    private static Task LeaveStaleMigrationLockAsync(AppDbContext ctx) =>
+        ctx.Database.ExecuteSqlRawAsync(
+            """
+            CREATE TABLE IF NOT EXISTS "__EFMigrationsLock" (
+                "Id" INTEGER NOT NULL CONSTRAINT "PK___EFMigrationsLock" PRIMARY KEY,
+                "Timestamp" TEXT NOT NULL);
+            INSERT INTO "__EFMigrationsLock" ("Id", "Timestamp") VALUES (1, '2026-11-19 21:55:00');
+            """,
+            TestContext.Current.CancellationToken);
+
+    [Fact]
+    public async Task InitializeAsync_StaleLockWithPendingMigrations_ThrowsTimeoutInsteadOfHanging()
+    {
+        await using var factory = await MigrationBaselineFactory.CreateAtMigration0014Async();
+        await using var ctx = factory.OpenContext();
+        await LeaveStaleMigrationLockAsync(ctx);
+        var sut = new DatabaseInitializer(ctx, NullLogger<DatabaseInitializer>.Instance, SHORT_TIMEOUT);
+
+        var act = () => sut.InitializeAsync(TestContext.Current.CancellationToken);
+
+        (await act.Should().ThrowAsync<TimeoutException>())
+            .WithMessage("*__EFMigrationsLock*");
+    }
+
+    [Fact]
+    public async Task InitializeAsync_StaleLockWithPendingMigrations_LogsTheTimeoutAsError()
+    {
+        await using var factory = await MigrationBaselineFactory.CreateAtMigration0014Async();
+        await using var ctx = factory.OpenContext();
+        await LeaveStaleMigrationLockAsync(ctx);
+        var logger = new CapturingLogger<DatabaseInitializer>();
+        var sut = new DatabaseInitializer(ctx, logger, SHORT_TIMEOUT);
+
+        try { await sut.InitializeAsync(TestContext.Current.CancellationToken); }
+        catch (TimeoutException) { /* asserted in the test above */ }
+
+        logger.Entries.Should().Contain(e => e.Level == LogLevel.Error && e.Message.Contains("timed out"));
+    }
+
+    [Fact]
+    public async Task InitializeAsync_StaleLockButDatabaseUpToDate_StartsWithoutWaitingForTheLock()
+    {
+        await using var ctx = CreateContext();
+        await new DatabaseInitializer(ctx, NullLogger<DatabaseInitializer>.Instance)
+            .InitializeAsync(TestContext.Current.CancellationToken);
+        await LeaveStaleMigrationLockAsync(ctx);
+        var sut = new DatabaseInitializer(ctx, NullLogger<DatabaseInitializer>.Instance, SHORT_TIMEOUT);
+
+        var act = () => sut.InitializeAsync(TestContext.Current.CancellationToken);
+
+        await act.Should().NotThrowAsync(because: "nothing is pending, so the leftover lock must not block startup");
+    }
+
+    [Fact]
+    public async Task InitializeAsync_CallerCancels_PropagatesCancellationNotTimeout()
+    {
+        await using var ctx = CreateContext();
+        var sut = new DatabaseInitializer(ctx, NullLogger<DatabaseInitializer>.Instance);
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        var act = () => sut.InitializeAsync(cts.Token);
+
+        await act.Should().ThrowAsync<OperationCanceledException>();
+    }
+
+    // ── Diagnostics ───────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task InitializeAsync_FreshDatabase_LogsMigrationStartAndCompletion()
+    {
+        await using var ctx = CreateContext();
+        var logger = new CapturingLogger<DatabaseInitializer>();
+
+        await new DatabaseInitializer(ctx, logger).InitializeAsync(TestContext.Current.CancellationToken);
+
+        logger.Entries.Select(e => e.Message).Should().Satisfy(
+            m => m.StartsWith("Migrating database:"),
+            m => m.StartsWith("Database migrated:"));
+    }
+
+    [Fact]
+    public async Task InitializeAsync_DatabaseUpToDate_LogsThatNothingWasApplied()
+    {
+        await using var ctx = CreateContext();
+        await new DatabaseInitializer(ctx, NullLogger<DatabaseInitializer>.Instance)
+            .InitializeAsync(TestContext.Current.CancellationToken);
+        var logger = new CapturingLogger<DatabaseInitializer>();
+
+        await new DatabaseInitializer(ctx, logger).InitializeAsync(TestContext.Current.CancellationToken);
+
+        logger.AllMessages.Should().Contain("up to date");
     }
 
     // ── IAsyncDisposable ──────────────────────────────────────────────────────
