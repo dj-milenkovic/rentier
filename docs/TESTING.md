@@ -128,8 +128,16 @@ navigation to each page doesn't throw. That's the entire pixels-level E2E budget
 
 ## 2.5 Mutation testing (Stryker.NET)
 
-Mutation-tests **every PR that changes Domain code or Domain unit tests** (`src/Rentier.Domain/**`,
-`tests/Rentier.UnitTests/Domain/**`) or the Stryker setup, plus **weekly** and on demand.
+Mutation-tests **every PR that can change the Domain score**, plus **weekly** and on demand.
+Stryker mutates only Domain, but the whole `Rentier.UnitTests` project runs against the
+mutants, so a PR triggers it when it touches:
+
+- Domain code or the tests that kill its mutants: `src/Rentier.Domain/**`,
+  `tests/Rentier.UnitTests/Domain/**`, `tests/Rentier.UnitTests/Application/**`
+  (Application tests exercise Domain entities and services), `tests/Rentier.Tests.Common/**`;
+- the mutation setup: `stryker-config.json`, `.config/dotnet-tools.json`, the workflow,
+  `tests/Rentier.UnitTests/Rentier.UnitTests.csproj` and `Directory.{Build,Packages}.props`
+  (test framework and MTP runner versions).
 A full run takes ~3.5 minutes. The PR check fails below the break threshold, and the score
 is posted as a PR comment that is updated on each push, next to the coverage one.
 
