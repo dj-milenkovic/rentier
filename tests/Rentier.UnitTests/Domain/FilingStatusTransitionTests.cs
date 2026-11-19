@@ -55,7 +55,8 @@ public class FilingStatusTransitionTests
 
         var act = () => filing.AdvanceStatus(FilingStatus.Filed);
 
-        act.Should().Throw<DomainException>();
+        act.Should().Throw<DomainException>()
+            .WithMessage("*Invalid*transition*");
     }
 
     [Fact]

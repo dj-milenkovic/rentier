@@ -35,14 +35,21 @@ public class HolidayYearRangeTests
     public void Constructor_StartYearBelowMinimum_ThrowsDomainException()
     {
         var act = () => new HolidayYearRange(2019, 2024);
-        act.Should().Throw<DomainException>();
+        act.Should().Throw<DomainException>().WithMessage("*StartYear*2020*");
+    }
+
+    [Fact]
+    public void Constructor_StartYearAtMinimum_DoesNotThrow()
+    {
+        var act = () => new HolidayYearRange(HolidayYearRange.MinStartYear, 2024);
+        act.Should().NotThrow();
     }
 
     [Fact]
     public void Constructor_EndYearExceedsMax_ThrowsDomainException()
     {
         var act = () => new HolidayYearRange(2024, 2035);
-        act.Should().Throw<DomainException>();
+        act.Should().Throw<DomainException>().WithMessage("*StartYear + 10*");
     }
 
     [Fact]
@@ -56,6 +63,13 @@ public class HolidayYearRangeTests
     public void Constructor_EndYearLessThanStartYear_ThrowsDomainException()
     {
         var act = () => new HolidayYearRange(2025, 2024);
-        act.Should().Throw<DomainException>();
+        act.Should().Throw<DomainException>().WithMessage("*EndYear must be >= StartYear*");
+    }
+
+    [Fact]
+    public void Constructor_SingleYearRange_DoesNotThrow()
+    {
+        var act = () => new HolidayYearRange(2025, 2025);
+        act.Should().NotThrow();
     }
 }

@@ -57,6 +57,34 @@ public class TaxpayerProfileTests
         act.Should().Throw<DomainException>().WithMessage("*FullName*");
     }
 
+    [Fact]
+    public void Constructor_FullNameAtMaxLength_DoesNotThrow()
+    {
+        var act = () => new TaxpayerProfile(TestId, ValidJmbg, new string('M', 200), ValidAddress, ValidOpstinaCode);
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void Constructor_FullNameOverMaxLength_ThrowsDomainException()
+    {
+        var act = () => new TaxpayerProfile(TestId, ValidJmbg, new string('M', 201), ValidAddress, ValidOpstinaCode);
+        act.Should().Throw<DomainException>().WithMessage("*FullName*200*");
+    }
+
+    [Fact]
+    public void Constructor_AddressAtMaxLength_DoesNotThrow()
+    {
+        var act = () => new TaxpayerProfile(TestId, ValidJmbg, ValidFullName, new string('K', 500), ValidOpstinaCode);
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void Constructor_AddressOverMaxLength_ThrowsDomainException()
+    {
+        var act = () => new TaxpayerProfile(TestId, ValidJmbg, ValidFullName, new string('K', 501), ValidOpstinaCode);
+        act.Should().Throw<DomainException>().WithMessage("*Address*500*");
+    }
+
     [Theory]
     [InlineData(null)]
     [InlineData("")]

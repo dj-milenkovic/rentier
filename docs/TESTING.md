@@ -16,7 +16,7 @@ rules, trait/CI contract, and the "when you add X, you add Y" checklist.
 | UI — Headless view | `Rentier.UnitTests` | Avalonia.Headless.XUnit (`[AvaloniaFact]`) | `Category=UI` | `build` matrix |
 | Integration — adapters | `Rentier.Infrastructure.Tests` | xUnit v3 + SQLite `:memory:` + Verify | `Category=Integration` | `integration-tests` |
 | E2E — scenarios | `Rentier.Scenarios.Tests` | xUnit v3 + production DI + fakes | `Category=Integration` | `integration-tests` |
-| Mutation | _(Stryker.NET)_ | dotnet-stryker | _(scheduled)_ | `stryker` (weekly) |
+| Mutation | _(Stryker.NET)_ | dotnet-stryker | _(n/a)_ | `stryker` (Domain PRs + weekly) |
 
 **Speed contract:** no-trait tests < 5 s total, zero I/O, zero threads blocked.
 
@@ -128,18 +128,51 @@ navigation to each page doesn't throw. That's the entire pixels-level E2E budget
 
 ## 2.5 Mutation testing (Stryker.NET)
 
-Run **weekly + on demand** (not per-PR — too slow for the inner loop).
+Mutation-tests **every PR that changes Domain code or Domain unit tests** (`src/Rentier.Domain/**`,
+`tests/Rentier.UnitTests/Domain/**`) or the Stryker setup, plus **weekly** and on demand.
+A full run takes ~3.5 minutes. The PR check fails below the break threshold, and the score
+is posted as a PR comment that is updated on each push, next to the coverage one.
+
+The `Stryker.NET — Rentier.Domain` check is meant to be a **required** status check, so the
+workflow runs on *every* PR: a `Detect Domain changes` job skips mutation testing (skipped
+counts as passed) when nothing relevant changed. Don't add a `paths:` filter to the trigger,
+or PRs outside Domain would wait forever for a required check that never starts. If change
+detection fails, mutation testing runs anyway (fail closed).
 
 ```bash
-# Install once:
-dotnet tool install -g dotnet-stryker
+# Restore the pinned Stryker version from .config/dotnet-tools.json:
+dotnet tool restore
 
-# Run against Domain:
-dotnet stryker --config-file stryker-config.json
+# Run against Domain (from the test project directory, see below):
+cd tests/Rentier.UnitTests
+dotnet tool run dotnet-stryker --config-file ../../stryker-config.json --output ../../mutation-report
 ```
 
-Config lives in `stryker-config.json` at the repo root. Break threshold: **85**.
-HTML report uploaded as a CI artifact from the weekly `stryker.yml` workflow.
+Config lives in `stryker-config.json` at the repo root. Break threshold: **90** (score was
+92.5% when it was raised from 85; raise it again as the score improves, never lower it to
+make a PR pass).
+HTML/JSON reports are uploaded as the `mutation-report` artifact by `stryker.yml`; the
+summary (score, verdict, per-file table) is shown on the run page and in the PR comment.
+
+Gotchas (each of these has broken the weekly run before):
+- **Run from `tests/Rentier.UnitTests`.** At the repo root Stryker finds `Rentier.slnx`,
+  switches to solution mode and rejects a single test project.
+- **`--output` is CLI-only.** It is not a valid `stryker-config.json` key, and Stryker
+  rejects unknown keys.
+- **Stryker is pinned** in `.config/dotnet-tools.json`. Bump it deliberately and run the
+  workflow on the PR (it triggers automatically when the config, manifest or workflow changes).
+- The `dashboard` reporter needs a `STRYKER_DASHBOARD_API_KEY` secret. It is not
+  configured, so don't add that reporter back without one.
+- **Test runner is `mtp` (Microsoft Testing Platform), not `vstest`.** xUnit v3 runs tests
+  in a separate process, so the VSTest runner can't capture per-test coverage ("coverage
+  capture failed"). Without coverage, every mutant runs all 1,300+ unit tests, so a full
+  run takes ~1 hour. With `mtp` it takes ~3 minutes. Stryker marks its MTP runner as
+  *preview*. When it was introduced, its verdicts were checked by applying a killed and a
+  survived mutant to the source by hand and running the tests. Don't switch back to
+  `vstest` to "double-check": with xUnit v3 it can't activate mutants in the test process,
+  so every mutant survives and it reports a false **0%**.
+- **Don't use the `progress` reporter.** Its console progress bar crashes Stryker after the
+  run when there is no real terminal (CI), before any report is written. Use `cleartext`.
 
 ---
 
@@ -154,7 +187,7 @@ lint (format + vulnerable-pkg gate)
   └─ (both upload coverage-* artifacts)
 coverage merge (ReportGenerator)   includes integration coverage + ratchet step
 sonar + quality gate
-weekly: stryker.yml                 mutation testing on Domain, break<85
+stryker.yml (Domain PRs + weekly)   mutation testing on Domain, break<90, PR comment
 ```
 
 **Trait contract — a test in the wrong bucket is a CI bug:**

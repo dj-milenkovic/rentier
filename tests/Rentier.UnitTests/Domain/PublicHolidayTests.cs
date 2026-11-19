@@ -22,7 +22,7 @@ public class PublicHolidayTests
     {
         var act = () => PublicHoliday.Create(new DateOnly(2025, 1, 1), null!);
 
-        act.Should().Throw<DomainException>();
+        act.Should().Throw<DomainException>().WithMessage("*name*");
     }
 
     [Fact]

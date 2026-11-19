@@ -4,9 +4,17 @@ on:
   schedule:
     - cron: '0 3 * * 1'   # Monday 03:00 UTC
   workflow_dispatch:
+  # Runs on every PR (no `paths:` filter) so the required "Stryker.NET — Rentier.Domain"
+  # check always reports: with a paths filter, PRs outside Domain would wait forever for
+  # a check that never starts. The `changes` job skips mutation testing (a skipped job
+  # passes a required check) unless the PR can affect the score.
+  pull_request:
+
+permissions:
+  contents: read
 
 concurrency:
-  group: stryker
+  group: stryker-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -15,9 +23,52 @@ env:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
 
 jobs:
+  # Domain is the only code Stryker mutates, so only Domain code, Domain tests and the
+  # mutation setup itself can change the score. Setup changes are included so a broken
+  # config is caught on its PR instead of silently failing the next Monday-night run.
+  changes:
+    name: Detect Domain changes
+    runs-on: ubuntu-latest
+    outputs:
+      domain: ${{ steps.filter.outputs.domain }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0   # needs the base commit to diff against
+
+      - name: Check changed paths
+        id: filter
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ "$EVENT_NAME" != "pull_request" ]; then
+            echo "domain=true" >> "$GITHUB_OUTPUT"   # schedule / manual run: always test
+            exit 0
+          fi
+          changed=$(git diff --name-only "$BASE_SHA...$HEAD_SHA")
+          echo "Changed files:"; echo "$changed"
+          pattern='^(src/Rentier\.Domain/|tests/Rentier\.UnitTests/Domain/|stryker-config\.json$|\.config/dotnet-tools\.json$|\.github/workflows/stryker\.yml$)'
+          if echo "$changed" | grep -Eq "$pattern"; then
+            echo "domain=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "domain=false" >> "$GITHUB_OUTPUT"
+            echo "No Domain or mutation-setup changes; mutation testing will be skipped."
+          fi
+
   mutation:
     name: Stryker.NET — Rentier.Domain
+    needs: changes
+    # Fail closed: if change detection itself fails, run mutation testing anyway rather
+    # than skip it (a skipped job would silently pass the required check).
+    if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.domain == 'true') }}
     runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      pull-requests: write   # create/update the mutation-report PR comment
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
@@ -37,15 +88,92 @@ jobs:
       - name: Restore
         run: dotnet restore Rentier.slnx
 
-      - name: Install dotnet-stryker
-        run: dotnet tool install -g dotnet-stryker
+      # Version pinned in .config/dotnet-tools.json. An unpinned global install
+      # silently picked up a Stryker release that rejects keys the config used.
+      - name: Restore dotnet tools
+        run: dotnet tool restore
 
+      # Run from the test project's directory: at the repo root Stryker detects
+      # Rentier.slnx, switches to solution mode and refuses a single test project.
+      # `--output` is CLI-only; it is not a valid stryker-config.json key.
+      # The test runner (mtp) and reporters are set in stryker-config.json;
+      # see docs/TESTING.md §2.5 for why.
       - name: Run Stryker
-        run: dotnet stryker --config-file stryker-config.json
+        id: stryker
+        working-directory: tests/Rentier.UnitTests
+        run: dotnet tool run dotnet-stryker --config-file ../../stryker-config.json --output ../../mutation-report
 
       - name: Upload mutation report
+        id: upload
         if: always()
         uses: actions/upload-artifact@v7.0.1
         with:
           name: mutation-report
-          path: mutation-report/
+          path: mutation-report/reports/
+          if-no-files-found: error
+
+      # One summary for both the run page and the PR comment. It is always written,
+      # so a failed run replaces an older "passes" comment instead of leaving it up.
+      - name: Build mutation summary
+        if: always()
+        env:
+          STRYKER_OUTCOME: ${{ steps.stryker.outcome }}
+          ARTIFACT_URL: ${{ steps.upload.outputs.artifact-url }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          report=mutation-report/reports/mutation-report.md
+          break_at=$(jq -r '."stryker-config".thresholds.break' stryker-config.json)
+          {
+            echo "## 🧬 Mutation Testing — Rentier.Domain"
+            echo
+            if [ -f "$report" ]; then
+              score=$(grep -oP 'final mutation score is \K[0-9.]+' "$report" || echo "N/A")
+              # Judge the score against the threshold itself: Stryker can also fail for
+              # other reasons after writing the report.
+              if [ "$score" != "N/A" ] && awk -v s="$score" -v b="$break_at" 'BEGIN { exit !(s < b) }'; then
+                echo "❌ **Score: ${score}%**, below the break threshold of ${break_at}%."
+              elif [ "$STRYKER_OUTCOME" = "success" ]; then
+                echo "✅ **Score: ${score}%**, at or above the break threshold of ${break_at}%."
+              else
+                echo "❌ **Stryker failed** (score ${score}%, threshold ${break_at}%); see the logs."
+              fi
+              echo
+              echo "<details><summary>Per-file results</summary>"
+              echo
+              # Drop the UTF-8 BOM and the N/A rows (enums and files with no mutants).
+              sed '1s/^\xEF\xBB\xBF//' "$report" | grep '^|' | grep -v -F 'N\/A'
+              echo
+              echo "</details>"
+            else
+              echo "❌ **Stryker did not produce a report.** The run failed before mutation testing finished; see the logs."
+            fi
+            echo
+            echo "Full HTML report: [mutation-report artifact](${ARTIFACT_URL:-$RUN_URL}) · [workflow run](${RUN_URL})"
+          } > mutation-summary.md
+          cat mutation-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      # Sticky comment via the preinstalled gh CLI, not a third-party action: no extra
+      # dependency running with pull-requests: write (SonarCloud flags actions that are
+      # not pinned to a commit SHA). Finds the bot's previous comment by its marker and
+      # edits it, so each push updates one comment instead of adding a new one. The
+      # marker matches the one used by sticky-pull-request-comment, so the comment it
+      # created earlier is reused.
+      - name: Post mutation report to PR
+        if: always() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          marker='<!-- Sticky Pull Request Commentmutation -->'
+          printf '%s\n\n%s\n' "$(cat mutation-summary.md)" "$marker" > mutation-comment.md
+          comment_id=$(gh api --paginate "repos/$REPO/issues/$PR_NUMBER/comments" \
+            --jq ".[] | select(.user.login == \"github-actions[bot]\" and (.body | contains(\"$marker\"))) | .id" \
+            | head -n 1)
+          if [ -n "$comment_id" ]; then
+            gh api -X PATCH "repos/$REPO/issues/comments/$comment_id" -F body=@mutation-comment.md > /dev/null
+            echo "Updated comment $comment_id"
+          else
+            gh api -X POST "repos/$REPO/issues/$PR_NUMBER/comments" -F body=@mutation-comment.md > /dev/null
+            echo "Created mutation report comment"
+          fi
