@@ -117,11 +117,14 @@ public sealed partial class IbkrCsvParser(ILogger<IbkrCsvParser> logger) : IStat
     }
 
     private const string ROW_AMOUNT_INVALID = "ROW_AMOUNT_INVALID";
+    private const int ISIN_MATCH_TIMEOUT_MS = 250;
 
     // ISIN pattern: (XX0000000000) — 2 letter country + 9 alphanumeric + 1 digit.
     // IBKR descriptions look like "AAPL(US0378331005) Cash Dividend" — the ISIN is mid-string,
     // so we strip the ISIN parenthetical and everything after it to recover the entity name.
-    [GeneratedRegex(@"\s*\([A-Z]{2}[A-Z0-9]{9}\d\).*$")]
+    // Timeout: the input is statement text from the user's file; a timeout surfaces as a parse
+    // failure (PARSE_EXCEPTION) through the existing catch instead of stalling the import.
+    [GeneratedRegex(@"\s*\([A-Z]{2}[A-Z0-9]{9}\d\).*$", RegexOptions.None, ISIN_MATCH_TIMEOUT_MS)]
     private static partial Regex IsinPattern();
 
     /// <summary>

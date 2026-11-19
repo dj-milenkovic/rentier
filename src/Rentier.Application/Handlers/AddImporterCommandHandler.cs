@@ -24,19 +24,9 @@ public sealed class AddImporterCommandHandler
     public async Task<Result<Guid, Error>> HandleAsync(
         AddImporterCommand command, CancellationToken ct = default)
     {
-        // (1) Validate AttachmentRegex if non-empty
-        if (!string.IsNullOrEmpty(command.AttachmentRegex))
-        {
-            try
-            {
-                // Validate the pattern compiles; static IsMatch uses an internal cache
-                System.Text.RegularExpressions.Regex.IsMatch(string.Empty, command.AttachmentRegex);
-            }
-            catch (ArgumentException ex)
-            {
-                return Result<Guid, Error>.Failure(new Error(ErrorCodes.IMPORTER_VALIDATION_INVALID_REGEX, ex.Message));
-            }
-        }
+        // (1) Validate AttachmentRegex (empty = no attachment filter)
+        if (AttachmentPattern.Validate(command.AttachmentRegex) is { } invalidPattern)
+            return Result<Guid, Error>.Failure(invalidPattern);
 
         // (2) Create importer and update details via HandlerHelper
         return await HandlerHelper.ExecuteAsync<Guid>(

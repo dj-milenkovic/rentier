@@ -183,10 +183,11 @@ public class ImapMailboxSyncService(
 
         try
         {
-            // Compile the attachment regex once per importer rather than on every filename check
+            // Built once per importer rather than on every filename check. The match timeout
+            // turns a pathological user pattern into a per-message error instead of a hang.
             Regex? attachmentRegex = string.IsNullOrEmpty(importer.AttachmentRegex)
                 ? null
-                : new Regex(importer.AttachmentRegex, RegexOptions.Compiled | RegexOptions.IgnoreCase);
+                : AttachmentPattern.Create(importer.AttachmentRegex);
 
             var importerQuery = ComposeImporterQuery(baseQuery, importer);
             var uids = await inbox.SearchAsync(importerQuery, ct);

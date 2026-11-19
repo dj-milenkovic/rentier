@@ -29,19 +29,9 @@ public sealed class UpdateImporterCommandHandler
             return Result<VoidResult, Error>.Failure(
                 new Error(ErrorCodes.IMPORTER_NOT_FOUND, $"Importer {command.Id} not found."));
 
-        // (2) Validate AttachmentRegex if non-empty
-        if (!string.IsNullOrEmpty(command.AttachmentRegex))
-        {
-            try
-            {
-                // Validate the pattern compiles; static IsMatch uses an internal cache
-                System.Text.RegularExpressions.Regex.IsMatch(string.Empty, command.AttachmentRegex);
-            }
-            catch (ArgumentException ex)
-            {
-                return Result<VoidResult, Error>.Failure(new Error(ErrorCodes.IMPORTER_VALIDATION_INVALID_REGEX, ex.Message));
-            }
-        }
+        // (2) Validate AttachmentRegex (empty = no attachment filter)
+        if (AttachmentPattern.Validate(command.AttachmentRegex) is { } invalidPattern)
+            return Result<VoidResult, Error>.Failure(invalidPattern);
 
         // (3) Update details via HandlerHelper
         return await HandlerHelper.ExecuteAsync<VoidResult>(
