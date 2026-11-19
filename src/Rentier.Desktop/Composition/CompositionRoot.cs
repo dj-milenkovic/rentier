@@ -63,6 +63,7 @@ public static class CompositionRoot
         // ViewModels — settings sub-ViewModels are singletons for in-session state persistence
         services.AddSingleton<ProfileSettingsViewModel>();
         services.AddSingleton<AppearanceSettingsViewModel>();
+        services.AddSingleton<DiagnosticsSettingsViewModel>();
         services.AddSingleton<MainWindowViewModel>();
 
         // Holiday handlers
@@ -137,6 +138,7 @@ public static class CompositionRoot
         // instance behind both faces — pages raise requests, MainWindowViewModel performs them.
         services.AddSingleton<IConfirmationService, ConfirmationService>();
         services.AddSingleton<IFileSaveService, FileSaveService>();
+        services.AddSingleton<IFolderLauncher, FolderLauncher>();
         services.AddTransient<IReportImportDialogService, ReportImportDialogService>();
         services.AddSingleton<NavigationService>();
         services.AddSingleton<INavigationService>(sp => sp.GetRequiredService<NavigationService>());

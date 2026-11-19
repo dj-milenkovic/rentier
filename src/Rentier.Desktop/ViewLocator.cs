@@ -19,6 +19,7 @@ public sealed class ViewLocator : IDataTemplate
         {
             [typeof(AppearanceSettingsViewModel)] = static () => new AppearanceSettingsView(),
             [typeof(DashboardViewModel)] = static () => new DashboardView(),
+            [typeof(DiagnosticsSettingsViewModel)] = static () => new DiagnosticsSettingsView(),
             [typeof(FilingsViewModel)] = static () => new FilingsView(),
             [typeof(HolidaySettingsViewModel)] = static () => new HolidaySettingsView(),
             [typeof(ImporterSettingsViewModel)] = static () => new ImporterSettingsView(),

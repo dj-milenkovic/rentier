@@ -111,6 +111,7 @@ public class MainWindowViewModelSmokeTests
         services.AddSingleton(CreateMailboxVm());
         services.AddSingleton(CreateImporterVm());
         services.AddSingleton(CreateAppearanceVm());
+        services.AddSingleton(DesktopTestDoubles.DiagnosticsViewModel());
         services.AddSingleton(_ => Substitute.For<IUpdateService>());
 
         return services.BuildServiceProvider();
@@ -134,12 +135,12 @@ public class MainWindowViewModelSmokeTests
     }
 
     [Fact]
-    public void MainWindowViewModel_Constructed_NavigationEntriesHasTenItems()
+    public void MainWindowViewModel_Constructed_NavigationEntriesHasElevenItems()
     {
         var vm = CreateVm();
 
-        // 4 top-level (Dashboard, Filings, Reports, Sync) + 1 Settings group + 5 children
-        vm.NavigationEntries.Count.Should().Be(10);
+        // 4 top-level (Dashboard, Filings, Reports, Sync) + 1 Settings group + 6 children
+        vm.NavigationEntries.Count.Should().Be(11);
     }
 
     [Fact]
@@ -169,8 +170,8 @@ public class MainWindowViewModelSmokeTests
         var vm = CreateVm();
         var settingsGroup = vm.NavigationEntries[4];
 
-        // Entries 5–9 are the Settings children
-        for (int i = 5; i <= 9; i++)
+        // Entries 5–10 are the Settings children
+        for (int i = 5; i <= 10; i++)
         {
             var child = vm.NavigationEntries[i];
             child.IndentLevel.Should().Be(1, $"entry [{i}] should have IndentLevel=1");

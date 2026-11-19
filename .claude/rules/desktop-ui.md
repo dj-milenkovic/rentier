@@ -19,6 +19,10 @@ paths:
   (`ConfirmDialogHelper`, `ImportDialogHelper`) — always invoked async.
 - Navigation is owned by `MainWindowViewModel`: sidebar `NavigationEntry` items swap
   `CurrentViewModel`. Content ViewModels never reference Views or other pages directly.
+- **Logging lives in `Logging/` and the composition root only.** The file logger is started in
+  `Program.Main` (never in `App`, which headless tests run too). ViewModels depend on
+  `IDiagnosticsService`, never on Serilog types. Same content rule as every layer: ids, codes
+  and counts only — no personal or financial data in a log message.
 - See `.claude/skills/clean-architecture` for the full ViewModel pattern, navigation
   shell layout, and page-specific UX contracts (Filings grouping, Sync log format).
 - See `.claude/skills/rentier-ui-design` before adding/changing any AXAML, style,

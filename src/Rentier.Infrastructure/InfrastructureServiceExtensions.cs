@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Repositories;
 using Rentier.Application.Services;
@@ -25,8 +26,12 @@ public static class InfrastructureServiceExtensions
     /// </summary>
     /// <param name="services">The DI service collection to register into.</param>
     /// <param name="dbPath">Absolute path to the SQLite database file.</param>
+    /// <param name="startupLogger">
+    /// Optional logger for registration-time facts (which credential store was selected). The
+    /// container does not exist yet at this point, so the caller supplies one.
+    /// </param>
     public static async Task AddInfrastructureServicesAsync(
-        this IServiceCollection services, string dbPath)
+        this IServiceCollection services, string dbPath, ILogger? startupLogger = null)
     {
         // Transient lifetime is intentional: this is a desktop (Avalonia) app with no DI request scope.
         // Each service gets its own DbContext, so a repository resolved from DI commits each write on its own.
@@ -46,11 +51,14 @@ public static class InfrastructureServiceExtensions
         {
             var (store, info) = factoryResult.Value;
             services.AddSingleton<ICredentialStore>(store);
-            // Log provider info once DI is built — use a startup logger if available
-            _ = info; // info is available for external logging if needed
+            startupLogger?.LogInformation("Credential store provider: {Provider}", info.ProviderName);
         }
         else
         {
+            // Code only: the message can embed environment details from the platform exception.
+            startupLogger?.LogWarning(
+                "Credential store unavailable ({Code}); mailbox credentials cannot be saved or read",
+                factoryResult.Error.Code);
             services.AddSingleton<ICredentialStore>(new NullCredentialStore(factoryResult.Error));
         }
 

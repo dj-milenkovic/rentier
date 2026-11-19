@@ -83,7 +83,8 @@ public sealed class ProcessReportsCommandHandler
             {
                 // The report's unit of work is already disposed, so everything it staged
                 // (filings, status) was discarded.
-                _logger.LogError(ex, "Report {ReportId} failed unexpectedly: {Message}", report.Id, ex.Message);
+                // The exception is attached (the log renders it safely); its message is never put in the template.
+                _logger.LogError(ex, "Report {ReportId} failed unexpectedly", report.Id);
                 outcome = new ReportOutcome.AttemptFailed(ex.Message);
             }
 
@@ -135,9 +136,8 @@ public sealed class ProcessReportsCommandHandler
             case ReportOutcome.Rejected rejected:
                 // Data integrity failure (no attachment, missing importer, parse error) — not an unexpected exception
                 tally.Count(ReportStatus.Error);
-                _logger.LogWarning(
-                    "Report {ReportId} rejected: [{Code}] {Message}",
-                    report.Id, rejected.Error.Code, rejected.Error.Message);
+                // Code only: the message can quote parsed statement content (amounts, tickers).
+                _logger.LogWarning("Report {ReportId} rejected: [{Code}]", report.Id, rejected.Error.Code);
                 severity = SyncProgressSeverity.Error;
                 message = $"Report '{report.ReportName}': processing error — {rejected.Error.Message}.";
                 break;
@@ -260,8 +260,8 @@ public sealed class ProcessReportsCommandHandler
             catch (Exception persistEx) when (persistEx is not OperationCanceledException)
             {
                 _logger.LogError(persistEx,
-                    "Report {ReportId}: rejection [{Code}] could not be saved: {Message}",
-                    report.Id, rejection.Error.Code, persistEx.Message);
+                    "Report {ReportId}: rejection [{Code}] could not be saved",
+                    report.Id, rejection.Error.Code);
                 return new ReportOutcome.AttemptFailed(rejection.Error.Message);
             }
 
@@ -313,9 +313,10 @@ public sealed class ProcessReportsCommandHandler
 
             if (exhausted)
             {
+                // No reason text: it is the raw failure message and can embed statement content.
                 _logger.LogError(
-                    "Report {ReportId} failed {Attempts} times and was marked Error: {Reason}",
-                    report.Id, persisted.ProcessingAttempts, reason);
+                    "Report {ReportId} failed {Attempts} times and was marked Error",
+                    report.Id, persisted.ProcessingAttempts);
             }
 
             return new ReportFailedAttempt(report.Id, report.ReportName, reason, persisted.ProcessingAttempts,
@@ -418,9 +419,10 @@ public sealed class ProcessReportsCommandHandler
             }
             else
             {
+                // Never the parser message: it embeds the raw cell value (rates, amounts).
                 _logger.LogWarning(
-                    "Report {ReportId} row {Row}: [{Code}] {Message}",
-                    report.Id, parseError.RowNumber, parseError.Code, parseError.Message);
+                    "Report {ReportId} row {Row}: [{Code}]",
+                    report.Id, parseError.RowNumber, parseError.Code);
             }
         }
 

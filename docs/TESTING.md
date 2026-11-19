@@ -207,6 +207,7 @@ stryker.yml (Domain PRs + weekly)   mutation testing on Domain, break<90, PR com
 | Domain entity or value object | Example `[Theory]` + `[Property]` tests |
 | Filing status transition | Full transition matrix (all valid + all invalid pairs) |
 | Application handler | Handler test class + `DiRegistrationSmokeTests` entry |
+| Log call on a data path (parser, sync, handler) | `CapturingLogger<T>` test asserting the messages contain no sensitive value (amount, ticker, account id, host) |
 | ViewModel or View | ViewModel tests + headless smoke |
 | Repository | Integration tests (found / not-found / constraint / round-trips) |
 | Migration | Schema smoke test + upgrade-from-baseline test |

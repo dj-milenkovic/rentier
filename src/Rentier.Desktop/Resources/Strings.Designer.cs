@@ -25,6 +25,7 @@ public static class Strings
     public static string Nav_Settings_Mailboxes => "Mailboxes";
     public static string Nav_Settings_Importers => "Importers";
     public static string Nav_Settings_Appearance => "Appearance";
+    public static string Nav_Settings_Diagnostics => "Diagnostics";
     public static string Dashboard_PendingCount => "Pending";
     public static string Dashboard_FiledCount => "Filed";
     public static string Dashboard_PaidCount => "Paid";
@@ -274,4 +275,14 @@ public static class Strings
     public static string Filter_Apply => "Apply";
     public static string Filter_SelectAll => "All";
     public static string Filter_Clear => "None";
+    // Issue #68: diagnostic log settings page
+    public static string Diagnostics_Header => "Diagnostics";
+    public static string Diagnostics_Subheader => "Log files that help troubleshoot problems.";
+    public static string Diagnostics_DebugLogging_Label => "Detailed (debug) logging";
+    public static string Diagnostics_DebugLogging_Note => "Records extra technical detail in the log. Turn it on only when asked to reproduce a problem. Takes effect immediately.";
+    public static string Diagnostics_LogFolder_Label => "Log folder";
+    public static string Diagnostics_OpenLogsFolder => "Open logs folder";
+    public static string Diagnostics_PrivacyNote => "Rentier avoids writing personal or financial data to the log, but skim a log before sharing it. Logs older than 30 days are deleted automatically.";
+    public static string Diagnostics_OpenFolderFailed => "Could not open the folder. You can open it manually:";
+    public static string Diagnostics_SaveFailed => "Could not remember this setting. It stays active until Rentier is closed.";
 }

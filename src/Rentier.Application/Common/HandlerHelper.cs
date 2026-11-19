@@ -45,7 +45,8 @@ public static class HandlerHelper
         // ViewModel can show, instead of faulting a ReactiveCommand; cancellation is rethrown above.
         catch (Exception ex)
         {
-            logger?.LogError(ex, "[{Caller}] Unexpected failure: {Message}", caller, ex.Message);
+            // The exception is attached; its message is never put in the template.
+            logger?.LogError(ex, "[{Caller}] Unexpected failure", caller);
             return Result<TValue, Error>.Failure(new Error(errorCode, ex.Message));
         }
     }

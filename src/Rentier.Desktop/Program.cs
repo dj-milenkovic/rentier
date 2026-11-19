@@ -1,9 +1,14 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using Avalonia;
 using ReactiveUI.Avalonia;
 using Microsoft.Extensions.DependencyInjection;
 using Rentier.Application.Interfaces;
+using Rentier.Desktop.Composition;
+using Rentier.Desktop.Logging;
 using Rentier.Infrastructure;
+using Serilog;
 using Velopack;
 
 namespace Rentier.Desktop;
@@ -20,15 +25,50 @@ public static class Program
             return RunSmokeTest();
 
         VelopackApp.Build().Run();
-        return BuildAvaloniaApp()
-            .StartWithClassicDesktopLifetime(args);
+
+        // Logging starts here, not in App: headless tests run App too and must not write
+        // into the developer's real logs folder.
+        LoggingSession.Start(AppPaths.LogDirectory);
+        GlobalExceptionLogging.Attach();
+        LogStartupBanner();
+
+        try
+        {
+            return BuildAvaloniaApp()
+                .StartWithClassicDesktopLifetime(args);
+        }
+        // Process boundary: record the crash, then rethrow so the runtime still reports it.
+        catch (Exception ex)
+        {
+            Log.Fatal(ex, "Fatal error, application is terminating");
+            throw;
+        }
+        finally
+        {
+            Log.Information("Application exiting");
+            Log.CloseAndFlush();
+        }
     }
 
     private static AppBuilder BuildAvaloniaApp()
     => AppBuilder.Configure<App>()
         .UsePlatformDetect()
         .WithInterFont()
-        .UseReactiveUI(_ => { });
+        .UseReactiveUI(rx => rx.WithExceptionHandler(new GlobalExceptionLogging.ReactiveExceptionObserver()));
+
+    /// <summary>Environment facts useful for support. Deliberately no machine or user name.</summary>
+    private static void LogStartupBanner()
+    {
+        var version = typeof(Program).Assembly
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "unknown";
+
+        Log.Information(
+            "Rentier {Version} starting on {OS} ({Architecture}), .NET {Runtime}",
+            version,
+            RuntimeInformation.OSDescription,
+            RuntimeInformation.ProcessArchitecture,
+            Environment.Version);
+    }
 
 
     // ── Headless smoke test ───────────────────────────────────────────────────
@@ -61,10 +101,8 @@ public static class Program
     private static async Task<int> SmokeTestAsync()
     {
         // Isolated DB path — avoids touching a real user database on dev machines.
-        var dbPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "Rentier", "rentier-smoke.db");
-        Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
+        var dbPath = AppPaths.SmokeDatabasePath;
+        Directory.CreateDirectory(AppPaths.RootDirectory);
 
         var services = new ServiceCollection();
 

@@ -33,9 +33,10 @@ public sealed class DeleteMailboxCommandHandler
         // Any other failure is unexpected and warrants a warning, but must not block DB deletion.
         if (!credResult.IsSuccess && credResult.Error.Code != ErrorCodes.CREDENTIAL_NOT_FOUND)
         {
+            // Code only: the credential-store message can include platform and account details.
             _logger.LogWarning(
-                "Failed to delete credential for mailbox {MailboxId}: [{Code}] {Message}",
-                command.Id, credResult.Error.Code, credResult.Error.Message);
+                "Failed to delete credential for mailbox {MailboxId}: [{Code}]",
+                command.Id, credResult.Error.Code);
         }
 
         await _repository.DeleteAsync(command.Id, ct);

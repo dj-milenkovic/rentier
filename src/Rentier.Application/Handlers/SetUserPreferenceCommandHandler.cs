@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.Interfaces;
@@ -11,9 +13,11 @@ public sealed class SetUserPreferenceCommandHandler
     : ICommandHandler<SetUserPreferenceCommand, Result<VoidResult, Error>>
 {
     private readonly IUserPreferenceRepository _repository;
+    private readonly ILogger<SetUserPreferenceCommandHandler> _logger;
 
-    public SetUserPreferenceCommandHandler(IUserPreferenceRepository repository)
+    public SetUserPreferenceCommandHandler(IUserPreferenceRepository repository, ILogger<SetUserPreferenceCommandHandler>? logger = null)
     {
+        _logger = logger ?? NullLogger<SetUserPreferenceCommandHandler>.Instance;
         _repository = repository;
     }
 
@@ -35,5 +39,6 @@ public sealed class SetUserPreferenceCommandHandler
                 }
                 return Result<VoidResult, Error>.Success(VoidResult.Value);
             },
-            ErrorCodes.INFRASTRUCTURE_ERROR);
+            ErrorCodes.INFRASTRUCTURE_ERROR,
+            _logger);
 }

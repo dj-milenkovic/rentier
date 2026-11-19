@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.Interfaces;
@@ -12,9 +14,11 @@ public sealed class AddImporterCommandHandler
     : ICommandHandler<AddImporterCommand, Result<Guid, Error>>
 {
     private readonly IImporterRepository _repository;
+    private readonly ILogger<AddImporterCommandHandler> _logger;
 
-    public AddImporterCommandHandler(IImporterRepository repository)
+    public AddImporterCommandHandler(IImporterRepository repository, ILogger<AddImporterCommandHandler>? logger = null)
     {
+        _logger = logger ?? NullLogger<AddImporterCommandHandler>.Instance;
         _repository = repository;
     }
 
@@ -52,6 +56,7 @@ public sealed class AddImporterCommandHandler
                 await _repository.AddAsync(importer, ct);
                 return Result<Guid, Error>.Success(importer.Id);
             },
-            ErrorCodes.INFRASTRUCTURE_ERROR);
+            ErrorCodes.INFRASTRUCTURE_ERROR,
+            _logger);
     }
 }

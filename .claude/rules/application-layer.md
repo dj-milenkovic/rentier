@@ -18,5 +18,11 @@ paths:
   leak as control flow — catch, log (if applicable), and translate.
 - DTOs crossing into the Desktop layer belong here (e.g. `FilingDto`, `ReportDto`,
   `SyncResultDto`) — Desktop must never bind directly to Domain entities or EF models.
+- **Logging is metadata only.** `ILogger<T>` templates carry ids (Guids), error codes, counts,
+  durations, dates, currency codes and public FX rates. Never amounts, tickers, ISINs, account
+  ids, report/file names, email subjects, hosts, usernames, or any `Error.Message`,
+  `ParseError.Message`, `ToLogMessage()` or exception message placed in a template — attach the
+  exception object instead (the log renders it safely). Logs are shared in bug reports.
+  New `ILogger<T>` constructor parameters are optional (`= null`) so tests can build the class directly.
 - `decimal` for all monetary values, `DateOnly` for all dates — convert any external
   `DateTime` at the Infrastructure boundary, never inside Application.

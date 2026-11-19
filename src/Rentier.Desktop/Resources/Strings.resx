@@ -91,6 +91,9 @@
   <data name="Nav_Settings_Appearance" xml:space="preserve">
     <value>Appearance</value>
   </data>
+  <data name="Nav_Settings_Diagnostics" xml:space="preserve">
+    <value>Diagnostics</value>
+  </data>
   <data name="Sync_StartButton" xml:space="preserve">
     <value>▶ Start Sync</value>
   </data>

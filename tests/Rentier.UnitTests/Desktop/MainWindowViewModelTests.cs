@@ -86,6 +86,7 @@ public class MainWindowViewModelTests
         services.AddSingleton(BuildMailboxVm());
         services.AddSingleton(BuildImporterVm(getProfileForManualFiling));
         services.AddSingleton(BuildAppearanceVm());
+        services.AddSingleton(DesktopTestDoubles.DiagnosticsViewModel());
 
         return services.BuildServiceProvider();
     }
@@ -199,7 +200,7 @@ public class MainWindowViewModelTests
         var vm = CreateVm();
 
         // 4 top-level + 1 Settings group header + 5 children
-        vm.NavigationEntries.Should().HaveCount(10);
+        vm.NavigationEntries.Should().HaveCount(11);
     }
 
     [Fact]

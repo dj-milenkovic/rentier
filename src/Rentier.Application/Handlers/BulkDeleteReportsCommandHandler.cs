@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.Interfaces;
@@ -15,9 +17,11 @@ public sealed class BulkDeleteReportsCommandHandler
     : ICommandHandler<BulkDeleteReportsCommand, Result<VoidResult, Error>>
 {
     private readonly IUnitOfWorkFactory _unitOfWorkFactory;
+    private readonly ILogger<BulkDeleteReportsCommandHandler> _logger;
 
-    public BulkDeleteReportsCommandHandler(IUnitOfWorkFactory unitOfWorkFactory)
+    public BulkDeleteReportsCommandHandler(IUnitOfWorkFactory unitOfWorkFactory, ILogger<BulkDeleteReportsCommandHandler>? logger = null)
     {
+        _logger = logger ?? NullLogger<BulkDeleteReportsCommandHandler>.Instance;
         _unitOfWorkFactory = unitOfWorkFactory;
     }
 
@@ -43,6 +47,7 @@ public sealed class BulkDeleteReportsCommandHandler
 
                 return Result<VoidResult, Error>.Success(VoidResult.Value);
             },
-            ErrorCodes.REPORT_BULK_DELETE_FAILED);
+            ErrorCodes.REPORT_BULK_DELETE_FAILED,
+            _logger);
     }
 }

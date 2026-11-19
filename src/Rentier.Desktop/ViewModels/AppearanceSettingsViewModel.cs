@@ -43,7 +43,7 @@ public sealed class AppearanceSettingsViewModel : ReactiveObject
             {
                 _localizationService.SetCulture(code);
                 // Fire-and-forget persistence
-                _ = setPreferenceHandler.HandleAsync(new SetUserPreferenceCommand("Language", code));
+                _ = setPreferenceHandler.HandleAsync(new SetUserPreferenceCommand(UserPreferenceKeys.LANGUAGE, code));
             });
     }
 
