@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using System.Text;
 using FluentAssertions;
 using Rentier.Application.Interfaces;
@@ -32,7 +33,7 @@ public sealed class IbkrCsvParserTests
             Dividends,Data,USD,2024-01-15,"{description}",24.00
             """;
         await using var stream = new MemoryStream(Encoding.UTF8.GetBytes(csv));
-        IStatementParser parser = new IbkrCsvParser();
+        IStatementParser parser = new IbkrCsvParser(NullLogger<IbkrCsvParser>.Instance);
 
         var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
 
@@ -48,7 +49,7 @@ public sealed class IbkrCsvParserTests
             Dividends,Data,USD,2024-01-15,No ISIN Here,24.00
             """;
         await using var stream = new MemoryStream(Encoding.UTF8.GetBytes(csv));
-        IStatementParser parser = new IbkrCsvParser();
+        IStatementParser parser = new IbkrCsvParser(NullLogger<IbkrCsvParser>.Instance);
 
         var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
 
@@ -61,7 +62,7 @@ public sealed class IbkrCsvParserTests
     [Fact]
     public async Task ParseAsync_HappyPath_ReturnsAllSectionsClean()
     {
-        IStatementParser parser = new IbkrCsvParser();
+        IStatementParser parser = new IbkrCsvParser(NullLogger<IbkrCsvParser>.Instance);
         await using var stream = LoadFixture("happy_path.csv");
 
         var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
@@ -91,7 +92,7 @@ public sealed class IbkrCsvParserTests
     [Fact]
     public async Task ParseAsync_MultipleDividendsSameEntity_AggregatesAmounts()
     {
-        IStatementParser parser = new IbkrCsvParser();
+        IStatementParser parser = new IbkrCsvParser(NullLogger<IbkrCsvParser>.Instance);
         await using var stream = LoadFixture("multiple_dividends_same_entity.csv");
 
         var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
@@ -104,7 +105,7 @@ public sealed class IbkrCsvParserTests
     [Fact]
     public async Task ParseAsync_MultipleDividendsDifferentDates_ReturnsTwoRecords()
     {
-        IStatementParser parser = new IbkrCsvParser();
+        IStatementParser parser = new IbkrCsvParser(NullLogger<IbkrCsvParser>.Instance);
         await using var stream = LoadFixture("multiple_dividends_different_dates.csv");
 
         var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
@@ -118,7 +119,7 @@ public sealed class IbkrCsvParserTests
     [Fact]
     public async Task ParseAsync_MultipleWhtSameEntity_AggregatesAmounts()
     {
-        IStatementParser parser = new IbkrCsvParser();
+        IStatementParser parser = new IbkrCsvParser(NullLogger<IbkrCsvParser>.Instance);
         await using var stream = LoadFixture("multiple_wht_same_entity.csv");
 
         var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
@@ -137,7 +138,7 @@ public sealed class IbkrCsvParserTests
     [Fact]
     public async Task ParseAsync_RealWorldMultiplePaymentTypesPerEntity_AggregatesBothDividendAndWht()
     {
-        IStatementParser parser = new IbkrCsvParser();
+        IStatementParser parser = new IbkrCsvParser(NullLogger<IbkrCsvParser>.Instance);
         await using var stream = LoadFixture("real_world_multiple_payment_types.csv");
 
         var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
@@ -161,7 +162,7 @@ public sealed class IbkrCsvParserTests
     [Fact]
     public async Task ParseAsync_RealWorldCustomStatementFormat_ParsesCleanlyWithNoErrors()
     {
-        IStatementParser parser = new IbkrCsvParser();
+        IStatementParser parser = new IbkrCsvParser(NullLogger<IbkrCsvParser>.Instance);
         await using var stream = LoadFixture("real_world_custom_statement.csv");
 
         var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
@@ -183,7 +184,7 @@ public sealed class IbkrCsvParserTests
     [Fact]
     public async Task ParseAsync_InterestDebitCredit_ReturnsSeparateRecords()
     {
-        IStatementParser parser = new IbkrCsvParser();
+        IStatementParser parser = new IbkrCsvParser(NullLogger<IbkrCsvParser>.Instance);
         await using var stream = LoadFixture("interest_debit_credit.csv");
 
         var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
@@ -199,7 +200,7 @@ public sealed class IbkrCsvParserTests
     [Fact]
     public async Task ParseAsync_WhtCurrencyMismatch_AddsParseError()
     {
-        IStatementParser parser = new IbkrCsvParser();
+        IStatementParser parser = new IbkrCsvParser(NullLogger<IbkrCsvParser>.Instance);
         await using var stream = LoadFixture("wht_currency_mismatch.csv");
 
         var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
@@ -213,7 +214,7 @@ public sealed class IbkrCsvParserTests
     [Fact]
     public async Task ParseAsync_WhtUnmatched_AddsParseError()
     {
-        IStatementParser parser = new IbkrCsvParser();
+        IStatementParser parser = new IbkrCsvParser(NullLogger<IbkrCsvParser>.Instance);
         await using var stream = LoadFixture("wht_unmatched.csv");
 
         var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
@@ -227,7 +228,7 @@ public sealed class IbkrCsvParserTests
     [Fact]
     public async Task ParseAsync_MalformedRow_SkipsRowAndContinues()
     {
-        IStatementParser parser = new IbkrCsvParser();
+        IStatementParser parser = new IbkrCsvParser(NullLogger<IbkrCsvParser>.Instance);
         await using var stream = LoadFixture("malformed_row.csv");
 
         var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
@@ -242,7 +243,7 @@ public sealed class IbkrCsvParserTests
     [Fact]
     public async Task ParseAsync_EmptySections_ReturnsEmptyLists()
     {
-        IStatementParser parser = new IbkrCsvParser();
+        IStatementParser parser = new IbkrCsvParser(NullLogger<IbkrCsvParser>.Instance);
         await using var stream = LoadFixture("empty_sections.csv");
 
         var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
@@ -266,7 +267,7 @@ public sealed class IbkrCsvParserTests
             Withholding Tax,Total,USD,,Total,3.60
             """;
         await using var stream = new MemoryStream(Encoding.UTF8.GetBytes(csv));
-        IStatementParser parser = new IbkrCsvParser();
+        IStatementParser parser = new IbkrCsvParser(NullLogger<IbkrCsvParser>.Instance);
 
         var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
 
@@ -284,7 +285,7 @@ public sealed class IbkrCsvParserTests
             Base Currency Exchange Rate,Total,,,Total,,
             """;
         await using var stream = new MemoryStream(Encoding.UTF8.GetBytes(csv));
-        IStatementParser parser = new IbkrCsvParser();
+        IStatementParser parser = new IbkrCsvParser(NullLogger<IbkrCsvParser>.Instance);
 
         var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
 
@@ -303,7 +304,7 @@ public sealed class IbkrCsvParserTests
             Trades,Data,USD,2024-01-15,AAPL,10,185.00
             """;
         await using var stream = new MemoryStream(Encoding.UTF8.GetBytes(csv));
-        IStatementParser parser = new IbkrCsvParser();
+        IStatementParser parser = new IbkrCsvParser(NullLogger<IbkrCsvParser>.Instance);
 
         var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
 
@@ -323,7 +324,7 @@ public sealed class IbkrCsvParserTests
         var bytes = new UTF8Encoding(encoderShouldEmitUTF8Identifier: true).GetPreamble()
             .Concat(Encoding.UTF8.GetBytes(csv)).ToArray();
         await using var stream = new MemoryStream(bytes);
-        IStatementParser parser = new IbkrCsvParser();
+        IStatementParser parser = new IbkrCsvParser(NullLogger<IbkrCsvParser>.Instance);
 
         var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
 
@@ -339,7 +340,7 @@ public sealed class IbkrCsvParserTests
             Dividends,Data,USD,2024-01-15,"AAPL(US0378331005) Cash Dividend, USD 0.24; per Share",24.00
             """;
         await using var stream = new MemoryStream(Encoding.UTF8.GetBytes(csv));
-        IStatementParser parser = new IbkrCsvParser();
+        IStatementParser parser = new IbkrCsvParser(NullLogger<IbkrCsvParser>.Instance);
 
         var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
 
@@ -360,7 +361,7 @@ public sealed class IbkrCsvParserTests
             Dividends,Data,USD,2024-01-15,AAPL(US0378331005) Cash Dividend,24.00
             """;
         await using var stream = new MemoryStream(Encoding.UTF8.GetBytes(csv));
-        IStatementParser parser = new IbkrCsvParser();
+        IStatementParser parser = new IbkrCsvParser(NullLogger<IbkrCsvParser>.Instance);
 
         var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
 
@@ -383,7 +384,7 @@ public sealed class IbkrCsvParserTests
     public async Task ParseAsync_WhtOnCreditInterest_PairsOntoInterest()
     {
         await using var stream = new MemoryStream(Encoding.UTF8.GetBytes(INTEREST_WITH_WHT_CSV));
-        IStatementParser parser = new IbkrCsvParser();
+        IStatementParser parser = new IbkrCsvParser(NullLogger<IbkrCsvParser>.Instance);
 
         var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
 
@@ -394,7 +395,7 @@ public sealed class IbkrCsvParserTests
     public async Task ParseAsync_WhtOnCreditInterest_ProducesNoErrors()
     {
         await using var stream = new MemoryStream(Encoding.UTF8.GetBytes(INTEREST_WITH_WHT_CSV));
-        IStatementParser parser = new IbkrCsvParser();
+        IStatementParser parser = new IbkrCsvParser(NullLogger<IbkrCsvParser>.Instance);
 
         var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
 
@@ -409,7 +410,7 @@ public sealed class IbkrCsvParserTests
             Withholding Tax,Data,USD,2024-01-31,Withholding @ 20% on Credit Interest for Jan-2024,-1.08
             """;
         await using var stream = new MemoryStream(Encoding.UTF8.GetBytes(csv));
-        IStatementParser parser = new IbkrCsvParser();
+        IStatementParser parser = new IbkrCsvParser(NullLogger<IbkrCsvParser>.Instance);
 
         var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
 
@@ -421,7 +422,7 @@ public sealed class IbkrCsvParserTests
     [Fact]
     public async Task ParseAsync_MalformedDividendRow_ErrorSeverity()
     {
-        IStatementParser parser = new IbkrCsvParser();
+        IStatementParser parser = new IbkrCsvParser(NullLogger<IbkrCsvParser>.Instance);
         await using var stream = LoadFixture("malformed_row.csv");
 
         var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
@@ -437,7 +438,7 @@ public sealed class IbkrCsvParserTests
             Base Currency Exchange Rate,Data,EUR,2024-01-15,EUR.USD 01/15/2024,USD,-1.0943
             """;
         await using var stream = new MemoryStream(Encoding.UTF8.GetBytes(csv));
-        IStatementParser parser = new IbkrCsvParser();
+        IStatementParser parser = new IbkrCsvParser(NullLogger<IbkrCsvParser>.Instance);
 
         var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);
 

@@ -12,9 +12,9 @@ public sealed class SetUserPreferenceCommandHandler
     : ICommandHandler<SetUserPreferenceCommand, Result<VoidResult, Error>>
 {
     private readonly IUserPreferenceRepository _repository;
-    private readonly ILogger<SetUserPreferenceCommandHandler>? _logger;
+    private readonly ILogger<SetUserPreferenceCommandHandler> _logger;
 
-    public SetUserPreferenceCommandHandler(IUserPreferenceRepository repository, ILogger<SetUserPreferenceCommandHandler>? logger = null)
+    public SetUserPreferenceCommandHandler(IUserPreferenceRepository repository, ILogger<SetUserPreferenceCommandHandler> logger)
     {
         _logger = logger;
         _repository = repository;

@@ -32,7 +32,7 @@ public static class InfrastructureServiceExtensions
     /// container does not exist yet at this point, so the caller supplies one.
     /// </param>
     public static async Task AddInfrastructureServicesAsync(
-        this IServiceCollection services, string dbPath, ILogger? startupLogger = null)
+        this IServiceCollection services, string dbPath, ILogger startupLogger)
     {
         // Transient lifetime is intentional: this is a desktop (Avalonia) app with no DI request scope.
         // Each service gets its own DbContext, so a repository resolved from DI commits each write on its own.
@@ -52,12 +52,12 @@ public static class InfrastructureServiceExtensions
         {
             var (store, info) = factoryResult.Value;
             services.AddSingleton<ICredentialStore>(store);
-            startupLogger?.CredentialStoreSelected(info.ProviderName);
+            startupLogger.CredentialStoreSelected(info.ProviderName);
         }
         else
         {
             // Code only: the message can embed environment details from the platform exception.
-            startupLogger?.CredentialStoreUnavailable(factoryResult.Error.Code);
+            startupLogger.CredentialStoreUnavailable(factoryResult.Error.Code);
             services.AddSingleton<ICredentialStore>(new NullCredentialStore(factoryResult.Error));
         }
 

@@ -2,7 +2,6 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using CsvHelper;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Rentier.Application.Common;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Parsing;
@@ -10,11 +9,11 @@ using Rentier.Infrastructure.Logging;
 
 namespace Rentier.Infrastructure.Parsing;
 
-public sealed partial class IbkrCsvParser(ILogger<IbkrCsvParser>? logger = null) : IStatementParser
+public sealed partial class IbkrCsvParser(ILogger<IbkrCsvParser> logger) : IStatementParser
 {
     // Logging rule for this class: counts and error codes only. Statement content (amounts,
     // tickers, account ids) and CsvHelper messages, which quote the raw record, never go in a template.
-    private readonly ILogger<IbkrCsvParser> _logger = logger ?? NullLogger<IbkrCsvParser>.Instance;
+    private readonly ILogger<IbkrCsvParser> _logger = logger;
 
     public async Task<Result<StatementParseResult, Error>> ParseAsync(
         Stream csvStream, CancellationToken cancellationToken = default)

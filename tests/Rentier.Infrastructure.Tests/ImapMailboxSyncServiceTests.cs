@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using System.Text;
 using FluentAssertions;
 using MailKit;
@@ -33,7 +34,7 @@ public class ImapMailboxSyncServiceTests
             ICredentialStore credentialStore,
             ImapClient client,
             TimeProvider? timeProvider = null)
-            : base(reportRepository, mailboxRepository, credentialStore, timeProvider ?? TestClock.Provider())
+            : base(reportRepository, mailboxRepository, credentialStore, timeProvider ?? TestClock.Provider(), NullLogger<ImapMailboxSyncService>.Instance)
         {
             _client = client;
         }
@@ -109,7 +110,7 @@ public class ImapMailboxSyncServiceTests
             Substitute.For<IReportRepository>(),
             Substitute.For<IMailboxRepository>(),
             credStore,
-            TestClock.Provider());
+            TestClock.Provider(), NullLogger<ImapMailboxSyncService>.Instance);
 
         var mailbox = MakeMailbox();
         var result = await svc.SyncAsync(mailbox, Array.Empty<Importer>(), SyncParameters.Default, null, CancellationToken.None);
@@ -129,7 +130,7 @@ public class ImapMailboxSyncServiceTests
             Substitute.For<IReportRepository>(),
             Substitute.For<IMailboxRepository>(),
             credStore,
-            TestClock.Provider());
+            TestClock.Provider(), NullLogger<ImapMailboxSyncService>.Instance);
 
         var mailbox = MakeMailbox();
         var result = await svc.SyncAsync(mailbox, Array.Empty<Importer>(), SyncParameters.Default, null, CancellationToken.None);
@@ -145,7 +146,7 @@ public class ImapMailboxSyncServiceTests
             Substitute.For<IReportRepository>(),
             Substitute.For<IMailboxRepository>(),
             Substitute.For<ICredentialStore>(),
-            TestClock.Provider());
+            TestClock.Provider(), NullLogger<ImapMailboxSyncService>.Instance);
 
         var act = async () => await svc.SyncAsync(null!, Array.Empty<Importer>(), SyncParameters.Default, null, CancellationToken.None);
 
@@ -159,7 +160,7 @@ public class ImapMailboxSyncServiceTests
             Substitute.For<IReportRepository>(),
             Substitute.For<IMailboxRepository>(),
             Substitute.For<ICredentialStore>(),
-            TestClock.Provider());
+            TestClock.Provider(), NullLogger<ImapMailboxSyncService>.Instance);
 
         var mailbox = MakeMailbox();
         var act = async () => await svc.SyncAsync(mailbox, null!, SyncParameters.Default, null, CancellationToken.None);

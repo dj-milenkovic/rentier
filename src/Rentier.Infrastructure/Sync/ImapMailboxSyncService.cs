@@ -4,7 +4,6 @@ using MailKit.Net.Imap;
 using MailKit.Search;
 using MailKit.Security;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using MimeKit;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
@@ -25,12 +24,12 @@ public class ImapMailboxSyncService(
     IMailboxRepository mailboxRepository,
     ICredentialStore credentialStore,
     TimeProvider timeProvider,
-    ILogger<ImapMailboxSyncService>? logger = null)
+    ILogger<ImapMailboxSyncService> logger)
     : IMailboxSyncService
 {
     // Logging rule for this class: ids, counts and UIDs only. Never the host, username, subject,
     // attachment name or an exception message built from them.
-    private readonly ILogger<ImapMailboxSyncService> _logger = logger ?? NullLogger<ImapMailboxSyncService>.Instance;
+    private readonly ILogger<ImapMailboxSyncService> _logger = logger;
 
     /// <summary>Seam for unit tests — override to return a pre-configured or mocked client.</summary>
     protected virtual ImapClient CreateClient() => new ImapClient();

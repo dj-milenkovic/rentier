@@ -16,9 +16,9 @@ public sealed class BulkDeleteReportsCommandHandler
     : ICommandHandler<BulkDeleteReportsCommand, Result<VoidResult, Error>>
 {
     private readonly IUnitOfWorkFactory _unitOfWorkFactory;
-    private readonly ILogger<BulkDeleteReportsCommandHandler>? _logger;
+    private readonly ILogger<BulkDeleteReportsCommandHandler> _logger;
 
-    public BulkDeleteReportsCommandHandler(IUnitOfWorkFactory unitOfWorkFactory, ILogger<BulkDeleteReportsCommandHandler>? logger = null)
+    public BulkDeleteReportsCommandHandler(IUnitOfWorkFactory unitOfWorkFactory, ILogger<BulkDeleteReportsCommandHandler> logger)
     {
         _logger = logger;
         _unitOfWorkFactory = unitOfWorkFactory;

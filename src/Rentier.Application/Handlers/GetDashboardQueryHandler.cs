@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
@@ -13,7 +12,7 @@ public sealed class GetDashboardQueryHandler(
     IFilingRepository filingRepo,
     IMailboxRepository mailboxRepo,
     TimeProvider timeProvider,
-    ILogger<GetDashboardQueryHandler>? logger = null)
+    ILogger<GetDashboardQueryHandler> logger)
     : IQueryHandler<GetDashboardQuery, Result<DashboardDto, Error>>
 {
     public Task<Result<DashboardDto, Error>> HandleAsync(

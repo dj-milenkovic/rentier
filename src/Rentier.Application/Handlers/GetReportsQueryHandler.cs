@@ -13,13 +13,13 @@ public sealed class GetReportsQueryHandler
     private readonly IReportRepository _reports;
     private readonly IImporterRepository _importers;
     private readonly IFilingRepository _filings;
-    private readonly ILogger<GetReportsQueryHandler>? _logger;
+    private readonly ILogger<GetReportsQueryHandler> _logger;
 
     public GetReportsQueryHandler(
         IReportRepository reports,
         IImporterRepository importers,
         IFilingRepository filings,
-        ILogger<GetReportsQueryHandler>? logger = null)
+        ILogger<GetReportsQueryHandler> logger)
     {
         _logger = logger;
         _reports = reports;

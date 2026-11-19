@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using FluentAssertions;
 using NSubstitute;
 using Rentier.Application.Commands;
@@ -15,7 +16,7 @@ public class SaveTaxpayerProfileCommandHandlerTests
 
     public SaveTaxpayerProfileCommandHandlerTests()
     {
-        _handler = new SaveTaxpayerProfileCommandHandler(_repo);
+        _handler = new SaveTaxpayerProfileCommandHandler(_repo, NullLogger<SaveTaxpayerProfileCommandHandler>.Instance);
     }
 
     [Fact]

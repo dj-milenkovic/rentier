@@ -3,7 +3,6 @@ using AngleSharp;
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
@@ -16,10 +15,10 @@ internal sealed class TimeAndDateHolidayScraper : IHolidayImporter
     private readonly HttpClient _http;
     private readonly ILogger<TimeAndDateHolidayScraper> _logger;
 
-    public TimeAndDateHolidayScraper(HttpClient http, ILogger<TimeAndDateHolidayScraper>? logger = null)
+    public TimeAndDateHolidayScraper(HttpClient http, ILogger<TimeAndDateHolidayScraper> logger)
     {
         _http = http;
-        _logger = logger ?? NullLogger<TimeAndDateHolidayScraper>.Instance;
+        _logger = logger;
     }
 
     public async Task<Result<IReadOnlyList<HolidayEntryDto>, Error>> ImportAsync(

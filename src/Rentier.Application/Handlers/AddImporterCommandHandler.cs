@@ -13,9 +13,9 @@ public sealed class AddImporterCommandHandler
     : ICommandHandler<AddImporterCommand, Result<Guid, Error>>
 {
     private readonly IImporterRepository _repository;
-    private readonly ILogger<AddImporterCommandHandler>? _logger;
+    private readonly ILogger<AddImporterCommandHandler> _logger;
 
-    public AddImporterCommandHandler(IImporterRepository repository, ILogger<AddImporterCommandHandler>? logger = null)
+    public AddImporterCommandHandler(IImporterRepository repository, ILogger<AddImporterCommandHandler> logger)
     {
         _logger = logger;
         _repository = repository;

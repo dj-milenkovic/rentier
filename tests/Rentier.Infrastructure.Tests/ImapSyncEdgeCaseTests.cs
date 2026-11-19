@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using System.Text;
 using FluentAssertions;
 using MailKit;
@@ -35,7 +36,7 @@ public class ImapSyncEdgeCaseTests
             IMailboxRepository mailboxRepository,
             ICredentialStore credentialStore,
             ImapClient client)
-            : base(reportRepository, mailboxRepository, credentialStore, TestClock.Provider())
+            : base(reportRepository, mailboxRepository, credentialStore, TestClock.Provider(), NullLogger<ImapMailboxSyncService>.Instance)
         {
             _client = client;
         }

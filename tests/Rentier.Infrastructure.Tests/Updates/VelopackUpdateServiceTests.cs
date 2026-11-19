@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using FluentAssertions;
 using Rentier.Infrastructure.Updates;
 
@@ -21,7 +22,7 @@ public class VelopackUpdateServiceTests
         // When the app is not installed (dev mode), the service must return immediately
         // without performing any network call.
         var manager = new FakeVelopackManager(isInstalled: false);
-        var service = new VelopackUpdateService(manager);
+        var service = new VelopackUpdateService(manager, NullLogger<VelopackUpdateService>.Instance);
 
         var result = await service.CheckForUpdatesAsync(TestContext.Current.CancellationToken);
 
@@ -36,7 +37,7 @@ public class VelopackUpdateServiceTests
     public async Task CheckForUpdatesAsync_WhenUpdateAvailable_ReturnsTrueWithVersion()
     {
         var manager = new FakeVelopackManager(isInstalled: true, availableVersion: "2.0.0");
-        var service = new VelopackUpdateService(manager);
+        var service = new VelopackUpdateService(manager, NullLogger<VelopackUpdateService>.Instance);
 
         var result = await service.CheckForUpdatesAsync(TestContext.Current.CancellationToken);
 
@@ -50,7 +51,7 @@ public class VelopackUpdateServiceTests
     public async Task CheckForUpdatesAsync_WhenNoUpdateAvailable_ReturnsFalse()
     {
         var manager = new FakeVelopackManager(isInstalled: true, availableVersion: null);
-        var service = new VelopackUpdateService(manager);
+        var service = new VelopackUpdateService(manager, NullLogger<VelopackUpdateService>.Instance);
 
         var result = await service.CheckForUpdatesAsync(TestContext.Current.CancellationToken);
 
@@ -64,7 +65,7 @@ public class VelopackUpdateServiceTests
     public async Task CheckForUpdatesAsync_WhenNetworkException_ReturnsFalse()
     {
         var manager = new FakeVelopackManager(isInstalled: true, throwOnCheck: true);
-        var service = new VelopackUpdateService(manager);
+        var service = new VelopackUpdateService(manager, NullLogger<VelopackUpdateService>.Instance);
 
         var result = await service.CheckForUpdatesAsync(TestContext.Current.CancellationToken);
 
@@ -78,7 +79,7 @@ public class VelopackUpdateServiceTests
     public async Task DownloadUpdateAsync_WhenNotInstalled_IsNoOp()
     {
         var manager = new FakeVelopackManager(isInstalled: false);
-        var service = new VelopackUpdateService(manager);
+        var service = new VelopackUpdateService(manager, NullLogger<VelopackUpdateService>.Instance);
 
         // Should complete without throwing even when not installed
         await service.DownloadUpdateAsync(_ => { }, TestContext.Current.CancellationToken);
@@ -90,7 +91,7 @@ public class VelopackUpdateServiceTests
     public async Task DownloadUpdateAsync_WhenInstalled_CallsManager()
     {
         var manager = new FakeVelopackManager(isInstalled: true, availableVersion: "2.0.0");
-        var service = new VelopackUpdateService(manager);
+        var service = new VelopackUpdateService(manager, NullLogger<VelopackUpdateService>.Instance);
 
         // First check so the service knows what to download
         await service.CheckForUpdatesAsync(TestContext.Current.CancellationToken);
@@ -106,7 +107,7 @@ public class VelopackUpdateServiceTests
     {
         var manager = new FakeVelopackManager(isInstalled: true, availableVersion: "2.0.0",
             progressValues: [0, 50, 100]);
-        var service = new VelopackUpdateService(manager);
+        var service = new VelopackUpdateService(manager, NullLogger<VelopackUpdateService>.Instance);
         await service.CheckForUpdatesAsync(TestContext.Current.CancellationToken);
 
         var progressValues = new List<int>();
@@ -120,7 +121,7 @@ public class VelopackUpdateServiceTests
     {
         var manager = new FakeVelopackManager(isInstalled: true, availableVersion: "2.0.0",
             throwOnDownload: true);
-        var service = new VelopackUpdateService(manager);
+        var service = new VelopackUpdateService(manager, NullLogger<VelopackUpdateService>.Instance);
         await service.CheckForUpdatesAsync(TestContext.Current.CancellationToken);
 
         var act = async () => await service.DownloadUpdateAsync(_ => { });
@@ -134,7 +135,7 @@ public class VelopackUpdateServiceTests
     public void ApplyUpdateAndRestart_WhenNotInstalled_IsNoOp()
     {
         var manager = new FakeVelopackManager(isInstalled: false);
-        var service = new VelopackUpdateService(manager);
+        var service = new VelopackUpdateService(manager, NullLogger<VelopackUpdateService>.Instance);
 
         // Should not throw
         service.ApplyUpdateAndRestart();
@@ -146,7 +147,7 @@ public class VelopackUpdateServiceTests
     public async Task ApplyUpdateAndRestart_WhenInstalledAndDownloaded_CallsManager()
     {
         var manager = new FakeVelopackManager(isInstalled: true, availableVersion: "2.0.0");
-        var service = new VelopackUpdateService(manager);
+        var service = new VelopackUpdateService(manager, NullLogger<VelopackUpdateService>.Instance);
         await service.CheckForUpdatesAsync(TestContext.Current.CancellationToken);
         await service.DownloadUpdateAsync(_ => { }, TestContext.Current.CancellationToken);
 
@@ -161,7 +162,7 @@ public class VelopackUpdateServiceTests
     public void ScheduleUpdateOnExit_WhenNotInstalled_IsNoOp()
     {
         var manager = new FakeVelopackManager(isInstalled: false);
-        var service = new VelopackUpdateService(manager);
+        var service = new VelopackUpdateService(manager, NullLogger<VelopackUpdateService>.Instance);
 
         // Should not throw
         service.ScheduleUpdateOnExit();
@@ -173,7 +174,7 @@ public class VelopackUpdateServiceTests
     public async Task ScheduleUpdateOnExit_WhenInstalledAndDownloaded_CallsManager()
     {
         var manager = new FakeVelopackManager(isInstalled: true, availableVersion: "2.0.0");
-        var service = new VelopackUpdateService(manager);
+        var service = new VelopackUpdateService(manager, NullLogger<VelopackUpdateService>.Instance);
         await service.CheckForUpdatesAsync(TestContext.Current.CancellationToken);
         await service.DownloadUpdateAsync(_ => { }, TestContext.Current.CancellationToken);
 
@@ -188,7 +189,7 @@ public class VelopackUpdateServiceTests
     public void Dispose_CanBeCalledMultipleTimes()
     {
         var manager = new FakeVelopackManager(isInstalled: false);
-        var service = new VelopackUpdateService(manager);
+        var service = new VelopackUpdateService(manager, NullLogger<VelopackUpdateService>.Instance);
 
         var act = () =>
         {

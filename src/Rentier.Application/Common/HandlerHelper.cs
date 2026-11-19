@@ -27,7 +27,7 @@ public static class HandlerHelper
     public static async Task<Result<TValue, Error>> ExecuteAsync<TValue>(
         Func<Task<Result<TValue, Error>>> operation,
         string errorCode,
-        ILogger? logger = null,
+        ILogger logger,
         [CallerMemberName] string? caller = null)
     {
         try
@@ -47,7 +47,7 @@ public static class HandlerHelper
         catch (Exception ex)
         {
             // The exception is attached; its message is never put in the template.
-            logger?.UnexpectedHandlerFailure(ex, caller);
+            logger.UnexpectedHandlerFailure(ex, caller);
             return Result<TValue, Error>.Failure(new Error(errorCode, ex.Message));
         }
     }
@@ -69,7 +69,7 @@ public static class HandlerHelper
         Func<Result<TValue, Error>?> validation,
         Func<Task<Result<TValue, Error>>> operation,
         string errorCode,
-        ILogger? logger = null,
+        ILogger logger,
         [CallerMemberName] string? caller = null)
     {
         var failure = validation();

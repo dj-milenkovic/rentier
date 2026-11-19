@@ -10,9 +10,9 @@ public sealed class GetUserPreferenceQueryHandler
     : IQueryHandler<GetUserPreferenceQuery, Result<string?, Error>>
 {
     private readonly IUserPreferenceRepository _repository;
-    private readonly ILogger<GetUserPreferenceQueryHandler>? _logger;
+    private readonly ILogger<GetUserPreferenceQueryHandler> _logger;
 
-    public GetUserPreferenceQueryHandler(IUserPreferenceRepository repository, ILogger<GetUserPreferenceQueryHandler>? logger = null)
+    public GetUserPreferenceQueryHandler(IUserPreferenceRepository repository, ILogger<GetUserPreferenceQueryHandler> logger)
     {
         _logger = logger;
         _repository = repository;

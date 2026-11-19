@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using FluentAssertions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
@@ -21,7 +22,7 @@ public class GetReportsQueryHandlerTests
 
     public GetReportsQueryHandlerTests()
     {
-        _sut = new GetReportsQueryHandler(_reportRepo, _importerRepo, _filingRepo);
+        _sut = new GetReportsQueryHandler(_reportRepo, _importerRepo, _filingRepo, NullLogger<GetReportsQueryHandler>.Instance);
     }
 
     private static Report MakeReport(Guid? importerId = null, string name = "rep.csv")

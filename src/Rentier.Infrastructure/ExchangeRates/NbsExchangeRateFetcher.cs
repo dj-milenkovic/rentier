@@ -18,11 +18,11 @@ public sealed class NbsExchangeRateFetcher : IExchangeRateFetcher
     public NbsExchangeRateFetcher(
         HttpClient http,
         IExchangeRateCacheRepository cache,
-        ILogger<NbsExchangeRateFetcher>? logger = null)
+        ILogger<NbsExchangeRateFetcher> logger)
     {
         _http = http;
         _cache = cache;
-        _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<NbsExchangeRateFetcher>.Instance;
+        _logger = logger;
     }
 
     public async Task<Result<ExchangeRate, Error>> FetchRateAsync(

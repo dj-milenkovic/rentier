@@ -12,9 +12,9 @@ public sealed class UpdateImporterCommandHandler
     : ICommandHandler<UpdateImporterCommand, Result<VoidResult, Error>>
 {
     private readonly IImporterRepository _repository;
-    private readonly ILogger<UpdateImporterCommandHandler>? _logger;
+    private readonly ILogger<UpdateImporterCommandHandler> _logger;
 
-    public UpdateImporterCommandHandler(IImporterRepository repository, ILogger<UpdateImporterCommandHandler>? logger = null)
+    public UpdateImporterCommandHandler(IImporterRepository repository, ILogger<UpdateImporterCommandHandler> logger)
     {
         _logger = logger;
         _repository = repository;

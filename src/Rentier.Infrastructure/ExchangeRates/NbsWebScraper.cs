@@ -2,7 +2,6 @@ using System.Globalization;
 using AngleSharp;
 using AngleSharp.Dom;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Rentier.Application.Common;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Repositories;
@@ -21,11 +20,11 @@ public sealed class NbsWebScraper : IExchangeRateFetcher
     private static readonly CultureInfo SerbianCulture = new CultureInfo("sr-Latn-RS");
 
     public NbsWebScraper(
-        HttpClient http, IExchangeRateCacheRepository cache, ILogger<NbsWebScraper>? logger = null)
+        HttpClient http, IExchangeRateCacheRepository cache, ILogger<NbsWebScraper> logger)
     {
         _http = http;
         _cache = cache;
-        _logger = logger ?? NullLogger<NbsWebScraper>.Instance;
+        _logger = logger;
     }
 
     public async Task<Result<ExchangeRate, Error>> FetchRateAsync(

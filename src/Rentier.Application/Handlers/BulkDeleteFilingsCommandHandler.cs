@@ -11,9 +11,9 @@ public sealed class BulkDeleteFilingsCommandHandler
     : ICommandHandler<BulkDeleteFilingsCommand, Result<VoidResult, Error>>
 {
     private readonly IFilingRepository _filingRepository;
-    private readonly ILogger<BulkDeleteFilingsCommandHandler>? _logger;
+    private readonly ILogger<BulkDeleteFilingsCommandHandler> _logger;
 
-    public BulkDeleteFilingsCommandHandler(IFilingRepository filingRepository, ILogger<BulkDeleteFilingsCommandHandler>? logger = null)
+    public BulkDeleteFilingsCommandHandler(IFilingRepository filingRepository, ILogger<BulkDeleteFilingsCommandHandler> logger)
     {
         _filingRepository = filingRepository;
         _logger = logger;

@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using FluentAssertions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
@@ -21,7 +22,7 @@ public class GetDashboardQueryHandlerTests
 
     public GetDashboardQueryHandlerTests()
     {
-        _sut = new GetDashboardQueryHandler(_filingRepo, _mailboxRepo, TestClock.Provider());
+        _sut = new GetDashboardQueryHandler(_filingRepo, _mailboxRepo, TestClock.Provider(), NullLogger<GetDashboardQueryHandler>.Instance);
 
         // Default: empty returns
         _filingRepo.GetUpcomingAsync(Arg.Any<DateOnly>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
@@ -225,7 +226,7 @@ public class GetDashboardQueryHandlerTests
             .Returns(new List<Filing>().AsReadOnly() as IReadOnlyList<Filing>);
         var sut = new GetDashboardQueryHandler(
             _filingRepo, _mailboxRepo,
-            new FixedTimeProvider(utcNow, FixedTimeProvider.FixedOffsetZone(localOffset)));
+            new FixedTimeProvider(utcNow, FixedTimeProvider.FixedOffsetZone(localOffset)), NullLogger<GetDashboardQueryHandler>.Instance);
 
         await sut.HandleAsync(new GetDashboardQuery(), TestContext.Current.CancellationToken);
 

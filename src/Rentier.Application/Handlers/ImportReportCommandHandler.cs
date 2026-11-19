@@ -19,14 +19,14 @@ public sealed class ImportReportCommandHandler
     private readonly IStatementParser _statementParser;
     private readonly ICommandHandler<ProcessReportsCommand, Result<ProcessReportsResult, Error>> _processReports;
     private readonly TimeProvider _timeProvider;
-    private readonly ILogger<ImportReportCommandHandler>? _logger;
+    private readonly ILogger<ImportReportCommandHandler> _logger;
 
     public ImportReportCommandHandler(
         IReportRepository reportRepository,
         IStatementParser statementParser,
         ICommandHandler<ProcessReportsCommand, Result<ProcessReportsResult, Error>> processReports,
         TimeProvider timeProvider,
-        ILogger<ImportReportCommandHandler>? logger = null)
+        ILogger<ImportReportCommandHandler> logger)
     {
         _logger = logger;
         _timeProvider = timeProvider;

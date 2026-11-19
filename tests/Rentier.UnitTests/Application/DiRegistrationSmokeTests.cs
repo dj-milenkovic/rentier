@@ -20,6 +20,7 @@ public class DiRegistrationSmokeTests
     public void ServiceCollection_WithSubstituteStubs_ResolvesAllApplicationInterfaces()
     {
         var services = new ServiceCollection();
+        services.AddLogging(); // as the composition root does: handlers require ILogger<T>
 
         services.AddSingleton(Substitute.For<IFilingRepository>());
         services.AddSingleton(Substitute.For<IReportRepository>());
@@ -50,6 +51,7 @@ public class DiRegistrationSmokeTests
     public void ServiceCollection_LocalizationAndPreferenceServices_AllResolveSuccessfully()
     {
         var services = new ServiceCollection();
+        services.AddLogging(); // as the composition root does: handlers require ILogger<T>
 
         // Register stubs for dependencies
         services.AddSingleton(Substitute.For<IUserPreferenceRepository>());
@@ -77,6 +79,7 @@ public class DiRegistrationSmokeTests
     public void ServiceCollection_FilingHandlers_AllResolveSuccessfully()
     {
         var services = new ServiceCollection();
+        services.AddLogging(); // as the composition root does: handlers require ILogger<T>
         services.AddSingleton(Substitute.For<IFilingRepository>());
 
         services.AddTransient<
@@ -108,6 +111,7 @@ public class DiRegistrationSmokeTests
     public void ServiceCollection_ReportHandlers_AllResolveSuccessfully()
     {
         var services = new ServiceCollection();
+        services.AddLogging(); // as the composition root does: handlers require ILogger<T>
         services.AddSingleton(Substitute.For<IReportRepository>());
         services.AddSingleton(Substitute.For<IFilingRepository>());
         services.AddSingleton(Substitute.For<IImporterRepository>());

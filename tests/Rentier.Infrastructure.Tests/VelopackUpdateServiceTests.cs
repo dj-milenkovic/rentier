@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using FluentAssertions;
 using Rentier.Infrastructure.Updates;
 using Xunit;
@@ -39,7 +40,7 @@ public class VelopackUpdateServiceTests
     public async Task CheckForUpdatesAsync_ManagerThrows_ReturnsFalseResult()
     {
         // Arrange — IsInstalled=true so the catch block is reachable
-        using var service = new VelopackUpdateService(new ThrowingVelopackManager(), null);
+        using var service = new VelopackUpdateService(new ThrowingVelopackManager(), NullLogger<VelopackUpdateService>.Instance);
 
         // Act — manager throws; service must catch silently and return no-update
         var result = await service.CheckForUpdatesAsync(CancellationToken.None);
@@ -52,7 +53,7 @@ public class VelopackUpdateServiceTests
     [Fact]
     public async Task CheckForUpdatesAsync_NotInstalled_ReturnsFalseWithoutCallingManager()
     {
-        using var service = new VelopackUpdateService(new NotInstalledVelopackManager(), null);
+        using var service = new VelopackUpdateService(new NotInstalledVelopackManager(), NullLogger<VelopackUpdateService>.Instance);
 
         var result = await service.CheckForUpdatesAsync(CancellationToken.None);
 

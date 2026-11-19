@@ -103,9 +103,12 @@ public static class Program
 
         var services = new ServiceCollection();
 
-        // Same explicit registration call as App.axaml.cs, so the smoke test exercises
-        // the real infrastructure wiring.
-        await services.AddInfrastructureServicesAsync(dbPath);
+        // Same logging + registration calls as App.axaml.cs, so the smoke test exercises the
+        // real wiring. No session was started on this path, so logging is disabled (no file).
+        var loggingSession = LoggingSession.CreateDisabled(AppPaths.LogDirectory);
+        services.AddRentierLogging(loggingSession);
+        using var startupLoggerFactory = new Serilog.Extensions.Logging.SerilogLoggerFactory(loggingSession.Logger);
+        await services.AddInfrastructureServicesAsync(dbPath, startupLoggerFactory.CreateLogger("Startup"));
 
         await using var provider = services.BuildServiceProvider();
         await provider.GetRequiredService<IDatabaseInitializer>().InitializeAsync();

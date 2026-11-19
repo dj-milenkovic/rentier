@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using FluentAssertions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
@@ -20,7 +21,7 @@ public class DeleteReportCommandHandlerTests
     public DeleteReportCommandHandlerTests()
     {
         _unitOfWorkFactory = new FakeUnitOfWorkFactory(_reportRepo, _filingRepo);
-        _sut = new DeleteReportCommandHandler(_unitOfWorkFactory);
+        _sut = new DeleteReportCommandHandler(_unitOfWorkFactory, NullLogger<DeleteReportCommandHandler>.Instance);
     }
 
     [Fact]

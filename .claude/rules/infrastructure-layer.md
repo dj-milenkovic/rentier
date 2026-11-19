@@ -26,5 +26,7 @@ paths:
   host/username, credentials, or the message of an exception raised while parsing user data
   (CsvHelper messages quote the raw record). Attach the exception object, not `ex.Message`.
   Never call `EnableSensitiveDataLogging` (an architecture test enforces this).
+  Loggers are **required** constructor parameters (no `= null`, no `NullLogger` fallback); add
+  messages as `[LoggerMessage]` methods in `Logging/InfrastructureLog.cs`.
 - See `.claude/skills/ef-core` and `.claude/skills/rentier-integration-tests` for
   detailed EF Core and integration-test guidance.

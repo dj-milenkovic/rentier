@@ -12,9 +12,9 @@ public sealed class SaveTaxpayerProfileCommandHandler
     : ICommandHandler<SaveTaxpayerProfileCommand, Result<VoidResult, Error>>
 {
     private readonly ITaxpayerProfileRepository _repository;
-    private readonly ILogger<SaveTaxpayerProfileCommandHandler>? _logger;
+    private readonly ILogger<SaveTaxpayerProfileCommandHandler> _logger;
 
-    public SaveTaxpayerProfileCommandHandler(ITaxpayerProfileRepository repository, ILogger<SaveTaxpayerProfileCommandHandler>? logger = null)
+    public SaveTaxpayerProfileCommandHandler(ITaxpayerProfileRepository repository, ILogger<SaveTaxpayerProfileCommandHandler> logger)
     {
         _logger = logger;
         _repository = repository;

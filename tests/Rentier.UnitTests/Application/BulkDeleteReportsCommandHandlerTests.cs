@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using FluentAssertions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
@@ -19,7 +20,7 @@ public class BulkDeleteReportsCommandHandlerTests
     public BulkDeleteReportsCommandHandlerTests()
     {
         _unitOfWorkFactory = new FakeUnitOfWorkFactory(_reportRepo, _filingRepo);
-        _sut = new BulkDeleteReportsCommandHandler(_unitOfWorkFactory);
+        _sut = new BulkDeleteReportsCommandHandler(_unitOfWorkFactory, NullLogger<BulkDeleteReportsCommandHandler>.Instance);
     }
 
     [Fact]

@@ -23,6 +23,10 @@ paths:
   ids, report/file names, email subjects, hosts, usernames, or any `Error.Message`,
   `ParseError.Message`, `ToLogMessage()` or exception message placed in a template — attach the
   exception object instead (the log renders it safely). Logs are shared in bug reports.
-  New `ILogger<T>` constructor parameters are optional (`= null`) so tests can build the class directly.
+  `ILogger<T>` constructor parameters are **required**: never `ILogger<T>? logger = null`, never a
+  `logger ?? NullLogger<T>.Instance` fallback, never `logger?.` calls. DI always supplies a real
+  logger; tests pass `NullLogger<T>.Instance` (or `CapturingLogger<T>` to assert on output), and
+  test DI containers call `services.AddLogging()`. Write messages as `[LoggerMessage]` methods
+  in the layer's `Logging/*Log.cs` class, not `logger.LogXxx(...)` (CA1873).
 - `decimal` for all monetary values, `DateOnly` for all dates — convert any external
   `DateTime` at the Infrastructure boundary, never inside Application.

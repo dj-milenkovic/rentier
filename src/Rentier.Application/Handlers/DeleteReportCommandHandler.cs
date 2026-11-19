@@ -16,9 +16,9 @@ public sealed class DeleteReportCommandHandler
     : ICommandHandler<DeleteReportCommand, Result<VoidResult, Error>>
 {
     private readonly IUnitOfWorkFactory _unitOfWorkFactory;
-    private readonly ILogger<DeleteReportCommandHandler>? _logger;
+    private readonly ILogger<DeleteReportCommandHandler> _logger;
 
-    public DeleteReportCommandHandler(IUnitOfWorkFactory unitOfWorkFactory, ILogger<DeleteReportCommandHandler>? logger = null)
+    public DeleteReportCommandHandler(IUnitOfWorkFactory unitOfWorkFactory, ILogger<DeleteReportCommandHandler> logger)
     {
         _logger = logger;
         _unitOfWorkFactory = unitOfWorkFactory;
