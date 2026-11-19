@@ -128,10 +128,16 @@ navigation to each page doesn't throw. That's the entire pixels-level E2E budget
 
 ## 2.5 Mutation testing (Stryker.NET)
 
-Runs on **every PR that changes Domain code or Domain unit tests** (`src/Rentier.Domain/**`,
+Mutation-tests **every PR that changes Domain code or Domain unit tests** (`src/Rentier.Domain/**`,
 `tests/Rentier.UnitTests/Domain/**`) or the Stryker setup, plus **weekly** and on demand.
 A full run takes ~3.5 minutes. The PR check fails below the break threshold, and the score
-is posted as a sticky PR comment (header `mutation`), updated on each push like the coverage one.
+is posted as a PR comment that is updated on each push, next to the coverage one.
+
+The `Stryker.NET — Rentier.Domain` check is meant to be a **required** status check, so the
+workflow runs on *every* PR: a `Detect Domain changes` job skips mutation testing (skipped
+counts as passed) when nothing relevant changed. Don't add a `paths:` filter to the trigger,
+or PRs outside Domain would wait forever for a required check that never starts. If change
+detection fails, mutation testing runs anyway (fail closed).
 
 ```bash
 # Restore the pinned Stryker version from .config/dotnet-tools.json:

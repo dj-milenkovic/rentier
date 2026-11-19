@@ -4,16 +4,11 @@ on:
   schedule:
     - cron: '0 3 * * 1'   # Monday 03:00 UTC
   workflow_dispatch:
-  # Domain is the only code Stryker mutates, so only Domain code, Domain tests and the
-  # mutation setup itself can change the score. Setup changes are included so a broken
-  # config is caught on its PR instead of silently failing the next Monday-night run.
+  # Runs on every PR (no `paths:` filter) so the required "Stryker.NET — Rentier.Domain"
+  # check always reports: with a paths filter, PRs outside Domain would wait forever for
+  # a check that never starts. The `changes` job skips mutation testing (a skipped job
+  # passes a required check) unless the PR can affect the score.
   pull_request:
-    paths:
-      - 'src/Rentier.Domain/**'
-      - 'tests/Rentier.UnitTests/Domain/**'
-      - 'stryker-config.json'
-      - '.config/dotnet-tools.json'
-      - '.github/workflows/stryker.yml'
 
 permissions:
   contents: read
@@ -28,13 +23,52 @@ env:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
 
 jobs:
+  # Domain is the only code Stryker mutates, so only Domain code, Domain tests and the
+  # mutation setup itself can change the score. Setup changes are included so a broken
+  # config is caught on its PR instead of silently failing the next Monday-night run.
+  changes:
+    name: Detect Domain changes
+    runs-on: ubuntu-latest
+    outputs:
+      domain: ${{ steps.filter.outputs.domain }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0   # needs the base commit to diff against
+
+      - name: Check changed paths
+        id: filter
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ "$EVENT_NAME" != "pull_request" ]; then
+            echo "domain=true" >> "$GITHUB_OUTPUT"   # schedule / manual run: always test
+            exit 0
+          fi
+          changed=$(git diff --name-only "$BASE_SHA...$HEAD_SHA")
+          echo "Changed files:"; echo "$changed"
+          pattern='^(src/Rentier\.Domain/|tests/Rentier\.UnitTests/Domain/|stryker-config\.json$|\.config/dotnet-tools\.json$|\.github/workflows/stryker\.yml$)'
+          if echo "$changed" | grep -Eq "$pattern"; then
+            echo "domain=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "domain=false" >> "$GITHUB_OUTPUT"
+            echo "No Domain or mutation-setup changes; mutation testing will be skipped."
+          fi
+
   mutation:
     name: Stryker.NET — Rentier.Domain
+    needs: changes
+    # Fail closed: if change detection itself fails, run mutation testing anyway rather
+    # than skip it (a skipped job would silently pass the required check).
+    if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.domain == 'true') }}
     runs-on: ubuntu-latest
     timeout-minutes: 120
     permissions:
       contents: read
-      pull-requests: write   # sticky mutation-report comment, same as the coverage job
+      pull-requests: write   # create/update the mutation-report PR comment
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
@@ -118,9 +152,28 @@ jobs:
           } > mutation-summary.md
           cat mutation-summary.md >> "$GITHUB_STEP_SUMMARY"
 
+      # Sticky comment via the preinstalled gh CLI, not a third-party action: no extra
+      # dependency running with pull-requests: write (SonarCloud flags actions that are
+      # not pinned to a commit SHA). Finds the bot's previous comment by its marker and
+      # edits it, so each push updates one comment instead of adding a new one. The
+      # marker matches the one used by sticky-pull-request-comment, so the comment it
+      # created earlier is reused.
       - name: Post mutation report to PR
         if: always() && github.event_name == 'pull_request'
-        uses: marocchino/sticky-pull-request-comment@v3.0.5
-        with:
-          header: mutation
-          path: mutation-summary.md
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          marker='<!-- Sticky Pull Request Commentmutation -->'
+          printf '%s\n\n%s\n' "$(cat mutation-summary.md)" "$marker" > mutation-comment.md
+          comment_id=$(gh api --paginate "repos/$REPO/issues/$PR_NUMBER/comments" \
+            --jq ".[] | select(.user.login == \"github-actions[bot]\" and (.body | contains(\"$marker\"))) | .id" \
+            | head -n 1)
+          if [ -n "$comment_id" ]; then
+            gh api -X PATCH "repos/$REPO/issues/comments/$comment_id" -F body=@mutation-comment.md > /dev/null
+            echo "Updated comment $comment_id"
+          else
+            gh api -X POST "repos/$REPO/issues/$PR_NUMBER/comments" -F body=@mutation-comment.md > /dev/null
+            echo "Created mutation report comment"
+          fi
