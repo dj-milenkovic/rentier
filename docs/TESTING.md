@@ -148,7 +148,9 @@ cd tests/Rentier.UnitTests
 dotnet tool run dotnet-stryker --config-file ../../stryker-config.json --output ../../mutation-report
 ```
 
-Config lives in `stryker-config.json` at the repo root. Break threshold: **85**.
+Config lives in `stryker-config.json` at the repo root. Break threshold: **90** (score was
+92.5% when it was raised from 85; raise it again as the score improves, never lower it to
+make a PR pass).
 HTML/JSON reports are uploaded as the `mutation-report` artifact by `stryker.yml`; the
 summary (score, verdict, per-file table) is shown on the run page and in the PR comment.
 
@@ -185,7 +187,7 @@ lint (format + vulnerable-pkg gate)
   └─ (both upload coverage-* artifacts)
 coverage merge (ReportGenerator)   includes integration coverage + ratchet step
 sonar + quality gate
-stryker.yml (Domain PRs + weekly)   mutation testing on Domain, break<85, PR comment
+stryker.yml (Domain PRs + weekly)   mutation testing on Domain, break<90, PR comment
 ```
 
 **Trait contract — a test in the wrong bucket is a CI bug:**
