@@ -16,7 +16,7 @@ rules, trait/CI contract, and the "when you add X, you add Y" checklist.
 | UI — Headless view | `Rentier.UnitTests` | Avalonia.Headless.XUnit (`[AvaloniaFact]`) | `Category=UI` | `build` matrix |
 | Integration — adapters | `Rentier.Infrastructure.Tests` | xUnit v3 + SQLite `:memory:` + Verify | `Category=Integration` | `integration-tests` |
 | E2E — scenarios | `Rentier.Scenarios.Tests` | xUnit v3 + production DI + fakes | `Category=Integration` | `integration-tests` |
-| Mutation | _(Stryker.NET)_ | dotnet-stryker | _(scheduled)_ | `stryker` (weekly) |
+| Mutation | _(Stryker.NET)_ | dotnet-stryker | _(n/a)_ | `stryker` (Domain PRs + weekly) |
 
 **Speed contract:** no-trait tests < 5 s total, zero I/O, zero threads blocked.
 
@@ -128,7 +128,10 @@ navigation to each page doesn't throw. That's the entire pixels-level E2E budget
 
 ## 2.5 Mutation testing (Stryker.NET)
 
-Run **weekly + on demand** (not per-PR — too slow for the inner loop).
+Runs on **every PR that changes Domain code or Domain unit tests** (`src/Rentier.Domain/**`,
+`tests/Rentier.UnitTests/Domain/**`) or the Stryker setup, plus **weekly** and on demand.
+A full run takes ~3.5 minutes. The PR check fails below the break threshold, and the score
+is posted as a sticky PR comment (header `mutation`), updated on each push like the coverage one.
 
 ```bash
 # Restore the pinned Stryker version from .config/dotnet-tools.json:
@@ -140,8 +143,8 @@ dotnet tool run dotnet-stryker --config-file ../../stryker-config.json --output 
 ```
 
 Config lives in `stryker-config.json` at the repo root. Break threshold: **85**.
-HTML/JSON reports are uploaded as a CI artifact from the weekly `stryker.yml` workflow,
-and the Markdown summary is shown on the run page.
+HTML/JSON reports are uploaded as the `mutation-report` artifact by `stryker.yml`; the
+summary (score, verdict, per-file table) is shown on the run page and in the PR comment.
 
 Gotchas (each of these has broken the weekly run before):
 - **Run from `tests/Rentier.UnitTests`.** At the repo root Stryker finds `Rentier.slnx`,
@@ -176,7 +179,7 @@ lint (format + vulnerable-pkg gate)
   └─ (both upload coverage-* artifacts)
 coverage merge (ReportGenerator)   includes integration coverage + ratchet step
 sonar + quality gate
-weekly: stryker.yml                 mutation testing on Domain, break<85
+stryker.yml (Domain PRs + weekly)   mutation testing on Domain, break<85, PR comment
 ```
 
 **Trait contract — a test in the wrong bucket is a CI bug:**
