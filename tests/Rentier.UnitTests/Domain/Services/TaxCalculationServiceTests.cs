@@ -85,6 +85,17 @@ public class TaxCalculationServiceTests
     }
 
     [Fact]
+    public void Calculate_NegativeIncomeThatRoundsToZeroRsd_ThrowsDomainException()
+    {
+        // -0.001 × 1 rounds to 0.00 RSD, which would pass every downstream non-negative check
+        // and silently produce a filing. Only the input guard can reject it.
+        var act = () => TaxCalculationService.Calculate(new IncomeTaxInput(IncomeType.Dividend, "AAPL", TestDate, -0.001m, "USD", 0m, "USD"), Rate(1m));
+
+        act.Should().Throw<DomainException>()
+            .WithMessage("*Income amount*negative*");
+    }
+
+    [Fact]
     public void Calculate_NegativeWht_ThrowsDomainException()
     {
         var act = () => TaxCalculationService.Calculate(new IncomeTaxInput(IncomeType.Dividend, "AAPL", TestDate, 100m, "USD", -5m, "USD"), Rate(100m));
@@ -100,6 +111,39 @@ public class TaxCalculationServiceTests
 
         act.Should().Throw<DomainException>()
             .WithMessage("*WHT currency*");
+    }
+
+    [Fact]
+    public void Calculate_ZeroWhtInDifferentCurrency_DoesNotThrow()
+    {
+        // The WHT/income currency match is only enforced when WHT was actually withheld.
+        var act = () => TaxCalculationService.Calculate(new IncomeTaxInput(IncomeType.Interest, "IBKR", TestDate, 100m, "USD", 0m, "EUR"), Rate(100m));
+
+        act.Should().NotThrow();
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Calculate_NullOrWhitespaceIncomeCurrency_ThrowsDomainException(string? currency)
+    {
+        var act = () => TaxCalculationService.Calculate(new IncomeTaxInput(IncomeType.Dividend, "AAPL", TestDate, 100m, currency!, 0m, "USD"), Rate(100m));
+
+        act.Should().Throw<DomainException>()
+            .WithMessage("*IncomeCurrency*");
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Calculate_NullOrWhitespaceWhtCurrency_ThrowsDomainException(string? currency)
+    {
+        var act = () => TaxCalculationService.Calculate(new IncomeTaxInput(IncomeType.Dividend, "AAPL", TestDate, 100m, "USD", 0m, currency!), Rate(100m));
+
+        act.Should().Throw<DomainException>()
+            .WithMessage("*WhtCurrency*");
     }
 
     [Theory]

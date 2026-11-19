@@ -152,6 +152,38 @@ public class FilingDeadlineCalculatorTests
             .WithMessage("*14*");
     }
 
+    // Weekday holidays Wed 22 May – Wed 5 Jun 2024 (11 dates). Each Saturday is skipped in a
+    // single step, so the 14 candidates checked are: 22,23,24, Sat 25, 27..31, Sat 1, 3,4,5,6.
+    private static readonly DateOnly[] ElevenWeekdayHolidays =
+    {
+        new(2024, 5, 22), new(2024, 5, 23), new(2024, 5, 24),
+        new(2024, 5, 27), new(2024, 5, 28), new(2024, 5, 29), new(2024, 5, 30), new(2024, 5, 31),
+        new(2024, 6, 3), new(2024, 6, 4), new(2024, 6, 5),
+    };
+
+    [Fact]
+    public void CalculateDeadline_WorkingDayIsFourteenthCandidate_ReturnsIt()
+    {
+        // 2024-04-22 + 30 = Wed 22 May; the 14th (last allowed) candidate is Thu 6 Jun.
+        var result = FilingDeadlineCalculator.CalculateDeadline(
+            new DateOnly(2024, 4, 22), WithHolidays(ElevenWeekdayHolidays));
+
+        result.Should().Be(new DateOnly(2024, 6, 6));
+    }
+
+    [Fact]
+    public void CalculateDeadline_WorkingDayIsFifteenthCandidate_ThrowsDomainException()
+    {
+        // Adding Thu 6 Jun pushes the first working day (Fri 7 Jun) one step past the limit.
+        var holidays = ElevenWeekdayHolidays.Append(new DateOnly(2024, 6, 6)).ToArray();
+
+        var act = () => FilingDeadlineCalculator.CalculateDeadline(
+            new DateOnly(2024, 4, 22), WithHolidays(holidays));
+
+        act.Should().Throw<DomainException>()
+            .WithMessage("*14*");
+    }
+
     // ── Empty holiday list ────────────────────────────────────────────────
     [Fact]
     public void CalculateDeadline_EmptyHolidays_PureWeekendArithmetic()

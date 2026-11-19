@@ -117,7 +117,8 @@ public class BusinessDayResolverTests
     {
         var act = () => BusinessDayResolver.IsBusinessDay(new DateOnly(2024, 1, 8), null!);
 
-        act.Should().Throw<DomainException>();
+        act.Should().Throw<DomainException>()
+            .WithMessage("*HolidayConf*");
     }
 
     [Fact]
@@ -126,7 +127,8 @@ public class BusinessDayResolverTests
         // Enumerate to trigger the guard (lazy method)
         var act = () => BusinessDayResolver.WalkBackward(new DateOnly(2024, 1, 8), null!).ToList();
 
-        act.Should().Throw<DomainException>();
+        act.Should().Throw<DomainException>()
+            .WithMessage("*HolidayConf*");
     }
 
     [Fact]

@@ -27,6 +27,37 @@ public class FilingCreateFromIncomeTests
     }
 
     [Fact]
+    public void CreateFromIncome_AllZeroAmounts_Succeeds()
+    {
+        // Zero income is valid input to the tax calculator, so a zero filing must be accepted.
+        var act = () => Filing.CreateFromIncome(
+            new FilingInfo(IncomeType.Interest, "IBKR", TestDate, 0m, 0m, 0m, 0m),
+            ProfileId, Deadline, new FilingProvenance());
+
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void CreateFromIncome_PayingEntityAtMaxLength_Succeeds()
+    {
+        var filing = Filing.CreateFromIncome(
+            new FilingInfo(IncomeType.Dividend, new string('A', 200), TestDate, 1000m, 150m, 150m, 0m),
+            ProfileId, Deadline, new FilingProvenance());
+
+        filing.PayingEntity.Should().HaveLength(200);
+    }
+
+    [Fact]
+    public void CreateFromIncome_PayingEntityOverMaxLength_ThrowsDomainException()
+    {
+        var act = () => Filing.CreateFromIncome(
+            new FilingInfo(IncomeType.Dividend, new string('A', 201), TestDate, 1000m, 150m, 150m, 0m),
+            ProfileId, Deadline, new FilingProvenance());
+
+        act.Should().Throw<DomainException>().WithMessage("*PayingEntity*200*");
+    }
+
+    [Fact]
     public void CreateFromIncome_TrimsPayingEntity()
     {
         var filing = Filing.CreateFromIncome(
