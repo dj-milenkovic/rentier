@@ -32,7 +32,7 @@ public class MailboxTests
     public void Create_EmptyHost_ThrowsDomainException()
     {
         var act = () => Mailbox.Create("", 993, "user@example.com", TestClock.TODAY);
-        act.Should().Throw<DomainException>();
+        act.Should().Throw<DomainException>().WithMessage("*Host*");
     }
 
     [Fact]
@@ -46,7 +46,14 @@ public class MailboxTests
     public void Create_PortZero_ThrowsDomainException()
     {
         var act = () => Mailbox.Create("imap.example.com", 0, "user@example.com", TestClock.TODAY);
-        act.Should().Throw<DomainException>();
+        act.Should().Throw<DomainException>().WithMessage("*Port*");
+    }
+
+    [Fact]
+    public void Create_Port1_Succeeds()
+    {
+        var act = () => Mailbox.Create("imap.example.com", 1, "user@example.com", TestClock.TODAY);
+        act.Should().NotThrow();
     }
 
     [Fact]
@@ -67,7 +74,14 @@ public class MailboxTests
     public void Create_EmptyUsername_ThrowsDomainException()
     {
         var act = () => Mailbox.Create("imap.example.com", 993, "", TestClock.TODAY);
-        act.Should().Throw<DomainException>();
+        act.Should().Throw<DomainException>().WithMessage("*Username*");
+    }
+
+    [Fact]
+    public void Constructor_NullCursor_ThrowsDomainException()
+    {
+        var act = () => new Mailbox(Guid.NewGuid(), "imap.example.com", 993, "user@example.com", null!);
+        act.Should().Throw<DomainException>().WithMessage("*Cursor must not be null*");
     }
 
     [Fact]
@@ -97,7 +111,7 @@ public class MailboxTests
 
         var act = () => mailbox.UpdateDetails("imap.example.com", 993, username);
 
-        act.Should().Throw<DomainException>();
+        act.Should().Throw<DomainException>().WithMessage("*Username*");
     }
 
     [Fact]
@@ -117,15 +131,29 @@ public class MailboxTests
     {
         var mailbox = Mailbox.Create("imap.example.com", 993, "user@example.com", TestClock.TODAY);
         var act = () => mailbox.UpdateDetails("", 993, "user@example.com");
-        act.Should().Throw<DomainException>();
+        act.Should().Throw<DomainException>().WithMessage("*Host*");
     }
 
-    [Fact]
-    public void UpdateDetails_InvalidPort_ThrowsDomainException()
+    [Theory]
+    [InlineData(0)]
+    [InlineData(65536)]
+    public void UpdateDetails_PortOutOfRange_ThrowsDomainException(int port)
     {
         var mailbox = Mailbox.Create("imap.example.com", 993, "user@example.com", TestClock.TODAY);
-        var act = () => mailbox.UpdateDetails("imap.example.com", 0, "user@example.com");
-        act.Should().Throw<DomainException>();
+        var act = () => mailbox.UpdateDetails("imap.example.com", port, "user@example.com");
+        act.Should().Throw<DomainException>().WithMessage("*Port*");
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(65535)]
+    public void UpdateDetails_PortAtRangeLimit_UpdatesPort(int port)
+    {
+        var mailbox = Mailbox.Create("imap.example.com", 993, "user@example.com", TestClock.TODAY);
+
+        mailbox.UpdateDetails("imap.example.com", port, "user@example.com");
+
+        mailbox.Port.Should().Be(port);
     }
 
     [Fact]
@@ -146,6 +174,7 @@ public class MailboxTests
     {
         var mailbox = Mailbox.Create("imap.example.com", 993, "user@example.com", TestClock.TODAY);
         var act = () => mailbox.UpdateCursor(null!);
-        act.Should().Throw<DomainException>();
+        // Without the guard, null falls through the switch to "Unknown MailboxCursor subtype".
+        act.Should().Throw<DomainException>().WithMessage("*Cursor must not be null*");
     }
 }

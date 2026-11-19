@@ -107,7 +107,7 @@ public class ReportTests
 
         var act = () => report.SetStatus(ReportStatus.Processed);
 
-        act.Should().Throw<DomainException>();
+        act.Should().Throw<DomainException>().WithMessage("*Invalid*transition*");
     }
 
     [Fact]
@@ -239,7 +239,7 @@ public class ReportTests
 
         var act = () => report.RecordFailedAttempt("late failure", MAX_ATTEMPTS);
 
-        act.Should().Throw<DomainException>();
+        act.Should().Throw<DomainException>().WithMessage("*pending (Init)*");
     }
 
     [Fact]
@@ -249,7 +249,17 @@ public class ReportTests
 
         var act = () => report.RecordFailedAttempt("failure", 0);
 
-        act.Should().Throw<DomainException>();
+        act.Should().Throw<DomainException>().WithMessage("*maxAttempts*");
+    }
+
+    [Fact]
+    public void RecordFailedAttempt_MaxAttemptsOne_FirstFailureExhaustsRetries()
+    {
+        var report = NewReport();
+
+        var exhausted = report.RecordFailedAttempt("failure", 1);
+
+        exhausted.Should().BeTrue();
     }
 
     [Fact]

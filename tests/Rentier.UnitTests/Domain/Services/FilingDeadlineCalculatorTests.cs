@@ -132,11 +132,10 @@ public class FilingDeadlineCalculatorTests
     [Fact]
     public void CalculateDeadline_MaxIterationsExceeded_ThrowsDomainException()
     {
-        // 2024-04-22 + 30 = 2024-05-22 (Wed).
-        // 14 weekday holidays starting at Wed 22 May exhaust all iterations:
-        //   22,23,24 May (Wed–Fri) → Sat 25 skipped by weekend rule →
-        //   27,28,29,30,31 May (Mon–Fri) → Sat 1 Jun skipped by weekend rule →
-        //   3,4,5,6 Jun (Mon–Thu) = 12 weekday holidays + 2 Sat advances = 14 iterations, no return.
+        // 2024-04-22 + 30 = 2024-05-22 (Wed). The 14 allowed candidates are
+        //   22,23,24 May, Sat 25 (jumps to Mon), 27..31 May, Sat 1 Jun (jumps to Mon), 3,4,5,6 Jun,
+        // all holidays or Saturdays, so no working day is found. The list also covers 7 and 10 Jun,
+        // which lie past the limit; the exact boundary is pinned by the two tests below.
         var incomeDate = new DateOnly(2024, 4, 22);
         var holidays14 = new[]
         {

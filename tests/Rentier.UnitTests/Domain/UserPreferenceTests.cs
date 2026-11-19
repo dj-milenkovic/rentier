@@ -131,4 +131,14 @@ public class UserPreferenceTests
         act.Should().Throw<DomainException>()
             .WithMessage("*500*");
     }
+
+    [Fact]
+    public void UpdateValue_Value500Chars_UpdatesValue()
+    {
+        var pref = new UserPreference("Language", "en");
+
+        pref.UpdateValue(new string('x', 500));
+
+        pref.Value.Should().HaveLength(500);
+    }
 }

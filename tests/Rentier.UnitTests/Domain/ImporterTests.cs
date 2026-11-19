@@ -21,7 +21,7 @@ public sealed class ImporterTests
     public void Create_EmptyDisplayName_ThrowsDomainException()
     {
         var act = () => Importer.Create(string.Empty);
-        act.Should().Throw<DomainException>();
+        act.Should().Throw<DomainException>().WithMessage("*DisplayName*");
     }
 
     [Fact]
@@ -36,7 +36,7 @@ public sealed class ImporterTests
     {
         var longName = new string('x', 201);
         var act = () => Importer.Create(longName);
-        act.Should().Throw<DomainException>();
+        act.Should().Throw<DomainException>().WithMessage("*DisplayName*200*");
     }
 
     [Fact]
@@ -94,7 +94,7 @@ public sealed class ImporterTests
     {
         var importer = Importer.Create("Test");
         var act = () => importer.UpdateDetails(new ImporterDetails(string.Empty, ReportType.IbkrCsv, null, null, "", "", "", ""));
-        act.Should().Throw<DomainException>();
+        act.Should().Throw<DomainException>().WithMessage("*DisplayName*");
     }
 
     [Fact]
@@ -126,7 +126,17 @@ public sealed class ImporterTests
 
         var act = () => importer.UpdateDetails(new ImporterDetails(longName, ReportType.IbkrCsv, null, null, "", "", "", ""));
 
-        act.Should().Throw<DomainException>();
+        act.Should().Throw<DomainException>().WithMessage("*DisplayName*200*");
+    }
+
+    [Fact]
+    public void UpdateDetails_WithDisplayNameAtMaxLength_UpdatesDisplayName()
+    {
+        var importer = Importer.Create("Test");
+
+        importer.UpdateDetails(new ImporterDetails(new string('x', 200), ReportType.IbkrCsv, null, null, "", "", "", ""));
+
+        importer.DisplayName.Should().HaveLength(200);
     }
 
     [Fact]
@@ -154,6 +164,6 @@ public sealed class ImporterTests
         var importer = Importer.Create("Test");
         var longNotes = new string('x', 4001);
         var act = () => importer.UpdateDetails(new ImporterDetails("Test", ReportType.IbkrCsv, null, null, "", "", "", longNotes));
-        act.Should().Throw<DomainException>();
+        act.Should().Throw<DomainException>().WithMessage("*PaymentNotes*4000*");
     }
 }

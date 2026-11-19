@@ -81,7 +81,7 @@ public class TaxCalculationServiceTests
         var act = () => TaxCalculationService.Calculate(new IncomeTaxInput(IncomeType.Dividend, "AAPL", TestDate, -1m, "USD", 0m, "USD"), Rate(100m));
 
         act.Should().Throw<DomainException>()
-            .WithMessage("*negative*");
+            .WithMessage("*Income amount*negative*");
     }
 
     [Fact]
@@ -101,7 +101,7 @@ public class TaxCalculationServiceTests
         var act = () => TaxCalculationService.Calculate(new IncomeTaxInput(IncomeType.Dividend, "AAPL", TestDate, 100m, "USD", -5m, "USD"), Rate(100m));
 
         act.Should().Throw<DomainException>()
-            .WithMessage("*negative*");
+            .WithMessage("*WHT amount*negative*");
     }
 
     [Fact]
