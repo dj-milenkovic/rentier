@@ -77,6 +77,7 @@ public class MainWindowViewModel_UpdateTests
         services.AddSingleton(BuildMailboxVm());
         services.AddSingleton(BuildImporterVm());
         services.AddSingleton(BuildAppearanceVm());
+        services.AddSingleton(DesktopTestDoubles.DiagnosticsViewModel());
 
         return services.BuildServiceProvider();
     }

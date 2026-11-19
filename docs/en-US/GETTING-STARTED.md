@@ -146,6 +146,14 @@ For each filing:
 | Mailbox sync imports 0 reports | Attachment regex is empty, or filters are too strict | Verify all three importer filter fields; test with `.*\.csv` as the attachment regex |
 | "IMAP sync failed" error | Wrong credentials, wrong port, or an app password is needed | Re-enter your credentials and use port 993 with SSL |
 
+### Diagnostic logs
+
+Rentier writes one log file per day (for example `rentier-20260115.log`) and deletes logs older than 30 days. Logs record what the app did and any errors, with timestamps. Rentier avoids writing personal or financial data to them (no names, email addresses, account numbers or amounts), but skim a log before sharing it.
+
+- **Find them:** open **Settings → Diagnostics → Open logs folder**. On Windows the folder is `%LOCALAPPDATA%\Rentier\logs`; on macOS and Linux it is `Rentier/logs` inside your user data folder (`~/.local/share`).
+- **More detail:** if you are asked to reproduce a problem, turn on **Detailed (debug) logging** on the same page. It takes effect immediately and is remembered until you turn it off.
+- **Report a problem:** attach the log for the day it happened to your [GitHub issue](https://github.com/dj-milenkovic/rentier/issues).
+
 ---
 
 ## Next Steps

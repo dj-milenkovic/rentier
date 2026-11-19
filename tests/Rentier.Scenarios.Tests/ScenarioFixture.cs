@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -30,7 +31,7 @@ public sealed class ScenarioFixture : IAsyncLifetime
         var services = new ServiceCollection();
         services.AddLogging(b => b.SetMinimumLevel(LogLevel.Warning));
 
-        await services.AddInfrastructureServicesAsync(_dbPath);
+        await services.AddInfrastructureServicesAsync(_dbPath, NullLogger.Instance);
 
         // Override externals — last registration wins in .NET DI
         services.AddSingleton<ICredentialStore>(new FakeCredentialStore());

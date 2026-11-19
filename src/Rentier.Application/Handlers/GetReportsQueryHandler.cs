@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
@@ -12,12 +13,15 @@ public sealed class GetReportsQueryHandler
     private readonly IReportRepository _reports;
     private readonly IImporterRepository _importers;
     private readonly IFilingRepository _filings;
+    private readonly ILogger<GetReportsQueryHandler> _logger;
 
     public GetReportsQueryHandler(
         IReportRepository reports,
         IImporterRepository importers,
-        IFilingRepository filings)
+        IFilingRepository filings,
+        ILogger<GetReportsQueryHandler> logger)
     {
+        _logger = logger;
         _reports = reports;
         _importers = importers;
         _filings = filings;
@@ -71,5 +75,6 @@ public sealed class GetReportsQueryHandler
                 return Result<ReportsPageResult, Error>.Success(
                     new ReportsPageResult(dtos.AsReadOnly(), totalCount, totalPages));
             },
-            ErrorCodes.REPORT_QUERY_FAILED);
+            ErrorCodes.REPORT_QUERY_FAILED,
+            _logger);
 }

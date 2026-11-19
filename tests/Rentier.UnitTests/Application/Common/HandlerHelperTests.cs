@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using FluentAssertions;
 using Rentier.Application.Common;
 using Rentier.Domain.Exceptions;
@@ -16,7 +17,7 @@ public class HandlerHelperTests
 
         var result = await HandlerHelper.ExecuteAsync<int>(
             () => Task.FromResult(expected),
-            "TEST_ERROR");
+            "TEST_ERROR", NullLogger.Instance);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().Be(42);
@@ -27,7 +28,7 @@ public class HandlerHelperTests
     {
         var act = async () => await HandlerHelper.ExecuteAsync<int>(
             () => throw new OperationCanceledException(),
-            "TEST_ERROR");
+            "TEST_ERROR", NullLogger.Instance);
 
         await act.Should().ThrowAsync<OperationCanceledException>(
             "OperationCanceledException must propagate — not be swallowed");
@@ -40,7 +41,7 @@ public class HandlerHelperTests
 
         var result = await HandlerHelper.ExecuteAsync<int>(
             () => throw new DomainException(domainMessage),
-            "TEST_ERROR");
+            "TEST_ERROR", NullLogger.Instance);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be(ErrorCodes.DOMAIN_ERROR);
@@ -55,7 +56,7 @@ public class HandlerHelperTests
 
         var result = await HandlerHelper.ExecuteAsync<int>(
             () => throw new InvalidOperationException(exceptionMessage),
-            errorCode);
+            errorCode, NullLogger.Instance);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be(errorCode);
@@ -69,7 +70,7 @@ public class HandlerHelperTests
 
         var result = await HandlerHelper.ExecuteAsync<int>(
             () => Task.FromResult(failure),
-            "TEST_ERROR");
+            "TEST_ERROR", NullLogger.Instance);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("CUSTOM_CODE");
@@ -92,7 +93,7 @@ public class HandlerHelperTests
                 operationExecuted = true;
                 return Task.FromResult(Result<int, Error>.Success(99));
             },
-            "TEST_ERROR");
+            "TEST_ERROR", NullLogger.Instance);
 
         result.Should().Be(validationFailure);
         operationExecuted.Should().BeFalse("operation must not run when validation fails");
@@ -110,7 +111,7 @@ public class HandlerHelperTests
                 operationExecuted = true;
                 return Task.FromResult(Result<int, Error>.Success(7));
             },
-            "TEST_ERROR");
+            "TEST_ERROR", NullLogger.Instance);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().Be(7);
@@ -125,7 +126,7 @@ public class HandlerHelperTests
         var result = await HandlerHelper.ExecuteWithValidationAsync<int>(
             () => null,
             () => throw new InvalidOperationException("boom"),
-            errorCode);
+            errorCode, NullLogger.Instance);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be(errorCode);

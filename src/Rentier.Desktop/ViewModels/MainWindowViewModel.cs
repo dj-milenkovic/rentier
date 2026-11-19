@@ -241,6 +241,7 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
         var mailboxVm = provider.GetRequiredService<MailboxSettingsViewModel>();
         var importerVm = provider.GetRequiredService<ImporterSettingsViewModel>();
         var appearanceVm = provider.GetRequiredService<AppearanceSettingsViewModel>();
+        var diagnosticsVm = provider.GetRequiredService<DiagnosticsSettingsViewModel>();
 
         var settingsGroup = new NavigationEntry(localizationService["Nav_Settings"], viewModel: null, Icon: NavIcon("NavSettingsIcon"))
         {
@@ -254,7 +255,9 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
         var importersChild = new NavigationEntry(localizationService["Nav_Settings_Importers"], importerVm, Icon: NavIcon("NavImportersIcon")) { IndentLevel = 1, ParentGroup = settingsGroup };
         var languageChild = new NavigationEntry(localizationService["Nav_Settings_Appearance"], appearanceVm, Icon: NavIcon("NavLanguageIcon")) { IndentLevel = 1, ParentGroup = settingsGroup };
 
-        settingsGroup.Children = new[] { profileChild, holidaysChild, mailboxesChild, importersChild, languageChild };
+        var diagnosticsChild = new NavigationEntry(localizationService["Nav_Settings_Diagnostics"], diagnosticsVm, Icon: NavIcon("NavDiagnosticsIcon")) { IndentLevel = 1, ParentGroup = settingsGroup };
+
+        settingsGroup.Children = new[] { profileChild, holidaysChild, mailboxesChild, importersChild, languageChild, diagnosticsChild };
 
         return new List<NavigationEntry>
         {
@@ -268,6 +271,7 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
             mailboxesChild,
             importersChild,
             languageChild,
+            diagnosticsChild,
         };
     }
 
@@ -370,6 +374,7 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
                 MailboxSettingsViewModel => "Nav_Settings_Mailboxes",
                 ImporterSettingsViewModel => "Nav_Settings_Importers",
                 AppearanceSettingsViewModel => "Nav_Settings_Appearance",
+                DiagnosticsSettingsViewModel => "Nav_Settings_Diagnostics",
                 _ => null,
             };
 

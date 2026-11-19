@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using System.Net;
 using FluentAssertions;
 using NSubstitute;
@@ -43,7 +44,7 @@ public class NbsWebScraperTests
         var cache = Substitute.For<IExchangeRateCacheRepository>();
         cache.GetAsync(Arg.Any<DateOnly>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns((ExchangeRate?)null);
-        return new NbsWebScraper(new HttpClient(new FakeHandler(response)), cache);
+        return new NbsWebScraper(new HttpClient(new FakeHandler(response)), cache, NullLogger<NbsWebScraper>.Instance);
     }
 
     [Fact]
@@ -54,7 +55,7 @@ public class NbsWebScraperTests
             .Returns((ExchangeRate?)null);
         var scraper = new NbsWebScraper(
             new HttpClient(new FakeHandler(new HttpResponseMessage(HttpStatusCode.OK)
-            { Content = new StringContent(ValidHtmlTable) })), cache);
+            { Content = new StringContent(ValidHtmlTable) })), cache, NullLogger<NbsWebScraper>.Instance);
 
         var result = await scraper.FetchRateAsync(TestDate, "USD", TestContext.Current.CancellationToken);
 
@@ -122,7 +123,7 @@ public class NbsWebScraperTests
         var cache = Substitute.For<IExchangeRateCacheRepository>();
         cache.GetAsync(Arg.Any<DateOnly>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns((ExchangeRate?)null);
-        var scraper = new NbsWebScraper(new HttpClient(new ThrowingHandler()), cache);
+        var scraper = new NbsWebScraper(new HttpClient(new ThrowingHandler()), cache, NullLogger<NbsWebScraper>.Instance);
         var result = await scraper.FetchRateAsync(TestDate, "USD", TestContext.Current.CancellationToken);
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be("NBS_HTTP_ERROR");

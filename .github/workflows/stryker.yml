@@ -23,9 +23,16 @@ env:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
 
 jobs:
-  # Domain is the only code Stryker mutates, so only Domain code, Domain tests and the
-  # mutation setup itself can change the score. Setup changes are included so a broken
-  # config is caught on its PR instead of silently failing the next Monday-night run.
+  # Domain is the only code Stryker mutates, but the whole Rentier.UnitTests project runs
+  # against the mutants, so the score depends on:
+  #   - Domain code and the tests that kill its mutants: Domain/ and Application/ tests
+  #     (Application tests exercise Domain entities and services) plus the shared
+  #     builders in Rentier.Tests.Common;
+  #   - the mutation setup: Stryker config and tool pin, this workflow, the test project
+  #     file, and Directory.{Build,Packages}.props (test framework and MTP runner
+  #     versions — the mtp runner breaks on incompatible bumps).
+  # Setup changes are included so a broken config is caught on its PR instead of
+  # silently failing the next Monday-night run.
   changes:
     name: Detect Domain changes
     runs-on: ubuntu-latest
@@ -50,7 +57,16 @@ jobs:
           fi
           changed=$(git diff --name-only "$BASE_SHA...$HEAD_SHA")
           echo "Changed files:"; echo "$changed"
-          pattern='^(src/Rentier\.Domain/|tests/Rentier\.UnitTests/Domain/|stryker-config\.json$|\.config/dotnet-tools\.json$|\.github/workflows/stryker\.yml$)'
+          pattern='^('
+          pattern+='src/Rentier\.Domain/'
+          pattern+='|tests/Rentier\.UnitTests/(Domain|Application)/'
+          pattern+='|tests/Rentier\.UnitTests/Rentier\.UnitTests\.csproj$'
+          pattern+='|tests/Rentier\.Tests\.Common/'
+          pattern+='|Directory\.(Build|Packages)\.props$'
+          pattern+='|stryker-config\.json$'
+          pattern+='|\.config/dotnet-tools\.json$'
+          pattern+='|\.github/workflows/stryker\.yml$'
+          pattern+=')'
           if echo "$changed" | grep -Eq "$pattern"; then
             echo "domain=true" >> "$GITHUB_OUTPUT"
           else

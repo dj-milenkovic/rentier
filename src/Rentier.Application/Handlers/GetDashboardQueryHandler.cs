@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
@@ -8,7 +9,10 @@ using Rentier.Domain.ValueObjects;
 namespace Rentier.Application.Handlers;
 
 public sealed class GetDashboardQueryHandler(
-    IFilingRepository filingRepo, IMailboxRepository mailboxRepo, TimeProvider timeProvider)
+    IFilingRepository filingRepo,
+    IMailboxRepository mailboxRepo,
+    TimeProvider timeProvider,
+    ILogger<GetDashboardQueryHandler> logger)
     : IQueryHandler<GetDashboardQuery, Result<DashboardDto, Error>>
 {
     public Task<Result<DashboardDto, Error>> HandleAsync(
@@ -51,5 +55,6 @@ public sealed class GetDashboardQueryHandler(
                     stats.InitCount, stats.FiledCount, stats.PaidCount, stats.TotalUnpaidRsd,
                     lastSync));
             },
-            ErrorCodes.DASHBOARD_QUERY_FAILED);
+            ErrorCodes.DASHBOARD_QUERY_FAILED,
+            logger);
 }

@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using FluentAssertions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
@@ -15,7 +16,7 @@ public class BulkDeleteFilingsCommandHandlerTests
     private readonly BulkDeleteFilingsCommandHandler _sut;
 
     public BulkDeleteFilingsCommandHandlerTests()
-        => _sut = new BulkDeleteFilingsCommandHandler(_repo);
+        => _sut = new BulkDeleteFilingsCommandHandler(_repo, NullLogger<BulkDeleteFilingsCommandHandler>.Instance);
 
     [Fact]
     public async Task HandleAsync_NullFilingIds_ReturnsDomainError()

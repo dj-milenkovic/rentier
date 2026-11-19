@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using System.Net;
 using FluentAssertions;
 using NSubstitute;
@@ -73,7 +74,7 @@ public class NbsExchangeRateFetcherTests
         FakeHttpMessageHandler handler, IExchangeRateCacheRepository repo)
     {
         var client = new HttpClient(handler);
-        return new NbsExchangeRateFetcher(client, repo);
+        return new NbsExchangeRateFetcher(client, repo, NullLogger<NbsExchangeRateFetcher>.Instance);
     }
 
     [Fact]
@@ -232,7 +233,7 @@ public class NbsExchangeRateFetcherTests
         repo.SaveBatchAsync(Arg.Any<IReadOnlyList<ExchangeRate>>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromException(new Microsoft.EntityFrameworkCore.DbUpdateException("concurrency", new Exception())));
 
-        var fetcher = new NbsExchangeRateFetcher(new HttpClient(handler), repo);
+        var fetcher = new NbsExchangeRateFetcher(new HttpClient(handler), repo, NullLogger<NbsExchangeRateFetcher>.Instance);
 
         // Act
         var result = await fetcher.FetchRateAsync(TestDate, "EUR", TestContext.Current.CancellationToken);
@@ -257,7 +258,7 @@ public class NbsIntegrationTests
         repo.SaveBatchAsync(Arg.Any<IReadOnlyList<ExchangeRate>>(), Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
 
-        var fetcher = new NbsExchangeRateFetcher(new HttpClient(), repo);
+        var fetcher = new NbsExchangeRateFetcher(new HttpClient(), repo, NullLogger<NbsExchangeRateFetcher>.Instance);
         var result = await fetcher.FetchRateAsync(new DateOnly(2024, 1, 15), "EUR", TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
@@ -273,7 +274,7 @@ public class NbsIntegrationTests
         repo.SaveBatchAsync(Arg.Any<IReadOnlyList<ExchangeRate>>(), Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
 
-        var fetcher = new NbsExchangeRateFetcher(new HttpClient(), repo);
+        var fetcher = new NbsExchangeRateFetcher(new HttpClient(), repo, NullLogger<NbsExchangeRateFetcher>.Instance);
         var result = await fetcher.FetchRateAsync(new DateOnly(2024, 1, 15), "USD", TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();

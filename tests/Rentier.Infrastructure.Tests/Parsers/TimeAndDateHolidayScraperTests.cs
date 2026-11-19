@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using System.Net;
 using FluentAssertions;
 using Rentier.Infrastructure.Scraping;
@@ -16,7 +17,7 @@ public class TimeAndDateHolidayScraperTests
     }
 
     private static TimeAndDateHolidayScraper CreateScraper(string html, HttpStatusCode status = HttpStatusCode.OK)
-        => new(new HttpClient(new FakeHttpMessageHandler(html, status)));
+        => new(new HttpClient(new FakeHttpMessageHandler(html, status)), NullLogger<TimeAndDateHolidayScraper>.Instance);
 
     [Fact]
     public async Task ImportAsync_WithRealFixture_Returns11UniqueNationalHolidays()

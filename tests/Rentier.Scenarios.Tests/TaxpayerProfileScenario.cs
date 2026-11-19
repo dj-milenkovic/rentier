@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using FluentAssertions;
 using Rentier.Application.Commands;
 using Rentier.Application.Handlers;
@@ -27,7 +28,7 @@ public sealed class TaxpayerProfileScenario : IAsyncLifetime
     [Fact]
     public async Task SaveProfile_NewProfile_CanBeRetrievedById()
     {
-        var saveHandler = new SaveTaxpayerProfileCommandHandler(_repository);
+        var saveHandler = new SaveTaxpayerProfileCommandHandler(_repository, NullLogger<SaveTaxpayerProfileCommandHandler>.Instance);
         var getHandler = new GetTaxpayerProfileQueryHandler(_repository);
 
         var command = new SaveTaxpayerProfileCommand(
@@ -61,7 +62,7 @@ public sealed class TaxpayerProfileScenario : IAsyncLifetime
     [Fact]
     public async Task SaveProfile_WhenUpdated_ReturnsLatestData()
     {
-        var saveHandler = new SaveTaxpayerProfileCommandHandler(_repository);
+        var saveHandler = new SaveTaxpayerProfileCommandHandler(_repository, NullLogger<SaveTaxpayerProfileCommandHandler>.Instance);
         var getHandler = new GetTaxpayerProfileQueryHandler(_repository);
 
         var initialCommand = new SaveTaxpayerProfileCommand(
@@ -110,7 +111,7 @@ public sealed class TaxpayerProfileScenario : IAsyncLifetime
     [Fact]
     public async Task SaveProfile_InvalidJmbg_ReturnsDomainError()
     {
-        var saveHandler = new SaveTaxpayerProfileCommandHandler(_repository);
+        var saveHandler = new SaveTaxpayerProfileCommandHandler(_repository, NullLogger<SaveTaxpayerProfileCommandHandler>.Instance);
 
         var command = new SaveTaxpayerProfileCommand(
             Jmbg: "invalid",

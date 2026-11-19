@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
+using Rentier.Infrastructure.Logging;
 
 namespace Rentier.Infrastructure.Updates;
 
@@ -18,21 +19,19 @@ public sealed class VelopackUpdateService : IUpdateService, IDisposable
 
     /// <summary>
     /// Production constructor — creates a real <see cref="VelopackManagerAdapter"/>
-    /// pointing at the Rentier GitHub repository. Logger is optional; falls back to
-    /// <see cref="NullLogger{T}"/> so call sites that omit the logger (e.g. manual
-    /// instantiation in tests) remain backward-compatible.
+    /// pointing at the Rentier GitHub repository.
     /// </summary>
-    public VelopackUpdateService(ILogger<VelopackUpdateService>? logger = null)
+    public VelopackUpdateService(ILogger<VelopackUpdateService> logger)
         : this(new VelopackManagerAdapter(), logger) { }
 
     /// <summary>
     /// Test constructor — accepts an injected <see cref="IVelopackManager"/> for full
     /// control over Velopack behavior in unit tests.
     /// </summary>
-    internal VelopackUpdateService(IVelopackManager manager, ILogger<VelopackUpdateService>? logger = null)
+    internal VelopackUpdateService(IVelopackManager manager, ILogger<VelopackUpdateService> logger)
     {
         _manager = manager;
-        _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<VelopackUpdateService>.Instance;
+        _logger = logger;
     }
 
     /// <inheritdoc />
@@ -58,7 +57,7 @@ public sealed class VelopackUpdateService : IUpdateService, IDisposable
             // Silent failure — network errors must never surface to the user during startup.
             // Deliberately broad (and includes cancellation): the result type has no failure
             // channel and "no update information" is the correct outcome for every failure.
-            _logger.LogDebug(ex, "Update check failed silently; the app will continue without update information.");
+            _logger.UpdateCheckFailed(ex);
             return new UpdateCheckResult(false, null);
         }
     }

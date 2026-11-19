@@ -1,14 +1,20 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 using CsvHelper;
+using Microsoft.Extensions.Logging;
 using Rentier.Application.Common;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Parsing;
+using Rentier.Infrastructure.Logging;
 
 namespace Rentier.Infrastructure.Parsing;
 
-public sealed partial class IbkrCsvParser : IStatementParser
+public sealed partial class IbkrCsvParser(ILogger<IbkrCsvParser> logger) : IStatementParser
 {
+    // Logging rule for this class: counts and error codes only. Statement content (amounts,
+    // tickers, account ids) and CsvHelper messages, which quote the raw record, never go in a template.
+    private readonly ILogger<IbkrCsvParser> _logger = logger;
+
     public async Task<Result<StatementParseResult, Error>> ParseAsync(
         Stream csvStream, CancellationToken cancellationToken = default)
     {
@@ -23,6 +29,7 @@ public sealed partial class IbkrCsvParser : IStatementParser
             // parse failure; only caller cancellation propagates.
             catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
             {
+                _logger.StatementUnreadable(ex);
                 return Result<StatementParseResult, Error>.Failure(
                     new Error("PARSE_EXCEPTION", ex.Message));
             }
@@ -35,8 +42,11 @@ public sealed partial class IbkrCsvParser : IStatementParser
                 r.Length >= 1 && knownSections.Contains(r[0]));
 
             if (!hasAnySection)
+            {
+                _logger.StatementHasNoSections(rows.Count);
                 return Result<StatementParseResult, Error>.Failure(
                     new Error("INVALID_FORMAT", "No recognised IBKR sections found in the CSV."));
+            }
 
             var allErrors = new List<ParseError>();
 
@@ -55,6 +65,8 @@ public sealed partial class IbkrCsvParser : IStatementParser
             var (fxRates, fxErrors) = ParseExchangeRates(rows);
             allErrors.AddRange(fxErrors.Select(e => e with { Severity = ParseSeverity.Warning }));
 
+            _logger.StatementParsed(dividends.Count, interest.Count, fxRates.Count, allErrors.Count);
+
             return Result<StatementParseResult, Error>.Success(new StatementParseResult(
                 dividends.Values.ToList().AsReadOnly(),
                 interest.Values.ToList().AsReadOnly(),
@@ -66,6 +78,7 @@ public sealed partial class IbkrCsvParser : IStatementParser
         // propagates.
         catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
         {
+            _logger.StatementParseFailed(ex);
             return Result<StatementParseResult, Error>.Failure(
                 new Error("PARSE_EXCEPTION", ex.Message));
         }
@@ -104,11 +117,14 @@ public sealed partial class IbkrCsvParser : IStatementParser
     }
 
     private const string ROW_AMOUNT_INVALID = "ROW_AMOUNT_INVALID";
+    private const int ISIN_MATCH_TIMEOUT_MS = 250;
 
     // ISIN pattern: (XX0000000000) — 2 letter country + 9 alphanumeric + 1 digit.
     // IBKR descriptions look like "AAPL(US0378331005) Cash Dividend" — the ISIN is mid-string,
     // so we strip the ISIN parenthetical and everything after it to recover the entity name.
-    [GeneratedRegex(@"\s*\([A-Z]{2}[A-Z0-9]{9}\d\).*$")]
+    // Timeout: the input is statement text from the user's file; a timeout surfaces as a parse
+    // failure (PARSE_EXCEPTION) through the existing catch instead of stalling the import.
+    [GeneratedRegex(@"\s*\([A-Z]{2}[A-Z0-9]{9}\d\).*$", RegexOptions.None, ISIN_MATCH_TIMEOUT_MS)]
     private static partial Regex IsinPattern();
 
     /// <summary>

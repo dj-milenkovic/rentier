@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.Interfaces;
@@ -11,9 +12,11 @@ public sealed class UpdateImporterCommandHandler
     : ICommandHandler<UpdateImporterCommand, Result<VoidResult, Error>>
 {
     private readonly IImporterRepository _repository;
+    private readonly ILogger<UpdateImporterCommandHandler> _logger;
 
-    public UpdateImporterCommandHandler(IImporterRepository repository)
+    public UpdateImporterCommandHandler(IImporterRepository repository, ILogger<UpdateImporterCommandHandler> logger)
     {
+        _logger = logger;
         _repository = repository;
     }
 
@@ -26,19 +29,9 @@ public sealed class UpdateImporterCommandHandler
             return Result<VoidResult, Error>.Failure(
                 new Error(ErrorCodes.IMPORTER_NOT_FOUND, $"Importer {command.Id} not found."));
 
-        // (2) Validate AttachmentRegex if non-empty
-        if (!string.IsNullOrEmpty(command.AttachmentRegex))
-        {
-            try
-            {
-                // Validate the pattern compiles; static IsMatch uses an internal cache
-                System.Text.RegularExpressions.Regex.IsMatch(string.Empty, command.AttachmentRegex);
-            }
-            catch (ArgumentException ex)
-            {
-                return Result<VoidResult, Error>.Failure(new Error(ErrorCodes.IMPORTER_VALIDATION_INVALID_REGEX, ex.Message));
-            }
-        }
+        // (2) Validate AttachmentRegex (empty = no attachment filter)
+        if (AttachmentPattern.Validate(command.AttachmentRegex) is { } invalidPattern)
+            return Result<VoidResult, Error>.Failure(invalidPattern);
 
         // (3) Update details via HandlerHelper
         return await HandlerHelper.ExecuteAsync<VoidResult>(
@@ -58,6 +51,7 @@ public sealed class UpdateImporterCommandHandler
                 await _repository.UpdateAsync(importer, ct);
                 return Result<VoidResult, Error>.Success(VoidResult.Value);
             },
-            ErrorCodes.INFRASTRUCTURE_ERROR);
+            ErrorCodes.INFRASTRUCTURE_ERROR,
+            _logger);
     }
 }

@@ -5,6 +5,7 @@ using Rentier.Application.Common;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Repositories;
 using Rentier.Domain.ValueObjects;
+using Rentier.Infrastructure.Logging;
 
 namespace Rentier.Infrastructure.ExchangeRates;
 
@@ -17,11 +18,11 @@ public sealed class NbsExchangeRateFetcher : IExchangeRateFetcher
     public NbsExchangeRateFetcher(
         HttpClient http,
         IExchangeRateCacheRepository cache,
-        ILogger<NbsExchangeRateFetcher>? logger = null)
+        ILogger<NbsExchangeRateFetcher> logger)
     {
         _http = http;
         _cache = cache;
-        _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<NbsExchangeRateFetcher>.Instance;
+        _logger = logger;
     }
 
     public async Task<Result<ExchangeRate, Error>> FetchRateAsync(
@@ -95,7 +96,7 @@ public sealed class NbsExchangeRateFetcher : IExchangeRateFetcher
         catch (Exception ex) when (ex is Microsoft.EntityFrameworkCore.DbUpdateException or InvalidOperationException)
         {
             // Cache write failure is non-fatal; the fetched rates are still returned below.
-            _logger.LogWarning(ex, "Failed to write NBS rates to cache for {Date}. Rates will be re-fetched next time.", date);
+            _logger.NbsApiCacheWriteFailed(ex, date);
         }
 
         // Step 10: Return requested rate from parsed batch (not re-queried from DB)

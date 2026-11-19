@@ -146,6 +146,14 @@ Za svaki filing:
 | Sinhronizacija sandučeta uvozi 0 izveštaja | Attachment regex je prazan ili su filteri previše strogi | Proverite sva tri polja filtera na importer-u; testirajte sa `.*\.csv` kao attachment regex |
 | Greška "IMAP sync failed" | Pogrešni kredencijali, pogrešan port ili je potrebna aplikacijska lozinka | Ponovo unesite kredencijale i koristite port 993 sa SSL-om |
 
+### Dijagnostički dnevnici
+
+Rentier upisuje jedan dnevnik po danu (na primer `rentier-20260115.log`) i briše dnevnike starije od 30 dana. Dnevnici beleže šta je program radio i eventualne greške, sa vremenskim oznakama. Rentier izbegava da u njih upisuje lične ili finansijske podatke (imena, adrese e-pošte, brojeve računa ili iznose), ali pregledajte dnevnik pre nego što ga podelite.
+
+- **Gde se nalaze:** otvorite **Podešavanja → Dijagnostika → Otvori fasciklu sa dnevnicima**. Na Windows-u je fascikla `%LOCALAPPDATA%\Rentier\logs`; na macOS-u i Linux-u je `Rentier/logs` unutar korisničke fascikle sa podacima (`~/.local/share`).
+- **Više detalja:** ako se od vas zatraži da reprodukujete problem, uključite **Detaljno (debug) beleženje** na istoj stranici. Stupa na snagu odmah i pamti se dok ga ne isključite.
+- **Prijava problema:** priložite dnevnik za dan kada se problem desio uz svoj [GitHub issue](https://github.com/dj-milenkovic/rentier/issues).
+
 ---
 
 ## Sledeći koraci

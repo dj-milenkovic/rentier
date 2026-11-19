@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.Interfaces;
@@ -10,9 +11,13 @@ public sealed class BulkDeleteFilingsCommandHandler
     : ICommandHandler<BulkDeleteFilingsCommand, Result<VoidResult, Error>>
 {
     private readonly IFilingRepository _filingRepository;
+    private readonly ILogger<BulkDeleteFilingsCommandHandler> _logger;
 
-    public BulkDeleteFilingsCommandHandler(IFilingRepository filingRepository)
-        => _filingRepository = filingRepository;
+    public BulkDeleteFilingsCommandHandler(IFilingRepository filingRepository, ILogger<BulkDeleteFilingsCommandHandler> logger)
+    {
+        _filingRepository = filingRepository;
+        _logger = logger;
+    }
 
     public Task<Result<VoidResult, Error>> HandleAsync(
         BulkDeleteFilingsCommand command, CancellationToken ct = default)
@@ -27,6 +32,7 @@ public sealed class BulkDeleteFilingsCommandHandler
                 await _filingRepository.DeleteManyAsync(command.FilingIds, ct);
                 return Result<VoidResult, Error>.Success(VoidResult.Value);
             },
-            ErrorCodes.FILING_BULK_DELETE_FAILED);
+            ErrorCodes.FILING_BULK_DELETE_FAILED,
+            _logger);
     }
 }

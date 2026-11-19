@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using FluentAssertions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
@@ -25,7 +26,7 @@ public class ImportReportCommandHandlerTests
 
     public ImportReportCommandHandlerTests()
     {
-        _sut = new ImportReportCommandHandler(_reportRepo, _parser, _processReports, _clock);
+        _sut = new ImportReportCommandHandler(_reportRepo, _parser, _processReports, _clock, NullLogger<ImportReportCommandHandler>.Instance);
 
         // Default: parse succeeds with empty result
         _parser.ParseAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
@@ -62,7 +63,7 @@ public class ImportReportCommandHandlerTests
         var clock = new FixedTimeProvider(
             new DateTimeOffset(2025, 12, 31, 23, 30, 0, TimeSpan.Zero),
             FixedTimeProvider.FixedOffsetZone(TimeSpan.FromHours(1)));
-        var sut = new ImportReportCommandHandler(_reportRepo, _parser, _processReports, clock);
+        var sut = new ImportReportCommandHandler(_reportRepo, _parser, _processReports, clock, NullLogger<ImportReportCommandHandler>.Instance);
 
         await sut.HandleAsync(MakeCommand(), TestContext.Current.CancellationToken);
 

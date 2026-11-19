@@ -12,6 +12,7 @@ using Rentier.Domain.Enums;
 using Rentier.Domain.Exceptions;
 using Rentier.Domain.Services;
 using Rentier.Domain.ValueObjects;
+using Rentier.Application.Logging;
 
 namespace Rentier.Application.Handlers;
 
@@ -83,7 +84,8 @@ public sealed class ProcessReportsCommandHandler
             {
                 // The report's unit of work is already disposed, so everything it staged
                 // (filings, status) was discarded.
-                _logger.LogError(ex, "Report {ReportId} failed unexpectedly: {Message}", report.Id, ex.Message);
+                // The exception is attached (the log renders it safely); its message is never put in the template.
+                _logger.ReportFailedUnexpectedly(ex, report.Id);
                 outcome = new ReportOutcome.AttemptFailed(ex.Message);
             }
 
@@ -135,9 +137,8 @@ public sealed class ProcessReportsCommandHandler
             case ReportOutcome.Rejected rejected:
                 // Data integrity failure (no attachment, missing importer, parse error) — not an unexpected exception
                 tally.Count(ReportStatus.Error);
-                _logger.LogWarning(
-                    "Report {ReportId} rejected: [{Code}] {Message}",
-                    report.Id, rejected.Error.Code, rejected.Error.Message);
+                // Code only: the message can quote parsed statement content (amounts, tickers).
+                _logger.ReportRejected(report.Id, rejected.Error.Code);
                 severity = SyncProgressSeverity.Error;
                 message = $"Report '{report.ReportName}': processing error — {rejected.Error.Message}.";
                 break;
@@ -149,8 +150,7 @@ public sealed class ProcessReportsCommandHandler
 
                 if (_logger.IsEnabled(LogLevel.Information))
                 {
-                    _logger.LogInformation(
-                        "Report {ReportId}: {Total} events, {Created} filings, {Failed} failed -> {Status}",
+                    _logger.ReportCommitted(
                         report.Id, committed.Succeeded + committed.Failed, committed.Created, committed.Failed,
                         committed.Status);
                 }
@@ -259,9 +259,7 @@ public sealed class ProcessReportsCommandHandler
             // failed attempt, so the cause is not masked. Cancellation propagates.
             catch (Exception persistEx) when (persistEx is not OperationCanceledException)
             {
-                _logger.LogError(persistEx,
-                    "Report {ReportId}: rejection [{Code}] could not be saved: {Message}",
-                    report.Id, rejection.Error.Code, persistEx.Message);
+                _logger.ReportRejectionNotSaved(persistEx, report.Id, rejection.Error.Code);
                 return new ReportOutcome.AttemptFailed(rejection.Error.Message);
             }
 
@@ -301,9 +299,7 @@ public sealed class ProcessReportsCommandHandler
             if (persisted is null || persisted.Status != ReportStatus.Init)
             {
                 // Deleted (or processed elsewhere) while this run was working on it.
-                _logger.LogWarning(
-                    "Report {ReportId} failed but is no longer pending (status {Status}); nothing to retry",
-                    report.Id, persisted?.Status.ToString() ?? "deleted");
+                _logger.ReportNoLongerPending(report.Id, persisted?.Status.ToString() ?? "deleted");
                 return new ReportFailedAttempt(report.Id, report.ReportName, reason, 0, FailedAttemptKind.ReportGone);
             }
 
@@ -313,9 +309,8 @@ public sealed class ProcessReportsCommandHandler
 
             if (exhausted)
             {
-                _logger.LogError(
-                    "Report {ReportId} failed {Attempts} times and was marked Error: {Reason}",
-                    report.Id, persisted.ProcessingAttempts, reason);
+                // No reason text: it is the raw failure message and can embed statement content.
+                _logger.ReportMarkedError(report.Id, persisted.ProcessingAttempts);
             }
 
             return new ReportFailedAttempt(report.Id, report.ReportName, reason, persisted.ProcessingAttempts,
@@ -329,7 +324,7 @@ public sealed class ProcessReportsCommandHandler
         // the original reason or stop the run; the report simply stays Init and is retried.
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Report {ReportId}: the failed attempt could not be recorded; it stays pending", report.Id);
+            _logger.ReportAttemptNotRecorded(ex, report.Id);
             return new ReportFailedAttempt(report.Id, report.ReportName, reason, 0, FailedAttemptKind.NotRecorded);
         }
     }
@@ -418,9 +413,8 @@ public sealed class ProcessReportsCommandHandler
             }
             else
             {
-                _logger.LogWarning(
-                    "Report {ReportId} row {Row}: [{Code}] {Message}",
-                    report.Id, parseError.RowNumber, parseError.Code, parseError.Message);
+                // Never the parser message: it embeds the raw cell value (rates, amounts).
+                _logger.ReportRowDiagnostic(report.Id, parseError.RowNumber, parseError.Code);
             }
         }
 

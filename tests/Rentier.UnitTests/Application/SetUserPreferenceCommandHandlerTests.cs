@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using FluentAssertions;
 using NSubstitute;
 using Rentier.Application.Commands;
@@ -16,7 +17,7 @@ public class SetUserPreferenceCommandHandlerTests
     public SetUserPreferenceCommandHandlerTests()
     {
         _repo = Substitute.For<IUserPreferenceRepository>();
-        _handler = new SetUserPreferenceCommandHandler(_repo);
+        _handler = new SetUserPreferenceCommandHandler(_repo, NullLogger<SetUserPreferenceCommandHandler>.Instance);
     }
 
     [Fact]

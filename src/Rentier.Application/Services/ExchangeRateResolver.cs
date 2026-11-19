@@ -6,6 +6,7 @@ using Rentier.Application.Parsing;
 using Rentier.Domain.Enums;
 using Rentier.Domain.Services;
 using Rentier.Domain.ValueObjects;
+using Rentier.Application.Logging;
 
 namespace Rentier.Application.Services;
 
@@ -83,8 +84,7 @@ public sealed class ExchangeRateResolver : IExchangeRateResolver
                     $"Synthetic cross-rate for '{currency}' on {date:yyyy-MM-dd} is not positive ({syntheticValue})."));
         }
 
-        _logger.LogWarning(
-            "Rate resolved (cross-rate): {Currency} on {Date} = {BrokerRate} {Pivot} x NBS {PivotRate} ({PivotDate})",
+        _logger.RateResolvedByCrossRate(
             currency, date, brokerRate.Rate, brokerRate.ToCurrency, pivot.Value.Rate.RateToRsd, pivot.Value.SourceDate);
 
         return Result<RateResolution, Error>.Success(new RateResolution(
@@ -124,9 +124,7 @@ public sealed class ExchangeRateResolver : IExchangeRateResolver
 
             if (fallbackResult.IsSuccess)
             {
-                _logger.LogWarning(
-                    "Rate resolved (fallback): {Currency} on {OriginalDate} used {FallbackDate}",
-                    currency, date, candidate);
+                _logger.RateResolvedByFallback(currency, date, candidate);
                 return Result<RateResolution, Error>.Success(
                     new RateResolution(fallbackResult.Value, candidate, ExchangeRateSourceType.Fallback));
             }
@@ -136,9 +134,7 @@ public sealed class ExchangeRateResolver : IExchangeRateResolver
 
             // Skipping a candidate whose rate could not be determined would silently apply an
             // even older rate, so stop here.
-            _logger.LogWarning(
-                "Rate lookup for {Currency} on {Date} failed with {Code}; not walking back further",
-                currency, candidate, fallbackResult.Error.Code);
+            _logger.RateLookupStopped(currency, candidate, fallbackResult.Error.Code);
             return Result<RateResolution, Error>.Failure(Classify(fallbackResult.Error, currency, candidate));
         }
 
@@ -146,9 +142,7 @@ public sealed class ExchangeRateResolver : IExchangeRateResolver
         var triedList = string.Join(", ", triedDates.Select(d => d.ToString("yyyy-MM-dd")));
         var message = $"No rate found for {currency} on {date:yyyy-MM-dd}. Tried: {triedList}. " +
                       "Manually import rate or check NBS availability.";
-        _logger.LogError(
-            "Rate resolution exhausted for {Currency} on {Date}. Tried: {TriedDates}",
-            currency, date, triedList);
+        _logger.RateResolutionExhausted(currency, date, triedList);
         return Result<RateResolution, Error>.Failure(new Error(ErrorCodes.RATE_NOT_FOUND, message));
     }
 

@@ -20,6 +20,7 @@ public static class SrLatnStrings
         ["Nav_Settings_Mailboxes"] = "Poštanski sandučići",
         ["Nav_Settings_Importers"] = "Uvoznici",
         ["Nav_Settings_Appearance"] = "Izgled",
+        ["Nav_Settings_Diagnostics"] = "Dijagnostika",
         ["AppTitle"] = "Rentier",
         ["Sync_StartButton"] = "▶ Pokreni sinhronizaciju",
         ["Sync_CancelButton"] = "⬛ Otkaži",
@@ -271,5 +272,15 @@ public static class SrLatnStrings
         ["Filter_Apply"] = "Primeni",
         ["Filter_SelectAll"] = "Sve",
         ["Filter_Clear"] = "Nijedna",
+        // Issue #68: diagnostic log settings page
+        ["Diagnostics_Header"] = "Dijagnostika",
+        ["Diagnostics_Subheader"] = "Dnevnici koji pomažu pri otklanjanju problema.",
+        ["Diagnostics_DebugLogging_Label"] = "Detaljno (debug) beleženje",
+        ["Diagnostics_DebugLogging_Note"] = "Beleži dodatne tehničke detalje u dnevnik. Uključite samo kada se to zatraži radi reprodukcije problema. Stupa na snagu odmah.",
+        ["Diagnostics_LogFolder_Label"] = "Fascikla sa dnevnicima",
+        ["Diagnostics_OpenLogsFolder"] = "Otvori fasciklu sa dnevnicima",
+        ["Diagnostics_PrivacyNote"] = "Rentier izbegava da upisuje lične ili finansijske podatke u dnevnik, ali pregledajte dnevnik pre nego što ga podelite. Dnevnici stariji od 30 dana brišu se automatski.",
+        ["Diagnostics_OpenFolderFailed"] = "Nije moguće otvoriti fasciklu. Možete je otvoriti ručno:",
+        ["Diagnostics_SaveFailed"] = "Nije moguće zapamtiti ovo podešavanje. Ostaje aktivno do zatvaranja programa Rentier.",
     };
 }

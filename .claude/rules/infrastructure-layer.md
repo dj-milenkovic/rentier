@@ -21,5 +21,12 @@ paths:
   into Application/Domain. Convert monetary values to `decimal` immediately on parse.
 - EF Core migrations are **forward-only and never destructive** — do not edit past
   migrations; add a new one.
+- **Logging is metadata only.** Log ids, error codes, counts, HTTP status codes and dates —
+  never statement content (amounts, tickers, account ids), report or attachment names, mailbox
+  host/username, credentials, or the message of an exception raised while parsing user data
+  (CsvHelper messages quote the raw record). Attach the exception object, not `ex.Message`.
+  Never call `EnableSensitiveDataLogging` (an architecture test enforces this).
+  Loggers are **required** constructor parameters (no `= null`, no `NullLogger` fallback); add
+  messages as `[LoggerMessage]` methods in `Logging/InfrastructureLog.cs`.
 - See `.claude/skills/ef-core` and `.claude/skills/rentier-integration-tests` for
   detailed EF Core and integration-test guidance.

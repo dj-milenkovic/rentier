@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using FluentAssertions;
 using NSubstitute;
 using Rentier.Application.Commands;
@@ -16,7 +17,7 @@ public sealed class UpdateImporterCommandHandlerTests
 
     public UpdateImporterCommandHandlerTests()
     {
-        _sut = new UpdateImporterCommandHandler(_repo);
+        _sut = new UpdateImporterCommandHandler(_repo, NullLogger<UpdateImporterCommandHandler>.Instance);
     }
 
     [Fact]

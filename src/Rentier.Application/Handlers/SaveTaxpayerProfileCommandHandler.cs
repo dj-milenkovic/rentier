@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.Interfaces;
@@ -11,9 +12,11 @@ public sealed class SaveTaxpayerProfileCommandHandler
     : ICommandHandler<SaveTaxpayerProfileCommand, Result<VoidResult, Error>>
 {
     private readonly ITaxpayerProfileRepository _repository;
+    private readonly ILogger<SaveTaxpayerProfileCommandHandler> _logger;
 
-    public SaveTaxpayerProfileCommandHandler(ITaxpayerProfileRepository repository)
+    public SaveTaxpayerProfileCommandHandler(ITaxpayerProfileRepository repository, ILogger<SaveTaxpayerProfileCommandHandler> logger)
     {
+        _logger = logger;
         _repository = repository;
     }
 
@@ -36,5 +39,6 @@ public sealed class SaveTaxpayerProfileCommandHandler
                 await _repository.SaveAsync(profile, ct);
                 return Result<VoidResult, Error>.Success(VoidResult.Value);
             },
-            ErrorCodes.DOMAIN_ERROR);
+            ErrorCodes.DOMAIN_ERROR,
+            _logger);
 }

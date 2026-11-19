@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Rentier.Application.Interfaces;
@@ -18,7 +19,7 @@ public sealed class InfrastructureRegistrationSmokeTests : IAsyncLifetime
     public async ValueTask InitializeAsync()
     {
         var dbPath = Path.Combine(Path.GetTempPath(), $"rentier_smoke_{Guid.NewGuid():N}.db");
-        await _services.AddInfrastructureServicesAsync(dbPath);
+        await _services.AddInfrastructureServicesAsync(dbPath, NullLogger.Instance);
     }
 
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;

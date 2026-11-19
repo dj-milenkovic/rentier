@@ -2,19 +2,23 @@ using System.Globalization;
 using AngleSharp;
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
+using Microsoft.Extensions.Logging;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
+using Rentier.Infrastructure.Logging;
 
 namespace Rentier.Infrastructure.Scraping;
 
 internal sealed class TimeAndDateHolidayScraper : IHolidayImporter
 {
     private readonly HttpClient _http;
+    private readonly ILogger<TimeAndDateHolidayScraper> _logger;
 
-    public TimeAndDateHolidayScraper(HttpClient http)
+    public TimeAndDateHolidayScraper(HttpClient http, ILogger<TimeAndDateHolidayScraper> logger)
     {
         _http = http;
+        _logger = logger;
     }
 
     public async Task<Result<IReadOnlyList<HolidayEntryDto>, Error>> ImportAsync(
@@ -36,6 +40,7 @@ internal sealed class TimeAndDateHolidayScraper : IHolidayImporter
             ex is HttpRequestException
             || (ex is TaskCanceledException && !cancellationToken.IsCancellationRequested))
         {
+            _logger.HolidayRequestFailed(ex, year);
             return Result<IReadOnlyList<HolidayEntryDto>, Error>.Failure(
                 new Error("HOLIDAY_IMPORT_FAILED", $"Failed to fetch holidays: {ex.Message}"));
         }
@@ -48,14 +53,22 @@ internal sealed class TimeAndDateHolidayScraper : IHolidayImporter
 
             var table = document.QuerySelector("#holidays-table");
             if (table == null)
+            {
+                _logger.HolidayTableMissing(year);
                 return Result<IReadOnlyList<HolidayEntryDto>, Error>.Failure(
                     new Error("HOLIDAY_PARSE_ERROR", "Could not find #holidays-table in the response"));
+            }
 
             var results = ParseHolidays(table, year);
 
             if (results.Count == 0)
+            {
+                _logger.NoHolidaysFound(year);
                 return Result<IReadOnlyList<HolidayEntryDto>, Error>.Failure(
                     new Error("HOLIDAY_NOT_FOUND", $"No national holidays found for year {year}"));
+            }
+
+            _logger.HolidaysImported(results.Count, year);
 
             return Result<IReadOnlyList<HolidayEntryDto>, Error>.Success(results);
         }
@@ -63,6 +76,7 @@ internal sealed class TimeAndDateHolidayScraper : IHolidayImporter
         // enumerated, so everything except cancellation becomes HOLIDAY_PARSE_ERROR.
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            _logger.HolidayParseFailed(ex, year);
             return Result<IReadOnlyList<HolidayEntryDto>, Error>.Failure(
                 new Error("HOLIDAY_PARSE_ERROR", $"Failed to parse holidays: {ex.Message}"));
         }

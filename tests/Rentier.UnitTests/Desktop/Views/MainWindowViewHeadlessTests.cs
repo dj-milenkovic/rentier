@@ -93,6 +93,7 @@ public class MainWindowViewHeadlessTests
         services.AddSingleton(BuildMailboxVm());
         services.AddSingleton(BuildImporterVm(getProfileForManualFiling));
         services.AddSingleton(BuildAppearanceVm());
+        services.AddSingleton(DesktopTestDoubles.DiagnosticsViewModel());
 
         return services.BuildServiceProvider();
     }

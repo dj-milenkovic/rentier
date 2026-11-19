@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using Rentier.Infrastructure.Parsing;
 
 namespace Rentier.Infrastructure.Tests.Serialization;
@@ -28,7 +29,7 @@ public class IbkrCsvParserSnapshotTests
     [Fact]
     public async Task ParseAsync_KnownIbkrCsvFixture_MatchesSnapshot()
     {
-        var parser = new IbkrCsvParser();
+        var parser = new IbkrCsvParser(NullLogger<IbkrCsvParser>.Instance);
         await using var stream = LoadFixture("ibkr-sample.csv");
 
         var result = await parser.ParseAsync(stream, TestContext.Current.CancellationToken);

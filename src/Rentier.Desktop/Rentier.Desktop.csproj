@@ -37,6 +37,8 @@
     <PackageReference Include="ReactiveUI" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Serilog.Extensions.Logging" />
+    <PackageReference Include="Serilog.Sinks.File" />
     <PackageReference Include="Velopack" />
   </ItemGroup>
 

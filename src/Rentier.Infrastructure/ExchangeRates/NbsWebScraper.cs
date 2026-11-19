@@ -1,10 +1,12 @@
 using System.Globalization;
 using AngleSharp;
 using AngleSharp.Dom;
+using Microsoft.Extensions.Logging;
 using Rentier.Application.Common;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Repositories;
 using Rentier.Domain.ValueObjects;
+using Rentier.Infrastructure.Logging;
 
 namespace Rentier.Infrastructure.ExchangeRates;
 
@@ -12,14 +14,17 @@ public sealed class NbsWebScraper : IExchangeRateFetcher
 {
     private readonly HttpClient _http;
     private readonly IExchangeRateCacheRepository _cache;
+    private readonly ILogger<NbsWebScraper> _logger;
 
     // NBS web app uses Serbian locale with comma decimal separator
     private static readonly CultureInfo SerbianCulture = new CultureInfo("sr-Latn-RS");
 
-    public NbsWebScraper(HttpClient http, IExchangeRateCacheRepository cache)
+    public NbsWebScraper(
+        HttpClient http, IExchangeRateCacheRepository cache, ILogger<NbsWebScraper> logger)
     {
         _http = http;
         _cache = cache;
+        _logger = logger;
     }
 
     public async Task<Result<ExchangeRate, Error>> FetchRateAsync(
@@ -30,7 +35,12 @@ public sealed class NbsWebScraper : IExchangeRateFetcher
         // Cache check
         var cached = await _cache.GetAsync(date, upperCurrency, ct);
         if (cached is not null)
+        {
+            _logger.NbsCacheHit(upperCurrency, date);
             return Result<ExchangeRate, Error>.Success(cached);
+        }
+
+        _logger.NbsCacheMiss(upperCurrency, date);
 
         // Build URL: dd.MM.yyyy. format used by NBS web app
         var dateStr = date.ToString("dd.MM.yyyy.", CultureInfo.InvariantCulture);
@@ -43,9 +53,13 @@ public sealed class NbsWebScraper : IExchangeRateFetcher
         {
             using var response = await _http.GetAsync(url, ct);
             if (!response.IsSuccessStatusCode)
+            {
+                _logger.NbsHttpError((int)response.StatusCode, date);
                 return Result<ExchangeRate, Error>.Failure(
                     new Error(ErrorCodes.NBS_HTTP_ERROR,
                         $"NBS web app returned {(int)response.StatusCode} for {date:yyyy-MM-dd}."));
+            }
+
             html = await response.Content.ReadAsStringAsync(ct);
         }
         // TaskCanceledException is an HttpClient timeout unless the caller cancelled —
@@ -53,6 +67,7 @@ public sealed class NbsWebScraper : IExchangeRateFetcher
         catch (Exception ex) when (
             ex is HttpRequestException || (ex is TaskCanceledException && !ct.IsCancellationRequested))
         {
+            _logger.NbsRequestFailed(ex, date);
             return Result<ExchangeRate, Error>.Failure(
                 new Error(ErrorCodes.NBS_HTTP_ERROR, ex.Message));
         }
@@ -69,13 +84,23 @@ public sealed class NbsWebScraper : IExchangeRateFetcher
             // RATE_NOT_FOUND error below.
             var allRates = ParseRatesFromHtml(document, date);
 
+            _logger.NbsRatesParsed(allRates.Count, date);
+
             if (allRates.Count == 0)
                 return Result<ExchangeRate, Error>.Failure(
                     new Error(ErrorCodes.RATE_NOT_FOUND,
                         $"No exchange rates published for {date:yyyy-MM-dd} (NBS web app)."));
 
             // Cache all rates - swallow cache write failures (non-fatal), but re-throw cancellation
-            try { await _cache.SaveBatchAsync(allRates, ct); } catch (Exception ex) when (ex is not OperationCanceledException) { /* non-fatal */ }
+            try
+            {
+                await _cache.SaveBatchAsync(allRates, ct);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                // Non-fatal: the rate was fetched, it just will not be cached for next time.
+                _logger.NbsCacheWriteFailed(ex, allRates.Count, date);
+            }
 
             var result = allRates.FirstOrDefault(r =>
                 string.Equals(r.Currency, upperCurrency, StringComparison.OrdinalIgnoreCase));
@@ -91,6 +116,7 @@ public sealed class NbsWebScraper : IExchangeRateFetcher
         // becomes NBS_SCRAPE_ERROR, which ExchangeRateResolver treats as "source unavailable".
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            _logger.NbsParseFailed(ex, date);
             return Result<ExchangeRate, Error>.Failure(
                 new Error(ErrorCodes.NBS_SCRAPE_ERROR, $"Failed to parse NBS web app HTML: {ex.Message}"));
         }

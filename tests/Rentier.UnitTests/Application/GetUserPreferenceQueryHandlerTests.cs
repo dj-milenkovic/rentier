@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using FluentAssertions;
 using NSubstitute;
 using Rentier.Application.Handlers;
@@ -16,7 +17,7 @@ public class GetUserPreferenceQueryHandlerTests
     public GetUserPreferenceQueryHandlerTests()
     {
         _repo = Substitute.For<IUserPreferenceRepository>();
-        _handler = new GetUserPreferenceQueryHandler(_repo);
+        _handler = new GetUserPreferenceQueryHandler(_repo, NullLogger<GetUserPreferenceQueryHandler>.Instance);
     }
 
     [Fact]

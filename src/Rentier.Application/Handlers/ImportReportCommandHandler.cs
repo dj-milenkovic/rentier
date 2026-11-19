@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
@@ -18,13 +19,16 @@ public sealed class ImportReportCommandHandler
     private readonly IStatementParser _statementParser;
     private readonly ICommandHandler<ProcessReportsCommand, Result<ProcessReportsResult, Error>> _processReports;
     private readonly TimeProvider _timeProvider;
+    private readonly ILogger<ImportReportCommandHandler> _logger;
 
     public ImportReportCommandHandler(
         IReportRepository reportRepository,
         IStatementParser statementParser,
         ICommandHandler<ProcessReportsCommand, Result<ProcessReportsResult, Error>> processReports,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        ILogger<ImportReportCommandHandler> logger)
     {
+        _logger = logger;
         _timeProvider = timeProvider;
         _reportRepository = reportRepository;
         _statementParser = statementParser;
@@ -77,5 +81,6 @@ public sealed class ImportReportCommandHandler
 
                 return Result<Guid, Error>.Success(report.Id);
             },
-            ErrorCodes.REPORT_IMPORT_FAILED);
+            ErrorCodes.REPORT_IMPORT_FAILED,
+            _logger);
 }

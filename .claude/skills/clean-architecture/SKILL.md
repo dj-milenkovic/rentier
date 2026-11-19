@@ -133,7 +133,7 @@ Single-window sidebar shell, owned by `MainWindowViewModel` — there is **no
 - `NavigationEntry` supports collapsible groups (`IsGroup`/`Children` — the Settings
   section) and hidden entries (`IsVisible: false`) for sub-pages like Manual Filing.
 - Pages: **Dashboard, Sync, Reports, Filings**, Manual Filing (hidden sub-page), and
-  the **Settings** group → Profile, Holidays, Mailboxes, Importers, Appearance.
+  the **Settings** group → Profile, Holidays, Mailboxes, Importers, Appearance, Diagnostics.
 - Content ViewModels never reference Views or other pages; cross-page jumps are
   raised through delegates/observables that `MainWindowViewModel` subscribes to.
 

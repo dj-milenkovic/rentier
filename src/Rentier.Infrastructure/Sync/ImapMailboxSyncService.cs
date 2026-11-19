@@ -3,6 +3,7 @@ using MailKit;
 using MailKit.Net.Imap;
 using MailKit.Search;
 using MailKit.Security;
+using Microsoft.Extensions.Logging;
 using MimeKit;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
@@ -10,6 +11,7 @@ using Rentier.Application.Interfaces;
 using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
 using Rentier.Domain.ValueObjects;
+using Rentier.Infrastructure.Logging;
 
 namespace Rentier.Infrastructure.Sync;
 
@@ -21,9 +23,14 @@ public class ImapMailboxSyncService(
     IReportRepository reportRepository,
     IMailboxRepository mailboxRepository,
     ICredentialStore credentialStore,
-    TimeProvider timeProvider)
+    TimeProvider timeProvider,
+    ILogger<ImapMailboxSyncService> logger)
     : IMailboxSyncService
 {
+    // Logging rule for this class: ids, counts and UIDs only. Never the host, username, subject,
+    // attachment name or an exception message built from them.
+    private readonly ILogger<ImapMailboxSyncService> _logger = logger;
+
     /// <summary>Seam for unit tests — override to return a pre-configured or mocked client.</summary>
     protected virtual ImapClient CreateClient() => new ImapClient();
 
@@ -37,11 +44,16 @@ public class ImapMailboxSyncService(
         ArgumentNullException.ThrowIfNull(mailbox);
         ArgumentNullException.ThrowIfNull(importers);
 
+        _logger.MailboxSyncStarted(mailbox.Id, importers.Count);
+
         var credResult = await credentialStore.GetCredentialAsync(
             CredentialKeys.MailboxPassword(mailbox.Id), ct);
 
         if (!credResult.IsSuccess)
+        {
+            _logger.MailboxPasswordUnavailable(mailbox.Id, credResult.Error.Code);
             return Result<SyncResult, Error>.Failure(credResult.Error);
+        }
 
         var password = credResult.Value;
 
@@ -102,6 +114,7 @@ public class ImapMailboxSyncService(
                 await mailboxRepository.UpdateAsync(mailbox, ct);
             }
 
+            _logger.MailboxSyncFinished(mailbox.Id, reportsCreated, errors.Count);
             return Result<SyncResult, Error>.Success(new SyncResult(reportsCreated, errors));
         }
         // Boundary translation: MailKit surfaces connection, protocol, authentication and
@@ -109,6 +122,7 @@ public class ImapMailboxSyncService(
         // cancellation (an internal timeout is not one) becomes an infrastructure Result failure.
         catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
         {
+            _logger.MailboxSyncFailed(ex, mailbox.Id);
             return Result<SyncResult, Error>.Failure(
                 Error.Infrastructure($"IMAP sync failed for mailbox {mailbox.Id}: {ex.Message}"));
         }
@@ -169,21 +183,24 @@ public class ImapMailboxSyncService(
 
         try
         {
-            // Compile the attachment regex once per importer rather than on every filename check
+            // Built once per importer rather than on every filename check. The match timeout
+            // turns a pathological user pattern into a per-message error instead of a hang.
             Regex? attachmentRegex = string.IsNullOrEmpty(importer.AttachmentRegex)
                 ? null
-                : new Regex(importer.AttachmentRegex, RegexOptions.Compiled | RegexOptions.IgnoreCase);
+                : AttachmentPattern.Create(importer.AttachmentRegex);
 
             var importerQuery = ComposeImporterQuery(baseQuery, importer);
             var uids = await inbox.SearchAsync(importerQuery, ct);
             var total = uids.Count;
             var processed = 0;
+            _logger.ImporterMessagesMatched(importer.Id, total);
 
             foreach (var uid in uids)
             {
                 ct.ThrowIfCancellationRequested();
                 try
                 {
+                    _logger.ImporterProcessingMessage(importer.Id, uid.Id);
                     var message = await inbox.GetMessageAsync(uid, ct);
                     var subject = message.Subject ?? string.Empty;
                     processed++;
@@ -202,6 +219,7 @@ public class ImapMailboxSyncService(
                 // Per-message isolation: one bad message is recorded and the rest continue.
                 catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
                 {
+                    _logger.ImporterMessageFailed(ex, importer.Id, uid.Id);
                     errors.Add($"Importer {importer.Id} UID {uid.Id}: {ex.Message}");
                     if (lowestFailedUid == null || uid.Id < lowestFailedUid.Value)
                         lowestFailedUid = uid.Id;
@@ -211,6 +229,7 @@ public class ImapMailboxSyncService(
         // Per-importer isolation (invalid regex, failed search): recorded, other importers continue.
         catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
         {
+            _logger.ImporterFailed(ex, importer.Id);
             errors.Add($"Importer {importer.Id}: {ex.Message}");
             incomplete = true;
         }
