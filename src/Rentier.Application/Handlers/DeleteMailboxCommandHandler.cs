@@ -3,6 +3,7 @@ using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Repositories;
+using Rentier.Application.Logging;
 
 namespace Rentier.Application.Handlers;
 
@@ -34,9 +35,7 @@ public sealed class DeleteMailboxCommandHandler
         if (!credResult.IsSuccess && credResult.Error.Code != ErrorCodes.CREDENTIAL_NOT_FOUND)
         {
             // Code only: the credential-store message can include platform and account details.
-            _logger.LogWarning(
-                "Failed to delete credential for mailbox {MailboxId}: [{Code}]",
-                command.Id, credResult.Error.Code);
+            _logger.MailboxCredentialDeleteFailed(command.Id, credResult.Error.Code);
         }
 
         await _repository.DeleteAsync(command.Id, ct);

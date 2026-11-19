@@ -23,15 +23,8 @@ internal sealed class SensitivePropertyEnricher : ILogEventEnricher
 
     public void Enrich(LogEvent logEvent, ILogEventPropertyFactory propertyFactory)
     {
-        List<string>? hits = null;
-        foreach (var name in logEvent.Properties.Keys)
-        {
-            if (SENSITIVE_NAMES.Contains(name))
-                (hits ??= []).Add(name);
-        }
-
-        if (hits is null)
-            return;
+        // Materialised first: the properties dictionary is updated in the loop below.
+        var hits = logEvent.Properties.Keys.Where(SENSITIVE_NAMES.Contains).ToList();
 
         foreach (var name in hits)
             logEvent.AddOrUpdateProperty(new LogEventProperty(name, new ScalarValue(PLACEHOLDER)));

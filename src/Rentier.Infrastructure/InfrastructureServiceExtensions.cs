@@ -13,6 +13,7 @@ using Rentier.Infrastructure.Security;
 using Rentier.Infrastructure.Serialization;
 using Rentier.Infrastructure.Sync;
 using Rentier.Infrastructure.Updates;
+using Rentier.Infrastructure.Logging;
 
 namespace Rentier.Infrastructure;
 
@@ -51,14 +52,12 @@ public static class InfrastructureServiceExtensions
         {
             var (store, info) = factoryResult.Value;
             services.AddSingleton<ICredentialStore>(store);
-            startupLogger?.LogInformation("Credential store provider: {Provider}", info.ProviderName);
+            startupLogger?.CredentialStoreSelected(info.ProviderName);
         }
         else
         {
             // Code only: the message can embed environment details from the platform exception.
-            startupLogger?.LogWarning(
-                "Credential store unavailable ({Code}); mailbox credentials cannot be saved or read",
-                factoryResult.Error.Code);
+            startupLogger?.CredentialStoreUnavailable(factoryResult.Error.Code);
             services.AddSingleton<ICredentialStore>(new NullCredentialStore(factoryResult.Error));
         }
 

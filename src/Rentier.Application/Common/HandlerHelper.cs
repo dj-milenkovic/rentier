@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
 using Rentier.Domain.Exceptions;
+using Rentier.Application.Logging;
 
 namespace Rentier.Application.Common;
 
@@ -46,7 +47,7 @@ public static class HandlerHelper
         catch (Exception ex)
         {
             // The exception is attached; its message is never put in the template.
-            logger?.LogError(ex, "[{Caller}] Unexpected failure", caller);
+            logger?.UnexpectedHandlerFailure(ex, caller);
             return Result<TValue, Error>.Failure(new Error(errorCode, ex.Message));
         }
     }

@@ -4,6 +4,7 @@ using Rentier.Application.DTOs;
 using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
 using Rentier.Infrastructure.Persistence;
+using Rentier.Infrastructure.Logging;
 
 namespace Rentier.Infrastructure.Repositories;
 
@@ -71,7 +72,7 @@ public sealed class HolidayRepository(AppDbContext db, ILogger<HolidayRepository
             catch (Exception rollbackEx)
             {
                 // Rollback failure is logged but not rethrown — the original exception is the root cause.
-                logger.LogError(rollbackEx, "Transaction rollback failed after a holiday save error.");
+                logger.HolidayRollbackFailed(rollbackEx);
             }
             throw;
         }

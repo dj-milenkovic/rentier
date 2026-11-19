@@ -32,16 +32,13 @@ public static class Program
         GlobalExceptionLogging.Attach();
         LogStartupBanner();
 
+        // No catch here: a crash escaping Main is logged (Fatal) and flushed by the
+        // AppDomain.UnhandledException hook in GlobalExceptionLogging, so the runtime still
+        // reports it exactly as before and it is written to the log once.
         try
         {
             return BuildAvaloniaApp()
                 .StartWithClassicDesktopLifetime(args);
-        }
-        // Process boundary: record the crash, then rethrow so the runtime still reports it.
-        catch (Exception ex)
-        {
-            Log.Fatal(ex, "Fatal error, application is terminating");
-            throw;
         }
         finally
         {

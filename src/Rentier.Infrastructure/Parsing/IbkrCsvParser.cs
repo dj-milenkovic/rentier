@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Rentier.Application.Common;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Parsing;
+using Rentier.Infrastructure.Logging;
 
 namespace Rentier.Infrastructure.Parsing;
 
@@ -29,7 +30,7 @@ public sealed partial class IbkrCsvParser(ILogger<IbkrCsvParser>? logger = null)
             // parse failure; only caller cancellation propagates.
             catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
             {
-                _logger.LogWarning(ex, "Could not read the statement as CSV");
+                _logger.StatementUnreadable(ex);
                 return Result<StatementParseResult, Error>.Failure(
                     new Error("PARSE_EXCEPTION", ex.Message));
             }
@@ -43,7 +44,7 @@ public sealed partial class IbkrCsvParser(ILogger<IbkrCsvParser>? logger = null)
 
             if (!hasAnySection)
             {
-                _logger.LogWarning("Statement has no recognised IBKR sections ({RowCount} rows)", rows.Count);
+                _logger.StatementHasNoSections(rows.Count);
                 return Result<StatementParseResult, Error>.Failure(
                     new Error("INVALID_FORMAT", "No recognised IBKR sections found in the CSV."));
             }
@@ -65,9 +66,7 @@ public sealed partial class IbkrCsvParser(ILogger<IbkrCsvParser>? logger = null)
             var (fxRates, fxErrors) = ParseExchangeRates(rows);
             allErrors.AddRange(fxErrors.Select(e => e with { Severity = ParseSeverity.Warning }));
 
-            _logger.LogDebug(
-                "Parsed statement: {Dividends} dividends, {Interest} interest, {FxRates} FX rates, {Diagnostics} diagnostics",
-                dividends.Count, interest.Count, fxRates.Count, allErrors.Count);
+            _logger.StatementParsed(dividends.Count, interest.Count, fxRates.Count, allErrors.Count);
 
             return Result<StatementParseResult, Error>.Success(new StatementParseResult(
                 dividends.Values.ToList().AsReadOnly(),
@@ -80,7 +79,7 @@ public sealed partial class IbkrCsvParser(ILogger<IbkrCsvParser>? logger = null)
         // propagates.
         catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
         {
-            _logger.LogWarning(ex, "Unexpected failure while parsing the statement");
+            _logger.StatementParseFailed(ex);
             return Result<StatementParseResult, Error>.Failure(
                 new Error("PARSE_EXCEPTION", ex.Message));
         }

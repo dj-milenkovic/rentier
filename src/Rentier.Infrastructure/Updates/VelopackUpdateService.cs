@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
+using Rentier.Infrastructure.Logging;
 
 namespace Rentier.Infrastructure.Updates;
 
@@ -58,7 +59,7 @@ public sealed class VelopackUpdateService : IUpdateService, IDisposable
             // Silent failure — network errors must never surface to the user during startup.
             // Deliberately broad (and includes cancellation): the result type has no failure
             // channel and "no update information" is the correct outcome for every failure.
-            _logger.LogDebug(ex, "Update check failed silently; the app will continue without update information.");
+            _logger.UpdateCheckFailed(ex);
             return new UpdateCheckResult(false, null);
         }
     }

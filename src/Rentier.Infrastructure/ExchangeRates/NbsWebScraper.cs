@@ -7,6 +7,7 @@ using Rentier.Application.Common;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Repositories;
 using Rentier.Domain.ValueObjects;
+using Rentier.Infrastructure.Logging;
 
 namespace Rentier.Infrastructure.ExchangeRates;
 
@@ -36,11 +37,11 @@ public sealed class NbsWebScraper : IExchangeRateFetcher
         var cached = await _cache.GetAsync(date, upperCurrency, ct);
         if (cached is not null)
         {
-            _logger.LogDebug("NBS rate cache hit: {Currency} on {Date}", upperCurrency, date);
+            _logger.NbsCacheHit(upperCurrency, date);
             return Result<ExchangeRate, Error>.Success(cached);
         }
 
-        _logger.LogDebug("NBS rate cache miss: {Currency} on {Date}; fetching from the NBS web app", upperCurrency, date);
+        _logger.NbsCacheMiss(upperCurrency, date);
 
         // Build URL: dd.MM.yyyy. format used by NBS web app
         var dateStr = date.ToString("dd.MM.yyyy.", CultureInfo.InvariantCulture);
@@ -54,7 +55,7 @@ public sealed class NbsWebScraper : IExchangeRateFetcher
             using var response = await _http.GetAsync(url, ct);
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogWarning("NBS web app returned HTTP {StatusCode} for {Date}", (int)response.StatusCode, date);
+                _logger.NbsHttpError((int)response.StatusCode, date);
                 return Result<ExchangeRate, Error>.Failure(
                     new Error(ErrorCodes.NBS_HTTP_ERROR,
                         $"NBS web app returned {(int)response.StatusCode} for {date:yyyy-MM-dd}."));
@@ -67,7 +68,7 @@ public sealed class NbsWebScraper : IExchangeRateFetcher
         catch (Exception ex) when (
             ex is HttpRequestException || (ex is TaskCanceledException && !ct.IsCancellationRequested))
         {
-            _logger.LogWarning(ex, "NBS web app request failed for {Date}", date);
+            _logger.NbsRequestFailed(ex, date);
             return Result<ExchangeRate, Error>.Failure(
                 new Error(ErrorCodes.NBS_HTTP_ERROR, ex.Message));
         }
@@ -84,7 +85,7 @@ public sealed class NbsWebScraper : IExchangeRateFetcher
             // RATE_NOT_FOUND error below.
             var allRates = ParseRatesFromHtml(document, date);
 
-            _logger.LogDebug("Parsed {Count} NBS rates for {Date}", allRates.Count, date);
+            _logger.NbsRatesParsed(allRates.Count, date);
 
             if (allRates.Count == 0)
                 return Result<ExchangeRate, Error>.Failure(
@@ -99,7 +100,7 @@ public sealed class NbsWebScraper : IExchangeRateFetcher
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 // Non-fatal: the rate was fetched, it just will not be cached for next time.
-                _logger.LogWarning(ex, "Could not cache {Count} NBS rates for {Date}", allRates.Count, date);
+                _logger.NbsCacheWriteFailed(ex, allRates.Count, date);
             }
 
             var result = allRates.FirstOrDefault(r =>
@@ -116,7 +117,7 @@ public sealed class NbsWebScraper : IExchangeRateFetcher
         // becomes NBS_SCRAPE_ERROR, which ExchangeRateResolver treats as "source unavailable".
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            _logger.LogWarning(ex, "Failed to parse the NBS web app page for {Date}", date);
+            _logger.NbsParseFailed(ex, date);
             return Result<ExchangeRate, Error>.Failure(
                 new Error(ErrorCodes.NBS_SCRAPE_ERROR, $"Failed to parse NBS web app HTML: {ex.Message}"));
         }

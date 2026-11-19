@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
 using Microsoft.Extensions.Logging;
+using Rentier.Desktop.Logging;
 
 namespace Rentier.Desktop.Services;
 
@@ -32,7 +33,7 @@ internal sealed class FolderLauncher(ILogger<FolderLauncher> logger) : IFolderLa
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException
                                        or System.ComponentModel.Win32Exception or NotSupportedException)
         {
-            logger.LogWarning(ex, "Could not open the log folder");
+            logger.LogFolderOpenFailed(ex);
             return false;
         }
     }

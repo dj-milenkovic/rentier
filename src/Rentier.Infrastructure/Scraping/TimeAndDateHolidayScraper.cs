@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
+using Rentier.Infrastructure.Logging;
 
 namespace Rentier.Infrastructure.Scraping;
 
@@ -40,7 +41,7 @@ internal sealed class TimeAndDateHolidayScraper : IHolidayImporter
             ex is HttpRequestException
             || (ex is TaskCanceledException && !cancellationToken.IsCancellationRequested))
         {
-            _logger.LogWarning(ex, "Holiday import request failed for {Year}", year);
+            _logger.HolidayRequestFailed(ex, year);
             return Result<IReadOnlyList<HolidayEntryDto>, Error>.Failure(
                 new Error("HOLIDAY_IMPORT_FAILED", $"Failed to fetch holidays: {ex.Message}"));
         }
@@ -54,7 +55,7 @@ internal sealed class TimeAndDateHolidayScraper : IHolidayImporter
             var table = document.QuerySelector("#holidays-table");
             if (table == null)
             {
-                _logger.LogWarning("Holiday page for {Year} has no #holidays-table; the site layout may have changed", year);
+                _logger.HolidayTableMissing(year);
                 return Result<IReadOnlyList<HolidayEntryDto>, Error>.Failure(
                     new Error("HOLIDAY_PARSE_ERROR", "Could not find #holidays-table in the response"));
             }
@@ -63,12 +64,12 @@ internal sealed class TimeAndDateHolidayScraper : IHolidayImporter
 
             if (results.Count == 0)
             {
-                _logger.LogWarning("No national holidays found for {Year}", year);
+                _logger.NoHolidaysFound(year);
                 return Result<IReadOnlyList<HolidayEntryDto>, Error>.Failure(
                     new Error("HOLIDAY_NOT_FOUND", $"No national holidays found for year {year}"));
             }
 
-            _logger.LogDebug("Imported {Count} national holidays for {Year}", results.Count, year);
+            _logger.HolidaysImported(results.Count, year);
 
             return Result<IReadOnlyList<HolidayEntryDto>, Error>.Success(results);
         }
@@ -76,7 +77,7 @@ internal sealed class TimeAndDateHolidayScraper : IHolidayImporter
         // enumerated, so everything except cancellation becomes HOLIDAY_PARSE_ERROR.
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            _logger.LogWarning(ex, "Failed to parse the holiday page for {Year}", year);
+            _logger.HolidayParseFailed(ex, year);
             return Result<IReadOnlyList<HolidayEntryDto>, Error>.Failure(
                 new Error("HOLIDAY_PARSE_ERROR", $"Failed to parse holidays: {ex.Message}"));
         }
