@@ -49,29 +49,36 @@ internal sealed class VelopackManagerAdapter : IVelopackManager
 
     public bool IsInstalled => _manager.IsInstalled;
 
+    public bool HasUpdateToDownload => _pendingUpdate is not null;
+
+    // Velopack's own record of a downloaded-but-unapplied release, so a package downloaded
+    // before the last restart still counts.
+    public bool HasUpdateToApply => _manager.UpdatePendingRestart is not null;
+
     public async Task<string?> CheckForUpdatesAsync(CancellationToken cancellationToken)
     {
-        var info = await _manager.CheckForUpdatesAsync().ConfigureAwait(false);
+        // UpdateManager.CheckForUpdatesAsync takes no token; WaitAsync stops waiting on cancellation.
+        // Task.Run keeps any synchronous work it does before its first await off the caller's
+        // (UI) thread.
+        var info = await Task.Run(() => _manager.CheckForUpdatesAsync(), cancellationToken)
+                             .WaitAsync(cancellationToken)
+                             .ConfigureAwait(false);
         _pendingUpdate = info;
         return info?.TargetFullRelease?.Version?.ToString();
     }
 
     public async Task DownloadUpdatesAsync(Action<int> progress, CancellationToken cancellationToken)
     {
-        if (_pendingUpdate is null) return;
-        await _manager.DownloadUpdatesAsync(_pendingUpdate, progress, cancellationToken)
+        var pending = _pendingUpdate
+            ?? throw new InvalidOperationException("No update to download; check for updates first.");
+        await _manager.DownloadUpdatesAsync(pending, progress, cancellationToken)
                       .ConfigureAwait(false);
     }
 
     public void ApplyUpdatesAndRestart()
     {
-        if (_pendingUpdate?.TargetFullRelease is null) return;
-        _manager.ApplyUpdatesAndRestart(_pendingUpdate.TargetFullRelease);
-    }
-
-    public void WaitExitThenApplyUpdates()
-    {
-        if (_pendingUpdate?.TargetFullRelease is null) return;
-        _manager.WaitExitThenApplyUpdates(_pendingUpdate.TargetFullRelease);
+        var pending = _manager.UpdatePendingRestart
+            ?? throw new InvalidOperationException("No downloaded update to apply.");
+        _manager.ApplyUpdatesAndRestart(pending);
     }
 }

@@ -37,7 +37,7 @@ public class MainWindowViewHeadlessTests
         var services = new ServiceCollection();
         services.AddSingleton<TimeProvider>(TestClock.Provider());
 
-        services.AddSingleton(_ => Substitute.For<IUpdateService>());
+        services.AddSingleton(_ => DesktopTestDoubles.UpdateService());
 
         services.AddTransient(_ =>
             Substitute.For<IQueryHandler<GetDashboardQuery, Result<DashboardDto, Error>>>());

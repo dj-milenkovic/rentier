@@ -112,7 +112,7 @@ public class MainWindowViewModelSmokeTests
         services.AddSingleton(CreateImporterVm());
         services.AddSingleton(CreateAppearanceVm());
         services.AddSingleton(DesktopTestDoubles.DiagnosticsViewModel());
-        services.AddSingleton(_ => Substitute.For<IUpdateService>());
+        services.AddSingleton(_ => DesktopTestDoubles.UpdateService());
 
         return services.BuildServiceProvider();
     }

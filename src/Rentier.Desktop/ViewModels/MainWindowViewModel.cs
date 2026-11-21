@@ -7,6 +7,7 @@ using ReactiveUI.Primitives.Signals;
 using ReactiveUI.Primitives.Disposables;
 using Rentier.Desktop.Extensions;
 using ReactiveUI;
+using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Desktop.Services;
@@ -168,8 +169,7 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
             RunDownloadUpdateAsync, canBeginUpdate, outputScheduler: _outputScheduler);
 
         RestartNowCommand = ReactiveCommand.Create(
-            () => updateService.ApplyUpdateAndRestart(),
-            canRestart, outputScheduler: _outputScheduler);
+            RestartNow, canRestart, outputScheduler: _outputScheduler);
 
         DismissRestartCommand = ReactiveCommand.CreateFromTask(
             OnDismissRestartAsync,
@@ -221,9 +221,25 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
 
     private async Task OnDismissRestartAsync()
     {
-        _updateService.ScheduleUpdateOnExit();
+        // Nothing to schedule: Velopack applies a downloaded update on the next launch by default.
+        // (WaitExitThenApplyUpdates is not an option — it kills the app if it is still running
+        // 60 seconds later.)
         CurrentUpdateState = UpdateState.Idle;
         await Task.CompletedTask;
+    }
+
+    private void RestartNow()
+    {
+        // Returns only on failure; on success the process exits and relaunches.
+        var result = _updateService.ApplyUpdateAndRestart();
+        if (!result.IsSuccess)
+            ShowUpdateError(result.Error);
+    }
+
+    private void ShowUpdateError(Error error)
+    {
+        UpdateErrorMessage = error.Message;
+        CurrentUpdateState = UpdateState.Error;
     }
 
     private List<NavigationEntry> BuildNavigationEntries(
@@ -310,17 +326,16 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
             })
             .DisposeWith(disposables);
 
-        // Auto-check for updates in background on activation
-        RxSchedulers.TaskpoolScheduler.Schedule(() =>
-                Signal.FromAsync(async ct => { await RunCheckForUpdateAsync(); return RxVoid.Default; })
-                    .Subscribe())
-            .DisposeWith(disposables);
+        // Auto-check for updates on activation. Activation runs on the UI thread and the check
+        // awaits without ConfigureAwait(false), so every bound update-state change happens on the
+        // UI thread; the service does its own I/O off it.
+        CheckForUpdateCommand.Execute().Subscribe().DisposeWith(disposables);
     }
 
     private async Task RunCheckForUpdateAsync()
     {
         CurrentUpdateState = UpdateState.Checking;
-        var result = await _updateService.CheckForUpdatesAsync().ConfigureAwait(false);
+        var result = await _updateService.CheckForUpdatesAsync();
         if (result.IsUpdateAvailable)
         {
             AvailableVersion = result.TargetVersion;
@@ -335,22 +350,14 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
     private async Task RunDownloadUpdateAsync()
     {
         CurrentUpdateState = UpdateState.Downloading;
-        try
-        {
-            await _updateService.DownloadUpdateAsync(
-                progress => RxSchedulers.MainThreadScheduler.Schedule(
-                    () => DownloadProgress = progress))
-                .ConfigureAwait(false);
+        var result = await _updateService.DownloadUpdateAsync(
+            progress => RxSchedulers.MainThreadScheduler.Schedule(
+                () => DownloadProgress = progress));
 
+        if (result.IsSuccess)
             CurrentUpdateState = UpdateState.Downloaded;
-        }
-        // UI boundary: IUpdateService.DownloadUpdateAsync has no Result channel, and any download
-        // failure (network, disk, package) must become the Error state rather than crash the app.
-        catch (Exception ex)
-        {
-            UpdateErrorMessage = ex.Message;
-            CurrentUpdateState = UpdateState.Error;
-        }
+        else
+            ShowUpdateError(result.Error);
     }
 
     private void UpdateNavigationLabels(ILocalizationService loc)

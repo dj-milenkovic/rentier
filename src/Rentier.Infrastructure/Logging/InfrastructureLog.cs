@@ -101,8 +101,23 @@ internal static partial class InfrastructureLog
     [LoggerMessage(5002, LogLevel.Warning, "Credential store unavailable ({Code}); mailbox credentials cannot be saved or read")]
     public static partial void CredentialStoreUnavailable(this ILogger logger, string code);
 
-    [LoggerMessage(5003, LogLevel.Debug, "Update check failed silently; the app will continue without update information.")]
+    [LoggerMessage(5003, LogLevel.Warning, "Update check failed; the app will continue without update information.")]
     public static partial void UpdateCheckFailed(this ILogger logger, Exception exception);
+
+    [LoggerMessage(5004, LogLevel.Information, "Update check skipped: this copy is not a Velopack install, so it cannot update itself.")]
+    public static partial void UpdateCheckSkippedNotInstalled(this ILogger logger);
+
+    [LoggerMessage(5005, LogLevel.Information, "Update available: version {TargetVersion}")]
+    public static partial void UpdateAvailable(this ILogger logger, string targetVersion);
+
+    [LoggerMessage(5006, LogLevel.Debug, "No update available")]
+    public static partial void UpdateNotAvailable(this ILogger logger);
+
+    [LoggerMessage(5007, LogLevel.Warning, "Update download failed")]
+    public static partial void UpdateDownloadFailed(this ILogger logger, Exception exception);
+
+    [LoggerMessage(5008, LogLevel.Warning, "Applying the downloaded update failed")]
+    public static partial void UpdateApplyFailed(this ILogger logger, Exception exception);
 
     // ── Persistence (6xxx) ───────────────────────────────────────────────────
 

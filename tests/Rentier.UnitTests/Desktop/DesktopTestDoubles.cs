@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
+using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Desktop.Services;
 using Rentier.Desktop.ViewModels;
@@ -45,6 +46,18 @@ internal static class DesktopTestDoubles
         services.AddSingleton<INavigationService>(sp => sp.GetRequiredService<NavigationService>());
         services.AddSingleton<INavigationRequestSource>(sp => sp.GetRequiredService<NavigationService>());
         return services;
+    }
+
+    /// <summary>
+    /// An update service that reports "no update available". The shell checks for updates as soon
+    /// as it activates, so a bare substitute (whose check returns a null result) is not enough.
+    /// </summary>
+    public static IUpdateService UpdateService()
+    {
+        var updateService = Substitute.For<IUpdateService>();
+        updateService.CheckForUpdatesAsync(Arg.Any<CancellationToken>())
+            .Returns(new UpdateCheckResult(false, null));
+        return updateService;
     }
 
     /// <summary>A folder launcher that reports <paramref name="opened"/> for every request.</summary>
