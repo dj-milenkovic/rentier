@@ -285,4 +285,20 @@ public static class Strings
     public static string Diagnostics_PrivacyNote => "Rentier avoids writing personal or financial data to the log, but skim a log before sharing it. Logs older than 30 days are deleted automatically.";
     public static string Diagnostics_OpenFolderFailed => "Could not open the folder. You can open it manually:";
     public static string Diagnostics_SaveFailed => "Could not remember this setting. It stays active until Rentier is closed.";
+
+    // Keys the views bind to that previously existed only in Strings.resx (or nowhere)
+    public static string Filings_FilterChip_Report => "Filtered by report";
+    public static string Filings_FilterChip_Dismiss => "Remove report filter";
+    public static string Holidays_Empty_Text => "No holidays in the selected year range.";
+
+    // Update notification bar (values mirror Strings.resx)
+    public static string Update_Available_Message => "Update v{0} available";
+    public static string Update_Now_Button => "Update Now";
+    public static string Update_Later_Button => "Later";
+    public static string Update_Downloading_Message => "Downloading update... {0}%";
+    public static string Update_Ready_Message => "Update ready. Restart to apply.";
+    public static string Update_Restart_Button => "Restart Now";
+    public static string Update_Error_Message => "Update failed: {0}";
+    public static string Update_Retry_Button => "Retry";
+    public static string Update_Dismiss_Button => "Dismiss";
 }

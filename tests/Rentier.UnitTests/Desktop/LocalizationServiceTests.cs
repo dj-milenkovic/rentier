@@ -134,4 +134,32 @@ public class LocalizationServiceTests
             englishKeys,
             because: "every English resource key must have a corresponding Serbian (Latin) translation");
     }
+
+    [Fact]
+    public void LocalizedKeys_UsedInViewsAndViewModels_AllExistInEnglishStrings()
+    {
+        // Parity alone is not enough: a key missing from BOTH languages renders as "[Key]".
+        // The update bar shipped that way, because its keys existed only in Strings.resx,
+        // which LocalizationService does not read.
+        var englishKeys = typeof(Strings)
+            .GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+            .Select(p => p.Name)
+            .ToHashSet();
+
+        var desktopDir = RepositoryFiles.Path("src/Rentier.Desktop");
+        var viewKeys = Directory.EnumerateFiles(desktopDir, "*.axaml", SearchOption.AllDirectories)
+            .SelectMany(f => System.Text.RegularExpressions.Regex
+                .Matches(File.ReadAllText(f), @"Binding \[(\w+)\], Source=\{StaticResource Localizer\}"))
+            .Select(m => m.Groups[1].Value);
+        var codeKeys = Directory.EnumerateFiles(desktopDir, "*.cs", SearchOption.AllDirectories)
+            .SelectMany(f => System.Text.RegularExpressions.Regex
+                .Matches(File.ReadAllText(f), @"_?[lL]ocalization(?:Service)?\[""(\w+)""\]"))
+            .Select(m => m.Groups[1].Value);
+
+        var usedKeys = viewKeys.Concat(codeKeys).ToHashSet();
+
+        usedKeys.Should().NotBeEmpty();
+        usedKeys.Except(englishKeys).Should().BeEmpty(
+            because: "every localized key used by the UI must exist in Strings (the English source)");
+    }
 }
