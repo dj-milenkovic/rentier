@@ -8,7 +8,12 @@ internal static class RepositoryFiles
 {
     public static string Root { get; } = FindRoot();
 
-    public static string Read(string relativePath) => File.ReadAllText(Path(relativePath));
+    /// <summary>
+    /// Reads a file with line endings normalized to <c>\n</c>: Windows checkouts get CRLF
+    /// (<c>.gitattributes</c> text=auto), and contract-test patterns must match on every OS.
+    /// </summary>
+    public static string Read(string relativePath) =>
+        File.ReadAllText(Path(relativePath)).ReplaceLineEndings("\n");
 
     public static string Path(string relativePath) => System.IO.Path.Combine(Root, relativePath);
 
