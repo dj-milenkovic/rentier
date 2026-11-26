@@ -36,9 +36,10 @@ public static class Program
 
         // Logging starts here, not in App: headless tests run App too and must not write
         // into the developer's real logs folder.
-        LoggingSession.Start(AppPaths.LogDirectory);
+        var loggingSession = LoggingSession.Start(AppPaths.LogDirectory);
         GlobalExceptionLogging.Attach();
         LogStartupBanner();
+        SyncInstalledAppsEntry(loggingSession);
 
         // No catch here: a crash escaping Main is logged (Fatal) and flushed by the
         // AppDomain.UnhandledException hook in GlobalExceptionLogging, so the runtime still
@@ -73,6 +74,18 @@ public static class Program
             RuntimeInformation.OSDescription,
             RuntimeInformation.ProcessArchitecture,
             Environment.Version);
+    }
+
+
+    /// <summary>
+    /// After an in-app update, show the new version in Settings &gt; Apps (Windows installer
+    /// installs only). Failures are logged inside and never stop the app.
+    /// </summary>
+    private static void SyncInstalledAppsEntry(LoggingSession loggingSession)
+    {
+        using var loggerFactory = new Serilog.Extensions.Logging.SerilogLoggerFactory(loggingSession.Logger);
+        _ = InstalledAppsEntrySync.SyncThisInstall(
+            new Microsoft.Extensions.Logging.Logger<InstalledAppsEntrySync>(loggerFactory));
     }
 
 

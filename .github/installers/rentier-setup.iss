@@ -40,6 +40,10 @@ AppId={{F7A3B2C1-D4E5-4F6A-8B9C-0D1E2F3A4B5C}
 AppName=Rentier
 AppVersion={#AppVersion}
 AppVerName=Rentier {#AppVersion}
+; No version in the Apps list name: in-app updates change the version, and the app then
+; rewrites DisplayVersion (InstalledAppsEntrySync), which it can keep current; a name
+; like "Rentier 1.4.0" would go stale.
+UninstallDisplayName=Rentier
 AppPublisher=Rentier
 AppPublisherURL=https://github.com/dj-milenkovic/rentier
 DefaultDirName={autopf}\Rentier

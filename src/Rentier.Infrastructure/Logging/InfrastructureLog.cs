@@ -122,6 +122,12 @@ internal static partial class InfrastructureLog
     [LoggerMessage(5009, LogLevel.Information, "Update download cancelled")]
     public static partial void UpdateDownloadCancelled(this ILogger logger);
 
+    [LoggerMessage(5010, LogLevel.Information, "Installed apps entry updated to version {Version}")]
+    public static partial void InstalledAppsEntryUpdated(this ILogger logger, string version);
+
+    [LoggerMessage(5011, LogLevel.Warning, "Updating the installed apps entry failed; Settings > Apps keeps showing the old version")]
+    public static partial void InstalledAppsEntryUpdateFailed(this ILogger logger, Exception exception);
+
     // ── Persistence (6xxx) ───────────────────────────────────────────────────
 
     [LoggerMessage(6001, LogLevel.Error, "Transaction rollback failed after a holiday save error.")]

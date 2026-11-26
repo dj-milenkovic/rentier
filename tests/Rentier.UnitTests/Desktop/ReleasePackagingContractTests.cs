@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using FluentAssertions;
 using Rentier.Desktop.Composition;
+using Rentier.Infrastructure.Updates;
 using Xunit;
 
 namespace Rentier.UnitTests.Desktop;
@@ -139,6 +140,43 @@ public class ReleasePackagingContractTests
 
         appId.Success.Should().BeTrue("rentier-setup.iss should define AppId");
         uninstallKey.Groups[1].Value.Should().Be(appId.Groups[1].Value);
+    }
+
+    [Fact]
+    public void InstalledAppsEntrySync_UninstallKey_UsesTheInstallerAppId()
+    {
+        // The app rewrites the Apps entry's version after an in-app update. If its key drifts from
+        // the installer's AppId, it silently finds no entry and the Apps list goes stale again.
+        var appId = Regex.Match(InstallerScript(), @"^AppId=\{(\{[0-9A-Fa-f-]+\})", RegexOptions.Multiline);
+
+        appId.Success.Should().BeTrue("rentier-setup.iss should define AppId");
+        InstalledAppsEntrySync.UNINSTALL_KEY_PATH.Should().EndWith($@"\Uninstall\{appId.Groups[1].Value}_is1");
+    }
+
+    [Fact]
+    public void Installer_UninstallDisplayName_IsTheNameTheAppKeeps()
+    {
+        // The app resets DisplayName to this on every start; the installer must write the same,
+        // with no version in it (the version changes with every in-app update).
+        InstallerScript().Should().MatchRegex(
+            $@"(?m)^UninstallDisplayName={Regex.Escape(InstalledAppsEntrySync.APP_DISPLAY_NAME)}$");
+    }
+
+    [Theory]
+    [InlineData("Smoke test the macOS app")]
+    [InlineData("Smoke test the AppImage")]
+    public void ReleaseWorkflow_SmokeTestsEveryPlatformsPackage(string step)
+    {
+        // Each package is the only download for its OS: a broken one must stop the release.
+        WorkflowStep(step).Should().Contain("--smoke-test-update");
+    }
+
+    [Fact]
+    public void ReleaseWorkflow_SmokeTestsTheWindowsLauncher()
+    {
+        // The shortcuts start Rentier.exe, so it must be run, not only current\Rentier.Desktop.exe.
+        WorkflowStep("Install, smoke test and uninstall the installer")
+            .Should().Contain("Join-Path $dir 'Rentier.exe') -ArgumentList '--smoke-test'");
     }
 
     [Fact]
