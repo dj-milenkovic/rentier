@@ -282,5 +282,26 @@ public static class SrLatnStrings
         ["Diagnostics_PrivacyNote"] = "Rentier izbegava da upisuje lične ili finansijske podatke u dnevnik, ali pregledajte dnevnik pre nego što ga podelite. Dnevnici stariji od 30 dana brišu se automatski.",
         ["Diagnostics_OpenFolderFailed"] = "Nije moguće otvoriti fasciklu. Možete je otvoriti ručno:",
         ["Diagnostics_SaveFailed"] = "Nije moguće zapamtiti ovo podešavanje. Ostaje aktivno do zatvaranja programa Rentier.",
+
+        ["Filings_FilterChip_Report"] = "Filtrirano po izveštaju",
+        ["Filings_FilterChip_Dismiss"] = "Ukloni filter izveštaja",
+        ["Holidays_Empty_Text"] = "Nema praznika u izabranom opsegu godina.",
+
+        // ── Update notification bar ──────────────────────────────────────────
+        ["Update_Available_Message"] = "Dostupna je nova verzija v{0}",
+        ["Update_Now_Button"] = "Ažuriraj sada",
+        ["Update_Later_Button"] = "Kasnije",
+        ["Update_Downloading_Message"] = "Preuzimanje ažuriranja... {0}%",
+        ["Update_Ready_Message"] = "Ažuriranje je spremno. Ponovo pokrenite program da biste ga primenili.",
+        ["Update_Restart_Button"] = "Ponovo pokreni",
+        ["Update_Error_Message"] = "Ažuriranje nije uspelo: {0}",
+        ["Update_Retry_Button"] = "Pokušaj ponovo",
+        ["Update_Dismiss_Button"] = "Zatvori",
+        ["Update_Error_NotInstalled"] = "ova kopija programa Rentier ne može sama da se ažurira. Preuzmite novu verziju sa stranice Releases.",
+        ["Update_Error_NoPending"] = "nijedno ažuriranje još nije spremno. Pokušajte ponovo kasnije.",
+        ["Update_Error_DownloadFailed"] = "preuzimanje nije završeno. Proverite internet vezu i pokušajte ponovo.",
+        ["Update_Error_DownloadCancelled"] = "preuzimanje je otkazano.",
+        ["Update_Error_ApplyFailed"] = "ažuriranje nije moglo da se instalira. Zatvorite i ponovo otvorite Rentier da biste pokušali još jednom.",
+        ["Update_Error_Unknown"] = "došlo je do neočekivane greške.",
     };
 }

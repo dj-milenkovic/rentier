@@ -11,9 +11,19 @@ name: Auto Release
 #   everything else                                           → PATCH
 #
 # Skip release: include [skip release] anywhere in the commit message.
+#
+# Dry run: tick "dry_run" (or dispatch with inputs[dry_run]=true), on any branch. Every job
+# builds, smoke-tests and verifies exactly as for a real release, but no tag is pushed and no
+# GitHub Release is created; the would-be release assets and notes are uploaded as one
+# workflow artifact, "release-preview-<version>", instead.
 
 on:
   workflow_dispatch:  # disabled auto-trigger; run manually when ready to release
+    inputs:
+      dry_run:
+        description: 'Dry run: build and verify every release asset, but create no tag and no release'
+        type: boolean
+        default: false
 
 # Serialize releases so concurrent merges never compute the same tag.
 # cancel-in-progress: false ensures both releases still happen, just sequentially.
@@ -26,6 +36,14 @@ env:
   PROJECT_PATH: src/Rentier.Desktop/Rentier.Desktop.csproj
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
   DOTNET_NOLOGO: 1
+  # Velopack auto-update. Every release also ships auto-updating "-velopack" packages next to
+  # the classic ones, plus one update feed per channel (releases.<channel>.json + .nupkg).
+  # Channels are named after the runtime: vpk adds the channel to file names only for
+  # non-default channels, so the OS defaults (win, linux) would collide in one release.
+  # The app reads the feed from REPO_URL (baked in via RentierUpdateFeedUrl), so a fork's
+  # build updates from the fork.
+  PACK_ID: Rentier
+  REPO_URL: https://github.com/${{ github.repository }}
 
 jobs:
   # ──────────────────────────────────────────────────────────────────
@@ -35,9 +53,10 @@ jobs:
     name: Compute next version
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.version.outputs.version }}
-      tag:     ${{ steps.version.outputs.tag }}
-      skip:    ${{ steps.skip.outputs.skip }}
+      version:  ${{ steps.version.outputs.version }}
+      tag:      ${{ steps.version.outputs.tag }}
+      prev_tag: ${{ steps.bump.outputs.prev_tag }}
+      skip:     ${{ steps.skip.outputs.skip }}
     permissions:
       contents: read
 
@@ -131,7 +150,13 @@ jobs:
           # GITHUB_TOKEN tag pushes don't re-trigger push.tags workflows, but the
           # build + release jobs below run directly in this same workflow run.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DRY_RUN: ${{ inputs.dry_run }}
         run: |
+          if [ "${DRY_RUN}" = "true" ]; then
+            echo "## 🧪 Dry run: ${NEW_TAG} would be tagged (no tag pushed)" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
@@ -178,6 +203,7 @@ jobs:
           -p:Version=${{ needs.compute-version.outputs.version }}
           -p:AssemblyVersion=${{ needs.compute-version.outputs.version }}
           -p:FileVersion=${{ needs.compute-version.outputs.version }}
+          -p:RentierUpdateFeedUrl=${{ env.REPO_URL }}
           -o ./publish/win-x64
 
       - name: Create ZIP archive
@@ -199,12 +225,75 @@ jobs:
             /DIconPath="$PWD\Assets\Icons\rentier.ico" `
             .github\installers\rentier-setup.iss
 
+      # ── Velopack (auto-updating) packages — in addition to the classic ones above ──
+      - name: Restore .NET tools (vpk)
+        run: dotnet tool restore
+
+      - name: Download previous Velopack release (delta base)
+        # The previous release's full package lets vpk build a small delta update. The first
+        # release that carries a Velopack feed has no predecessor, so this fails exactly once.
+        continue-on-error: true
+        shell: pwsh
+        run: dotnet vpk download github --repoUrl "${{ env.REPO_URL }}" --channel win-x64 -o velopack --token "${{ github.token }}" -x
+
+      - name: Pack Velopack release
+        shell: pwsh
+        env:
+          VERSION: ${{ needs.compute-version.outputs.version }}
+        # --noInst is required: Velopack's own Setup.exe installs to %LocalAppData%\<packId>,
+        # which for "Rentier" is the user data folder, and it replaces that folder on install.
+        # The portable layout is shipped inside InnoSetup instead (same path as today).
+        run: >
+          dotnet vpk pack
+          --packId $env:PACK_ID --packTitle Rentier --packAuthors Rentier
+          --packVersion $env:VERSION --packDir publish/win-x64 --runtime win-x64
+          --channel win-x64 -o velopack
+          --mainExe Rentier.Desktop.exe --icon Assets/Icons/rentier.ico
+          --noInst -x
+
+      - name: Collect Velopack feed and portable layout
+        shell: pwsh
+        env:
+          VERSION: ${{ needs.compute-version.outputs.version }}
+        run: |
+          # assets.<channel>.json lists exactly the files this pack created, so the downloaded
+          # previous-release package is never re-published.
+          $assets = Get-Content velopack/assets.win-x64.json -Raw | ConvertFrom-Json
+          New-Item -ItemType Directory -Force feed-out | Out-Null
+          $assets | Where-Object { $_.Type -in 'Full', 'Delta' } |
+            ForEach-Object { Copy-Item "velopack/$($_.RelativeFileName)" feed-out/ }
+          Copy-Item velopack/releases.win-x64.json feed-out/
+
+          $portable = ($assets | Where-Object Type -eq 'Portable').RelativeFileName
+          if (-not $portable) { throw "vpk produced no portable package" }
+          Copy-Item "velopack/$portable" "Rentier-$env:VERSION-win-x64-velopack.zip"
+          Expand-Archive "velopack/$portable" -DestinationPath publish/win-x64-velopack -Force
+
+      - name: Build Velopack InnoSetup installer
+        shell: pwsh
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" `
+            /DVelopack `
+            /DAppVersion=${{ needs.compute-version.outputs.version }} `
+            /DSourcePath="$PWD\publish\win-x64-velopack" `
+            /DOutputPath="$PWD" `
+            /DIconPath="$PWD\Assets\Icons\rentier.ico" `
+            .github\installers\rentier-setup.iss
+
       - uses: actions/upload-artifact@v7.0.1
         with:
           name: release-win-x64
           path: |
             Rentier-*-win-x64.zip
             Rentier-*-win-x64-setup.exe
+            Rentier-*-win-x64-velopack.zip
+            Rentier-*-win-x64-velopack-setup.exe
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v7.0.1
+        with:
+          name: feed-win-x64
+          path: feed-out/*
           if-no-files-found: error
 
   # ──────────────────────────────────────────────────────────────────
@@ -241,6 +330,7 @@ jobs:
           -p:Version=${{ needs.compute-version.outputs.version }}
           -p:AssemblyVersion=${{ needs.compute-version.outputs.version }}
           -p:FileVersion=${{ needs.compute-version.outputs.version }}
+          -p:RentierUpdateFeedUrl=${{ env.REPO_URL }}
           -o ./publish/${{ matrix.rid }}
 
       - name: Create .app bundle
@@ -312,10 +402,75 @@ jobs:
             exit 1
           fi
 
+      # ── Velopack (auto-updating) package — in addition to the classic DMG above ──
+      - name: Restore .NET tools (vpk)
+        run: dotnet tool restore
+
+      - name: Download previous Velopack release (delta base)
+        # Fails exactly once: the first release with a Velopack feed has no predecessor.
+        continue-on-error: true
+        run: dotnet vpk download github --repoUrl "${REPO_URL}" --channel "${{ matrix.rid }}" -o velopack --token "${{ github.token }}" -x
+
+      - name: Pack Velopack release
+        env:
+          VERSION: ${{ needs.compute-version.outputs.version }}
+          RID: ${{ matrix.rid }}
+        # vpk builds its own self-updating Rentier.app (Info.plist included). Its .pkg installer
+        # is not published — the DMG below remains the macOS download.
+        run: >
+          dotnet vpk pack
+          --packId "${PACK_ID}" --packTitle Rentier --packAuthors Rentier
+          --packVersion "${VERSION}" --packDir "publish/${RID}" --runtime "${RID}"
+          --channel "${RID}" -o velopack
+          --mainExe Rentier.Desktop --icon Assets/Icons/rentier.icns
+          --bundleId com.rentier.desktop -x
+
+      - name: Collect Velopack feed and build Velopack DMG
+        env:
+          VERSION: ${{ needs.compute-version.outputs.version }}
+          RID: ${{ matrix.rid }}
+        run: |
+          # assets.<channel>.json lists exactly the files this pack created.
+          ASSETS="velopack/assets.${RID}.json"
+          mkdir -p feed-out velopack-dmg
+          jq -r '.[] | select(.Type == "Full" or .Type == "Delta") | .RelativeFileName' "$ASSETS" \
+            | while read -r f; do cp "velopack/$f" feed-out/; done
+          cp "velopack/releases.${RID}.json" feed-out/
+
+          PORTABLE=$(jq -r '.[] | select(.Type == "Portable") | .RelativeFileName' "$ASSETS")
+          [ -n "$PORTABLE" ] || { echo "::error::vpk produced no portable package"; exit 1; }
+          ditto -x -k "velopack/${PORTABLE}" velopack-dmg
+          [ -d velopack-dmg/Rentier.app ] || { echo "::error::Rentier.app missing from ${PORTABLE}"; exit 1; }
+
+          create-dmg \
+            --volname "Rentier" \
+            --volicon "Assets/Icons/rentier.icns" \
+            --window-pos 200 120 \
+            --window-size 600 400 \
+            --icon-size 100 \
+            --icon "Rentier.app" 175 190 \
+            --hide-extension "Rentier.app" \
+            --app-drop-link 425 190 \
+            "Rentier-${VERSION}-${RID}-velopack.dmg" \
+            velopack-dmg || true
+
+          if [ ! -f "Rentier-${VERSION}-${RID}-velopack.dmg" ]; then
+            echo "::error::Velopack DMG creation failed for ${RID}"
+            exit 1
+          fi
+
       - uses: actions/upload-artifact@v7.0.1
         with:
           name: release-${{ matrix.rid }}
-          path: Rentier-*-${{ matrix.rid }}.dmg
+          path: |
+            Rentier-*-${{ matrix.rid }}.dmg
+            Rentier-*-${{ matrix.rid }}-velopack.dmg
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v7.0.1
+        with:
+          name: feed-${{ matrix.rid }}
+          path: feed-out/*
           if-no-files-found: error
 
   # ──────────────────────────────────────────────────────────────────
@@ -349,6 +504,7 @@ jobs:
           -p:Version=${{ needs.compute-version.outputs.version }}
           -p:AssemblyVersion=${{ needs.compute-version.outputs.version }}
           -p:FileVersion=${{ needs.compute-version.outputs.version }}
+          -p:RentierUpdateFeedUrl=${{ env.REPO_URL }}
           -o ./publish/linux-x64
 
       - name: Create tar.gz
@@ -412,12 +568,56 @@ jobs:
           dpkg-deb --build --root-owner-group "${PKG}"
           mv "${PKG}.deb" "Rentier-${VERSION}-linux-x64.deb"
 
+      # ── Velopack (auto-updating) AppImage — in addition to the classic packages above ──
+      # The .deb installs root-owned files under /usr/lib, which the app cannot replace, so on
+      # Linux only the AppImage can update itself.
+      - name: Restore .NET tools (vpk)
+        run: dotnet tool restore
+
+      - name: Download previous Velopack release (delta base)
+        # Fails exactly once: the first release with a Velopack feed has no predecessor.
+        continue-on-error: true
+        run: dotnet vpk download github --repoUrl "${REPO_URL}" --channel linux-x64 -o velopack --token "${{ github.token }}" -x
+
+      - name: Pack Velopack release
+        env:
+          VERSION: ${{ needs.compute-version.outputs.version }}
+        run: >
+          dotnet vpk pack
+          --packId "${PACK_ID}" --packTitle Rentier --packAuthors Rentier
+          --packVersion "${VERSION}" --packDir publish/linux-x64 --runtime linux-x64
+          --channel linux-x64 -o velopack
+          --mainExe Rentier.Desktop --icon Assets/Icons/png/rentier_256x256.png
+          --categories Office -x
+
+      - name: Collect Velopack feed and AppImage
+        env:
+          VERSION: ${{ needs.compute-version.outputs.version }}
+        run: |
+          # assets.<channel>.json lists exactly the files this pack created.
+          ASSETS=velopack/assets.linux-x64.json
+          mkdir -p feed-out
+          jq -r '.[] | select(.Type == "Full" or .Type == "Delta") | .RelativeFileName' "$ASSETS" \
+            | while read -r f; do cp "velopack/$f" feed-out/; done
+          cp velopack/releases.linux-x64.json feed-out/
+
+          APPIMAGE=$(jq -r '.[] | .RelativeFileName | select(endswith(".AppImage"))' "$ASSETS")
+          [ -n "$APPIMAGE" ] || { echo "::error::vpk produced no AppImage"; exit 1; }
+          cp "velopack/${APPIMAGE}" "Rentier-${VERSION}-linux-x64.AppImage"
+
       - uses: actions/upload-artifact@v7.0.1
         with:
           name: release-linux-x64
           path: |
             Rentier-*-linux-x64.tar.gz
             Rentier-*-linux-x64.deb
+            Rentier-*-linux-x64.AppImage
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v7.0.1
+        with:
+          name: feed-linux-x64
+          path: feed-out/*
           if-no-files-found: error
 
   # ──────────────────────────────────────────────────────────────────
@@ -466,6 +666,36 @@ jobs:
           }
           Write-Host "SMOKE TEST PASSED (exit code 0)"
 
+      - name: Validate Velopack portable layout and smoke test it
+        shell: pwsh
+        run: |
+          $zip = Get-ChildItem ./artifact -Filter "Rentier-*-win-x64-velopack.zip" -Recurse |
+            Select-Object -First 1
+          if (-not $zip) { throw "Velopack win-x64 ZIP not found in downloaded artifact" }
+          Expand-Archive -Path $zip.FullName -DestinationPath ./velopack-extracted -Force
+
+          # Without Update.exe + current\ next to the launcher, Velopack reports the app as not
+          # installed and the in-app updater silently does nothing.
+          foreach ($f in 'Rentier.exe', 'Update.exe', 'current\Rentier.Desktop.exe', 'current\sq.version') {
+            if (-not (Test-Path "./velopack-extracted/$f")) { throw "Velopack layout is missing $f" }
+          }
+
+          $proc = Start-Process ./velopack-extracted/current/Rentier.Desktop.exe `
+            -ArgumentList "--smoke-test" -PassThru -Wait -NoNewWindow
+          if ($proc.ExitCode -ne 0) {
+            throw "Velopack smoke test exited with code $($proc.ExitCode) — artifact is not functional"
+          }
+
+          # --smoke-test exits before Velopack starts, so it cannot see whether Velopack accepts
+          # this layout. --smoke-test-update runs after VelopackApp.Run() and fails when the app
+          # would report "not installed" (every update check skipped, nothing logged to the user).
+          $proc = Start-Process ./velopack-extracted/current/Rentier.Desktop.exe `
+            -ArgumentList "--smoke-test-update" -PassThru -Wait -NoNewWindow
+          if ($proc.ExitCode -ne 0) {
+            throw "Velopack update smoke test exited with code $($proc.ExitCode) — the installed app would never update"
+          }
+          Write-Host "VELOPACK SMOKE TEST PASSED (exit code 0)"
+
   # ──────────────────────────────────────────────────────────────────
   # Create GitHub Release with all artifacts + checksums
   # ──────────────────────────────────────────────────────────────────
@@ -487,6 +717,25 @@ jobs:
           path: dist
           merge-multiple: true
 
+      - name: Download Velopack feeds
+        uses: actions/download-artifact@v8.0.1
+        with:
+          pattern: feed-*
+          path: feeds
+
+      - name: Merge Velopack feeds into dist (fail on any name collision)
+        run: |
+          # Each channel's files must have unique names: in one GitHub release a duplicate
+          # would silently replace another channel's package.
+          for f in feeds/*/*; do
+            name=$(basename "$f")
+            if [ -e "dist/$name" ]; then
+              echo "::error::Release asset name collision: $name"
+              exit 1
+            fi
+            cp "$f" dist/
+          done
+
       - name: Verify all platform artifacts present
         working-directory: dist
         env:
@@ -499,6 +748,11 @@ jobs:
             "Rentier-${VERSION}-osx-x64.dmg"
             "Rentier-${VERSION}-linux-x64.tar.gz"
             "Rentier-${VERSION}-linux-x64.deb"
+            "Rentier-${VERSION}-win-x64-velopack.zip"
+            "Rentier-${VERSION}-win-x64-velopack-setup.exe"
+            "Rentier-${VERSION}-osx-arm64-velopack.dmg"
+            "Rentier-${VERSION}-osx-x64-velopack.dmg"
+            "Rentier-${VERSION}-linux-x64.AppImage"
           )
           missing=0
           for f in "${expected[@]}"; do
@@ -507,18 +761,45 @@ jobs:
           [ "$missing" -eq 0 ] || { echo "::error::Aborting release — missing artifact(s) above."; exit 1; }
           echo "All ${#expected[@]} platform artifacts present."
 
+      - name: Verify Velopack update feeds
+        working-directory: dist
+        env:
+          VERSION: ${{ needs.compute-version.outputs.version }}
+        run: |
+          # The installed app finds updates only through releases.<channel>.json; a release
+          # without a valid feed is exactly the silent failure this pipeline used to ship.
+          failed=0
+          for ch in win-x64 osx-arm64 osx-x64 linux-x64; do
+            feed="releases.${ch}.json"
+            if [ ! -f "$feed" ]; then
+              echo "::error::Missing update feed: $feed"; failed=1; continue
+            fi
+            pkg=$(jq -r --arg v "$VERSION" \
+              '.Assets[] | select(.Version == $v and .Type == "Full") | .FileName' "$feed")
+            if [ -z "$pkg" ]; then
+              echo "::error::$feed has no Full package for ${VERSION}"; failed=1
+            elif [ ! -f "$pkg" ]; then
+              echo "::error::$feed references $pkg, which is not in the release"; failed=1
+            else
+              echo "${ch}: ${pkg}"
+            fi
+          done
+          [ "$failed" -eq 0 ] || { echo "::error::Aborting release — invalid update feed(s) above."; exit 1; }
+
       - name: Generate SHA256 checksums
         working-directory: dist
         run: |
-          sha256sum Rentier-* | tee SHA256SUMS.txt
+          sha256sum Rentier-* releases.*.json | tee SHA256SUMS.txt
 
       - name: Generate release notes
         env:
           VERSION: ${{ needs.compute-version.outputs.version }}
           TAG: ${{ needs.compute-version.outputs.tag }}
+          # From compute-version, not "second-newest tag": a dry run pushes no new tag, so the
+          # newest tag is then the previous release.
+          PREV_TAG: ${{ needs.compute-version.outputs.prev_tag }}
         run: |
           {
-            PREV_TAG=$(git tag --sort=-version:refname | grep -E '^v[0-9]' | sed -n '2p' || true)
 
             if [ -n "$PREV_TAG" ]; then
               echo "## What's Changed since ${PREV_TAG}"
@@ -541,6 +822,19 @@ jobs:
             echo "| macOS x64 | \`Rentier-${VERSION}-osx-x64.dmg\` | — |"
             echo "| Linux x64 | \`Rentier-${VERSION}-linux-x64.deb\` | \`Rentier-${VERSION}-linux-x64.tar.gz\` |"
             echo ""
+            echo "### Auto-updating packages (preview)"
+            echo ""
+            echo "These install to the same place as the packages above, but Rentier then updates itself from inside the app."
+            echo ""
+            echo "| Platform | Installer | Portable |"
+            echo "|----------|-----------|----------|"
+            echo "| Windows x64 | \`Rentier-${VERSION}-win-x64-velopack-setup.exe\` | \`Rentier-${VERSION}-win-x64-velopack.zip\` |"
+            echo "| macOS ARM64 | \`Rentier-${VERSION}-osx-arm64-velopack.dmg\` | — |"
+            echo "| macOS x64 | \`Rentier-${VERSION}-osx-x64-velopack.dmg\` | — |"
+            echo "| Linux x64 | — | \`Rentier-${VERSION}-linux-x64.AppImage\` (\`chmod +x\`; may need \`libfuse2\`) |"
+            echo ""
+            echo "Switching from a package above: run the auto-updating installer once (Windows upgrades an install made for your account in place; an install made for all users must be uninstalled first, and the installer tells you so; on macOS replace \`Rentier.app\` in Applications). Your data is not affected."
+            echo ""
             echo "## Checksums (SHA256)"
             echo ""
             echo '```'
@@ -550,7 +844,39 @@ jobs:
 
           cat release-notes.md
 
+      - name: Upload release preview (dry run)
+        if: ${{ inputs.dry_run }}
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: release-preview-${{ needs.compute-version.outputs.version }}
+          path: |
+            dist/Rentier-*
+            dist/releases.*.json
+            dist/SHA256SUMS.txt
+            release-notes.md
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Summarize release preview (dry run)
+        if: ${{ inputs.dry_run }}
+        working-directory: dist
+        env:
+          TAG: ${{ needs.compute-version.outputs.tag }}
+        run: |
+          {
+            echo "## 🧪 Dry run: ${TAG} was NOT released"
+            echo ""
+            echo "Download the \`release-preview-*\` artifact of this run to inspect the files."
+            echo ""
+            echo "| Asset | Size |"
+            echo "|-------|------|"
+            for f in Rentier-* releases.*.json SHA256SUMS.txt; do
+              echo "| \`${f}\` | $(du -h "$f" | cut -f1) |"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Create GitHub Release
+        if: ${{ !inputs.dry_run }}
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           tag_name: ${{ needs.compute-version.outputs.tag }}
@@ -560,6 +886,7 @@ jobs:
           prerelease: false
           files: |
             dist/Rentier-*
+            dist/releases.*.json
             dist/SHA256SUMS.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

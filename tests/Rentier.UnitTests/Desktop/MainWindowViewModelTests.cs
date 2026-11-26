@@ -24,7 +24,7 @@ public class MainWindowViewModelTests
         services.AddSingleton<TimeProvider>(TestClock.Provider());
 
         // UpdateService
-        services.AddSingleton(_ => Substitute.For<IUpdateService>());
+        services.AddSingleton(_ => DesktopTestDoubles.UpdateService());
 
         // Dashboard
         services.AddTransient(_ =>

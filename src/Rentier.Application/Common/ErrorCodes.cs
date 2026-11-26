@@ -92,4 +92,17 @@ public static class ErrorCodes
     // ── Report processing retry ────────────────────────────────────────────
     public const string REPORT_PROCESS_DEFERRED = "REPORT_PROCESS_DEFERRED";
     public const string REPORT_PROCESS_ATTEMPTS_EXHAUSTED = "REPORT_PROCESS_ATTEMPTS_EXHAUSTED";
+
+    // ── Auto-update (IUpdateService) ───────────────────────────────────────
+    // The update bar maps these to localized text, so the service must use the constants.
+
+    /// <summary>This copy has no self-updating layout (dev run or a classic package).</summary>
+    public const string UPDATE_NOT_INSTALLED = "UPDATE_NOT_INSTALLED";
+
+    /// <summary>Nothing to download (no update found) or nothing downloaded to apply.</summary>
+    public const string UPDATE_NO_PENDING = "UPDATE_NO_PENDING";
+
+    public const string UPDATE_DOWNLOAD_FAILED = "UPDATE_DOWNLOAD_FAILED";
+    public const string UPDATE_DOWNLOAD_CANCELLED = "UPDATE_DOWNLOAD_CANCELLED";
+    public const string UPDATE_APPLY_FAILED = "UPDATE_APPLY_FAILED";
 }

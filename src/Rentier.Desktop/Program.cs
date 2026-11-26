@@ -4,10 +4,12 @@ using System.Runtime.InteropServices;
 using Avalonia;
 using ReactiveUI.Avalonia;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using Rentier.Application.Interfaces;
 using Rentier.Desktop.Composition;
 using Rentier.Desktop.Logging;
 using Rentier.Infrastructure;
+using Rentier.Infrastructure.Updates;
 using Serilog;
 using Velopack;
 
@@ -25,6 +27,12 @@ public static class Program
             return RunSmokeTest();
 
         VelopackApp.Build().Run();
+
+        // --smoke-test-update: exit 0 only if Velopack recognises this copy as installed, i.e.
+        // the in-app updater will actually run. Checked after VelopackApp.Run() on purpose — that
+        // is the state the real app sees. Used by release CI on the extracted portable layout.
+        if (args.Contains("--smoke-test-update"))
+            return RunUpdateLayoutSmokeTest();
 
         // Logging starts here, not in App: headless tests run App too and must not write
         // into the developer's real logs folder.
@@ -82,6 +90,36 @@ public static class Program
             // or UI exists, and Task.Run keeps the work off the STA thread. It is the same
             // bridge the compiler emits for an async Main.
             return Task.Run(SmokeTestAsync).GetAwaiter().GetResult();
+        }
+        // Process boundary: any failure becomes a non-zero exit code for the CI smoke step.
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"[SMOKE] FAILED: {ex}");
+            return 1;
+        }
+    }
+
+    /// <summary>
+    /// Fails when the update service would report "not installed" — the state in which every
+    /// update check is skipped and the updater silently does nothing. Also fails when the update
+    /// feed URL was not baked into the build (the service cannot be constructed).
+    /// </summary>
+    private static int RunUpdateLayoutSmokeTest()
+    {
+        try
+        {
+            // No logging session on this path; the result goes to the console for CI.
+            using var updates = new VelopackUpdateService(NullLogger<VelopackUpdateService>.Instance);
+            if (!updates.IsInstalled)
+            {
+                Console.Error.WriteLine(
+                    "[SMOKE] FAILED: Velopack does not recognise this layout as installed; " +
+                    "in-app updates would silently do nothing.");
+                return 1;
+            }
+
+            Console.WriteLine("[SMOKE] Velopack layout recognised; in-app updates are enabled. Exiting 0.");
+            return 0;
         }
         // Process boundary: any failure becomes a non-zero exit code for the CI smoke step.
         catch (Exception ex)

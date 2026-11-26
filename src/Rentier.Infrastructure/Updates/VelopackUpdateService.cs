@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Infrastructure.Logging;
@@ -12,6 +13,26 @@ namespace Rentier.Infrastructure.Updates;
 /// </summary>
 public sealed class VelopackUpdateService : IUpdateService, IDisposable
 {
+    // Messages are for logs and diagnostics only. The UI shows localized text chosen by the
+    // error code, never Error.Message: an exception message can carry internal URLs or paths.
+    private static readonly Error NotInstalled =
+        new(ErrorCodes.UPDATE_NOT_INSTALLED, "This copy of Rentier cannot update itself.");
+
+    private static readonly Error NothingToDownload =
+        new(ErrorCodes.UPDATE_NO_PENDING, "No update is available to download.");
+
+    private static readonly Error NothingToApply =
+        new(ErrorCodes.UPDATE_NO_PENDING, "No downloaded update is waiting to be applied.");
+
+    private static readonly Error DownloadFailed =
+        new(ErrorCodes.UPDATE_DOWNLOAD_FAILED, "The update could not be downloaded.");
+
+    private static readonly Error DownloadCancelled =
+        new(ErrorCodes.UPDATE_DOWNLOAD_CANCELLED, "The update download was cancelled.");
+
+    private static readonly Error ApplyFailed =
+        new(ErrorCodes.UPDATE_APPLY_FAILED, "The downloaded update could not be applied.");
+
     private readonly IVelopackManager _manager;
     private readonly ILogger<VelopackUpdateService> _logger;
     private readonly SemaphoreSlim _semaphore = new(1, 1);
@@ -42,19 +63,27 @@ public sealed class VelopackUpdateService : IUpdateService, IDisposable
         CancellationToken cancellationToken = default)
     {
         if (!_manager.IsInstalled)
+        {
+            _logger.UpdateCheckSkippedNotInstalled();
             return new UpdateCheckResult(false, null);
+        }
 
         try
         {
             var version = await _manager.CheckForUpdatesAsync(cancellationToken)
                                         .ConfigureAwait(false);
-            return version is not null
-                ? new UpdateCheckResult(true, version)
-                : new UpdateCheckResult(false, null);
+            if (version is null)
+            {
+                _logger.UpdateNotAvailable();
+                return new UpdateCheckResult(false, null);
+            }
+
+            _logger.UpdateAvailable(version);
+            return new UpdateCheckResult(true, version);
         }
         catch (Exception ex)
         {
-            // Silent failure — network errors must never surface to the user during startup.
+            // Silent for the user — a failed check must never interrupt startup — but logged.
             // Deliberately broad (and includes cancellation): the result type has no failure
             // channel and "no update information" is the correct outcome for every failure.
             _logger.UpdateCheckFailed(ex);
@@ -63,18 +92,45 @@ public sealed class VelopackUpdateService : IUpdateService, IDisposable
     }
 
     /// <inheritdoc />
-    public async Task DownloadUpdateAsync(
+    public async Task<Result<bool, Error>> DownloadUpdateAsync(
         Action<int> progress,
         CancellationToken cancellationToken = default)
     {
         if (!_manager.IsInstalled)
-            return;
+            return Result<bool, Error>.Failure(NotInstalled);
 
-        await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+        if (!_manager.HasUpdateToDownload)
+            return Result<bool, Error>.Failure(NothingToDownload);
+
+        // Cancellation is a Result too, including while another download holds the semaphore:
+        // this method's contract is that it never throws.
+        try
+        {
+            await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.UpdateDownloadCancelled();
+            return Result<bool, Error>.Failure(DownloadCancelled);
+        }
+
         try
         {
             await _manager.DownloadUpdatesAsync(progress, cancellationToken)
                           .ConfigureAwait(false);
+            return Result<bool, Error>.Success(true);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            _logger.UpdateDownloadCancelled();
+            return Result<bool, Error>.Failure(DownloadCancelled);
+        }
+        // Infrastructure boundary: network, disk, checksum and lock failures all become a
+        // Result the UI can show; none of them may crash the app.
+        catch (Exception ex)
+        {
+            _logger.UpdateDownloadFailed(ex);
+            return Result<bool, Error>.Failure(DownloadFailed);
         }
         finally
         {
@@ -83,21 +139,27 @@ public sealed class VelopackUpdateService : IUpdateService, IDisposable
     }
 
     /// <inheritdoc />
-    public void ApplyUpdateAndRestart()
+    public Result<bool, Error> ApplyUpdateAndRestart()
     {
         if (!_manager.IsInstalled)
-            return;
+            return Result<bool, Error>.Failure(NotInstalled);
 
-        _manager.ApplyUpdatesAndRestart();
-    }
+        if (!_manager.HasUpdateToApply)
+            return Result<bool, Error>.Failure(NothingToApply);
 
-    /// <inheritdoc />
-    public void ScheduleUpdateOnExit()
-    {
-        if (!_manager.IsInstalled)
-            return;
-
-        _manager.WaitExitThenApplyUpdates();
+        try
+        {
+            // On success Velopack exits the process here.
+            _manager.ApplyUpdatesAndRestart();
+            return Result<bool, Error>.Success(true);
+        }
+        // Infrastructure boundary: a missing Update.exe or a held lock must surface as an
+        // error the user can see, not an unhandled exception.
+        catch (Exception ex)
+        {
+            _logger.UpdateApplyFailed(ex);
+            return Result<bool, Error>.Failure(ApplyFailed);
+        }
     }
 
     /// <inheritdoc />

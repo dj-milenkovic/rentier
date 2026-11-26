@@ -7,6 +7,7 @@ using ReactiveUI.Primitives.Signals;
 using ReactiveUI.Primitives.Disposables;
 using Rentier.Desktop.Extensions;
 using ReactiveUI;
+using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Desktop.Services;
@@ -43,7 +44,7 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
     private UpdateState _currentUpdateState = UpdateState.Idle;
     private string? _availableVersion;
     private int _downloadProgress;
-    private string? _updateErrorMessage;
+    private string? _updateErrorCode;
 
     public UpdateState CurrentUpdateState
     {
@@ -79,15 +80,20 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
         }
     }
 
-    public string? UpdateErrorMessage
+    /// <summary>
+    /// Localized reason for the last update failure, chosen by error code. Never the service's
+    /// <see cref="Error.Message"/>: that is English-only and may quote an exception (URLs, paths).
+    /// </summary>
+    public string? UpdateErrorMessage => _updateErrorCode switch
     {
-        get => _updateErrorMessage;
-        private set
-        {
-            this.RaiseAndSetIfChanged(ref _updateErrorMessage, value);
-            this.RaisePropertyChanged(nameof(UpdateFailedText));
-        }
-    }
+        null => null,
+        ErrorCodes.UPDATE_NOT_INSTALLED => _localizationService["Update_Error_NotInstalled"],
+        ErrorCodes.UPDATE_NO_PENDING => _localizationService["Update_Error_NoPending"],
+        ErrorCodes.UPDATE_DOWNLOAD_FAILED => _localizationService["Update_Error_DownloadFailed"],
+        ErrorCodes.UPDATE_DOWNLOAD_CANCELLED => _localizationService["Update_Error_DownloadCancelled"],
+        ErrorCodes.UPDATE_APPLY_FAILED => _localizationService["Update_Error_ApplyFailed"],
+        _ => _localizationService["Update_Error_Unknown"],
+    };
 
     // ── Localized format-string properties for the update notification bar ───
 
@@ -168,8 +174,7 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
             RunDownloadUpdateAsync, canBeginUpdate, outputScheduler: _outputScheduler);
 
         RestartNowCommand = ReactiveCommand.Create(
-            () => updateService.ApplyUpdateAndRestart(),
-            canRestart, outputScheduler: _outputScheduler);
+            RestartNow, canRestart, outputScheduler: _outputScheduler);
 
         DismissRestartCommand = ReactiveCommand.CreateFromTask(
             OnDismissRestartAsync,
@@ -221,9 +226,27 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
 
     private async Task OnDismissRestartAsync()
     {
-        _updateService.ScheduleUpdateOnExit();
+        // Nothing to schedule: Velopack applies a downloaded update on the next launch by default.
+        // (WaitExitThenApplyUpdates is not an option — it kills the app if it is still running
+        // 60 seconds later.)
         CurrentUpdateState = UpdateState.Idle;
         await Task.CompletedTask;
+    }
+
+    private void RestartNow()
+    {
+        // Returns only on failure; on success the process exits and relaunches.
+        var result = _updateService.ApplyUpdateAndRestart();
+        if (!result.IsSuccess)
+            ShowUpdateError(result.Error);
+    }
+
+    private void ShowUpdateError(Error error)
+    {
+        _updateErrorCode = error.Code;
+        this.RaisePropertyChanged(nameof(UpdateErrorMessage));
+        this.RaisePropertyChanged(nameof(UpdateFailedText));
+        CurrentUpdateState = UpdateState.Error;
     }
 
     private List<NavigationEntry> BuildNavigationEntries(
@@ -306,21 +329,24 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
                 UpdateNavigationLabels(_localizationService);
                 this.RaisePropertyChanged(nameof(UpdateAvailableText));
                 this.RaisePropertyChanged(nameof(DownloadingText));
+                this.RaisePropertyChanged(nameof(UpdateErrorMessage));
                 this.RaisePropertyChanged(nameof(UpdateFailedText));
             })
             .DisposeWith(disposables);
 
-        // Auto-check for updates in background on activation
-        RxSchedulers.TaskpoolScheduler.Schedule(() =>
-                Signal.FromAsync(async ct => { await RunCheckForUpdateAsync(); return RxVoid.Default; })
-                    .Subscribe())
-            .DisposeWith(disposables);
+        // Auto-check for updates on activation. Activation runs on the UI thread and the check
+        // awaits without ConfigureAwait(false), so every bound update-state change happens on the
+        // UI thread; the service does its own I/O off it.
+        // Execute() ignores CanExecute, so guard explicitly: a re-activation must not restart the
+        // check from UpdateAvailable/Downloading/Downloaded/Dismissed and wipe that state.
+        if (CurrentUpdateState == UpdateState.Idle)
+            CheckForUpdateCommand.Execute().Subscribe().DisposeWith(disposables);
     }
 
     private async Task RunCheckForUpdateAsync()
     {
         CurrentUpdateState = UpdateState.Checking;
-        var result = await _updateService.CheckForUpdatesAsync().ConfigureAwait(false);
+        var result = await _updateService.CheckForUpdatesAsync();
         if (result.IsUpdateAvailable)
         {
             AvailableVersion = result.TargetVersion;
@@ -335,22 +361,14 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
     private async Task RunDownloadUpdateAsync()
     {
         CurrentUpdateState = UpdateState.Downloading;
-        try
-        {
-            await _updateService.DownloadUpdateAsync(
-                progress => RxSchedulers.MainThreadScheduler.Schedule(
-                    () => DownloadProgress = progress))
-                .ConfigureAwait(false);
+        var result = await _updateService.DownloadUpdateAsync(
+            progress => RxSchedulers.MainThreadScheduler.Schedule(
+                () => DownloadProgress = progress));
 
+        if (result.IsSuccess)
             CurrentUpdateState = UpdateState.Downloaded;
-        }
-        // UI boundary: IUpdateService.DownloadUpdateAsync has no Result channel, and any download
-        // failure (network, disk, package) must become the Error state rather than crash the app.
-        catch (Exception ex)
-        {
-            UpdateErrorMessage = ex.Message;
-            CurrentUpdateState = UpdateState.Error;
-        }
+        else
+            ShowUpdateError(result.Error);
     }
 
     private void UpdateNavigationLabels(ILocalizationService loc)

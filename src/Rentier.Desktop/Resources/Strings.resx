@@ -791,6 +791,24 @@
   <data name="Update_Dismiss_Button" xml:space="preserve">
     <value>Dismiss</value>
   </data>
+  <data name="Update_Error_NotInstalled" xml:space="preserve">
+    <value>this copy of Rentier cannot update itself. Download the new version from the Releases page.</value>
+  </data>
+  <data name="Update_Error_NoPending" xml:space="preserve">
+    <value>no update is ready yet. Try again later.</value>
+  </data>
+  <data name="Update_Error_DownloadFailed" xml:space="preserve">
+    <value>the download did not complete. Check your internet connection and try again.</value>
+  </data>
+  <data name="Update_Error_DownloadCancelled" xml:space="preserve">
+    <value>the download was cancelled.</value>
+  </data>
+  <data name="Update_Error_ApplyFailed" xml:space="preserve">
+    <value>the update could not be installed. Close and reopen Rentier to try again.</value>
+  </data>
+  <data name="Update_Error_Unknown" xml:space="preserve">
+    <value>an unexpected error occurred.</value>
+  </data>
   <data name="Reports_Filter_Name_Watermark" xml:space="preserve">
     <value>Filter by name...</value>
   </data>
