@@ -30,7 +30,7 @@ If you prefer not to run an installer, use the Windows ZIP, the macOS DMG or the
 
 ### Updates
 
-The packages above update themselves. Rentier packages of **v1.3.0 and earlier do not**: see [Switching from v1.3.0 or earlier](#switching-from-v130-or-earlier) below.
+The packages above update themselves. Packages of **v1.3.0 and earlier**, and the **v1.3.1** packages without `-velopack` in their name, **do not**: see [Switching from a package that does not update itself](#switching-from-a-package-that-does-not-update-itself) below.
 
 Each time Rentier starts, it checks the Releases page for a newer version. If there is one, a bar appears at the top of the window:
 
@@ -40,9 +40,9 @@ Each time Rentier starts, it checks the Releases page for a newer version. If th
 
 If the download or the installation fails, a red bar shows **"Update failed: <reason>"** with **Retry** (try the download again) and **Dismiss**. If Rentier cannot reach the Releases page, for example when you are offline, it shows no bar and simply checks again on the next start.
 
-### Switching from v1.3.0 or earlier
+### Switching from a package that does not update itself
 
-Packages of v1.3.0 and earlier cannot update themselves. Switch once; after that Rentier updates from inside the app.
+Packages of v1.3.0 and earlier, and the v1.3.1 packages without `-velopack` in their name, cannot update themselves. Switch once; after that Rentier updates from inside the app. If you installed v1.3.1 from a `-velopack` package, there is nothing to do.
 
 | Operating system | What to do |
 |---|---|

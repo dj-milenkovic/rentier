@@ -30,7 +30,7 @@ Ako ne želite da pokrećete instaler, koristite Windows ZIP, macOS DMG ili Linu
 
 ### Ažuriranja
 
-Gore navedeni paketi se sami ažuriraju. Rentier paketi **v1.3.0 i stariji to ne mogu**: pogledajte [Prelazak sa verzije v1.3.0 ili starije](#prelazak-sa-verzije-v130-ili-starije) ispod.
+Gore navedeni paketi se sami ažuriraju. Paketi **v1.3.0 i stariji**, kao i **v1.3.1** paketi bez `-velopack` u nazivu, **to ne mogu**: pogledajte [Prelazak sa paketa koji se ne ažurira sam](#prelazak-sa-paketa-koji-se-ne-ažurira-sam) ispod.
 
 Pri svakom pokretanju Rentier proverava da li na Releases stranici postoji novija verzija. Ako postoji, na vrhu prozora se pojavljuje traka:
 
@@ -40,9 +40,9 @@ Pri svakom pokretanju Rentier proverava da li na Releases stranici postoji novij
 
 Ako preuzimanje ili instalacija ne uspe, crvena traka prikazuje **„Ažuriranje nije uspelo: <razlog>”** sa dugmićima **Pokušaj ponovo** (ponovo pokreće preuzimanje) i **Zatvori**. Ako Rentier ne može da pristupi Releases stranici, na primer kada niste povezani na internet, ne prikazuje nikakvu traku i jednostavno ponovo proverava pri sledećem pokretanju.
 
-### Prelazak sa verzije v1.3.0 ili starije
+### Prelazak sa paketa koji se ne ažurira sam
 
-Paketi v1.3.0 i stariji ne mogu sami da se ažuriraju. Pređite jednom; posle toga se Rentier ažurira iz same aplikacije.
+Paketi v1.3.0 i stariji, kao i v1.3.1 paketi bez `-velopack` u nazivu, ne mogu sami da se ažuriraju. Pređite jednom; posle toga se Rentier ažurira iz same aplikacije. Ako ste v1.3.1 instalirali iz `-velopack` paketa, ne morate ništa da radite.
 
 | Operativni sistem | Šta treba uraditi |
 |---|---|

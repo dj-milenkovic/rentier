@@ -100,7 +100,7 @@ Download the package for your system from [GitHub Releases](../../releases):
 | macOS | `Rentier-<version>-osx-arm64.dmg` (Apple silicon) or `Rentier-<version>-osx-x64.dmg` (Intel) |
 | Linux | `Rentier-<version>-linux-x64.AppImage` (portable; `chmod +x`; may need `libfuse2`; needs ICU, `libicu`) |
 
-Every package updates itself: when Rentier starts and finds a newer version, a bar at the top of the window offers to download and install it. Packages of v1.3.0 and earlier cannot update themselves; switch once as described in [Getting Started](docs/en-US/GETTING-STARTED.md#switching-from-v130-or-earlier). Your data stays in your user profile and is not affected.
+Every package updates itself: when Rentier starts and finds a newer version, a bar at the top of the window offers to download and install it. Packages of v1.3.0 and earlier, and the v1.3.1 packages without `-velopack` in their name, cannot update themselves; switch once as described in [Getting Started](docs/en-US/GETTING-STARTED.md#switching-from-a-package-that-does-not-update-itself). Your data stays in your user profile and is not affected.
 
 ---
 
