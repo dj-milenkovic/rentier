@@ -38,7 +38,7 @@ Pri svakom pokretanju Rentier proverava da li na Releases stranici postoji novij
 2. **„Preuzimanje ažuriranja... <n>%”** prikazuje napredak preuzimanja.
 3. **„Ažuriranje je spremno. Ponovo pokrenite program da biste ga primenili.”**: izaberite **Ponovo pokreni** da se Rentier zatvori, instalira ažuriranje i ponovo pokrene, ili **Kasnije** da nastavite sa radom. Ako izaberete Kasnije, ažuriranje se instalira pri sledećem pokretanju Rentier-a.
 
-Ako preuzimanje ili instalacija ne uspe, crvena traka prikazuje **„Ažuriranje nije uspelo: <razlog>”** sa dugmićima **Pokušaj ponovo** (ponovo pokreće preuzimanje) i **Zatvori**. Ako Rentier ne može da pristupi Releases stranici, na primer kada niste povezani na internet, ne prikazuje nikakvu traku i jednostavno ponovo proverava pri sledećem pokretanju.
+Ako preuzimanje ili instalacija ne uspe, crvena traka prikazuje **„Ažuriranje nije uspelo: <razlog>”** sa dugmićima **Pokušaj ponovo** i **Zatvori**. **Pokušaj ponovo** ponovo preuzima ažuriranje; kada se preuzimanje završi, ponovo se pojavljuje traka „Ažuriranje je spremno”. Ako razlog kaže da ažuriranje nije moglo da se instalira, možete i da zatvorite i ponovo otvorite Rentier: preuzeto ažuriranje se instalira pri pokretanju. Ako Rentier ne može da pristupi Releases stranici, na primer kada niste povezani na internet, ne prikazuje nikakvu traku i jednostavno ponovo proverava pri sledećem pokretanju.
 
 ### Prelazak sa paketa koji se ne ažurira sam
 

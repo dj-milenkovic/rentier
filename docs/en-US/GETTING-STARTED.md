@@ -38,7 +38,7 @@ Each time Rentier starts, it checks the Releases page for a newer version. If th
 2. **"Downloading update... <n>%"** shows the download progress.
 3. **"Update ready. Restart to apply."**: choose **Restart Now** to close Rentier, install the update and start it again, or **Later** to keep working. If you choose Later, the update is installed the next time you start Rentier.
 
-If the download or the installation fails, a red bar shows **"Update failed: <reason>"** with **Retry** (try the download again) and **Dismiss**. If Rentier cannot reach the Releases page, for example when you are offline, it shows no bar and simply checks again on the next start.
+If the download or the installation fails, a red bar shows **"Update failed: <reason>"** with **Retry** and **Dismiss**. **Retry** downloads the update again; when it is done, the "Update ready" bar appears again. If the reason says the update could not be installed, you can also close and reopen Rentier: it installs a downloaded update when it starts. If Rentier cannot reach the Releases page, for example when you are offline, it shows no bar and simply checks again on the next start.
 
 ### Switching from a package that does not update itself
 

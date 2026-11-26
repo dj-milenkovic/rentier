@@ -376,6 +376,27 @@ jobs:
             exit 1
           fi
 
+      - name: Smoke test the macOS app
+        env:
+          RID: ${{ matrix.rid }}
+        run: |
+          # The DMG holds this same Rentier.app, and it is the only macOS download: run it before
+          # release. --smoke-test-update fails unless Velopack accepts the bundle as installed.
+          # macos-latest is Apple silicon, so the osx-x64 app runs under Rosetta 2.
+          if [ "$RID" = "osx-x64" ] && ! arch -x86_64 /usr/bin/true 2>/dev/null; then
+            sudo softwareupdate --install-rosetta --agree-to-license
+          fi
+
+          APP=velopack-dmg/Rentier.app
+          EXE=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "${APP}/Contents/Info.plist")
+          BIN="${APP}/Contents/MacOS/${EXE}"
+          [ -x "$BIN" ] || { echo "::error::${BIN} is missing or not executable"; exit 1; }
+
+          for arg in --smoke-test --smoke-test-update; do
+            "$BIN" "$arg" || { echo "::error::${RID} Rentier.app: ${arg} failed"; exit 1; }
+          done
+          echo "MACOS SMOKE TEST PASSED (${RID})"
+
       - uses: actions/upload-artifact@v7.0.1
         with:
           name: release-${{ matrix.rid }}
@@ -458,6 +479,20 @@ jobs:
           [ -n "$APPIMAGE" ] || { echo "::error::vpk produced no AppImage"; exit 1; }
           cp "velopack/${APPIMAGE}" "Rentier-${VERSION}-linux-x64.AppImage"
 
+      - name: Smoke test the AppImage
+        env:
+          VERSION: ${{ needs.compute-version.outputs.version }}
+        run: |
+          # The AppImage is the only Linux download: run it before release, through its own
+          # entry point, so Velopack sees what a user's copy sees. APPIMAGE_EXTRACT_AND_RUN=1
+          # runs it without FUSE. --smoke-test-update fails unless Velopack accepts it as installed.
+          APP="./Rentier-${VERSION}-linux-x64.AppImage"
+          chmod +x "$APP"
+          for arg in --smoke-test --smoke-test-update; do
+            APPIMAGE_EXTRACT_AND_RUN=1 "$APP" "$arg" || { echo "::error::AppImage ${arg} failed"; exit 1; }
+          done
+          echo "APPIMAGE SMOKE TEST PASSED"
+
       - uses: actions/upload-artifact@v7.0.1
         with:
           name: release-linux-x64
@@ -522,8 +557,9 @@ jobs:
         shell: pwsh
         run: |
           # setup.exe is the main Windows download: install it per-user (silently, into a temp
-          # folder), check that Velopack accepts the installed layout, then uninstall it and check
-          # that the user data folder survived.
+          # folder), check that Velopack accepts the installed layout and that the Rentier.exe
+          # launcher (what the shortcuts start) runs the app, then uninstall it and check that the
+          # user data folder and its files survived.
           $setup = Get-ChildItem ./artifact -Filter "Rentier-*-win-x64-setup.exe" -Recurse |
             Select-Object -First 1
           if (-not $setup) { throw "Win-x64 installer not found in downloaded artifact" }
@@ -541,25 +577,49 @@ jobs:
             if (-not (Test-Path (Join-Path $dir $f))) { throw "Installed layout is missing $f" }
           }
 
+          # The portable ZIP step above already created the user data folder. Start from none, so
+          # the checks below see what the installed copy does.
+          $data = Join-Path $env:LOCALAPPDATA 'Rentier'
+          $smokeDb = Join-Path $data 'rentier-smoke.db'
+          Remove-Item $data -Recurse -Force -ErrorAction SilentlyContinue
+
           $exe = Join-Path $dir 'current\Rentier.Desktop.exe'
           foreach ($arg in '--smoke-test', '--smoke-test-update') {
             $proc = Start-Process $exe -ArgumentList $arg -PassThru -Wait -NoNewWindow
             if ($proc.ExitCode -ne 0) { throw "Installed app: $arg exited with code $($proc.ExitCode)" }
           }
+          if (-not (Test-Path $smokeDb)) { throw "The installed app's --smoke-test did not create $smokeDb" }
 
-          # --smoke-test created the user data folder; uninstalling must leave it alone.
-          $data = Join-Path $env:LOCALAPPDATA 'Rentier'
-          if (-not (Test-Path $data)) { throw "Expected the smoke test to create $data" }
+          # The shortcuts start Rentier.exe, Velopack's launcher, not the app itself. It starts
+          # current\Rentier.Desktop.exe with the same arguments and exits without waiting, so its
+          # exit code says nothing about the app: check that the app ran (the smoke database is
+          # created again) and has exited.
+          Remove-Item $smokeDb -Force
+          $proc = Start-Process (Join-Path $dir 'Rentier.exe') -ArgumentList '--smoke-test' -PassThru -Wait
+          if ($proc.ExitCode -ne 0) { throw "Launcher Rentier.exe exited with code $($proc.ExitCode)" }
+          $deadline = (Get-Date).AddSeconds(120)
+          while (-not (Test-Path $smokeDb) -or (Get-Process -Name 'Rentier.Desktop' -ErrorAction SilentlyContinue)) {
+            if ((Get-Date) -gt $deadline) { throw "Rentier.exe did not start the app (no $smokeDb, or the app never exited)" }
+            Start-Sleep -Seconds 2
+          }
 
-          Start-Process (Join-Path $dir 'unins000.exe') -Wait `
+          # Uninstalling must leave the user data folder and every file in it alone, not just
+          # the folder itself.
+          $sentinel = Join-Path $data 'uninstall-must-keep-this.txt'
+          Set-Content -Path $sentinel -Value 'user data'
+
+          $proc = Start-Process (Join-Path $dir 'unins000.exe') -PassThru -Wait `
             -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART'
+          if ($proc.ExitCode -ne 0) { throw "Uninstaller exited with code $($proc.ExitCode)" }
           # The uninstaller hands over to a temporary copy of itself, so wait for the files to go.
           $deadline = (Get-Date).AddSeconds(120)
           while ((Test-Path (Join-Path $dir 'Rentier.exe')) -or (Test-Path (Join-Path $dir 'current'))) {
             if ((Get-Date) -gt $deadline) { throw "Uninstall did not remove the installed files" }
             Start-Sleep -Seconds 2
           }
-          if (-not (Test-Path $data)) { throw "Uninstall deleted the user data folder $data" }
+          foreach ($f in $sentinel, $smokeDb) {
+            if (-not (Test-Path $f)) { throw "Uninstall deleted user data: $f" }
+          }
           Write-Host "INSTALLER SMOKE TEST PASSED"
 
   # ──────────────────────────────────────────────────────────────────
