@@ -11,9 +11,19 @@ name: Auto Release
 #   everything else                                           → PATCH
 #
 # Skip release: include [skip release] anywhere in the commit message.
+#
+# Dry run: tick "dry_run" (or dispatch with inputs[dry_run]=true), on any branch. Every job
+# builds, smoke-tests and verifies exactly as for a real release, but no tag is pushed and no
+# GitHub Release is created; the would-be release assets and notes are uploaded as one
+# workflow artifact, "release-preview-<version>", instead.
 
 on:
   workflow_dispatch:  # disabled auto-trigger; run manually when ready to release
+    inputs:
+      dry_run:
+        description: 'Dry run: build and verify every release asset, but create no tag and no release'
+        type: boolean
+        default: false
 
 # Serialize releases so concurrent merges never compute the same tag.
 # cancel-in-progress: false ensures both releases still happen, just sequentially.
@@ -43,9 +53,10 @@ jobs:
     name: Compute next version
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.version.outputs.version }}
-      tag:     ${{ steps.version.outputs.tag }}
-      skip:    ${{ steps.skip.outputs.skip }}
+      version:  ${{ steps.version.outputs.version }}
+      tag:      ${{ steps.version.outputs.tag }}
+      prev_tag: ${{ steps.bump.outputs.prev_tag }}
+      skip:     ${{ steps.skip.outputs.skip }}
     permissions:
       contents: read
 
@@ -139,7 +150,13 @@ jobs:
           # GITHUB_TOKEN tag pushes don't re-trigger push.tags workflows, but the
           # build + release jobs below run directly in this same workflow run.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DRY_RUN: ${{ inputs.dry_run }}
         run: |
+          if [ "${DRY_RUN}" = "true" ]; then
+            echo "## 🧪 Dry run: ${NEW_TAG} would be tagged (no tag pushed)" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
@@ -778,9 +795,11 @@ jobs:
         env:
           VERSION: ${{ needs.compute-version.outputs.version }}
           TAG: ${{ needs.compute-version.outputs.tag }}
+          # From compute-version, not "second-newest tag": a dry run pushes no new tag, so the
+          # newest tag is then the previous release.
+          PREV_TAG: ${{ needs.compute-version.outputs.prev_tag }}
         run: |
           {
-            PREV_TAG=$(git tag --sort=-version:refname | grep -E '^v[0-9]' | sed -n '2p' || true)
 
             if [ -n "$PREV_TAG" ]; then
               echo "## What's Changed since ${PREV_TAG}"
@@ -825,7 +844,39 @@ jobs:
 
           cat release-notes.md
 
+      - name: Upload release preview (dry run)
+        if: ${{ inputs.dry_run }}
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: release-preview-${{ needs.compute-version.outputs.version }}
+          path: |
+            dist/Rentier-*
+            dist/releases.*.json
+            dist/SHA256SUMS.txt
+            release-notes.md
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Summarize release preview (dry run)
+        if: ${{ inputs.dry_run }}
+        working-directory: dist
+        env:
+          TAG: ${{ needs.compute-version.outputs.tag }}
+        run: |
+          {
+            echo "## 🧪 Dry run: ${TAG} was NOT released"
+            echo ""
+            echo "Download the \`release-preview-*\` artifact of this run to inspect the files."
+            echo ""
+            echo "| Asset | Size |"
+            echo "|-------|------|"
+            for f in Rentier-* releases.*.json SHA256SUMS.txt; do
+              echo "| \`${f}\` | $(du -h "$f" | cut -f1) |"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Create GitHub Release
+        if: ${{ !inputs.dry_run }}
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           tag_name: ${{ needs.compute-version.outputs.tag }}

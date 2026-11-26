@@ -78,6 +78,27 @@ public class ReleasePackagingContractTests
     }
 
     [Fact]
+    public void ReleaseWorkflow_DryRun_DoesNotCreateGitHubRelease()
+    {
+        // A dry run is meant to be safe on any branch: it must never publish a release.
+        var releaseStep = Regex.Match(ReleaseWorkflow(),
+            @"- name: Create GitHub Release\n(?<body>(?:(?!\n\s*- name:).)*)", RegexOptions.Singleline);
+
+        releaseStep.Success.Should().BeTrue("auto-release.yml should have a Create GitHub Release step");
+        releaseStep.Groups["body"].Value.Should().Contain("if: ${{ !inputs.dry_run }}");
+    }
+
+    [Fact]
+    public void ReleaseWorkflow_DryRun_ExitsBeforePushingTheTag()
+    {
+        var workflow = ReleaseWorkflow();
+        var dryRunExit = workflow.IndexOf("if [ \"${DRY_RUN}\" = \"true\" ]", StringComparison.Ordinal);
+        var tagPush = workflow.IndexOf("git push origin \"${NEW_TAG}\"", StringComparison.Ordinal);
+
+        dryRunExit.Should().BeInRange(0, tagPush, "the dry-run exit must come before the tag push");
+    }
+
+    [Fact]
     public void VelopackInstaller_AllUsersInstallCheck_UsesTheInstallerAppId()
     {
         // The per-user Velopack installer detects an all-users classic install by its HKLM
