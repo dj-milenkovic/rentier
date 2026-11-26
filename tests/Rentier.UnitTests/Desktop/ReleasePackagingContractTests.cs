@@ -18,6 +18,35 @@ public class ReleasePackagingContractTests
 
     private static string ReleaseWorkflow() => ReadRepoFile(".github/workflows/auto-release.yml");
 
+    private static string InstallerScript() => ReadRepoFile(".github/installers/rentier-setup.iss");
+
+    /// <summary>The body of one workflow step, from its <c>- name:</c> line to the next step.</summary>
+    private static string WorkflowStep(string name)
+    {
+        var step = Regex.Match(ReleaseWorkflow(),
+            $@"- name: {Regex.Escape(name)}\n(?<body>(?:(?!\n\s*- name:).)*)", RegexOptions.Singleline);
+        step.Success.Should().BeTrue($"auto-release.yml should have a '{name}' step");
+        return step.Groups["body"].Value;
+    }
+
+    /// <summary>The file names the release job requires, e.g. <c>Rentier-${VERSION}-win-x64.zip</c>.</summary>
+    private static IReadOnlyList<string> ExpectedReleaseAssets()
+    {
+        var list = Regex.Match(WorkflowStep("Verify all platform artifacts present"),
+            @"expected=\((?<items>[^)]*)\)", RegexOptions.Singleline);
+        list.Success.Should().BeTrue("the verify step should list the expected assets in expected=( )");
+        return Regex.Matches(list.Groups["items"].Value, "\"([^\"]+)\"").Select(m => m.Groups[1].Value).ToList();
+    }
+
+    /// <summary>Every <c>Name:</c> entry of one <c>[Section]</c> of the installer script.</summary>
+    private static IReadOnlyList<string> InstallerEntryNames(string section)
+    {
+        var body = Regex.Match(InstallerScript(),
+            $@"^\[{section}\]\n(?<body>(?:(?!^\[).)*)", RegexOptions.Singleline | RegexOptions.Multiline);
+        body.Success.Should().BeTrue($"rentier-setup.iss should have an [{section}] section");
+        return Regex.Matches(body.Groups["body"].Value, @"Name:\s*""([^""]+)""").Select(m => m.Groups[1].Value).ToList();
+    }
+
     private static string WorkflowEnv(string name)
     {
         var match = Regex.Match(ReleaseWorkflow(), $@"^\s*{name}:\s*(\S+)\s*$", RegexOptions.Multiline);
@@ -101,14 +130,92 @@ public class ReleasePackagingContractTests
     [Fact]
     public void VelopackInstaller_AllUsersInstallCheck_UsesTheInstallerAppId()
     {
-        // The per-user Velopack installer detects an all-users classic install by its HKLM
+        // The per-user installer detects an all-users install of an earlier version by its HKLM
         // uninstall key, which is named after AppId. If the two drift apart, the check silently
         // never fires and the installer creates a second copy again.
-        var script = ReadRepoFile(".github/installers/rentier-setup.iss");
+        var script = InstallerScript();
         var appId = Regex.Match(script, @"^AppId=\{(\{[0-9A-Fa-f-]+\})", RegexOptions.Multiline);
         var uninstallKey = Regex.Match(script, @"ClassicUninstallKey = '[^']*\\Uninstall\\(\{[0-9A-Fa-f-]+\})_is1'");
 
         appId.Success.Should().BeTrue("rentier-setup.iss should define AppId");
         uninstallKey.Groups[1].Value.Should().Be(appId.Groups[1].Value);
+    }
+
+    [Fact]
+    public void ReleaseWorkflow_ExpectedAssets_IncludeNoPackageThatCannotUpdateItself()
+    {
+        // A .deb installs root-owned files the app cannot replace, and a plain archive has no
+        // Velopack layout: neither can ever update itself, so neither may ship again.
+        ExpectedReleaseAssets().Should().NotContain(name =>
+            name.EndsWith(".deb", StringComparison.Ordinal) || name.EndsWith(".tar.gz", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void ReleaseNotes_ListEveryExpectedAsset()
+    {
+        // The download table is how users pick a file; it must not drift from what is published.
+        var notes = WorkflowStep("Generate release notes");
+
+        ExpectedReleaseAssets().Should().OnlyContain(name => notes.Contains(name, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void ReleaseWorkflow_SmokeTestsTheInstaller()
+    {
+        // setup.exe is the main Windows download: it must be installed and checked before release.
+        WorkflowStep("Install, smoke test and uninstall the installer")
+            .Should().Contain("-Filter \"Rentier-*-win-x64-setup.exe\"");
+    }
+
+    [Fact]
+    public void Installer_OutputName_IsAnExpectedReleaseAsset()
+    {
+        var baseName = Regex.Match(InstallerScript(), @"^OutputBaseFilename=(\S+)$", RegexOptions.Multiline);
+        baseName.Success.Should().BeTrue("rentier-setup.iss should define OutputBaseFilename");
+
+        var fileName = baseName.Groups[1].Value.Replace("{#AppVersion}", "${VERSION}") + ".exe";
+
+        ExpectedReleaseAssets().Should().Contain(fileName);
+    }
+
+    [Fact]
+    public void Installer_PrivilegesRequired_IsLowest()
+    {
+        // The app replaces its own files when it updates, which it cannot do in Program Files.
+        InstallerScript().Should().MatchRegex(@"(?m)^PrivilegesRequired=lowest$");
+    }
+
+    [Fact]
+    public void Installer_DoesNotOfferAnAllUsersInstall()
+    {
+        // PrivilegesRequiredOverridesAllowed would bring back the "install for all users" choice,
+        // and with it an install the app cannot update.
+        InstallerScript().Should().NotContain("PrivilegesRequiredOverridesAllowed");
+    }
+
+    [Fact]
+    public void Installer_DefaultDirName_IsThePerUserProgramsFolder()
+    {
+        // For a per-user install {autopf} is %LocalAppData%\Programs, so the install folder is
+        // never the user data folder (%LocalAppData%\Rentier), and the [InstallDelete] entries
+        // for {app} can never reach the user's database.
+        InstallerScript().Should().MatchRegex(@"(?m)^DefaultDirName=\{autopf\}\\Rentier$");
+    }
+
+    [Fact]
+    public void Installer_Shortcuts_StartTheVelopackLauncher()
+    {
+        // Rentier.exe is Velopack's launcher stub: it survives updates and always starts the
+        // current version. A shortcut to anything else breaks after the first update.
+        InstallerScript().Should().MatchRegex(@"(?m)^#define MainExe ""Rentier\.exe""$");
+    }
+
+    [Theory]
+    [InlineData("InstallDelete")]
+    [InlineData("UninstallDelete")]
+    public void Installer_DeleteEntries_StayInsideTheInstallFolder(string section)
+    {
+        // The user's tax database lives outside {app}; a delete entry anywhere else could reach it.
+        InstallerEntryNames(section).Should().OnlyContain(name => name.StartsWith(@"{app}\", StringComparison.Ordinal));
     }
 }

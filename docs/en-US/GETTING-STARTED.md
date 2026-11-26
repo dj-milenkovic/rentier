@@ -9,7 +9,6 @@ This guide walks you through installing Rentier, configuring your taxpayer profi
 | Requirement | Details |
 |---|---|
 | Operating system | Windows 10, Ubuntu 20.04, or macOS 12 (or later) |
-| .NET Runtime | [.NET 10.0](https://dotnet.microsoft.com/download) |
 | IBKR account | With dividends or interest activity to report |
 | Serbian JMBG | Your 13-digit personal identification number |
 
@@ -17,11 +16,42 @@ This guide walks you through installing Rentier, configuring your taxpayer profi
 
 ## Step 1 — Download and Install
 
-Rentier is downloaded from the project's [GitHub Releases](https://github.com/dj-milenkovic/rentier/releases) page, where both installer and portable builds are available for Windows, macOS, and Linux.
+Download Rentier from the project's [GitHub Releases](https://github.com/dj-milenkovic/rentier/releases) page. Every package includes everything Rentier needs to run, so you do not need to install .NET.
 
-1. Open the Releases page and download the package for your operating system.
-2. For the installer build, run the installer and follow the prompts.
-3. For the portable build, extract the archive to your preferred location and run the executable directly — no installation required.
+| Operating system | File | How to install |
+|---|---|---|
+| Windows (installer) | `Rentier-<version>-win-x64-setup.exe` | Run it and follow the prompts. It installs Rentier for your account only (by default in `%LocalAppData%\Programs\Rentier`) and needs no administrator rights. |
+| Windows (portable) | `Rentier-<version>-win-x64.zip` | Extract it into a new, empty folder that you can write to (for example in your user folder) and start `Rentier.exe`. No setup program runs. |
+| macOS, Apple silicon (M1 and later) | `Rentier-<version>-osx-arm64.dmg` | Open the DMG and drag `Rentier.app` into **Applications**. Start it from Applications, not from the DMG. |
+| macOS, Intel | `Rentier-<version>-osx-x64.dmg` | As above. |
+| Linux x64 | `Rentier-<version>-linux-x64.AppImage` | Make it executable (`chmod +x Rentier-<version>-linux-x64.AppImage`) and run it. Keep it in a folder you can write to. It may need `libfuse2`, and it needs ICU (`libicu`), which most distributions already include. |
+
+If you prefer not to run an installer, use the Windows ZIP, the macOS DMG or the Linux AppImage: none of them runs a setup program, and they update themselves just like the installer.
+
+### Updates
+
+The packages above update themselves. Rentier packages of **v1.3.0 and earlier do not**: see [Switching from v1.3.0 or earlier](#switching-from-v130-or-earlier) below.
+
+Each time Rentier starts, it checks the Releases page for a newer version. If there is one, a bar appears at the top of the window:
+
+1. **"Update v<version> available"**: choose **Update Now** to download it, or **Later** to hide the bar. Rentier asks again the next time it starts.
+2. **"Downloading update... <n>%"** shows the download progress.
+3. **"Update ready. Restart to apply."**: choose **Restart Now** to close Rentier, install the update and start it again, or **Later** to keep working. If you choose Later, the update is installed the next time you start Rentier.
+
+If the download or the installation fails, a red bar shows **"Update failed: <reason>"** with **Retry** (try the download again) and **Dismiss**. If Rentier cannot reach the Releases page, for example when you are offline, it shows no bar and simply checks again on the next start.
+
+### Switching from v1.3.0 or earlier
+
+Packages of v1.3.0 and earlier cannot update themselves. Switch once; after that Rentier updates from inside the app.
+
+| Operating system | What to do |
+|---|---|
+| Windows, installed | Run `Rentier-<version>-win-x64-setup.exe` once. If Rentier was installed for your account, the installer upgrades it in place. If it was installed **for all users**, the installer tells you so and stops: uninstall Rentier in **Settings → Apps** first, then run the installer again. |
+| Windows, portable ZIP | Extract the new ZIP into a new, empty folder and start `Rentier.exe`. Then delete the old folder and any shortcuts to its `Rentier.Desktop.exe`. |
+| macOS | Open the new DMG and drag `Rentier.app` into **Applications**, replacing the old one. |
+| Linux | Use the AppImage instead of the `.deb` or `.tar.gz` package. If you installed the `.deb`, remove it with `sudo apt remove rentier` so the old menu entry no longer starts the old version. |
+
+**Your data is not affected.** Rentier keeps its database, settings and logs in your user profile, not in the program folder: `%LocalAppData%\Rentier` on Windows, `~/Library/Application Support/Rentier` on macOS, and `~/.local/share/Rentier` on Linux. Switching packages, updating or uninstalling the program leaves that folder alone.
 
 ---
 
@@ -150,7 +180,7 @@ For each filing:
 
 Rentier writes one log file per day (for example `rentier-20260115.log`) and deletes logs older than 30 days. Logs record what the app did and any errors, with timestamps. Rentier avoids writing personal or financial data to them (no names, email addresses, account numbers or amounts), but skim a log before sharing it.
 
-- **Find them:** open **Settings → Diagnostics → Open logs folder**. On Windows the folder is `%LOCALAPPDATA%\Rentier\logs`; on macOS and Linux it is `Rentier/logs` inside your user data folder (`~/.local/share`).
+- **Find them:** open **Settings → Diagnostics → Open logs folder**. On Windows the folder is `%LOCALAPPDATA%\Rentier\logs`, on macOS `~/Library/Application Support/Rentier/logs`, and on Linux `~/.local/share/Rentier/logs`.
 - **More detail:** if you are asked to reproduce a problem, turn on **Detailed (debug) logging** on the same page. It takes effect immediately and is remembered until you turn it off.
 - **Report a problem:** attach the log for the day it happened to your [GitHub issue](https://github.com/dj-milenkovic/rentier/issues).
 

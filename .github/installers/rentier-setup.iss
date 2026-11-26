@@ -2,19 +2,22 @@
 ; Build: iscc /DAppVersion=1.0.0 rentier-setup.iss
 ; CI overrides SourcePath, OutputPath, and IconPath via /D flags.
 ;
-; /DVelopack builds the auto-updating variant: SourcePath is then Velopack's portable layout
-; (Rentier.exe launcher + Update.exe + current\), installed to the same folder and under the
-; same AppId as the classic installer, so either one upgrades a per-user install of the other
-; in place. The auto-updating variant is per-user only, so it cannot upgrade a classic install
-; made "for all users" (Program Files, registered under HKLM); it stops and asks the user to
-; uninstall that copy first (see [Code]). Without /DVelopack the script produces the classic
-; installer unchanged.
+; Installs Velopack's portable layout (Rentier.exe launcher + Update.exe + current\), so the app
+; updates itself from inside. It installs per-user only, to %LocalAppData%\Programs\Rentier: the
+; app replaces its own files when it updates, which it cannot do inside an all-users Program Files
+; install. The AppId is the one every earlier Rentier installer used, so an earlier per-user
+; install is upgraded in place. An earlier install made "for all users" (Program Files, registered
+; under HKLM) cannot be replaced by a per-user installer, so setup stops and asks the user to
+; uninstall that copy first (see [Code]).
+;
+; User data lives in %LocalAppData%\Rentier, a different folder: this script never touches it.
 
 #ifndef AppVersion
   #define AppVersion "0.0.0"
 #endif
 #ifndef SourcePath
-  #define SourcePath "..\..\publish\win-x64"
+  ; Velopack's portable layout, as CI extracts it from vpk's Portable.zip.
+  #define SourcePath "..\..\publish\win-x64-velopack"
 #endif
 #ifndef OutputPath
   #define OutputPath "..\..\artifacts"
@@ -23,14 +26,14 @@
   #define IconPath "..\..\Assets\Icons\rentier.ico"
 #endif
 
-#ifdef Velopack
-  ; Velopack's launcher stub: survives updates, always starts the current version.
-  #define MainExe "Rentier.exe"
-  #define OutputSuffix "-velopack"
-#else
-  #define MainExe "Rentier.Desktop.exe"
-  #define OutputSuffix ""
+; A plain `dotnet publish` folder has no Update.exe: an installer built from it would never update
+; and its shortcuts would point at a Rentier.exe that does not exist.
+#if !FileExists(AddBackslash(SourcePath) + "Update.exe")
+  #error SourcePath must be Velopack's portable layout (Update.exe is missing)
 #endif
+
+; Velopack's launcher stub: survives updates, always starts the current version.
+#define MainExe "Rentier.exe"
 
 [Setup]
 AppId={{F7A3B2C1-D4E5-4F6A-8B9C-0D1E2F3A4B5C}
@@ -43,7 +46,7 @@ DefaultDirName={autopf}\Rentier
 DefaultGroupName=Rentier
 DisableProgramGroupPage=yes
 OutputDir={#OutputPath}
-OutputBaseFilename=Rentier-{#AppVersion}-win-x64{#OutputSuffix}-setup
+OutputBaseFilename=Rentier-{#AppVersion}-win-x64-setup
 SetupIconFile={#IconPath}
 UninstallDisplayIcon={app}\{#MainExe}
 Compression=lzma2
@@ -51,12 +54,9 @@ SolidCompression=yes
 WizardStyle=modern
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
+; Per-user only, with no "install for all users" option: the app replaces its own files when it
+; updates, which it cannot do inside an all-users Program Files install.
 PrivilegesRequired=lowest
-#ifndef Velopack
-; The auto-updating variant is always per-user: the app replaces its own files when it updates,
-; which it cannot do inside an all-users Program Files install.
-PrivilegesRequiredOverridesAllowed=dialog
-#endif
 LicenseFile=..\..\LICENSE
 MinVersion=10.0
 
@@ -66,14 +66,12 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
-#ifdef Velopack
 [InstallDelete]
-; Files a previous classic install or earlier in-app updates left behind. Install folder only —
-; user data lives in %LocalAppData%\Rentier and is never touched.
+; Files an earlier non-updating install or earlier in-app updates left behind. Install folder
+; only — user data lives in %LocalAppData%\Rentier and is never touched.
 Type: files; Name: "{app}\Rentier.Desktop.exe"
 Type: filesandordirs; Name: "{app}\current"
 Type: filesandordirs; Name: "{app}\packages"
-#endif
 
 [Files]
 Source: "{#SourcePath}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
@@ -86,19 +84,17 @@ Name: "{autodesktop}\Rentier"; Filename: "{app}\{#MainExe}"; IconFilename: "{app
 [Run]
 Filename: "{app}\{#MainExe}"; Description: "{cm:LaunchProgram,Rentier}"; Flags: nowait postinstall skipifsilent
 
-#ifdef Velopack
 [UninstallDelete]
 ; In-app updates replace current\ and download into packages\, so uninstall cannot rely on
 ; its own file list for them. Install folder only — never the user data folder.
 Type: filesandordirs; Name: "{app}\current"
 Type: filesandordirs; Name: "{app}\packages"
-#endif
 
-#ifdef Velopack
 [Code]
-// A classic install made "for all users" lives in Program Files and is registered under HKLM.
-// This per-user installer only sees HKCU, so it would add a second copy instead of upgrading:
-// two entries in Apps, and the all-users shortcut keeps opening the old copy, which never updates.
+// An earlier Rentier install made "for all users" lives in Program Files and is registered under
+// HKLM. This per-user installer only sees HKCU, so it would add a second copy instead of
+// upgrading: two entries in Apps, and the all-users shortcut keeps opening the old copy, which
+// never updates.
 const
   ClassicUninstallKey = 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{F7A3B2C1-D4E5-4F6A-8B9C-0D1E2F3A4B5C}_is1';
 
@@ -129,11 +125,10 @@ begin
     SuppressibleMsgBox(
       'Rentier is already installed for all users of this computer, in:' + #13#10 +
       Location + #13#10#13#10 +
-      'The auto-updating version installs for your account only and cannot replace that copy.' + #13#10 +
+      'This version installs for your account only, so that it can update itself, and cannot replace that copy.' + #13#10 +
       'Uninstall Rentier in Settings > Apps first, then run this installer again.' + #13#10#13#10 +
       'Your data is not affected: it is stored in your user profile, not in the install folder.',
       mbCriticalError, MB_OK, IDOK);
     Result := False;
   end;
 end;
-#endif
