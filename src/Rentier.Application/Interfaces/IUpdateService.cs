@@ -26,8 +26,8 @@ public interface IUpdateService
 
     /// <summary>
     /// Downloads the update found by the last successful <see cref="CheckForUpdatesAsync"/>,
-    /// reporting progress from 0 to 100. Returns a failure when nothing is pending or the
-    /// download fails.
+    /// reporting progress from 0 to 100. Never throws: returns a failure when nothing is
+    /// pending, the download fails, or it is cancelled (one of the <c>ErrorCodes.UPDATE_*</c> codes).
     /// </summary>
     Task<Result<bool, Error>> DownloadUpdateAsync(
         Action<int> progress,

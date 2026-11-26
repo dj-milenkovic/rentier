@@ -32,11 +32,20 @@ public class MainWindowViewModel_UpdateTests
         return svc;
     }
 
+    private static readonly string[] UpdateErrorKeys =
+    [
+        "Update_Error_NotInstalled", "Update_Error_NoPending", "Update_Error_DownloadFailed",
+        "Update_Error_DownloadCancelled", "Update_Error_ApplyFailed", "Update_Error_Unknown",
+    ];
+
     private static Task<Result<bool, Error>> DownloadSucceeded()
         => Task.FromResult(Result<bool, Error>.Success(true));
 
     private static Task<Result<bool, Error>> DownloadFailed(string message)
-        => Task.FromResult(Result<bool, Error>.Failure(new Error("UPDATE_DOWNLOAD_FAILED", message)));
+        => DownloadFailedWith(ErrorCodes.UPDATE_DOWNLOAD_FAILED, message);
+
+    private static Task<Result<bool, Error>> DownloadFailedWith(string code, string message = "service text")
+        => Task.FromResult(Result<bool, Error>.Failure(new Error(code, message)));
 
     private static async Task<MainWindowViewModel> CreateVmInDownloadedStateAsync(IUpdateService updateService)
     {
@@ -167,6 +176,9 @@ public class MainWindowViewModel_UpdateTests
         locService["Update_Available_Message"].Returns("Update v{0} available");
         locService["Update_Downloading_Message"].Returns("Downloading update... {0}%");
         locService["Update_Error_Message"].Returns("Update failed: {0}");
+        // Failure reasons resolve to their own key name, so a test can see which one was chosen.
+        foreach (var key in UpdateErrorKeys)
+            locService[key].Returns(key);
         return locService;
     }
 
@@ -391,7 +403,7 @@ public class MainWindowViewModel_UpdateTests
     {
         var updateService = BuildUpdateService(new UpdateCheckResult(true, "2.0.0"));
         updateService.ApplyUpdateAndRestart()
-            .Returns(Result<bool, Error>.Failure(new Error("UPDATE_APPLY_FAILED", "Update.exe missing")));
+            .Returns(Result<bool, Error>.Failure(new Error(ErrorCodes.UPDATE_APPLY_FAILED, "Update.exe missing")));
         var vm = await CreateVmInDownloadedStateAsync(updateService);
 
         await vm.RestartNowCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
@@ -404,12 +416,32 @@ public class MainWindowViewModel_UpdateTests
     {
         var updateService = BuildUpdateService(new UpdateCheckResult(true, "2.0.0"));
         updateService.ApplyUpdateAndRestart()
-            .Returns(Result<bool, Error>.Failure(new Error("UPDATE_APPLY_FAILED", "Update.exe missing")));
+            .Returns(Result<bool, Error>.Failure(new Error(ErrorCodes.UPDATE_APPLY_FAILED, "Update.exe missing")));
         var vm = await CreateVmInDownloadedStateAsync(updateService);
 
         await vm.RestartNowCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
-        vm.UpdateErrorMessage.Should().Be("Update.exe missing");
+        vm.UpdateErrorMessage.Should().Be("Update_Error_ApplyFailed");
+    }
+
+    [Theory]
+    [InlineData(ErrorCodes.UPDATE_NOT_INSTALLED, "Update_Error_NotInstalled")]
+    [InlineData(ErrorCodes.UPDATE_NO_PENDING, "Update_Error_NoPending")]
+    [InlineData(ErrorCodes.UPDATE_DOWNLOAD_FAILED, "Update_Error_DownloadFailed")]
+    [InlineData(ErrorCodes.UPDATE_DOWNLOAD_CANCELLED, "Update_Error_DownloadCancelled")]
+    [InlineData(ErrorCodes.UPDATE_APPLY_FAILED, "Update_Error_ApplyFailed")]
+    [InlineData("SOMETHING_ELSE", "Update_Error_Unknown")]
+    public async Task UpdateErrorMessage_WhenDownloadFails_IsLocalizedTextForTheErrorCode(string code, string expectedKey)
+    {
+        var updateService = BuildUpdateService(new UpdateCheckResult(true, "2.0.0"));
+        updateService.DownloadUpdateAsync(Arg.Any<Action<int>>(), Arg.Any<CancellationToken>())
+            .Returns(DownloadFailedWith(code));
+        var vm = CreateVm(updateService);
+        await vm.CheckForUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
+
+        await vm.BeginUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
+
+        vm.UpdateErrorMessage.Should().Be(expectedKey);
     }
 
     // ── Automatic check on activation ─────────────────────────────────────────
@@ -423,6 +455,45 @@ public class MainWindowViewModel_UpdateTests
         using var _ = vm.Activator.Activate();
 
         updateService.Received(1).CheckForUpdatesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public void Activation_WhenUpdateAlreadyFound_DoesNotCheckAgain()
+    {
+        var updateService = BuildUpdateService(new UpdateCheckResult(true, "2.0.0"));
+        var vm = CreateVm(updateService);
+        vm.Activator.Activate().Dispose();
+        updateService.ClearReceivedCalls();
+
+        using var _ = vm.Activator.Activate();
+
+        updateService.DidNotReceive().CheckForUpdatesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Activation_WhenUpdateDownloaded_KeepsDownloadedState()
+    {
+        // Re-activation must not send a downloaded update back to "available": the Restart
+        // button would disappear.
+        var updateService = BuildUpdateService(new UpdateCheckResult(true, "2.0.0"));
+        var vm = await CreateVmInDownloadedStateAsync(updateService);
+
+        using var _ = vm.Activator.Activate();
+
+        vm.CurrentUpdateState.Should().Be(UpdateState.Downloaded);
+    }
+
+    [Fact]
+    public async Task Activation_WhenUpdateDismissed_KeepsBarHidden()
+    {
+        var updateService = BuildUpdateService(new UpdateCheckResult(true, "2.0.0"));
+        var vm = CreateVm(updateService);
+        await vm.CheckForUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
+        await vm.DismissUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
+
+        using var _ = vm.Activator.Activate();
+
+        vm.UpdateBarVisible.Should().BeFalse();
     }
 
     [AvaloniaFact]
@@ -495,8 +566,9 @@ public class MainWindowViewModel_UpdateTests
     }
 
     [Fact]
-    public async Task UpdateFailedText_WhenDownloadFails_ContainsErrorMessage()
+    public async Task UpdateFailedText_WhenDownloadFails_DoesNotShowServiceErrorMessage()
     {
+        // Error.Message is English-only and may quote an exception (internal URLs, paths).
         var updateService = BuildUpdateService(new UpdateCheckResult(true, "2.0.0"));
         updateService.DownloadUpdateAsync(Arg.Any<Action<int>>(), Arg.Any<CancellationToken>())
             .Returns(DownloadFailed("Network error"));
@@ -505,7 +577,7 @@ public class MainWindowViewModel_UpdateTests
 
         await vm.BeginUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
-        vm.UpdateFailedText.Should().Contain("Network error");
+        vm.UpdateFailedText.Should().NotContain("Network error");
     }
 
     [Fact]
@@ -519,7 +591,7 @@ public class MainWindowViewModel_UpdateTests
 
         await vm.BeginUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
 
-        vm.UpdateFailedText.Should().Be("Update failed: Timeout");
+        vm.UpdateFailedText.Should().Be("Update failed: Update_Error_DownloadFailed");
     }
 }
 

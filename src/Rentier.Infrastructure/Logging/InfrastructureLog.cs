@@ -119,6 +119,9 @@ internal static partial class InfrastructureLog
     [LoggerMessage(5008, LogLevel.Warning, "Applying the downloaded update failed")]
     public static partial void UpdateApplyFailed(this ILogger logger, Exception exception);
 
+    [LoggerMessage(5009, LogLevel.Information, "Update download cancelled")]
+    public static partial void UpdateDownloadCancelled(this ILogger logger);
+
     // ── Persistence (6xxx) ───────────────────────────────────────────────────
 
     [LoggerMessage(6001, LogLevel.Error, "Transaction rollback failed after a holiday save error.")]

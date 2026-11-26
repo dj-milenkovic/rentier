@@ -297,5 +297,11 @@ public static class SrLatnStrings
         ["Update_Error_Message"] = "Ažuriranje nije uspelo: {0}",
         ["Update_Retry_Button"] = "Pokušaj ponovo",
         ["Update_Dismiss_Button"] = "Zatvori",
+        ["Update_Error_NotInstalled"] = "ova kopija programa Rentier ne može sama da se ažurira. Preuzmite novu verziju sa stranice Releases.",
+        ["Update_Error_NoPending"] = "nijedno ažuriranje još nije spremno. Pokušajte ponovo kasnije.",
+        ["Update_Error_DownloadFailed"] = "preuzimanje nije završeno. Proverite internet vezu i pokušajte ponovo.",
+        ["Update_Error_DownloadCancelled"] = "preuzimanje je otkazano.",
+        ["Update_Error_ApplyFailed"] = "ažuriranje nije moglo da se instalira. Zatvorite i ponovo otvorite Rentier da biste pokušali još jednom.",
+        ["Update_Error_Unknown"] = "došlo je do neočekivane greške.",
     };
 }

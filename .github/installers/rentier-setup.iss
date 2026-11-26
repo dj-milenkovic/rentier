@@ -4,8 +4,11 @@
 ;
 ; /DVelopack builds the auto-updating variant: SourcePath is then Velopack's portable layout
 ; (Rentier.exe launcher + Update.exe + current\), installed to the same folder and under the
-; same AppId as the classic installer, so either one upgrades the other in place. Without
-; /DVelopack the script produces the classic installer unchanged.
+; same AppId as the classic installer, so either one upgrades a per-user install of the other
+; in place. The auto-updating variant is per-user only, so it cannot upgrade a classic install
+; made "for all users" (Program Files, registered under HKLM); it stops and asks the user to
+; uninstall that copy first (see [Code]). Without /DVelopack the script produces the classic
+; installer unchanged.
 
 #ifndef AppVersion
   #define AppVersion "0.0.0"
@@ -89,4 +92,48 @@ Filename: "{app}\{#MainExe}"; Description: "{cm:LaunchProgram,Rentier}"; Flags: 
 ; its own file list for them. Install folder only — never the user data folder.
 Type: filesandordirs; Name: "{app}\current"
 Type: filesandordirs; Name: "{app}\packages"
+#endif
+
+#ifdef Velopack
+[Code]
+// A classic install made "for all users" lives in Program Files and is registered under HKLM.
+// This per-user installer only sees HKCU, so it would add a second copy instead of upgrading:
+// two entries in Apps, and the all-users shortcut keeps opening the old copy, which never updates.
+const
+  ClassicUninstallKey = 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{F7A3B2C1-D4E5-4F6A-8B9C-0D1E2F3A4B5C}_is1';
+
+function FindAllUsersInstall(var Location: String): Boolean;
+begin
+  Location := '';
+  // IsWin64 first: HKLM64 raises an error on 32-bit Windows (Setup refuses to run there anyway).
+  Result := IsWin64 and RegKeyExists(HKLM64, ClassicUninstallKey);
+  if Result then
+    RegQueryStringValue(HKLM64, ClassicUninstallKey, 'InstallLocation', Location)
+  else
+  begin
+    Result := RegKeyExists(HKLM32, ClassicUninstallKey);
+    if Result then
+      RegQueryStringValue(HKLM32, ClassicUninstallKey, 'InstallLocation', Location);
+  end;
+end;
+
+function InitializeSetup(): Boolean;
+var
+  Location: String;
+begin
+  Result := True;
+  if FindAllUsersInstall(Location) then
+  begin
+    if Location = '' then
+      Location := '(Program Files)';
+    SuppressibleMsgBox(
+      'Rentier is already installed for all users of this computer, in:' + #13#10 +
+      Location + #13#10#13#10 +
+      'The auto-updating version installs for your account only and cannot replace that copy.' + #13#10 +
+      'Uninstall Rentier in Settings > Apps first, then run this installer again.' + #13#10#13#10 +
+      'Your data is not affected: it is stored in your user profile, not in the install folder.',
+      mbCriticalError, MB_OK, IDOK);
+    Result := False;
+  end;
+end;
 #endif

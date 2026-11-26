@@ -44,7 +44,7 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
     private UpdateState _currentUpdateState = UpdateState.Idle;
     private string? _availableVersion;
     private int _downloadProgress;
-    private string? _updateErrorMessage;
+    private string? _updateErrorCode;
 
     public UpdateState CurrentUpdateState
     {
@@ -80,15 +80,20 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
         }
     }
 
-    public string? UpdateErrorMessage
+    /// <summary>
+    /// Localized reason for the last update failure, chosen by error code. Never the service's
+    /// <see cref="Error.Message"/>: that is English-only and may quote an exception (URLs, paths).
+    /// </summary>
+    public string? UpdateErrorMessage => _updateErrorCode switch
     {
-        get => _updateErrorMessage;
-        private set
-        {
-            this.RaiseAndSetIfChanged(ref _updateErrorMessage, value);
-            this.RaisePropertyChanged(nameof(UpdateFailedText));
-        }
-    }
+        null => null,
+        ErrorCodes.UPDATE_NOT_INSTALLED => _localizationService["Update_Error_NotInstalled"],
+        ErrorCodes.UPDATE_NO_PENDING => _localizationService["Update_Error_NoPending"],
+        ErrorCodes.UPDATE_DOWNLOAD_FAILED => _localizationService["Update_Error_DownloadFailed"],
+        ErrorCodes.UPDATE_DOWNLOAD_CANCELLED => _localizationService["Update_Error_DownloadCancelled"],
+        ErrorCodes.UPDATE_APPLY_FAILED => _localizationService["Update_Error_ApplyFailed"],
+        _ => _localizationService["Update_Error_Unknown"],
+    };
 
     // ── Localized format-string properties for the update notification bar ───
 
@@ -238,7 +243,9 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
 
     private void ShowUpdateError(Error error)
     {
-        UpdateErrorMessage = error.Message;
+        _updateErrorCode = error.Code;
+        this.RaisePropertyChanged(nameof(UpdateErrorMessage));
+        this.RaisePropertyChanged(nameof(UpdateFailedText));
         CurrentUpdateState = UpdateState.Error;
     }
 
@@ -322,6 +329,7 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
                 UpdateNavigationLabels(_localizationService);
                 this.RaisePropertyChanged(nameof(UpdateAvailableText));
                 this.RaisePropertyChanged(nameof(DownloadingText));
+                this.RaisePropertyChanged(nameof(UpdateErrorMessage));
                 this.RaisePropertyChanged(nameof(UpdateFailedText));
             })
             .DisposeWith(disposables);
@@ -329,7 +337,10 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
         // Auto-check for updates on activation. Activation runs on the UI thread and the check
         // awaits without ConfigureAwait(false), so every bound update-state change happens on the
         // UI thread; the service does its own I/O off it.
-        CheckForUpdateCommand.Execute().Subscribe().DisposeWith(disposables);
+        // Execute() ignores CanExecute, so guard explicitly: a re-activation must not restart the
+        // check from UpdateAvailable/Downloading/Downloaded/Dismissed and wipe that state.
+        if (CurrentUpdateState == UpdateState.Idle)
+            CheckForUpdateCommand.Execute().Subscribe().DisposeWith(disposables);
     }
 
     private async Task RunCheckForUpdateAsync()

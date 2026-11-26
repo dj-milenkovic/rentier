@@ -301,4 +301,12 @@ public static class Strings
     public static string Update_Error_Message => "Update failed: {0}";
     public static string Update_Retry_Button => "Retry";
     public static string Update_Dismiss_Button => "Dismiss";
+
+    // Update failure reasons, shown after Update_Error_Message's prefix; chosen by error code
+    public static string Update_Error_NotInstalled => "this copy of Rentier cannot update itself. Download the new version from the Releases page.";
+    public static string Update_Error_NoPending => "no update is ready yet. Try again later.";
+    public static string Update_Error_DownloadFailed => "the download did not complete. Check your internet connection and try again.";
+    public static string Update_Error_DownloadCancelled => "the download was cancelled.";
+    public static string Update_Error_ApplyFailed => "the update could not be installed. Close and reopen Rentier to try again.";
+    public static string Update_Error_Unknown => "an unexpected error occurred.";
 }

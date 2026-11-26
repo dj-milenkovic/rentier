@@ -668,6 +668,15 @@ jobs:
           if ($proc.ExitCode -ne 0) {
             throw "Velopack smoke test exited with code $($proc.ExitCode) — artifact is not functional"
           }
+
+          # --smoke-test exits before Velopack starts, so it cannot see whether Velopack accepts
+          # this layout. --smoke-test-update runs after VelopackApp.Run() and fails when the app
+          # would report "not installed" (every update check skipped, nothing logged to the user).
+          $proc = Start-Process ./velopack-extracted/current/Rentier.Desktop.exe `
+            -ArgumentList "--smoke-test-update" -PassThru -Wait -NoNewWindow
+          if ($proc.ExitCode -ne 0) {
+            throw "Velopack update smoke test exited with code $($proc.ExitCode) — the installed app would never update"
+          }
           Write-Host "VELOPACK SMOKE TEST PASSED (exit code 0)"
 
   # ──────────────────────────────────────────────────────────────────
@@ -805,7 +814,7 @@ jobs:
             echo "| macOS x64 | \`Rentier-${VERSION}-osx-x64-velopack.dmg\` | — |"
             echo "| Linux x64 | — | \`Rentier-${VERSION}-linux-x64.AppImage\` (\`chmod +x\`; may need \`libfuse2\`) |"
             echo ""
-            echo "Switching from a package above: run the auto-updating installer once (Windows upgrades the existing install in place; on macOS replace \`Rentier.app\` in Applications). Your data is not affected."
+            echo "Switching from a package above: run the auto-updating installer once (Windows upgrades an install made for your account in place; an install made for all users must be uninstalled first, and the installer tells you so; on macOS replace \`Rentier.app\` in Applications). Your data is not affected."
             echo ""
             echo "## Checksums (SHA256)"
             echo ""

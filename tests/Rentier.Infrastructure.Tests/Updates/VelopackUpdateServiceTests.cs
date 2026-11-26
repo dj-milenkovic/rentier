@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Rentier.Application.Common;
 using Rentier.Infrastructure.Updates;
 using Rentier.Tests.Common.Fakes;
 
@@ -114,7 +115,7 @@ public class VelopackUpdateServiceTests
 
         var result = await service.DownloadUpdateAsync(_ => { }, TestContext.Current.CancellationToken);
 
-        result.Error.Code.Should().Be(VelopackUpdateService.UPDATE_NOT_INSTALLED);
+        result.Error.Code.Should().Be(ErrorCodes.UPDATE_NOT_INSTALLED);
         manager.DownloadCallCount.Should().Be(0);
     }
 
@@ -129,7 +130,7 @@ public class VelopackUpdateServiceTests
 
         var result = await service.DownloadUpdateAsync(_ => { }, TestContext.Current.CancellationToken);
 
-        result.Error.Code.Should().Be(VelopackUpdateService.UPDATE_NO_PENDING);
+        result.Error.Code.Should().Be(ErrorCodes.UPDATE_NO_PENDING);
         manager.DownloadCallCount.Should().Be(0);
     }
 
@@ -160,7 +161,7 @@ public class VelopackUpdateServiceTests
     }
 
     [Fact]
-    public async Task DownloadUpdateAsync_WhenManagerThrows_ReturnsDownloadFailedWithMessage()
+    public async Task DownloadUpdateAsync_WhenManagerThrows_ReturnsDownloadFailed()
     {
         var manager = new FakeVelopackManager(isInstalled: true, availableVersion: "2.0.0",
             throwOnDownload: true);
@@ -169,8 +170,85 @@ public class VelopackUpdateServiceTests
 
         var result = await service.DownloadUpdateAsync(_ => { }, TestContext.Current.CancellationToken);
 
-        result.Error.Should().Be(new Rentier.Application.Common.Error(
-            VelopackUpdateService.UPDATE_DOWNLOAD_FAILED, "Simulated download error"));
+        result.Error.Code.Should().Be(ErrorCodes.UPDATE_DOWNLOAD_FAILED);
+    }
+
+    [Fact]
+    public async Task DownloadUpdateAsync_WhenManagerThrows_DoesNotPutExceptionMessageInError()
+    {
+        // The error reaches the update bar; an exception message can carry internal URLs or paths
+        // and is English-only. It belongs in the log (attached exception), not in the Error.
+        var manager = new FakeVelopackManager(isInstalled: true, availableVersion: "2.0.0",
+            throwOnDownload: true);
+        var service = CreateService(manager);
+        await service.CheckForUpdatesAsync(TestContext.Current.CancellationToken);
+
+        var result = await service.DownloadUpdateAsync(_ => { }, TestContext.Current.CancellationToken);
+
+        result.Error.Message.Should().NotContain("Simulated download error");
+    }
+
+    [Fact]
+    public async Task DownloadUpdateAsync_WhenCancelledDuringDownload_ReturnsCancelled()
+    {
+        var manager = new FakeVelopackManager(isInstalled: true, availableVersion: "2.0.0",
+            blockDownloadUntilCancelled: true);
+        var service = CreateService(manager);
+        await service.CheckForUpdatesAsync(TestContext.Current.CancellationToken);
+        using var cts = new CancellationTokenSource();
+
+        var download = service.DownloadUpdateAsync(_ => { }, cts.Token);
+        await cts.CancelAsync();
+        var result = await download;
+
+        result.Error.Code.Should().Be(ErrorCodes.UPDATE_DOWNLOAD_CANCELLED);
+    }
+
+    [Fact]
+    public async Task DownloadUpdateAsync_WhenCancelledWhileAnotherDownloadRuns_ReturnsCancelledWithoutThrowing()
+    {
+        // The second call waits on the semaphore the first one holds; cancelling that wait must
+        // still produce a Result, not an OperationCanceledException.
+        var manager = new FakeVelopackManager(isInstalled: true, availableVersion: "2.0.0",
+            blockDownloadUntilCancelled: true);
+        var service = CreateService(manager);
+        await service.CheckForUpdatesAsync(TestContext.Current.CancellationToken);
+        using var firstCts = new CancellationTokenSource();
+        using var secondCts = new CancellationTokenSource();
+        var first = service.DownloadUpdateAsync(_ => { }, firstCts.Token);
+
+        var second = service.DownloadUpdateAsync(_ => { }, secondCts.Token);
+        await secondCts.CancelAsync();
+        var result = await second;
+        await firstCts.CancelAsync();
+        await first;
+
+        result.Error.Code.Should().Be(ErrorCodes.UPDATE_DOWNLOAD_CANCELLED);
+    }
+
+    [Fact]
+    public async Task DownloadUpdateAsync_AfterCancelledWait_ReleasesNothingItDidNotAcquire()
+    {
+        // A cancelled semaphore wait must not release the semaphore: otherwise two downloads
+        // could run at once afterwards.
+        var manager = new FakeVelopackManager(isInstalled: true, availableVersion: "2.0.0",
+            blockDownloadUntilCancelled: true);
+        var service = CreateService(manager);
+        await service.CheckForUpdatesAsync(TestContext.Current.CancellationToken);
+        using var firstCts = new CancellationTokenSource();
+        using var cancelledCts = new CancellationTokenSource();
+        var first = service.DownloadUpdateAsync(_ => { }, firstCts.Token);
+        var cancelled = service.DownloadUpdateAsync(_ => { }, cancelledCts.Token);
+        await cancelledCts.CancelAsync();
+        await cancelled;
+
+        var third = service.DownloadUpdateAsync(_ => { }, firstCts.Token);
+        var startedWhileFirstRuns = manager.DownloadCallCount;
+        await firstCts.CancelAsync();
+        await first;
+        await third;
+
+        startedWhileFirstRuns.Should().Be(1);
     }
 
     [Fact]
@@ -198,7 +276,7 @@ public class VelopackUpdateServiceTests
 
         var result = service.ApplyUpdateAndRestart();
 
-        result.Error.Code.Should().Be(VelopackUpdateService.UPDATE_NOT_INSTALLED);
+        result.Error.Code.Should().Be(ErrorCodes.UPDATE_NOT_INSTALLED);
         manager.ApplyCallCount.Should().Be(0);
     }
 
@@ -210,7 +288,7 @@ public class VelopackUpdateServiceTests
 
         var result = service.ApplyUpdateAndRestart();
 
-        result.Error.Code.Should().Be(VelopackUpdateService.UPDATE_NO_PENDING);
+        result.Error.Code.Should().Be(ErrorCodes.UPDATE_NO_PENDING);
         manager.ApplyCallCount.Should().Be(0);
     }
 
@@ -248,7 +326,7 @@ public class VelopackUpdateServiceTests
 
         var result = service.ApplyUpdateAndRestart();
 
-        result.Error.Code.Should().Be(VelopackUpdateService.UPDATE_APPLY_FAILED);
+        result.Error.Code.Should().Be(ErrorCodes.UPDATE_APPLY_FAILED);
     }
 
     [Fact]
@@ -292,6 +370,7 @@ internal sealed class FakeVelopackManager : IVelopackManager
     private readonly bool _throwOnCheck;
     private readonly bool _throwOnDownload;
     private readonly bool _throwOnApply;
+    private readonly bool _blockDownloadUntilCancelled;
     private readonly int[]? _progressValues;
 
     public bool IsInstalled { get; }
@@ -308,7 +387,8 @@ internal sealed class FakeVelopackManager : IVelopackManager
         bool throwOnDownload = false,
         bool throwOnApply = false,
         bool pendingRestart = false,
-        int[]? progressValues = null)
+        int[]? progressValues = null,
+        bool blockDownloadUntilCancelled = false)
     {
         IsInstalled = isInstalled;
         _availableVersion = availableVersion;
@@ -317,6 +397,7 @@ internal sealed class FakeVelopackManager : IVelopackManager
         _throwOnApply = throwOnApply;
         HasUpdateToApply = pendingRestart;
         _progressValues = progressValues;
+        _blockDownloadUntilCancelled = blockDownloadUntilCancelled;
     }
 
     public Task<string?> CheckForUpdatesAsync(CancellationToken cancellationToken)
@@ -331,6 +412,8 @@ internal sealed class FakeVelopackManager : IVelopackManager
     public Task DownloadUpdatesAsync(Action<int> progress, CancellationToken cancellationToken)
     {
         DownloadCallCount++;
+        if (_blockDownloadUntilCancelled)
+            return Task.Delay(Timeout.Infinite, cancellationToken);
         if (_throwOnDownload)
             throw new InvalidOperationException("Simulated download error");
         if (_progressValues is not null)

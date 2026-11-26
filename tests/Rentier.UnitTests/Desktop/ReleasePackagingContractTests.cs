@@ -68,4 +68,26 @@ public class ReleasePackagingContractTests
         // Without releases.<channel>.json in the GitHub release, installed apps never see updates.
         ReleaseWorkflow().Should().Contain("dist/releases.*.json");
     }
+
+    [Fact]
+    public void ReleaseWorkflow_SmokeTestsThatVelopackRecognisesTheLayout()
+    {
+        // --smoke-test returns before VelopackApp.Run(), so it passes even for a layout Velopack
+        // rejects. Only --smoke-test-update catches "IsInstalled == false" before release.
+        ReleaseWorkflow().Should().Contain("--smoke-test-update");
+    }
+
+    [Fact]
+    public void VelopackInstaller_AllUsersInstallCheck_UsesTheInstallerAppId()
+    {
+        // The per-user Velopack installer detects an all-users classic install by its HKLM
+        // uninstall key, which is named after AppId. If the two drift apart, the check silently
+        // never fires and the installer creates a second copy again.
+        var script = ReadRepoFile(".github/installers/rentier-setup.iss");
+        var appId = Regex.Match(script, @"^AppId=\{(\{[0-9A-Fa-f-]+\})", RegexOptions.Multiline);
+        var uninstallKey = Regex.Match(script, @"ClassicUninstallKey = '[^']*\\Uninstall\\(\{[0-9A-Fa-f-]+\})_is1'");
+
+        appId.Success.Should().BeTrue("rentier-setup.iss should define AppId");
+        uninstallKey.Groups[1].Value.Should().Be(appId.Groups[1].Value);
+    }
 }
