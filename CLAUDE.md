@@ -50,6 +50,10 @@ dotnet test tests/Rentier.Infrastructure.Tests --filter "Category=Integration"
 # Run the desktop app
 dotnet run --project src/Rentier.Desktop/Rentier.Desktop.csproj
 ```
+PR descriptions follow `.github/pull_request_template.md`. Its `## Release note` section
+(`EN:` + `SR:` lines, written for users, Serbian in Latin script) becomes the PR's entry in the
+app's What's new; leave both lines empty for internal changes. See CONTRIBUTING.md → Release notes.
+
 CI (`.github/workflows/ci.yml`) runs format + vulnerable-package check → migration tests
 → build/test matrix (Windows/macOS/Linux) → coverage merge → SonarCloud. Match this
 locally before pushing (`dotnet list Rentier.slnx package --vulnerable --include-transitive`

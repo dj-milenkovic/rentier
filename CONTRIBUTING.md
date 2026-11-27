@@ -148,6 +148,29 @@ We welcome contributions! Before opening a pull request:
 5. **Run tests locally** — `dotnet test`
 6. **Commit** using conventional commit messages
 7. **Push** and open a **Pull Request** with a clear description
+8. **Fill in the "Release note" section** of the PR description if users will notice the change
+   (see below)
+
+### Release notes
+
+The app shows what changed in each version (Settings → What's new, and **What's new** on the
+update bar). Those notes come from the `## Release note` section of each merged PR's description,
+which the PR template provides:
+
+```
+## Release note
+EN: The update bar now spans the whole window.
+SR: Traka za ažuriranje sada je preko celog prozora.
+```
+
+- Write for users: what they see or can do now, not how it was built. Serbian in Latin script,
+  using the app's own words.
+- Both languages or neither: the **PR Release Note** check fails a note in one language only.
+- Internal changes (CI, refactoring, dependency updates, tests) leave the lines empty. A
+  `feat`/`fix`/`perf` PR without a note gets a warning, not a failure.
+- You can still fix a note after merging, until the next release is made: the release workflow
+  reads the PR descriptions then (`tools/Rentier.ReleaseNotes`). Notes for versions up to v1.4.0
+  live in `release-notes/history.md`.
 
 ### Code Review Expectations
 

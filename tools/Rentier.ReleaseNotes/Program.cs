@@ -52,7 +52,10 @@ internal static partial class Cli
         if (note.IsEmpty)
         {
             if (UserFacingType().IsMatch(title))
-                output.WriteLine("::warning title=Release note::This feat/fix PR has no \"## Release note\" section, so users will not see it in the app's What's new. Add EN: and SR: lines if users notice the change.");
+            {
+                var what = note.HasSection ? "an empty release note" : "no \"## Release note\" section";
+                output.WriteLine($"::warning title=Release note::This feat/fix PR has {what}, so users will not see it in the app's What's new. Fill in the EN: and SR: lines if users notice the change.");
+            }
             else
                 output.WriteLine("No release note: this PR will not appear in the app's What's new.");
             return 0;
