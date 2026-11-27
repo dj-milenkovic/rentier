@@ -24,6 +24,10 @@ on:
         description: 'Dry run: build and verify every release asset, but create no tag and no release'
         type: boolean
         default: false
+      allow_no_user_changes:
+        description: 'Release without user-facing changes (e.g. a dependency security fix): no merged PR has a release note; the app shows a generic line'
+        type: boolean
+        default: false
 
 # Serialize releases so concurrent merges never compute the same tag.
 # cancel-in-progress: false ensures both releases still happen, just sequentially.
@@ -128,11 +132,85 @@ jobs:
           echo "Previous: ${LATEST}  →  Next: ${NEW_TAG} (${BUMP} bump)"
 
   # ──────────────────────────────────────────────────────────────────
-  # 2. Create annotated git tag
+  # 2. User-facing release notes (last 10 versions), shipped inside the app
+  #    (Settings > What's new) and inside each update (vpk --releaseNotes).
+  #    Old versions come from .github/release-notes/history.md; newer ones from the
+  #    "## Release note" section of each merged PR's description.
+  #    Runs before the tag: a release with no user-facing change stops here
+  #    unless "Release without user-facing changes" is ticked.
+  # ──────────────────────────────────────────────────────────────────
+  release-notes:
+    name: Build release notes
+    needs: compute-version
+    if: needs.compute-version.outputs.skip == 'false'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v6.0.0
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Collect PR descriptions
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.compute-version.outputs.version }}
+          REPO: ${{ github.repository }}
+        run: |
+          git tag --list 'v*' > tags.txt
+          dotnet run --project .github/tools/Rentier.ReleaseNotes -c Release -- plan \
+            --history .github/release-notes/history.md --version "${VERSION}" --tags-file tags.txt > versions.txt
+          echo "Versions that take their notes from PR descriptions:"; cat versions.txt
+
+          while read -r ver; do
+            [ -n "$ver" ] || continue
+            # The PRs of a version: squash commits "(#N)" since the tag before it. The version
+            # being released has no tag yet (or only a local one on a dry run), so it ends at HEAD.
+            prev=$( (git tag --list 'v*'; echo "$ver") | sort -uV | grep -B1 -x "$ver" | head -n1 )
+            [ "$prev" != "$ver" ] || prev=""
+            end="$ver"; git rev-parse -q --verify "refs/tags/${ver}" >/dev/null || end=HEAD
+            mkdir -p "pr-bodies/${ver}"
+            git log "${prev:+${prev}..}${end}" --no-merges --format=%s \
+              | grep -oE '\(#[0-9]+\)$' | tr -d '(#)' | sort -un \
+              | while read -r pr; do
+                  gh api "repos/${REPO}/pulls/${pr}" --jq '.body // ""' > "pr-bodies/${ver}/${pr}.md" \
+                    || echo "::warning::Could not read the description of PR #${pr}"
+                done
+          done < versions.txt
+
+      - name: Build release notes
+        env:
+          VERSION: ${{ needs.compute-version.outputs.version }}
+          # Without it, a release whose PRs have no release note stops here (before the tag).
+          ALLOW_NO_USER_CHANGES: ${{ inputs.allow_no_user_changes }}
+        run: |
+          mkdir -p release-notes-app
+          dotnet run --project .github/tools/Rentier.ReleaseNotes -c Release -- build \
+            --history .github/release-notes/history.md --version "${VERSION}" --tags-file tags.txt \
+            --pr-bodies pr-bodies --out release-notes-app/release-notes.md \
+            --allow-no-user-changes "${ALLOW_NO_USER_CHANGES:-false}"
+          cat release-notes-app/release-notes.md
+
+      - uses: actions/upload-artifact@v7.0.1
+        with:
+          # Not "release-*": the release job downloads that pattern into the release assets.
+          name: app-release-notes
+          path: release-notes-app/release-notes.md
+          if-no-files-found: error
+          retention-days: 7
+
+  # ──────────────────────────────────────────────────────────────────
+  # 3. Create annotated git tag
   # ──────────────────────────────────────────────────────────────────
   tag:
     name: Create git tag
-    needs: compute-version
+    # After the release notes: a release with no user-facing change stops before anything is tagged.
+    needs: [compute-version, release-notes]
     if: needs.compute-version.outputs.skip == 'false'
     runs-on: ubuntu-latest
     permissions:
@@ -171,74 +249,6 @@ jobs:
             echo "| Version | \`${NEW_VERSION}\` |"
             echo "| Tag | \`${NEW_TAG}\` |"
           } >> "$GITHUB_STEP_SUMMARY"
-
-  # ──────────────────────────────────────────────────────────────────
-  # 3. User-facing release notes (last 10 versions), shipped inside the app
-  #    (Settings > What's new) and inside each update (vpk --releaseNotes).
-  #    Old versions come from release-notes/history.md; newer ones from the
-  #    "## Release note" section of each merged PR's description.
-  # ──────────────────────────────────────────────────────────────────
-  release-notes:
-    name: Build release notes
-    needs: compute-version
-    if: needs.compute-version.outputs.skip == 'false'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: read
-    steps:
-      - uses: actions/checkout@v7.0.1
-        with:
-          fetch-depth: 0
-
-      - uses: actions/setup-dotnet@v6.0.0
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
-
-      - name: Collect PR descriptions
-        env:
-          GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ needs.compute-version.outputs.version }}
-          REPO: ${{ github.repository }}
-        run: |
-          git tag --list 'v*' > tags.txt
-          dotnet run --project tools/Rentier.ReleaseNotes -c Release -- plan \
-            --history release-notes/history.md --version "${VERSION}" --tags-file tags.txt > versions.txt
-          echo "Versions that take their notes from PR descriptions:"; cat versions.txt
-
-          while read -r ver; do
-            [ -n "$ver" ] || continue
-            # The PRs of a version: squash commits "(#N)" since the tag before it. The version
-            # being released has no tag yet (or only a local one on a dry run), so it ends at HEAD.
-            prev=$( (git tag --list 'v*'; echo "$ver") | sort -uV | grep -B1 -x "$ver" | head -n1 )
-            [ "$prev" != "$ver" ] || prev=""
-            end="$ver"; git rev-parse -q --verify "refs/tags/${ver}" >/dev/null || end=HEAD
-            mkdir -p "pr-bodies/${ver}"
-            git log "${prev:+${prev}..}${end}" --no-merges --format=%s \
-              | grep -oE '\(#[0-9]+\)$' | tr -d '(#)' | sort -un \
-              | while read -r pr; do
-                  gh api "repos/${REPO}/pulls/${pr}" --jq '.body // ""' > "pr-bodies/${ver}/${pr}.md" \
-                    || echo "::warning::Could not read the description of PR #${pr}"
-                done
-          done < versions.txt
-
-      - name: Build release notes
-        env:
-          VERSION: ${{ needs.compute-version.outputs.version }}
-        run: |
-          mkdir -p release-notes-app
-          dotnet run --project tools/Rentier.ReleaseNotes -c Release -- build \
-            --history release-notes/history.md --version "${VERSION}" --tags-file tags.txt \
-            --pr-bodies pr-bodies --out release-notes-app/release-notes.md
-          cat release-notes-app/release-notes.md
-
-      - uses: actions/upload-artifact@v7.0.1
-        with:
-          # Not "release-*": the release job downloads that pattern into the release assets.
-          name: app-release-notes
-          path: release-notes-app/release-notes.md
-          if-no-files-found: error
-          retention-days: 7
 
   # ──────────────────────────────────────────────────────────────────
   # Windows x64 — Velopack portable ZIP + InnoSetup installer of that layout

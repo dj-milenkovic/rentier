@@ -66,7 +66,7 @@ public class ReleaseNotesBuilderTests
 
         var entries = ReleaseNotesBuilder.Build(History, versions, v => v == new Version(1, 5, 0)
             ? [Body("Five A", "Pet A"), "## Summary\nInternal only.", Body("Five B", "Pet B")]
-            : throw new InvalidOperationException("history versions must not read PRs"));
+            : throw new InvalidOperationException("history versions must not read PRs")).Entries;
 
         entries.Select(e => e.DisplayVersion).Should().Equal("v1.5.0", "v1.4.0", "v1.3.0");
         entries[0].English.Should().Be("- Five A\n- Five B");
@@ -75,18 +75,38 @@ public class ReleaseNotesBuilderTests
     }
 
     [Fact]
-    public void Build_VersionWhosePrsHaveNoNotes_IsLeftOut()
+    public void Build_VersionWhosePrsHaveNoNotes_GetsGenericLineAndIsReported()
     {
-        var entries = ReleaseNotesBuilder.Build(History, [new Version(1, 5, 0), new Version(1, 4, 0)], _ => ["chore: bump"]);
+        var result = ReleaseNotesBuilder.Build(History, [new Version(1, 5, 0), new Version(1, 4, 0)], _ => ["chore: bump"]);
 
-        entries.Select(e => e.DisplayVersion).Should().Equal("v1.4.0");
+        result.Entries.Select(e => e.DisplayVersion).Should().Equal("v1.5.0", "v1.4.0");
+        result.Entries[0].Should().Be(ReleaseNotesBuilder.GenericEntry(new Version(1, 5, 0)));
+        result.WithoutUserFacingChanges.Should().Equal(new Version(1, 5, 0));
+    }
+
+    [Fact]
+    public void Build_HistoryVersionMissingFromHistory_IsLeftOutWithoutGenericLine()
+    {
+        var result = ReleaseNotesBuilder.Build(History, [new Version(1, 4, 0), new Version(1, 3, 5)], _ => []);
+
+        result.Entries.Select(e => e.DisplayVersion).Should().Equal("v1.4.0");
+        result.WithoutUserFacingChanges.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void GenericEntry_HasBothLanguages()
+    {
+        var entry = ReleaseNotesBuilder.GenericEntry(new Version(2, 0, 0));
+
+        entry.English.Should().NotBeNullOrWhiteSpace();
+        entry.Serbian.Should().NotBeNullOrWhiteSpace();
     }
 
     [Fact]
     public void Build_ThenFormat_IsReadableByTheApp()
     {
         var entries = ReleaseNotesBuilder.Build(History, [new Version(1, 5, 0), new Version(1, 4, 0)],
-            _ => [Body("Five", "Pet")]);
+            _ => [Body("Five", "Pet")]).Entries;
 
         var parsed = ReleaseNotesDocument.Parse(ReleaseNotesDocument.Format(entries));
 

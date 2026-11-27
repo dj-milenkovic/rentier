@@ -4,7 +4,7 @@
 
   Every version up to the newest one in this file takes its notes from here only; every later
   version takes them from the "## Release note" sections of the PRs merged for it. The release
-  workflow (tools/Rentier.ReleaseNotes) combines both into the notes of the last 10 versions,
+  workflow (.github/tools/Rentier.ReleaseNotes) combines both into the notes of the last 10 versions,
   which ship inside the app (Settings > What's new) and inside each update (What's new on the
   update bar).
 

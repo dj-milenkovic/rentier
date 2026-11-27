@@ -52,6 +52,24 @@ public class ReleaseNotesWorkflowContractTests
     }
 
     [Fact]
+    public void Tag_WaitsForTheReleaseNotes()
+    {
+        Regex.Match(ReleaseWorkflow(), @"\n  tag:\n(?:    .*\n)*?    needs: \[(?<needs>[^\]]*)\]")
+            .Groups["needs"].Value.Split(',', StringSplitOptions.TrimEntries)
+            .Should().Contain("release-notes", "a release without user-facing changes must stop before anything is tagged");
+    }
+
+    [Fact]
+    public void BuildReleaseNotes_PassesTheOverrideInput()
+    {
+        var workflow = ReleaseWorkflow();
+
+        workflow.Should().Contain("allow_no_user_changes:");
+        workflow.Should().Contain("ALLOW_NO_USER_CHANGES: ${{ inputs.allow_no_user_changes }}");
+        workflow.Should().Contain("--allow-no-user-changes \"${ALLOW_NO_USER_CHANGES:-false}\"");
+    }
+
+    [Fact]
     public void NotesArtifact_IsNotPickedUpAsAReleaseAsset()
     {
         var workflow = ReleaseWorkflow();

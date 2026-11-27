@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Rentier.ReleaseNotes;
 using Xunit;
 
 namespace Rentier.UnitTests.Tools;
@@ -34,24 +35,80 @@ public class ReleaseNotesCliTests
     [InlineData("feat: new page")]
     [InlineData("fix(ui): button")]
     [InlineData("perf!: faster")]
-    public void Check_UserFacingTypeWithoutNote_WarnsButPasses(string title)
+    public void Check_UserFacingTitleWithoutNote_Fails(string title)
     {
         var (exitCode, output) = Check(title, "## Summary\nNothing for users.");
 
-        exitCode.Should().Be(0);
-        output.Should().Contain("::warning");
+        exitCode.Should().Be(1);
+        output.Should().Contain("::error").And.Contain("fix(ci)");
+    }
+
+    [Fact]
+    public void Check_UserFacingTitleWithUntouchedTemplate_Fails()
+    {
+        var template = RepositoryFiles.Read(".github/pull_request_template.md");
+
+        Check("feat: x", template).ExitCode.Should().Be(1);
     }
 
     [Theory]
     [InlineData("chore: Bump Avalonia")]
     [InlineData("ci: faster builds")]
     [InlineData("refactor(desktop): split view model")]
-    public void Check_InternalTypeWithoutNote_PassesQuietly(string title)
+    [InlineData("fix(ci): flaky job")]
+    [InlineData("feat(deps): new package")]
+    public void Check_InternalTitleWithoutNote_PassesQuietly(string title)
     {
         var (exitCode, output) = Check(title, "Dependabot body");
 
         exitCode.Should().Be(0);
         output.Should().NotContain("::warning").And.NotContain("::error");
+    }
+
+    [Fact]
+    public void Check_InternalTitleWithNoteInOneLanguage_StillFails()
+    {
+        Check("fix(ci): x", "## Release note\nEN: Only English\n").ExitCode.Should().Be(1);
+    }
+
+    // ── build: a release without user-facing changes ────────────────────────────
+
+    private static readonly IReadOnlyList<Rentier.Application.ReleaseNotes.ReleaseNotesEntry> History =
+        [new(new Version(1, 4, 0), "- Four", "- Četiri")];
+
+    private static readonly Version[] Versions = [new(1, 5, 0), new(1, 4, 0)];
+
+    [Fact]
+    public void BuildDocument_NewVersionWithoutNotes_StopsTheRelease()
+    {
+        var output = new StringWriter();
+
+        var exitCode = Cli.BuildDocument(History, Versions, _ => ["chore: Bump x"], allowNoUserChanges: false, output, out var document);
+
+        exitCode.Should().Be(1);
+        document.Should().BeEmpty();
+        output.ToString().Should().Contain("Release without user-facing changes");
+    }
+
+    [Fact]
+    public void BuildDocument_NewVersionWithoutNotesButAllowed_WritesGenericLine()
+    {
+        var exitCode = Cli.BuildDocument(History, Versions, _ => [], allowNoUserChanges: true, new StringWriter(), out var document);
+
+        exitCode.Should().Be(0);
+        var newest = Rentier.Application.ReleaseNotes.ReleaseNotesDocument.Parse(document)[0];
+        newest.DisplayVersion.Should().Be("v1.5.0");
+        newest.Should().Be(ReleaseNotesBuilder.GenericEntry(new Version(1, 5, 0)));
+    }
+
+    [Fact]
+    public void BuildDocument_NewVersionWithNotes_Succeeds()
+    {
+        var exitCode = Cli.BuildDocument(History, Versions, _ => ["## Release note\nEN: Five\nSR: Pet\n"],
+            allowNoUserChanges: false, new StringWriter(), out var document);
+
+        exitCode.Should().Be(0);
+        document.Should().StartWith("## v1.5.0").And.Contain("- Five").And.Contain("- Četiri");
     }
 
     [Fact]

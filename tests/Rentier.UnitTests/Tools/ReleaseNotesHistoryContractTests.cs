@@ -6,12 +6,12 @@ using Xunit;
 namespace Rentier.UnitTests.Tools;
 
 /// <summary>
-/// Guards <c>release-notes/history.md</c>: it is embedded in local builds and merged into every
+/// Guards <c>.github/release-notes/history.md</c>: it is embedded in local builds and merged into every
 /// release's notes, so a malformed entry would silently vanish from the app.
 /// </summary>
 public class ReleaseNotesHistoryContractTests
 {
-    private static string History() => RepositoryFiles.Read("release-notes/history.md");
+    private static string History() => RepositoryFiles.Read(".github/release-notes/history.md");
 
     [Fact]
     public void History_EveryVersionHeading_ParsesToAnEntry()

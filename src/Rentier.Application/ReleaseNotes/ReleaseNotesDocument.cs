@@ -7,7 +7,7 @@ namespace Rentier.Application.ReleaseNotes;
 /// <summary>
 /// Reads and writes the release-notes document that ships with every release: inside the app
 /// build (Settings → What's new) and inside the update package (the update bar's What's new).
-/// The release workflow writes it from <c>release-notes/history.md</c> plus the
+/// The release workflow writes it from <c>.github/release-notes/history.md</c> plus the
 /// "## Release note" sections of merged PR descriptions.
 /// </summary>
 /// <remarks>

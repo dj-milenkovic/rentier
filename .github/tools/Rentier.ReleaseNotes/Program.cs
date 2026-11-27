@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using Rentier.Application.ReleaseNotes;
 using Rentier.ReleaseNotes;
 
@@ -6,12 +5,13 @@ using Rentier.ReleaseNotes;
 //   check --title <pr title> --body-file <file>
 //   plan  --history <history.md> --version <new version> --tags-file <file>
 //   build --history <history.md> --version <new version> --tags-file <file> --pr-bodies <dir> --out <file>
+//         [--allow-no-user-changes true]
 // <tags-file>: the repository's version tags, one per line.
 // <pr-bodies>: <dir>/<version>/<pr number>.md, the descriptions of the PRs merged for each version
 //              that "plan" printed.
 return Cli.Run(args, Console.Out);
 
-internal static partial class Cli
+internal static class Cli
 {
     public static int Run(string[] args, TextWriter output)
     {
@@ -37,8 +37,8 @@ internal static partial class Cli
     }
 
     /// <summary>
-    /// Fails (exit 1) when a note is missing one of its languages; warns when a feat/fix PR has
-    /// no note at all, since users would not hear about it.
+    /// Fails (exit 1) when a note is missing one of its languages, or when a user-facing PR
+    /// (<see cref="PrTitle.IsUserFacing"/>) has no note at all.
     /// </summary>
     internal static int Check(string title, string body, TextWriter output)
     {
@@ -51,14 +51,17 @@ internal static partial class Cli
 
         if (note.IsEmpty)
         {
-            if (UserFacingType().IsMatch(title))
+            if (!PrTitle.IsUserFacing(title))
             {
-                var what = note.HasSection ? "an empty release note" : "no \"## Release note\" section";
-                output.WriteLine($"::warning title=Release note::This feat/fix PR has {what}, so users will not see it in the app's What's new. Fill in the EN: and SR: lines if users notice the change.");
+                output.WriteLine("Internal change: no release note needed, and this PR will not appear in the app's What's new.");
+                return 0;
             }
-            else
-                output.WriteLine("No release note: this PR will not appear in the app's What's new.");
-            return 0;
+
+            var scopes = string.Join(", ", PrTitle.InternalScopes.Order(StringComparer.Ordinal));
+            output.WriteLine("::error title=Release note::This feat/fix/perf PR has no release note. Fill in the EN: and SR: lines "
+                + "under \"## Release note\" with what users will notice. If users will not notice the change, give the title "
+                + $"an internal scope instead, e.g. \"fix(ci): ...\" (internal scopes: {scopes}).");
+            return 1;
         }
 
         output.WriteLine("Release note found (EN + SR). In the app it will read:");
@@ -75,12 +78,19 @@ internal static partial class Cli
         return 0;
     }
 
+    /// <summary>
+    /// Writes the document. Fails (exit 1) when the version being released has no user-facing
+    /// change, unless <c>--allow-no-user-changes true</c> (the release workflow's override): an
+    /// update that changes nothing users notice should be a deliberate choice.
+    /// </summary>
     private static int Build(Dictionary<string, string> options, TextWriter output)
     {
         var (history, versions) = Load(options);
         var prDirectory = Require(options, "pr-bodies");
+        var allowNoUserChanges = options.TryGetValue("allow-no-user-changes", out var allow)
+            && bool.TryParse(allow, out var allowed) && allowed;
 
-        var entries = ReleaseNotesBuilder.Build(history, versions, version =>
+        var exitCode = BuildDocument(history, versions, version =>
         {
             var dir = Path.Combine(prDirectory, $"v{version}");
             return Directory.Exists(dir)
@@ -88,10 +98,38 @@ internal static partial class Cli
                     .OrderBy(f => int.TryParse(Path.GetFileNameWithoutExtension(f), out var n) ? n : int.MaxValue)
                     .Select(File.ReadAllText)
                 : [];
-        });
+        }, allowNoUserChanges, output, out var document);
 
-        File.WriteAllText(Require(options, "out"), ReleaseNotesDocument.Format(entries));
-        output.WriteLine($"Release notes for {entries.Count} of {versions.Count} version(s): {string.Join(", ", entries.Select(e => e.DisplayVersion))}");
+        if (exitCode == 0)
+            File.WriteAllText(Require(options, "out"), document);
+        return exitCode;
+    }
+
+    /// <summary>The decision part of <c>build</c>, without file access.</summary>
+    internal static int BuildDocument(
+        IReadOnlyList<ReleaseNotesEntry> history,
+        IReadOnlyList<Version> versions,
+        Func<Version, IEnumerable<string>> prBodies,
+        bool allowNoUserChanges,
+        TextWriter output,
+        out string document)
+    {
+        var result = ReleaseNotesBuilder.Build(history, versions, prBodies);
+        document = string.Empty;
+
+        var newest = versions[0];
+        if (result.WithoutUserFacingChanges.Contains(newest) && !allowNoUserChanges)
+        {
+            output.WriteLine($"::error title=No user-facing changes::No PR merged for v{newest} has a release note, so users would get an update "
+                + "that changes nothing they notice. The release stops here. To release anyway (e.g. a dependency security fix), "
+                + "run it again with \"Release without user-facing changes\" ticked; the app then shows a generic line.");
+            return 1;
+        }
+
+        document = ReleaseNotesDocument.Format(result.Entries);
+        output.WriteLine($"Release notes for {result.Entries.Count} of {versions.Count} version(s): {string.Join(", ", result.Entries.Select(e => e.DisplayVersion))}");
+        if (result.WithoutUserFacingChanges.Count > 0)
+            output.WriteLine($"Generic line for: {string.Join(", ", result.WithoutUserFacingChanges.Select(v => $"v{v}"))}");
         return 0;
     }
 
@@ -130,7 +168,4 @@ internal static partial class Cli
         output.WriteLine("Usage: check --title <t> --body-file <f> | plan|build --history <f> --version <v> --tags-file <f> [--pr-bodies <dir> --out <f>]");
         return 2;
     }
-
-    [GeneratedRegex(@"^(feat|fix|perf)(\([^)]*\))?!?:", RegexOptions.None, matchTimeoutMilliseconds: 1000)]
-    private static partial Regex UserFacingType();
 }

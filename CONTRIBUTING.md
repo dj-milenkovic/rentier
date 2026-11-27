@@ -165,12 +165,22 @@ SR: Traka za ažuriranje sada je preko celog prozora.
 
 - Write for users: what they see or can do now, not how it was built. Serbian in Latin script,
   using the app's own words.
-- Both languages or neither: the **PR Release Note** check fails a note in one language only.
-- Internal changes (CI, refactoring, dependency updates, tests) leave the lines empty. A
-  `feat`/`fix`/`perf` PR without a note gets a warning, not a failure.
+- **The PR title decides whether a note is required.** The **PR Release Note** check fails when:
+  - a `feat`, `fix` or `perf` PR has no note. If users will not notice the change, give the title
+    an internal scope instead: `build`, `ci`, `claude`, `deps`, `dev`, `docs`, `release` or
+    `test(s)`, e.g. `fix(ci): flaky macOS job`.
+  - a note has only one language.
+- Every other type (`chore`, `ci`, `refactor`, `test`, `docs`, Dependabot's `chore: Bump ...`)
+  needs no note; leave the lines empty.
 - You can still fix a note after merging, until the next release is made: the release workflow
-  reads the PR descriptions then (`tools/Rentier.ReleaseNotes`). Notes for versions up to v1.4.0
-  live in `release-notes/history.md`.
+  reads the PR descriptions then.
+- **A release needs at least one note.** If no PR merged since the last release has one, the
+  Auto Release workflow stops before tagging. To release anyway (e.g. a dependency security fix),
+  run it with **Release without user-facing changes** ticked; the app then shows "Stability and
+  security improvements." for that version.
+- The release tooling lives with the workflows: `.github/tools/Rentier.ReleaseNotes` builds the
+  notes, and `.github/release-notes/history.md` holds the notes for versions up to v1.4.0. Only
+  release builds carry notes; a local build's Settings → What's new is empty.
 
 ### Code Review Expectations
 

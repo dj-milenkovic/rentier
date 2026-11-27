@@ -2,10 +2,12 @@ name: PR Release Note
 
 # Checks the "## Release note" section of the PR description (see .github/pull_request_template.md).
 # Its EN: and SR: lines become this PR's entry in the app's "What's new" once it is released.
-#   - A note in one language only fails the check: the app shows notes in English and Serbian.
-#   - A feat/fix/perf PR without a note gets a warning (not a failure): users will not hear about
-#     it, which is right for internal changes and wrong for anything they notice.
-#   - Every other PR (chore, ci, refactor, Dependabot, ...) passes without a note.
+# The PR title decides whether a note is required:
+#   - feat, fix and perf are user-facing and need a note in both languages, unless every scope is
+#     internal: build, ci, claude, deps, dev, docs, release, test(s). Example: "fix(ci): ...".
+#   - Every other type (chore, ci, refactor, test, docs, Dependabot's chore: Bump ...) needs none.
+#   - A note in one language only always fails: the app shows notes in English and Serbian.
+# Editing the title or the description re-runs the check.
 
 on:
   pull_request:
@@ -38,5 +40,5 @@ jobs:
           PR_BODY: ${{ github.event.pull_request.body }}
         run: |
           printf '%s' "${PR_BODY}" > "${RUNNER_TEMP}/pr-body.md"
-          dotnet run --project tools/Rentier.ReleaseNotes -c Release -- check \
+          dotnet run --project .github/tools/Rentier.ReleaseNotes -c Release -- check \
             --title "${PR_TITLE}" --body-file "${RUNNER_TEMP}/pr-body.md"

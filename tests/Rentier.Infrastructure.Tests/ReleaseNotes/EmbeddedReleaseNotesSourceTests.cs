@@ -8,13 +8,24 @@ namespace Rentier.Infrastructure.Tests.ReleaseNotes;
 public class EmbeddedReleaseNotesSourceTests
 {
     [Fact]
-    public async Task ReadAsync_DefaultBuild_ReturnsEmbeddedHistory()
+    public async Task ReadAsync_BuildWithoutReleaseNotes_ReturnsNull()
     {
+        // Only the release workflow passes -p:RentierReleaseNotesPath; this build does not.
         var markdown = await new EmbeddedReleaseNotesSource().ReadAsync(TestContext.Current.CancellationToken);
 
-        markdown.Should().NotBeNullOrWhiteSpace();
-        ReleaseNotesDocument.Parse(markdown).Should().NotBeEmpty(
-            "local builds embed release-notes/history.md (RentierReleaseNotesPath)");
+        markdown.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task ReadAsync_EmbeddedDocument_ReturnsItsMarkdown()
+    {
+        var source = new EmbeddedReleaseNotesSource(typeof(EmbeddedReleaseNotesSourceTests).Assembly, "Rentier.Tests.ReleaseNotes.md");
+
+        var markdown = await source.ReadAsync(TestContext.Current.CancellationToken);
+
+        var entry = ReleaseNotesDocument.Parse(markdown).Should().ContainSingle().Subject;
+        entry.DisplayVersion.Should().Be("v1.4.0");
+        entry.Serbian.Should().Be("- Četiri");
     }
 
     [Fact]
