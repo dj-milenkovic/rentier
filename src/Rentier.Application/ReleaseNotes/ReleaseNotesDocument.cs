@@ -78,10 +78,12 @@ public static partial class ReleaseNotesDocument
                 continue;
             }
 
+            // Append '\n' explicitly: AppendLine writes Environment.NewLine ("\r\n" on Windows),
+            // which would make the parsed notes differ by platform.
             switch (language)
             {
-                case ENGLISH: english.AppendLine(line.TrimEnd()); break;
-                case SERBIAN: serbian.AppendLine(line.TrimEnd()); break;
+                case ENGLISH: english.Append(line.TrimEnd()).Append('\n'); break;
+                case SERBIAN: serbian.Append(line.TrimEnd()).Append('\n'); break;
             }
         }
 
