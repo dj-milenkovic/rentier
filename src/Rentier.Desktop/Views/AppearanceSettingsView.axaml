@@ -5,6 +5,8 @@
              x:Class="Rentier.Desktop.Views.AppearanceSettingsView"
              x:DataType="vm:AppearanceSettingsViewModel"
              x:CompileBindings="False">
+  <!-- Scrolls when the window is short or text is enlarged. -->
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled">
   <StackPanel Spacing="24" Margin="20">
 
     <!-- Section header -->
@@ -66,4 +68,5 @@
     </Border>
 
   </StackPanel>
+  </ScrollViewer>
 </UserControl>

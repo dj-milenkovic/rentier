@@ -105,6 +105,28 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
     private readonly ObservableAsPropertyHelper<string> _impactSummary;
     public string ImpactSummary => _impactSummary.Value;
 
+    /// <summary>
+    /// Describes what a sync in <paramref name="mode"/> will fetch. Already-imported reports are
+    /// always skipped, so the text must not promise anything else. <paramref name="text"/> resolves
+    /// a string key, so the view can render the same summary in the user's language.
+    /// </summary>
+    public static string BuildImpactSummary(SyncMode mode, DateTimeOffset? replayFrom, Func<string, string> text)
+    {
+        var dateStr = replayFrom.HasValue
+            ? DateOnly.FromDateTime(replayFrom.Value.DateTime).ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)
+            : "...";
+        return mode switch
+        {
+            SyncMode.Incremental => text(nameof(Resources.Strings.Sync_Impact_Incremental)),
+            SyncMode.ReplayFromDate => string.Format(text(nameof(Resources.Strings.Sync_Impact_ReplayFromDate)), dateStr),
+            SyncMode.FullReplay => text(nameof(Resources.Strings.Sync_Impact_FullReplay)),
+            _ => string.Empty
+        };
+    }
+
+    private static string EnglishText(string key) =>
+        typeof(Resources.Strings).GetProperty(key)?.GetValue(null) as string ?? key;
+
     private readonly ObservableAsPropertyHelper<string?> _validationError;
     public string? ValidationError => _validationError.Value;
 
@@ -148,17 +170,8 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
         }).ToProperty(this, x => x.ValidationError);
 
         // Already-imported reports are always skipped: the summary must not promise anything else.
-        _impactSummary = modeStream.CombineLatest(dateStream, (m, d) =>
-        {
-            var dateStr = d.HasValue ? DateOnly.FromDateTime(d.Value.DateTime).ToString("yyyy-MM-dd") : "...";
-            return m switch
-            {
-                SyncMode.Incremental => "Fetches new emails since last sync. Duplicates are skipped.",
-                SyncMode.ReplayFromDate => $"Re-fetches emails from {dateStr}. Duplicates are skipped.",
-                SyncMode.FullReplay => "Fetches ALL emails in the mailbox. Duplicates are skipped.",
-                _ => string.Empty
-            };
-        }).ToProperty(this, x => x.ImpactSummary, initialValue: string.Empty);
+        _impactSummary = modeStream.CombineLatest(dateStream, (m, d) => BuildImpactSummary(m, d, EnglishText))
+            .ToProperty(this, x => x.ImpactSummary, initialValue: string.Empty);
 
         _errorSummaryMessage = this
             .WhenAnyValue(x => x.ErrorMessage, x => x.HasErrors,

@@ -161,7 +161,7 @@
         <Panel>
 
           <!-- UpdateAvailable panel -->
-          <Border Background="{DynamicResource RentierInfoBrush}"
+          <Border Background="{DynamicResource RentierInfoBackgroundBrush}"
                   CornerRadius="4"
                   Padding="12,6"
                   IsVisible="{Binding IsUpdateAvailableState}">
@@ -178,7 +178,7 @@
           </Border>
 
           <!-- Downloading panel -->
-          <Border Background="{DynamicResource RentierInfoBrush}"
+          <Border Background="{DynamicResource RentierInfoBackgroundBrush}"
                   CornerRadius="4"
                   Padding="12,6"
                   IsVisible="{Binding IsDownloadingState}">
@@ -195,7 +195,7 @@
           </Border>
 
           <!-- Downloaded panel -->
-          <Border Background="{DynamicResource RentierInfoBrush}"
+          <Border Background="{DynamicResource RentierInfoBackgroundBrush}"
                   CornerRadius="4"
                   Padding="12,6"
                   IsVisible="{Binding IsDownloadedState}">
@@ -212,7 +212,7 @@
           </Border>
 
           <!-- Error panel -->
-          <Border Background="{DynamicResource RentierErrorBrush}"
+          <Border Background="{DynamicResource RentierDangerBackgroundBrush}"
                   CornerRadius="4"
                   Padding="12,6"
                   IsVisible="{Binding IsErrorState}">

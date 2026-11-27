@@ -1,3 +1,4 @@
+using Rentier.Desktop.Resources;
 using ReactiveUI.Primitives.Concurrency;
 using ReactiveUI.Primitives;
 using FluentAssertions;
@@ -431,6 +432,26 @@ public class SyncViewModelTests
         // Default: Incremental
 
         vm.ImpactSummary.Should().Be("Fetches new emails since last sync. Duplicates are skipped.");
+    }
+
+    [Fact]
+    public void BuildImpactSummary_SerbianLookup_UsesTranslatedText()
+    {
+        var text = SyncViewModel.BuildImpactSummary(
+            SyncMode.FullReplay, null, key => SrLatnStrings.All[key]);
+
+        text.Should().Be(SrLatnStrings.All["Sync_Impact_FullReplay"]);
+    }
+
+    [Fact]
+    public void BuildImpactSummary_ReplayFromDate_FormatsDateIntoTranslatedText()
+    {
+        var text = SyncViewModel.BuildImpactSummary(
+            SyncMode.ReplayFromDate,
+            new DateTimeOffset(2024, 3, 15, 0, 0, 0, TimeSpan.Zero),
+            key => SrLatnStrings.All[key]);
+
+        text.Should().Be("Ponovo preuzima emailove od 2024-03-15. Duplikati se preskaču.");
     }
 
     [Fact]

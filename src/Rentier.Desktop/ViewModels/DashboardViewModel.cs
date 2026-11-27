@@ -31,6 +31,7 @@ public sealed class DashboardViewModel : ReactiveObject, IActivatableViewModel
     private int _paidCount;
     private string _totalUnpaidDisplay = string.Empty;
     private string _lastSyncDisplay = string.Empty;
+    private bool _hasLastSync;
 
     public bool IsLoading
     {
@@ -98,6 +99,13 @@ public sealed class DashboardViewModel : ReactiveObject, IActivatableViewModel
         private set => this.RaiseAndSetIfChanged(ref _lastSyncDisplay, value);
     }
 
+    /// <summary>False until a mailbox sync has completed; the view then shows a localized "Never".</summary>
+    public bool HasLastSync
+    {
+        get => _hasLastSync;
+        private set => this.RaiseAndSetIfChanged(ref _hasLastSync, value);
+    }
+
     public bool HasOverdueFilings => _overdueFilings.Count > 0;
 
     public ReactiveCommand<RxVoid, RxVoid> LoadCommand { get; }
@@ -152,6 +160,7 @@ public sealed class DashboardViewModel : ReactiveObject, IActivatableViewModel
             LastSyncDisplay = dto.LastSyncDate.HasValue
                 ? dto.LastSyncDate.Value.ToString("yyyy-MM-dd")
                 : Strings.Dashboard_LastSyncNever;
+            HasLastSync = dto.LastSyncDate.HasValue;
             HasData = true;
             this.RaisePropertyChanged(nameof(HasOverdueFilings));
         }

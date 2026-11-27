@@ -50,6 +50,10 @@
           <SolidColorBrush x:Key="RentierSuccessForegroundBrush" Color="#22C55E" />
           <SolidColorBrush x:Key="RentierSuccessBackgroundBrush" Color="#0A2D14" />
 
+          <!-- Status — info (callouts, update bar) -->
+          <SolidColorBrush x:Key="RentierInfoForegroundBrush"    Color="#93C5FD" />
+          <SolidColorBrush x:Key="RentierInfoBackgroundBrush"    Color="#0B2447" />
+
           <!-- Filing status badge backgrounds (same in both themes — saturated colours) -->
           <SolidColorBrush x:Key="RentierStatusInitBrush"        Color="#D4A017" />
           <SolidColorBrush x:Key="RentierStatusFiledBrush"       Color="#0063B1" />
@@ -111,6 +115,10 @@
           <!-- Status — success -->
           <SolidColorBrush x:Key="RentierSuccessForegroundBrush" Color="#16A34A" />
           <SolidColorBrush x:Key="RentierSuccessBackgroundBrush" Color="#F0FDF4" />
+
+          <!-- Status — info (callouts, update bar) -->
+          <SolidColorBrush x:Key="RentierInfoForegroundBrush"    Color="#1D4ED8" />
+          <SolidColorBrush x:Key="RentierInfoBackgroundBrush"    Color="#EFF6FF" />
 
           <!-- Filing status badge backgrounds (same in both themes — saturated colours) -->
           <SolidColorBrush x:Key="RentierStatusInitBrush"        Color="#D4A017" />

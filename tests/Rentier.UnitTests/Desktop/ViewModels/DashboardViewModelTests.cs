@@ -132,6 +132,28 @@ public class DashboardViewModelTests
     }
 
     [Fact]
+    public void LoadCommand_OnSuccess_LastSyncNull_HasLastSyncIsFalse()
+    {
+        var dto = EmptyDashboard();
+        var vm = CreateVm(handler: MakeHandler(dto));
+
+        using var _ = vm.Activator.Activate();
+
+        vm.HasLastSync.Should().BeFalse();
+    }
+
+    [Fact]
+    public void LoadCommand_OnSuccess_LastSyncSet_HasLastSyncIsTrue()
+    {
+        var dto = new DashboardDto([], [], 0, 0, 0, 0m, new DateOnly(2024, 7, 15));
+        var vm = CreateVm(handler: MakeHandler(dto));
+
+        using var _ = vm.Activator.Activate();
+
+        vm.HasLastSync.Should().BeTrue();
+    }
+
+    [Fact]
     public void LoadCommand_OnFailure_SetsErrorMessage()
     {
         var vm = CreateVm(handler: MakeFailingHandler("Something went wrong"));

@@ -108,9 +108,9 @@ public static class Strings
     public static string Filings_Col_Status => "Status";
     public static string Filings_Col_IncomeType => "Income Type";
     public static string Filings_Col_PayingEntity => "Paying Entity";
-    public static string Filings_Col_Deadline => "Filing Deadline";
+    public static string Filings_Col_Deadline => "Deadline";
     public static string Filings_Col_TaxPayable => "Tax Payable";
-    public static string Filings_Col_PaymentRef => "Payment Reference";
+    public static string Filings_Col_PaymentRef => "Payment Ref.";
     public static string Filings_Filter_Unpaid => "Unpaid";
     public static string Filings_Filter_All => "All";
     public static string Filings_Page_Previous => "← Previous";
@@ -309,4 +309,11 @@ public static class Strings
     public static string Update_Error_DownloadCancelled => "the download was cancelled.";
     public static string Update_Error_ApplyFailed => "the update could not be installed. Close and reopen Rentier to try again.";
     public static string Update_Error_Unknown => "an unexpected error occurred.";
+
+    // Toggle-switch state labels and sync-mode descriptions (previously hardcoded English)
+    public static string Common_On => "On";
+    public static string Common_Off => "Off";
+    public static string Sync_Impact_Incremental => "Fetches new emails since last sync. Duplicates are skipped.";
+    public static string Sync_Impact_ReplayFromDate => "Re-fetches emails from {0}. Duplicates are skipped.";
+    public static string Sync_Impact_FullReplay => "Fetches ALL emails in the mailbox. Duplicates are skipped.";
 }

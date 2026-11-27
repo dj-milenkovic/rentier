@@ -63,7 +63,16 @@
                 Margin="8" HorizontalAlignment="Center">
       <Button Content="{Binding [Reports_Page_Previous], Source={StaticResource Localizer}}"
               Command="{Binding PreviousPageCommand}" />
-      <TextBlock Text="{Binding PageIndicator}" VerticalAlignment="Center" />
+      <!-- MinWidth: the indicator is first measured as "… 1 od 1" and was clipped once the
+           total grew, because the centered pager did not re-measure it. -->
+      <TextBlock VerticalAlignment="Center" MinWidth="96" TextAlignment="Center">
+        <TextBlock.Text>
+          <MultiBinding Converter="{x:Static local:LocalizedFormatConverter.Instance}" ConverterParameter="Reports_Page_Indicator">
+            <Binding Path="CurrentPage" />
+            <Binding Path="TotalPages" />
+          </MultiBinding>
+        </TextBlock.Text>
+      </TextBlock>
       <Button Content="{Binding [Reports_Page_Next], Source={StaticResource Localizer}}"
               Command="{Binding NextPageCommand}" />
     </StackPanel>
@@ -108,7 +117,7 @@
         </DataGridTemplateColumn>
 
         <!-- Name column with text flyout -->
-        <DataGridTemplateColumn Width="*" MinWidth="120" CanUserSort="False">
+        <DataGridTemplateColumn Width="2*" MinWidth="150" CanUserSort="False">
           <DataGridTemplateColumn.Header>
             <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
               <TextBlock Text="{Binding [Reports_Col_Name], Source={StaticResource Localizer}}" VerticalAlignment="Center" />
@@ -149,14 +158,15 @@
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <TextBlock Text="{Binding DisplayName}"
-                          ToolTip.Tip="{Binding ReportName}"
-                          VerticalAlignment="Center" Margin="4,0" />
+                         ToolTip.Tip="{Binding ReportName}"
+                         TextTrimming="CharacterEllipsis"
+                         VerticalAlignment="Center" Margin="4,0" />
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
 
         <!-- Import Date column with text flyout -->
-        <DataGridTemplateColumn Width="110" MinWidth="90" CanUserSort="False">
+        <DataGridTemplateColumn Width="116" MinWidth="100" CanUserSort="False">
           <DataGridTemplateColumn.Header>
             <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
               <TextBlock Text="{Binding [Reports_Col_ImportDate], Source={StaticResource Localizer}}" VerticalAlignment="Center" />
@@ -202,7 +212,7 @@
         </DataGridTemplateColumn>
 
         <!-- Email Date column with text flyout -->
-        <DataGridTemplateColumn Width="110" MinWidth="90" CanUserSort="False">
+        <DataGridTemplateColumn Width="122" MinWidth="100" CanUserSort="False">
           <DataGridTemplateColumn.Header>
             <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
               <TextBlock Text="{Binding [Reports_Col_EmailDate], Source={StaticResource Localizer}}" VerticalAlignment="Center" />
@@ -248,7 +258,7 @@
         </DataGridTemplateColumn>
 
         <!-- Importer column with text flyout -->
-        <DataGridTemplateColumn Width="160" MinWidth="110" CanUserSort="False">
+        <DataGridTemplateColumn Width="*" MinWidth="110" CanUserSort="False">
           <DataGridTemplateColumn.Header>
             <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
               <TextBlock Text="{Binding [Reports_Col_Importer], Source={StaticResource Localizer}}" VerticalAlignment="Center" />
@@ -288,13 +298,14 @@
           </DataGridTemplateColumn.Header>
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
-              <TextBlock Text="{Binding ImporterName}" VerticalAlignment="Center" Margin="4,0" />
+              <TextBlock Text="{Binding ImporterName}" ToolTip.Tip="{Binding ImporterName}"
+                         TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="4,0" />
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
 
         <!-- Status column with enum flyout -->
-        <DataGridTemplateColumn Width="100" MinWidth="80" CanUserSort="False">
+        <DataGridTemplateColumn Width="132" MinWidth="96" CanUserSort="False">
           <DataGridTemplateColumn.Header>
             <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
               <TextBlock Text="{Binding [Reports_Col_Status], Source={StaticResource Localizer}}" VerticalAlignment="Center" />
@@ -323,7 +334,7 @@
                       <ItemsControl.ItemTemplate>
                         <DataTemplate>
                           <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}"
-                                    Content="{Binding Label}" Margin="0,2" />
+                                    Content="{Binding Value, Converter={x:Static local:ReportStatusDisplayConverter.Instance}}" Margin="0,2" />
                         </DataTemplate>
                       </ItemsControl.ItemTemplate>
                     </ItemsControl>
@@ -349,13 +360,13 @@
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <TextBlock Text="{Binding Status, Converter={x:Static local:ReportStatusDisplayConverter.Instance}}"
-                         VerticalAlignment="Center" Margin="4,0" />
+                         TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="4,0" />
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
 
         <!-- Filing Count column with text flyout -->
-        <DataGridTemplateColumn Width="70" MinWidth="60" CanUserSort="False">
+        <DataGridTemplateColumn Width="88" MinWidth="80" CanUserSort="False">
           <DataGridTemplateColumn.Header>
             <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
               <TextBlock Text="{Binding [Reports_Col_FilingCount], Source={StaticResource Localizer}}" VerticalAlignment="Center" />
@@ -395,13 +406,13 @@
           </DataGridTemplateColumn.Header>
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
-              <TextBlock Text="{Binding FilingCount}" VerticalAlignment="Center" Margin="4,0" />
+              <TextBlock Text="{Binding FilingCount}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="4,0,16,0" />
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
 
         <!-- Actions column (unchanged) -->
-        <DataGridTemplateColumn Header="{Binding [Reports_Col_Actions], Source={StaticResource Localizer}}" Width="Auto">
+        <DataGridTemplateColumn Header="{Binding [Reports_Col_Actions], Source={StaticResource Localizer}}" Width="80" MinWidth="80" CanUserResize="False">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <StackPanel Orientation="Horizontal" Spacing="4" Margin="4,0">

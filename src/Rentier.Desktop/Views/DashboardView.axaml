@@ -47,7 +47,8 @@
         </StackPanel>
         <StackPanel Margin="4" HorizontalAlignment="Center">
           <TextBlock Text="{Binding [Dashboard_LastSync], Source={StaticResource Localizer}}" FontSize="11" Foreground="{DynamicResource RentierTextSecondaryBrush}" HorizontalAlignment="Center" />
-          <TextBlock Text="{Binding LastSyncDisplay}" FontSize="14" HorizontalAlignment="Center" />
+          <TextBlock Text="{Binding LastSyncDisplay}" IsVisible="{Binding HasLastSync}" FontSize="14" HorizontalAlignment="Center" />
+          <TextBlock Text="{Binding [Dashboard_LastSyncNever], Source={StaticResource Localizer}}" IsVisible="{Binding !HasLastSync}" FontSize="14" HorizontalAlignment="Center" />
         </StackPanel>
       </UniformGrid>
     </Border>
@@ -67,24 +68,31 @@
                    FontWeight="Bold"
                    Foreground="{DynamicResource RentierDangerForegroundBrush}" />
       </Border>
-      <ItemsControl ItemsSource="{Binding OverdueFilings}">
-        <ItemsControl.ItemTemplate>
-          <DataTemplate>
-            <Border Background="{DynamicResource RentierDangerBackgroundBrush}"
-                    BorderBrush="{DynamicResource RentierDangerForegroundBrush}"
-                    BorderThickness="1"
-                    CornerRadius="{StaticResource RentierControlCornerRadius}"
-                    Padding="8,4" Margin="0,2">
-              <Grid ColumnDefinitions="*,Auto,Auto,Auto">
-                <TextBlock Grid.Column="0" Text="{Binding PayingEntity}" FontWeight="SemiBold" />
-                <TextBlock Grid.Column="1" Text="{Binding FilingDeadline, StringFormat={}{0:yyyy-MM-dd}}" Margin="8,0" Foreground="{DynamicResource RentierDangerForegroundBrush}" />
-                <TextBlock Grid.Column="2" Text="{Binding Status, Converter={x:Static local:FilingStatusDisplayConverter.Instance}}" Margin="8,0" />
-                <TextBlock Grid.Column="3" Text="{Binding TaxPayableRsd, StringFormat={}{0:N2} RSD}" Margin="8,0" />
-              </Grid>
-            </Border>
-          </DataTemplate>
-        </ItemsControl.ItemTemplate>
-      </ItemsControl>
+      <!-- Capped height so a long overdue list scrolls instead of pushing the
+           upcoming-deadlines grid off screen. -->
+      <ScrollViewer MaxHeight="168" HorizontalScrollBarVisibility="Disabled">
+        <ItemsControl ItemsSource="{Binding OverdueFilings}" Margin="0,0,12,0">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Border Background="{DynamicResource RentierDangerBackgroundBrush}"
+                      BorderBrush="{DynamicResource RentierDangerForegroundBrush}"
+                      BorderThickness="1"
+                      CornerRadius="{StaticResource RentierControlCornerRadius}"
+                      Padding="8,4" Margin="0,2">
+                <Grid ColumnDefinitions="*,96,96,130">
+                  <TextBlock Grid.Column="0" Text="{Binding PayingEntity}" FontWeight="SemiBold"
+                             TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding PayingEntity}" />
+                  <TextBlock Grid.Column="1" Text="{Binding FilingDeadline, StringFormat={}{0:yyyy-MM-dd}}" Margin="8,0,0,0"
+                             Foreground="{DynamicResource RentierDangerForegroundBrush}" />
+                  <TextBlock Grid.Column="2" Text="{Binding Status, Converter={x:Static local:FilingStatusDisplayConverter.Instance}}"
+                             Margin="8,0,0,0" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Grid.Column="3" Text="{Binding TaxPayableRsd, StringFormat={}{0:N2} RSD}" HorizontalAlignment="Right" />
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
     </StackPanel>
 
     <!-- Upcoming Deadlines DataGrid -->
@@ -101,12 +109,17 @@
                 GridLinesVisibility="Horizontal"
                 CanUserSortColumns="True"
                 AutoGenerateColumns="False">
+        <DataGrid.Styles>
+          <Style Selector="DataGridCell.numeric">
+            <Setter Property="HorizontalContentAlignment" Value="Right" />
+          </Style>
+        </DataGrid.Styles>
         <DataGrid.Columns>
-          <DataGridTextColumn Header="{Binding [Filings_Col_PayingEntity], Source={StaticResource Localizer}}" Binding="{Binding PayingEntity}" Width="*" />
-          <DataGridTextColumn Header="{Binding [Filings_Col_Deadline], Source={StaticResource Localizer}}" Binding="{Binding FilingDeadline, StringFormat={}{0:yyyy-MM-dd}}" Width="110" />
-          <DataGridTextColumn Header="{Binding [Filings_Col_IncomeType], Source={StaticResource Localizer}}" Binding="{Binding IncomeType, Converter={x:Static local:IncomeTypeDisplayConverter.Instance}}" Width="90" />
-          <DataGridTextColumn Header="{Binding [Filings_Col_Status], Source={StaticResource Localizer}}" Binding="{Binding Status, Converter={x:Static local:FilingStatusDisplayConverter.Instance}}" Width="90" />
-          <DataGridTextColumn Header="{Binding [Filings_Col_TaxPayable], Source={StaticResource Localizer}}" Binding="{Binding TaxPayableRsd, StringFormat={}{0:N2} RSD}" Width="140" />
+          <DataGridTextColumn Header="{Binding [Filings_Col_PayingEntity], Source={StaticResource Localizer}}" Binding="{Binding PayingEntity}" Width="*" MinWidth="160" />
+          <DataGridTextColumn Header="{Binding [Filings_Col_Deadline], Source={StaticResource Localizer}}" Binding="{Binding FilingDeadline, StringFormat={}{0:yyyy-MM-dd}}" Width="120" />
+          <DataGridTextColumn Header="{Binding [Filings_Col_IncomeType], Source={StaticResource Localizer}}" Binding="{Binding IncomeType, Converter={x:Static local:IncomeTypeDisplayConverter.Instance}}" Width="110" />
+          <DataGridTextColumn Header="{Binding [Filings_Col_Status], Source={StaticResource Localizer}}" Binding="{Binding Status, Converter={x:Static local:FilingStatusDisplayConverter.Instance}}" Width="104" />
+          <DataGridTextColumn Header="{Binding [Filings_Col_TaxPayable], Source={StaticResource Localizer}}" Binding="{Binding TaxPayableRsd, StringFormat={}{0:N2} RSD}" Width="140" CellStyleClasses="numeric" />
         </DataGrid.Columns>
       </DataGrid>
       <TextBlock Grid.Row="1" IsVisible="{Binding !HasUpcomingDeadlines}"

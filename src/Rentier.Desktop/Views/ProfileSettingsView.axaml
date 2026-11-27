@@ -14,7 +14,7 @@
       <TextBox Text="{Binding Jmbg}" MaxLength="13" />
       <TextBlock Text="{Binding JmbgValidationMessage}"
                  IsVisible="{Binding JmbgValidationMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                 Foreground="Red" FontSize="11" />
+                 Foreground="{DynamicResource RentierDangerForegroundBrush}" FontSize="11" />
 
       <TextBlock Text="{Binding [Profile_FullName_Label], Source={StaticResource Localizer}}" />
       <TextBox Text="{Binding FullName}" />
@@ -38,9 +38,9 @@
       <Button Content="{Binding [Profile_Save_Button], Source={StaticResource Localizer}}"
               Command="{Binding SaveCommand}" />
 
-      <TextBlock Text="{Binding ErrorMessage}" Foreground="Red"
+      <TextBlock Text="{Binding ErrorMessage}" Foreground="{DynamicResource RentierDangerForegroundBrush}"
                  IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-      <TextBlock Text="{Binding SuccessMessage}" Foreground="Green"
+      <TextBlock Text="{Binding SuccessMessage}" Foreground="{DynamicResource RentierSuccessForegroundBrush}"
                  IsVisible="{Binding SuccessMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
       <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsLoading}" />

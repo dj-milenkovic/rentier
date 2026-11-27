@@ -92,9 +92,9 @@ public static class SrLatnStrings
         ["Filings_Col_Status"] = "Status",
         ["Filings_Col_IncomeType"] = "Tip prihoda",
         ["Filings_Col_PayingEntity"] = "Isplatilac",
-        ["Filings_Col_Deadline"] = "Rok za podnošenje",
+        ["Filings_Col_Deadline"] = "Rok prijave",
         ["Filings_Col_TaxPayable"] = "Porez za uplatu",
-        ["Filings_Col_PaymentRef"] = "Referenca plaćanja",
+        ["Filings_Col_PaymentRef"] = "Referenca",
         ["Filings_Filter_Unpaid"] = "Neplaćeno",
         ["Filings_Filter_All"] = "Sve",
         ["Filings_Page_Previous"] = "← Prethodna",
@@ -303,5 +303,10 @@ public static class SrLatnStrings
         ["Update_Error_DownloadCancelled"] = "preuzimanje je otkazano.",
         ["Update_Error_ApplyFailed"] = "ažuriranje nije moglo da se instalira. Zatvorite i ponovo otvorite Rentier da biste pokušali još jednom.",
         ["Update_Error_Unknown"] = "došlo je do neočekivane greške.",
+        ["Common_On"] = "Uključeno",
+        ["Common_Off"] = "Isključeno",
+        ["Sync_Impact_Incremental"] = "Preuzima nove emailove od poslednje sinhronizacije. Duplikati se preskaču.",
+        ["Sync_Impact_ReplayFromDate"] = "Ponovo preuzima emailove od {0}. Duplikati se preskaču.",
+        ["Sync_Impact_FullReplay"] = "Preuzima SVE emailove iz sandučeta. Duplikati se preskaču.",
     };
 }

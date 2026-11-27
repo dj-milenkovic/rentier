@@ -15,11 +15,16 @@
             BorderBrush="{DynamicResource RentierBorderBrush}" BorderThickness="1"
             CornerRadius="{StaticResource RentierCardCornerRadius}"
             BoxShadow="{StaticResource RentierCardShadow}">
-      <StackPanel Spacing="8">
+      <StackPanel Spacing="8" Grid.IsSharedSizeScope="True">
 
         <!-- Sync mode row -->
-        <Grid ColumnDefinitions="120,*">
-          <TextBlock Grid.Column="0" Text="{Binding [Sync_Mode_Label], Source={StaticResource Localizer}}" VerticalAlignment="Center" />
+        <!-- Auto-sized shared label column: "Režim sinhronizacije" was clipped at 120px. -->
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" SharedSizeGroup="SyncLabel" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+          <TextBlock Grid.Column="0" Text="{Binding [Sync_Mode_Label], Source={StaticResource Localizer}}" VerticalAlignment="Center" Margin="0,0,12,0" />
           <ComboBox Grid.Column="1"
                     ItemsSource="{Binding AvailableSyncModes}"
                     SelectedItem="{Binding SelectedSyncMode}">
@@ -33,9 +38,12 @@
 
 
         <!-- Replay-from-date picker (only shown in ReplayFromDate mode) -->
-        <Grid ColumnDefinitions="120,*"
-              IsVisible="{Binding IsReplayFromDateMode}">
-          <TextBlock Grid.Column="0" Text="{Binding [Sync_ReplayFrom_Label], Source={StaticResource Localizer}}" VerticalAlignment="Center" />
+        <Grid IsVisible="{Binding IsReplayFromDateMode}">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" SharedSizeGroup="SyncLabel" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+          <TextBlock Grid.Column="0" Text="{Binding [Sync_ReplayFrom_Label], Source={StaticResource Localizer}}" VerticalAlignment="Center" Margin="0,0,12,0" />
           <DatePicker Grid.Column="1"
                       SelectedDate="{Binding ReplayFromDateOffset}" />
         </Grid>
@@ -47,10 +55,17 @@
                    IsVisible="{Binding IsFullReplayMode}" />
 
         <!-- Impact summary -->
-        <TextBlock Text="{Binding ImpactSummary}"
+        <TextBlock
                    Foreground="{DynamicResource RentierTextSecondaryBrush}"
                    FontStyle="Italic"
-                   TextWrapping="Wrap" />
+                   TextWrapping="Wrap">
+          <TextBlock.Text>
+            <MultiBinding Converter="{x:Static local:SyncImpactSummaryConverter.Instance}">
+              <Binding Path="SelectedSyncMode" />
+              <Binding Path="ReplayFromDateOffset" />
+            </MultiBinding>
+          </TextBlock.Text>
+        </TextBlock>
 
         <!-- Validation error -->
         <TextBlock Text="{Binding ValidationError}"
@@ -75,18 +90,19 @@
             Background="{DynamicResource RentierCardBrush}"
             BorderBrush="{DynamicResource RentierBorderBrush}" BorderThickness="1"
             CornerRadius="{StaticResource RentierCardCornerRadius}">
-      <ScrollViewer Name="LogScrollViewer">
+      <ScrollViewer Name="LogScrollViewer" HorizontalScrollBarVisibility="Disabled">
         <ItemsControl ItemsSource="{Binding LogEntries}">
           <ItemsControl.ItemTemplate>
             <DataTemplate>
-              <StackPanel Orientation="Horizontal" Spacing="8" Margin="8,2">
-                <TextBlock Text="{Binding Timestamp}"
+              <!-- Grid (not a horizontal StackPanel) so long messages wrap instead of overflowing. -->
+              <Grid ColumnDefinitions="60,16,*" ColumnSpacing="8" Margin="8,2">
+                <TextBlock Grid.Column="0" Text="{Binding Timestamp}"
                            Foreground="{DynamicResource RentierTextSecondaryBrush}"
-                           Width="60" FontFamily="Consolas,Menlo,monospace" FontSize="11" />
-                <TextBlock Text="{Binding Icon}" Width="16"
+                           FontFamily="Consolas,Menlo,monospace" FontSize="11" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="{Binding Icon}"
                            Foreground="{Binding Severity, Converter={x:Static local:SyncSeverityBrushConverter.Instance}}" />
-                <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
-              </StackPanel>
+                <TextBlock Grid.Column="2" Text="{Binding Message}" TextWrapping="Wrap" />
+              </Grid>
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
