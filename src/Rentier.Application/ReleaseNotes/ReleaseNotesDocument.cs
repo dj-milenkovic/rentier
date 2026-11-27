@@ -40,53 +40,23 @@ public static partial class ReleaseNotesDocument
 
         var text = HtmlComment().Replace(markdown.Replace("\r\n", "\n", StringComparison.Ordinal), string.Empty);
         var entries = new List<ReleaseNotesEntry>();
-
-        Version? version = null;
-        string? language = null;
-        var english = new StringBuilder();
-        var serbian = new StringBuilder();
-
-        void Flush()
-        {
-            if (version is not null)
-            {
-                var entry = new ReleaseNotesEntry(version, english.ToString().Trim(), serbian.ToString().Trim());
-                if (entry.HasNotes && entries.TrueForAll(e => e.Version != entry.Version))
-                    entries.Add(entry);
-            }
-
-            english.Clear();
-            serbian.Clear();
-            language = null;
-        }
+        var block = new VersionBlock(null);
 
         foreach (var line in text.Split('\n'))
         {
             var versionHeading = VersionHeading().Match(line);
             if (versionHeading.Success)
             {
-                Flush();
-                version = TryParseVersion(versionHeading.Groups["version"].Value, out var parsed) ? parsed : null;
+                AddIfNew(entries, block.ToEntry());
+                block = new VersionBlock(TryParseVersion(versionHeading.Groups["version"].Value, out var parsed) ? parsed : null);
                 continue;
             }
 
-            var languageHeading = LanguageHeading().Match(line);
-            if (languageHeading.Success)
-            {
-                language = languageHeading.Groups["lang"].Value.ToUpperInvariant();
-                continue;
-            }
-
-            switch (language)
-            {
-                case ENGLISH: english.AppendLine(line.TrimEnd()); break;
-                case SERBIAN: serbian.AppendLine(line.TrimEnd()); break;
-            }
+            block.Read(line);
         }
 
-        Flush();
-        entries.Sort((a, b) => b.Version.CompareTo(a.Version));
-        return entries;
+        AddIfNew(entries, block.ToEntry());
+        return [.. entries.OrderByDescending(e => e.Version)];
     }
 
     /// <summary>Writes entries in the document format, newest first. Entries without notes are left out.</summary>
@@ -134,6 +104,46 @@ public static partial class ReleaseNotesDocument
 
     // "1.4" and "1.4.0" must compare equal; Version treats a missing build part as -1.
     private static Version Normalize(Version v) => new(v.Major, v.Minor, Math.Max(v.Build, 0));
+
+    // A repeated version keeps its first block; a version without notes is left out.
+    private static void AddIfNew(List<ReleaseNotesEntry> entries, ReleaseNotesEntry? entry)
+    {
+        if (entry is { HasNotes: true } && entries.TrueForAll(e => e.Version != entry.Version))
+            entries.Add(entry);
+    }
+
+    /// <summary>The lines under one version heading, split into English and Serbian notes.</summary>
+    private sealed class VersionBlock(Version? version)
+    {
+        private readonly StringBuilder _english = new();
+        private readonly StringBuilder _serbian = new();
+        private string? _language;
+
+        public void Read(string line)
+        {
+            var languageHeading = LanguageHeading().Match(line);
+            if (languageHeading.Success)
+            {
+                _language = languageHeading.Groups["lang"].Value.ToUpperInvariant();
+                return;
+            }
+
+            var notes = _language switch
+            {
+                ENGLISH => _english,
+                SERBIAN => _serbian,
+                _ => null,
+            };
+
+            // Append '\n' explicitly: AppendLine writes Environment.NewLine ("\r\n" on Windows),
+            // which would make the parsed notes differ by platform.
+            notes?.Append(line.TrimEnd()).Append('\n');
+        }
+
+        /// <summary>The block as an entry, or <see langword="null"/> when its heading had no valid version.</summary>
+        public ReleaseNotesEntry? ToEntry() =>
+            version is null ? null : new ReleaseNotesEntry(version, _english.ToString().Trim(), _serbian.ToString().Trim());
+    }
 
     private static void AppendSection(StringBuilder sb, string language, string notes)
     {
