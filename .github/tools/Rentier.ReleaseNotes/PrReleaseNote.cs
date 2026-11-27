@@ -75,11 +75,11 @@ public sealed partial record PrReleaseNote(bool HasSection, string English, stri
             if (marker.Success)
             {
                 current = marker.Groups["lang"].Value.Equals("EN", StringComparison.OrdinalIgnoreCase) ? english : serbian;
-                current.AppendLine(marker.Groups["text"].Value);
+                current.Append(marker.Groups["text"].Value).Append('\n');
                 continue;
             }
 
-            current?.AppendLine(line.TrimEnd());
+            current?.Append(line.TrimEnd()).Append('\n');
         }
 
         return new PrReleaseNote(true, ToBullets(english.ToString()), ToBullets(serbian.ToString()));
