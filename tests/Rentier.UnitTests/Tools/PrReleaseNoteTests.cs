@@ -53,6 +53,37 @@ public class PrReleaseNoteTests
     }
 
     [Fact]
+    public void Parse_LanguageHeadings_ReturnBothLists()
+    {
+        var note = PrReleaseNote.Parse("""
+            ## Release note
+
+            ### EN
+            - The update bar spans the whole window.
+            - New What's new page.
+
+            ### SR
+            - Traka za ažuriranje je preko celog prozora.
+
+            ## Testing
+            - passed
+            """);
+
+        note.English.Should().Be("- The update bar spans the whole window.\n- New What's new page.");
+        note.Serbian.Should().Be("- Traka za ažuriranje je preko celog prozora.");
+    }
+
+    [Fact]
+    public void Parse_SerbianLineRightAfterEnglishList_IsStillSerbian()
+    {
+        // GitHub renders this "SR:" as part of the last English bullet; the parser must not.
+        var note = PrReleaseNote.Parse("## Release note\nEN:\n- One\n- Two\nSR:\n- Jedan\n- Dva\n");
+
+        note.English.Should().Be("- One\n- Two");
+        note.Serbian.Should().Be("- Jedan\n- Dva");
+    }
+
+    [Fact]
     public void Parse_UntouchedTemplate_IsEmpty()
     {
         var note = PrReleaseNote.Parse("""

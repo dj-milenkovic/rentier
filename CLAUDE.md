@@ -51,10 +51,10 @@ dotnet test tests/Rentier.Infrastructure.Tests --filter "Category=Integration"
 dotnet run --project src/Rentier.Desktop/Rentier.Desktop.csproj
 ```
 PR descriptions follow `.github/pull_request_template.md`. Its `## Release note` section
-(`EN:` + `SR:` lines, written for users, Serbian in Latin script) becomes the PR's entry in the
+(`### EN` + `### SR` bullets, written for users, Serbian in Latin script) becomes the PR's entry in the
 app's What's new. It is required for `feat`/`fix`/`perf` titles unless the scope is internal
 (`build`, `ci`, `claude`, `deps`, `dev`, `docs`, `release`, `test`), e.g. `fix(ci): ...`; leave
-both lines empty for internal changes. See CONTRIBUTING.md → Release notes.
+both empty for internal changes. See CONTRIBUTING.md → Release notes.
 
 CI (`.github/workflows/ci.yml`) runs format + vulnerable-package check → migration tests
 → build/test matrix (Windows/macOS/Linux) → coverage merge → SonarCloud. Match this

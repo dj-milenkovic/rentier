@@ -70,6 +70,16 @@ public class ReleaseNotesWorkflowContractTests
     }
 
     [Fact]
+    public void ReleaseNotes_AreBuiltFromPrsSinceTheCutoffOnly()
+    {
+        var workflow = ReleaseWorkflow();
+
+        workflow.Should().MatchRegex(@"RELEASE_NOTES_SINCE: '\d+\.\d+\.\d+'");
+        Regex.Matches(workflow, @"--since ""\$\{RELEASE_NOTES_SINCE\}""").Should().HaveCount(2, "plan and build use the same cutoff");
+        workflow.Should().NotContain("history.md", "the notes are a temporary release file, not a committed one");
+    }
+
+    [Fact]
     public void NotesArtifact_IsNotPickedUpAsAReleaseAsset()
     {
         var workflow = ReleaseWorkflow();
@@ -104,7 +114,7 @@ public class ReleaseNotesWorkflowContractTests
     {
         var template = RepositoryFiles.Read(".github/pull_request_template.md");
 
-        template.Should().Contain("## Release note").And.Contain("EN:").And.Contain("SR:");
+        template.Should().Contain("## Release note").And.Contain("\n### EN\n").And.Contain("\n### SR\n");
         Rentier.ReleaseNotes.PrReleaseNote.Parse(template).IsEmpty.Should().BeTrue(
             "an untouched template must not put placeholder text into the app");
     }

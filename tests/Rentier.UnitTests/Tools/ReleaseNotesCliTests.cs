@@ -73,17 +73,17 @@ public class ReleaseNotesCliTests
 
     // ── build: a release without user-facing changes ────────────────────────────
 
-    private static readonly IReadOnlyList<Rentier.Application.ReleaseNotes.ReleaseNotesEntry> History =
-        [new(new Version(1, 4, 0), "- Four", "- Četiri")];
+    private static readonly Version[] Versions = [new(1, 6, 0), new(1, 5, 0)];
 
-    private static readonly Version[] Versions = [new(1, 5, 0), new(1, 4, 0)];
+    private static IEnumerable<string> FiveHasNotes(Version v) =>
+        v == new Version(1, 5, 0) ? ["## Release note\nEN: Five\nSR: Pet\n"] : ["chore: Bump x"];
 
     [Fact]
     public void BuildDocument_NewVersionWithoutNotes_StopsTheRelease()
     {
         var output = new StringWriter();
 
-        var exitCode = Cli.BuildDocument(History, Versions, _ => ["chore: Bump x"], allowNoUserChanges: false, output, out var document);
+        var exitCode = Cli.BuildDocument(Versions, FiveHasNotes, allowNoUserChanges: false, output, out var document);
 
         exitCode.Should().Be(1);
         document.Should().BeEmpty();
@@ -93,22 +93,33 @@ public class ReleaseNotesCliTests
     [Fact]
     public void BuildDocument_NewVersionWithoutNotesButAllowed_WritesGenericLine()
     {
-        var exitCode = Cli.BuildDocument(History, Versions, _ => [], allowNoUserChanges: true, new StringWriter(), out var document);
+        var exitCode = Cli.BuildDocument(Versions, FiveHasNotes, allowNoUserChanges: true, new StringWriter(), out var document);
 
         exitCode.Should().Be(0);
         var newest = Rentier.Application.ReleaseNotes.ReleaseNotesDocument.Parse(document)[0];
-        newest.DisplayVersion.Should().Be("v1.5.0");
-        newest.Should().Be(ReleaseNotesBuilder.GenericEntry(new Version(1, 5, 0)));
+        newest.DisplayVersion.Should().Be("v1.6.0");
+        newest.Should().Be(ReleaseNotesBuilder.GenericEntry(new Version(1, 6, 0)));
+    }
+
+    [Fact]
+    public void BuildDocument_OlderVersionWithoutNotes_DoesNotStopTheRelease()
+    {
+        // An older version without notes was itself released with the override.
+        var exitCode = Cli.BuildDocument(Versions, v => v == new Version(1, 6, 0) ? ["## Release note\nEN: Six\nSR: Šest\n"] : [],
+            allowNoUserChanges: false, new StringWriter(), out var document);
+
+        exitCode.Should().Be(0);
+        document.Should().Contain("Stability and security improvements.");
     }
 
     [Fact]
     public void BuildDocument_NewVersionWithNotes_Succeeds()
     {
-        var exitCode = Cli.BuildDocument(History, Versions, _ => ["## Release note\nEN: Five\nSR: Pet\n"],
+        var exitCode = Cli.BuildDocument(Versions, _ => ["## Release note\nEN: Note\nSR: Beleška\n"],
             allowNoUserChanges: false, new StringWriter(), out var document);
 
         exitCode.Should().Be(0);
-        document.Should().StartWith("## v1.5.0").And.Contain("- Five").And.Contain("- Četiri");
+        document.Should().StartWith("## v1.6.0").And.Contain("- Note").And.Contain("## v1.5.0");
     }
 
     [Fact]

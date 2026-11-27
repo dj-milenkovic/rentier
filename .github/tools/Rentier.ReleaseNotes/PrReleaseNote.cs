@@ -7,11 +7,17 @@ namespace Rentier.ReleaseNotes;
 /// The user-facing release note written in a PR description:
 /// <code>
 /// ## Release note
-/// EN: What changed, in words a user understands.
-/// SR: Isto to, na srpskom.
+///
+/// ### EN
+/// - What changed, in words a user understands.
+///
+/// ### SR
+/// - Isto to, na srpskom.
 /// </code>
-/// Each language may run over several lines and may be a Markdown list. HTML comments (the PR
-/// template's hints) are ignored, so an untouched template counts as "no note".
+/// <c>EN:</c> / <c>SR:</c> lines work too, but the headings are what the PR template uses:
+/// GitHub shows an <c>SR:</c> line written right after an English list as part of its last
+/// item. Each language may run over several lines and may be a Markdown list. HTML comments
+/// (the template's hints) are ignored, so an untouched template counts as "no note".
 /// </summary>
 public sealed partial record PrReleaseNote(bool HasSection, string English, string Serbian)
 {
@@ -54,6 +60,13 @@ public sealed partial record PrReleaseNote(bool HasSection, string English, stri
 
         foreach (var line in lines.Skip(start + 1))
         {
+            var languageHeading = LanguageHeading().Match(line);
+            if (languageHeading.Success)
+            {
+                current = languageHeading.Groups["lang"].Value.Equals("EN", StringComparison.OrdinalIgnoreCase) ? english : serbian;
+                continue;
+            }
+
             var heading = AnyHeading().Match(line);
             if (heading.Success && heading.Groups["marks"].Length <= level)
                 break;
@@ -99,6 +112,9 @@ public sealed partial record PrReleaseNote(bool HasSection, string English, stri
 
     [GeneratedRegex(@"^(?<marks>#{1,6})\s", RegexOptions.None, matchTimeoutMilliseconds: 1000)]
     private static partial Regex AnyHeading();
+
+    [GeneratedRegex(@"^#{3,6}\s*(?<lang>EN|SR)\s*:?\s*$", RegexOptions.IgnoreCase, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex LanguageHeading();
 
     [GeneratedRegex(@"^\s*(\*\*)?(?<lang>EN|SR)(\*\*)?\s*:(\*\*)?\s*(?<text>.*)$", RegexOptions.IgnoreCase, matchTimeoutMilliseconds: 1000)]
     private static partial Regex LanguageMarker();

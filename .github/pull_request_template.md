@@ -5,16 +5,18 @@
 ## Release note
 
 <!--
-  What users will notice, in both languages. These lines appear in the app's "What's new"
+  What users will notice, in both languages. It appears in the app's "What's new"
   (Settings and the update bar) once this PR is released.
   - Write for users, not developers: what they see or can do now, not how it was built.
   - Serbian in Latin script, with the app's own words (Prijave, Izveštaji, Podešavanja, ...).
-  - Several changes: use a list under EN: and SR:.
-  - Required for feat/fix/perf titles. Internal only? Leave both lines empty and use an internal
+  - One "- " bullet per change, under each heading.
+  - Required for feat/fix/perf titles. Internal only? Leave both empty and use an internal
     type (chore, ci, refactor, test, docs) or scope, e.g. "fix(ci): ...".
 -->
-EN:
-SR:
+
+### EN
+
+### SR
 
 ## Testing
 

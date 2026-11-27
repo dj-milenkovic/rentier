@@ -159,9 +159,16 @@ which the PR template provides:
 
 ```
 ## Release note
-EN: The update bar now spans the whole window.
-SR: Traka za ažuriranje sada je preko celog prozora.
+
+### EN
+- The update bar now spans the whole window.
+
+### SR
+- Traka za ažuriranje sada je preko celog prozora.
 ```
+
+Keep the `### EN` / `### SR` headings: an `SR:` line written right after an English list shows
+on GitHub as part of the last English bullet.
 
 - Write for users: what they see or can do now, not how it was built. Serbian in Latin script,
   using the app's own words.
@@ -179,7 +186,8 @@ SR: Traka za ažuriranje sada je preko celog prozora.
   run it with **Release without user-facing changes** ticked; the app then shows "Stability and
   security improvements." for that version.
 - The release tooling lives with the workflows: `.github/tools/Rentier.ReleaseNotes` builds the
-  notes, and `.github/release-notes/history.md` holds the notes for versions up to v1.4.0. Only
+  notes into a temporary file during the release; nothing is committed. Versions up to v1.4.0
+  (`RELEASE_NOTES_SINCE` in `auto-release.yml`) predate release notes and are not shown. Only
   release builds carry notes; a local build's Settings → What's new is empty.
 
 ### Code Review Expectations

@@ -48,6 +48,9 @@ env:
   # build updates from the fork.
   PACK_ID: Rentier
   REPO_URL: https://github.com/${{ github.repository }}
+  # In-app release notes (What's new) start after this version: earlier PRs carry no
+  # "## Release note" section, so older versions are left out instead of showing a generic line.
+  RELEASE_NOTES_SINCE: '1.4.0'
 
 jobs:
   # ──────────────────────────────────────────────────────────────────
@@ -134,8 +137,8 @@ jobs:
   # ──────────────────────────────────────────────────────────────────
   # 2. User-facing release notes (last 10 versions), shipped inside the app
   #    (Settings > What's new) and inside each update (vpk --releaseNotes).
-  #    Old versions come from .github/release-notes/history.md; newer ones from the
-  #    "## Release note" section of each merged PR's description.
+  #    Built from the "## Release note" section of each merged PR's description
+  #    (versions after RELEASE_NOTES_SINCE); the file is never committed.
   #    Runs before the tag: a release with no user-facing change stops here
   #    unless "Release without user-facing changes" is ticked.
   # ──────────────────────────────────────────────────────────────────
@@ -164,7 +167,7 @@ jobs:
         run: |
           git tag --list 'v*' > tags.txt
           dotnet run --project .github/tools/Rentier.ReleaseNotes -c Release -- plan \
-            --history .github/release-notes/history.md --version "${VERSION}" --tags-file tags.txt > versions.txt
+            --since "${RELEASE_NOTES_SINCE}" --version "${VERSION}" --tags-file tags.txt > versions.txt
           echo "Versions that take their notes from PR descriptions:"; cat versions.txt
 
           while read -r ver; do
@@ -191,7 +194,7 @@ jobs:
         run: |
           mkdir -p release-notes-app
           dotnet run --project .github/tools/Rentier.ReleaseNotes -c Release -- build \
-            --history .github/release-notes/history.md --version "${VERSION}" --tags-file tags.txt \
+            --since "${RELEASE_NOTES_SINCE}" --version "${VERSION}" --tags-file tags.txt \
             --pr-bodies pr-bodies --out release-notes-app/release-notes.md \
             --allow-no-user-changes "${ALLOW_NO_USER_CHANGES:-false}"
           cat release-notes-app/release-notes.md

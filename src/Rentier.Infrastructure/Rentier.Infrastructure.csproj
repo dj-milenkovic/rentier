@@ -7,8 +7,8 @@
   </PropertyGroup>
 
   <!-- Release notes for Settings > What's new belong to the release process: only the release
-       workflow passes them (-p:RentierReleaseNotesPath=..., built from
-       .github/release-notes/history.md and PR descriptions). Other builds carry none. -->
+       workflow passes them (-p:RentierReleaseNotesPath=..., a temporary file built from the PR
+       descriptions). Other builds carry none. -->
   <ItemGroup Condition="'$(RentierReleaseNotesPath)' != ''">
     <EmbeddedResource Include="$(RentierReleaseNotesPath)" LogicalName="Rentier.ReleaseNotes.md" Visible="false" />
   </ItemGroup>

@@ -1,7 +1,7 @@
 name: PR Release Note
 
 # Checks the "## Release note" section of the PR description (see .github/pull_request_template.md).
-# Its EN: and SR: lines become this PR's entry in the app's "What's new" once it is released.
+# Its "### EN" and "### SR" bullets become this PR's entry in the app's "What's new" once it is released.
 # The PR title decides whether a note is required:
 #   - feat, fix and perf are user-facing and need a note in both languages, unless every scope is
 #     internal: build, ci, claude, deps, dev, docs, release, test(s). Example: "fix(ci): ...".

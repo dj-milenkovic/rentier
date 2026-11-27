@@ -3,9 +3,10 @@ using Rentier.ReleaseNotes;
 
 // Usage:
 //   check --title <pr title> --body-file <file>
-//   plan  --history <history.md> --version <new version> --tags-file <file>
-//   build --history <history.md> --version <new version> --tags-file <file> --pr-bodies <dir> --out <file>
+//   plan  --since <version> --version <new version> --tags-file <file>
+//   build --since <version> --version <new version> --tags-file <file> --pr-bodies <dir> --out <file>
 //         [--allow-no-user-changes true]
+// <since>:     the last release made before PR descriptions carried release notes; older versions are left out.
 // <tags-file>: the repository's version tags, one per line.
 // <pr-bodies>: <dir>/<version>/<pr number>.md, the descriptions of the PRs merged for each version
 //              that "plan" printed.
@@ -58,8 +59,8 @@ internal static class Cli
             }
 
             var scopes = string.Join(", ", PrTitle.InternalScopes.Order(StringComparer.Ordinal));
-            output.WriteLine("::error title=Release note::This feat/fix/perf PR has no release note. Fill in the EN: and SR: lines "
-                + "under \"## Release note\" with what users will notice. If users will not notice the change, give the title "
+            output.WriteLine("::error title=Release note::This feat/fix/perf PR has no release note. Write the changes under "
+                + "\"### EN\" and \"### SR\" in the \"## Release note\" section, as users will notice them. If users will not notice the change, give the title "
                 + $"an internal scope instead, e.g. \"fix(ci): ...\" (internal scopes: {scopes}).");
             return 1;
         }
@@ -72,8 +73,7 @@ internal static class Cli
 
     private static int Plan(Dictionary<string, string> options, TextWriter output)
     {
-        var (history, versions) = Load(options);
-        foreach (var version in ReleaseNotesBuilder.VersionsNeedingPrNotes(history, versions))
+        foreach (var version in Load(options))
             output.WriteLine($"v{version}");
         return 0;
     }
@@ -85,12 +85,12 @@ internal static class Cli
     /// </summary>
     private static int Build(Dictionary<string, string> options, TextWriter output)
     {
-        var (history, versions) = Load(options);
+        var versions = Load(options);
         var prDirectory = Require(options, "pr-bodies");
         var allowNoUserChanges = options.TryGetValue("allow-no-user-changes", out var allow)
             && bool.TryParse(allow, out var allowed) && allowed;
 
-        var exitCode = BuildDocument(history, versions, version =>
+        var exitCode = BuildDocument(versions, version =>
         {
             var dir = Path.Combine(prDirectory, $"v{version}");
             return Directory.Exists(dir)
@@ -107,14 +107,13 @@ internal static class Cli
 
     /// <summary>The decision part of <c>build</c>, without file access.</summary>
     internal static int BuildDocument(
-        IReadOnlyList<ReleaseNotesEntry> history,
         IReadOnlyList<Version> versions,
         Func<Version, IEnumerable<string>> prBodies,
         bool allowNoUserChanges,
         TextWriter output,
         out string document)
     {
-        var result = ReleaseNotesBuilder.Build(history, versions, prBodies);
+        var result = ReleaseNotesBuilder.Build(versions, prBodies);
         document = string.Empty;
 
         var newest = versions[0];
@@ -133,11 +132,10 @@ internal static class Cli
         return 0;
     }
 
-    private static (IReadOnlyList<ReleaseNotesEntry> History, IReadOnlyList<Version> Versions) Load(Dictionary<string, string> options)
+    private static IReadOnlyList<Version> Load(Dictionary<string, string> options)
     {
-        var history = ReleaseNotesDocument.Parse(File.ReadAllText(Require(options, "history")));
         var tags = File.ReadAllLines(Require(options, "tags-file")).Where(l => l.Trim().Length > 0);
-        return (history, ReleaseNotesBuilder.VersionsToCover(Require(options, "version"), tags));
+        return ReleaseNotesBuilder.VersionsToCover(Require(options, "version"), tags, Require(options, "since"));
     }
 
     private static Dictionary<string, string> ParseOptions(IEnumerable<string> args)
@@ -165,7 +163,7 @@ internal static class Cli
 
     private static int Usage(TextWriter output)
     {
-        output.WriteLine("Usage: check --title <t> --body-file <f> | plan|build --history <f> --version <v> --tags-file <f> [--pr-bodies <dir> --out <f>]");
+        output.WriteLine("Usage: check --title <t> --body-file <f> | plan|build --since <v> --version <v> --tags-file <f> [--pr-bodies <dir> --out <f>]");
         return 2;
     }
 }
