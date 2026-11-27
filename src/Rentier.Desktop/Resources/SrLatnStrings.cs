@@ -308,7 +308,7 @@ public static class SrLatnStrings
         ["Nav_Settings_WhatsNew"] = "Šta je novo",
         ["Update_WhatsNew_Button"] = "Šta je novo",
         ["WhatsNew_Header"] = "Šta je novo",
-        ["WhatsNew_Subheader"] = "Izmene u instaliranoj verziji ({0}) i u verzijama pre nje.",
+        ["WhatsNew_Subheader"] = "Koristite {0}. Evo šta se promenilo u poslednjim verzijama.",
         ["WhatsNew_Empty"] = "Ova kopija programa Rentier nema beleške o izdanjima.",
         ["WhatsNew_LoadError"] = "Beleške o izdanjima nije moguće učitati.",
         ["WhatsNew_OlderReleases"] = "Starije verzije: GitHub Releases",

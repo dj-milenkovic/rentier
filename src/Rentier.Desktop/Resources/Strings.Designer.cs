@@ -314,7 +314,7 @@ public static class Strings
     public static string Nav_Settings_WhatsNew => "What's new";
     public static string Update_WhatsNew_Button => "What's new";
     public static string WhatsNew_Header => "What's new";
-    public static string WhatsNew_Subheader => "Changes in the installed version ({0}) and the versions before it.";
+    public static string WhatsNew_Subheader => "You're using {0}. Here's what changed in recent versions.";
     public static string WhatsNew_Empty => "This copy of Rentier has no release notes.";
     public static string WhatsNew_LoadError => "The release notes could not be loaded.";
     public static string WhatsNew_OlderReleases => "Older versions: GitHub Releases";

@@ -870,7 +870,7 @@
     <value>What's new</value>
   </data>
   <data name="WhatsNew_Subheader" xml:space="preserve">
-    <value>Changes in the installed version ({0}) and the versions before it.</value>
+    <value>You're using {0}. Here's what changed in recent versions.</value>
   </data>
   <data name="WhatsNew_Empty" xml:space="preserve">
     <value>This copy of Rentier has no release notes.</value>
