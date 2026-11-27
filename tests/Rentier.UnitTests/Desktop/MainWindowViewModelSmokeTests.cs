@@ -112,6 +112,7 @@ public class MainWindowViewModelSmokeTests
         services.AddSingleton(CreateImporterVm());
         services.AddSingleton(CreateAppearanceVm());
         services.AddSingleton(DesktopTestDoubles.DiagnosticsViewModel());
+        services.AddSingleton(DesktopTestDoubles.WhatsNewViewModel());
         services.AddSingleton(_ => DesktopTestDoubles.UpdateService());
 
         return services.BuildServiceProvider();
@@ -131,16 +132,16 @@ public class MainWindowViewModelSmokeTests
         locService.CultureChanged.Returns(Signal.Never<string>());
         var updateService = provider.GetRequiredService<IUpdateService>();
         return new MainWindowViewModel(provider, locService, updateService, BuildAppVersionService(),
-            provider.GetRequiredService<INavigationRequestSource>());
+            provider.GetRequiredService<INavigationRequestSource>(), Substitute.For<IReleaseNotesDialogService>());
     }
 
     [Fact]
-    public void MainWindowViewModel_Constructed_NavigationEntriesHasElevenItems()
+    public void MainWindowViewModel_Constructed_NavigationEntriesHasTwelveItems()
     {
         var vm = CreateVm();
 
-        // 4 top-level (Dashboard, Filings, Reports, Sync) + 1 Settings group + 6 children
-        vm.NavigationEntries.Count.Should().Be(11);
+        // 4 top-level (Dashboard, Filings, Reports, Sync) + 1 Settings group + 7 children
+        vm.NavigationEntries.Count.Should().Be(12);
     }
 
     [Fact]

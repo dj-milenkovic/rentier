@@ -4,6 +4,7 @@ using Rentier.Application.Commands;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
+using Rentier.Application.Queries;
 using Rentier.Desktop.Services;
 using Rentier.Desktop.ViewModels;
 
@@ -82,6 +83,22 @@ internal static class DesktopTestDoubles
             .Returns(Result<VoidResult, Error>.Success(VoidResult.Value));
 
         return new DiagnosticsSettingsViewModel(diagnostics, FolderLauncher(), setPreference, new LocalizationService());
+    }
+
+    /// <summary>
+    /// A What's new settings page whose release-notes query returns <paramref name="notes"/>
+    /// (none by default), for shell tests that only need the page to exist.
+    /// </summary>
+    public static WhatsNewSettingsViewModel WhatsNewViewModel(IReadOnlyList<ReleaseNoteDto>? notes = null)
+    {
+        var getNotes = Substitute.For<IQueryHandler<GetInstalledReleaseNotesQuery, Result<IReadOnlyList<ReleaseNoteDto>, Error>>>();
+        getNotes.HandleAsync(Arg.Any<GetInstalledReleaseNotesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<IReadOnlyList<ReleaseNoteDto>, Error>.Success(notes ?? []));
+
+        var appVersion = Substitute.For<IAppVersionService>();
+        appVersion.DisplayVersion.Returns("v1.0.0");
+
+        return new WhatsNewSettingsViewModel(getNotes, new LocalizationService(), appVersion);
     }
 
     /// <summary>An import dialog returning <paramref name="selection"/> (<c>null</c> = user cancelled).</summary>

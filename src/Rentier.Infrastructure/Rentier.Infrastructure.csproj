@@ -4,7 +4,15 @@
     <!-- Update feed for the in-app Velopack updater. Kept in build configuration
          rather than source so the location is not a literal in the codebase. -->
     <RentierUpdateFeedUrl>https://github.com/dj-milenkovic/rentier</RentierUpdateFeedUrl>
+    <!-- Release notes built into the app (Settings > What's new). The release workflow passes
+         the generated document (last 10 versions) with -p:RentierReleaseNotesPath=...; local
+         builds embed the curated history so the page is never empty during development. -->
+    <RentierReleaseNotesPath Condition="'$(RentierReleaseNotesPath)' == ''">$(MSBuildThisFileDirectory)..\..\release-notes\history.md</RentierReleaseNotesPath>
   </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="$(RentierReleaseNotesPath)" LogicalName="Rentier.ReleaseNotes.md" Visible="false" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Rentier.Domain\Rentier.Domain.csproj" />

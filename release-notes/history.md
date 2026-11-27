@@ -1,9 +1,26 @@
 <!--
-  User-facing release notes for versions released before PR descriptions carried a
-  "## Release note" section. The release workflow merges these with the notes read from
-  PR descriptions; the app shows the last 10 versions. Versions with no user-relevant
-  changes (v1.0.12, v1.1.14, v1.1.16: dependency updates and internal work only) are left out.
+  User-facing release notes for the versions released before PR descriptions carried a
+  "## Release note" section (see .github/pull_request_template.md).
+
+  Every version up to the newest one in this file takes its notes from here only; every later
+  version takes them from the "## Release note" sections of the PRs merged for it. The release
+  workflow (tools/Rentier.ReleaseNotes) combines both into the notes of the last 10 versions,
+  which ship inside the app (Settings > What's new) and inside each update (What's new on the
+  update bar).
+
+  Versions with no change users would notice are left out: v1.0.12, v1.1.14 and v1.1.16 only
+  had dependency updates and internal work.
 -->
+
+## v1.4.0
+
+### EN
+- Every download of Rentier (Windows installer and ZIP, macOS DMG, Linux AppImage) now updates itself from inside the app. Your data is not affected.
+- Windows: **Settings → Apps** now shows the installed version of Rentier.
+
+### SR
+- Svaki paket programa Rentier (Windows instalacija i ZIP, macOS DMG, Linux AppImage) sada se sam ažurira iz programa. Vaši podaci ostaju netaknuti.
+- Windows: **Podešavanja → Aplikacije** sada prikazuju instaliranu verziju programa Rentier.
 
 ## v1.3.1
 

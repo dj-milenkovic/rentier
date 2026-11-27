@@ -303,5 +303,17 @@ public static class SrLatnStrings
         ["Update_Error_DownloadCancelled"] = "preuzimanje je otkazano.",
         ["Update_Error_ApplyFailed"] = "ažuriranje nije moglo da se instalira. Zatvorite i ponovo otvorite Rentier da biste pokušali još jednom.",
         ["Update_Error_Unknown"] = "došlo je do neočekivane greške.",
+
+        // ── Release notes ────────────────────────────────────────────────────
+        ["Nav_Settings_WhatsNew"] = "Šta je novo",
+        ["Update_WhatsNew_Button"] = "Šta je novo",
+        ["WhatsNew_Header"] = "Šta je novo",
+        ["WhatsNew_Subheader"] = "Izmene u instaliranoj verziji ({0}) i u verzijama pre nje.",
+        ["WhatsNew_Empty"] = "Ova kopija programa Rentier nema beleške o izdanjima.",
+        ["WhatsNew_LoadError"] = "Beleške o izdanjima nije moguće učitati.",
+        ["WhatsNew_OlderReleases"] = "Starije verzije: GitHub Releases",
+        ["ReleaseNotesDialog_Title"] = "Šta je novo",
+        ["ReleaseNotesDialog_Subheader"] = "Izmene od {0} do {1}",
+        ["ReleaseNotesDialog_Close"] = "Zatvori",
     };
 }

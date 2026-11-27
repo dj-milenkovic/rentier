@@ -11,6 +11,7 @@ using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
 using Rentier.Application.Queries;
+using Rentier.Application.ReleaseNotes;
 using Rentier.Desktop.Services;
 using Rentier.Desktop.ViewModels;
 using Rentier.Tests.Common.Fakes;
@@ -105,6 +106,7 @@ public class MainWindowViewModel_UpdateTests
         services.AddSingleton(BuildImporterVm());
         services.AddSingleton(BuildAppearanceVm());
         services.AddSingleton(DesktopTestDoubles.DiagnosticsViewModel());
+        services.AddSingleton(DesktopTestDoubles.WhatsNewViewModel());
 
         return services.BuildServiceProvider();
     }
@@ -189,13 +191,21 @@ public class MainWindowViewModel_UpdateTests
         return svc;
     }
 
-    private static MainWindowViewModel CreateVm(IUpdateService? updateService = null)
+    private static MainWindowViewModel CreateVm(
+        IUpdateService? updateService = null,
+        IReleaseNotesDialogService? releaseNotesDialog = null,
+        string cultureCode = "en")
     {
         var svc = updateService ?? BuildUpdateService();
         var provider = BuildProvider(svc);
+        var localization = BuildLocalizationService();
+        localization.CurrentCultureCode.Returns(cultureCode);
+        localization["ReleaseNotesDialog_Subheader"].Returns("From {0} to {1}");
         return new MainWindowViewModel(
-            provider, BuildLocalizationService(), svc, BuildAppVersionService(),
-            provider.GetRequiredService<INavigationRequestSource>(), ImmediateSequencer.Instance);
+            provider, localization, svc, BuildAppVersionService(),
+            provider.GetRequiredService<INavigationRequestSource>(),
+            releaseNotesDialog ?? Substitute.For<IReleaseNotesDialogService>(),
+            ImmediateSequencer.Instance);
     }
 
     [Fact]
@@ -593,7 +603,132 @@ public class MainWindowViewModel_UpdateTests
 
         vm.UpdateFailedText.Should().Be("Update failed: Update_Error_DownloadFailed");
     }
+
+    // ── Release notes of the available update ────────────────────────────────
+
+    private static readonly ReleaseNotesEntry[] TwoVersionsOfNotes =
+    [
+        new(new Version(2, 1, 0), "- Newest", "- Najnovije"),
+        new(new Version(2, 0, 0), "- Older", "- Starije"),
+    ];
+
+    private static IReleaseNotesDialogService Dialog(bool updateNow)
+    {
+        var dialog = Substitute.For<IReleaseNotesDialogService>();
+        dialog.ShowAsync(Arg.Any<ReleaseNotesDialogRequest>()).Returns(updateNow);
+        return dialog;
+    }
+
+    [Fact]
+    public async Task CheckForUpdateCommand_WhenUpdateCarriesNotes_CanShowUpdateReleaseNotes()
+    {
+        var vm = CreateVm(BuildUpdateService(new UpdateCheckResult(true, "2.1.0", TwoVersionsOfNotes)));
+
+        await vm.CheckForUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
+
+        vm.UpdateReleaseNotes.Should().Equal(TwoVersionsOfNotes);
+        vm.CanShowUpdateReleaseNotes.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task CheckForUpdateCommand_WhenUpdateCarriesNoNotes_HidesWhatsNewButton()
+    {
+        var vm = CreateVm(BuildUpdateService(new UpdateCheckResult(true, "2.1.0")));
+
+        await vm.CheckForUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
+
+        vm.CanShowUpdateReleaseNotes.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task DismissUpdateCommand_HidesWhatsNewButton()
+    {
+        var vm = CreateVm(BuildUpdateService(new UpdateCheckResult(true, "2.1.0", TwoVersionsOfNotes)));
+        await vm.CheckForUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
+
+        await vm.DismissUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
+
+        vm.CanShowUpdateReleaseNotes.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task CanShowUpdateReleaseNotes_WhenDownloaded_IsTrue()
+    {
+        var updateService = BuildUpdateService(new UpdateCheckResult(true, "2.1.0", TwoVersionsOfNotes));
+        updateService.DownloadUpdateAsync(Arg.Any<Action<int>>(), Arg.Any<CancellationToken>())
+            .Returns(DownloadSucceeded());
+        var vm = CreateVm(updateService);
+        await vm.CheckForUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
+
+        await vm.BeginUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
+
+        vm.CurrentUpdateState.Should().Be(UpdateState.Downloaded);
+        vm.CanShowUpdateReleaseNotes.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("en", "- Newest", "- Older")]
+    [InlineData("sr-Latn", "- Najnovije", "- Starije")]
+    public async Task ShowUpdateReleaseNotesCommand_ShowsEveryVersionInUiLanguage(
+        string culture, string newest, string older)
+    {
+        var dialog = Dialog(updateNow: false);
+        var vm = CreateVm(
+            BuildUpdateService(new UpdateCheckResult(true, "2.1.0", TwoVersionsOfNotes)), dialog, culture);
+        await vm.CheckForUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
+
+        await vm.ShowUpdateReleaseNotesCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
+
+        await dialog.Received(1).ShowAsync(Arg.Is<ReleaseNotesDialogRequest>(r =>
+            r.OfferUpdate
+            && r.Subheader == $"From {vm.AppVersionText} to v2.1.0"
+            && r.Notes.Select(n => n.Version).SequenceEqual(new[] { "v2.1.0", "v2.0.0" })
+            && r.Notes[0].Markdown == newest
+            && r.Notes[1].Markdown == older));
+    }
+
+    [Fact]
+    public async Task ShowUpdateReleaseNotesCommand_WhenUserChoosesUpdateNow_StartsDownload()
+    {
+        var updateService = BuildUpdateService(new UpdateCheckResult(true, "2.1.0", TwoVersionsOfNotes));
+        updateService.DownloadUpdateAsync(Arg.Any<Action<int>>(), Arg.Any<CancellationToken>())
+            .Returns(DownloadSucceeded());
+        var vm = CreateVm(updateService, Dialog(updateNow: true));
+        await vm.CheckForUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
+
+        await vm.ShowUpdateReleaseNotesCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
+
+        await updateService.Received(1).DownloadUpdateAsync(Arg.Any<Action<int>>(), Arg.Any<CancellationToken>());
+        vm.CurrentUpdateState.Should().Be(UpdateState.Downloaded);
+    }
+
+    [Fact]
+    public async Task ShowUpdateReleaseNotesCommand_WhenUserCloses_DoesNotDownload()
+    {
+        var updateService = BuildUpdateService(new UpdateCheckResult(true, "2.1.0", TwoVersionsOfNotes));
+        var vm = CreateVm(updateService, Dialog(updateNow: false));
+        await vm.CheckForUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
+
+        await vm.ShowUpdateReleaseNotesCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
+
+        await updateService.DidNotReceive().DownloadUpdateAsync(Arg.Any<Action<int>>(), Arg.Any<CancellationToken>());
+        vm.CurrentUpdateState.Should().Be(UpdateState.UpdateAvailable);
+    }
+
+    [Fact]
+    public async Task ShowUpdateReleaseNotesCommand_AfterDownload_DoesNotOfferUpdate()
+    {
+        var updateService = BuildUpdateService(new UpdateCheckResult(true, "2.1.0", TwoVersionsOfNotes));
+        updateService.DownloadUpdateAsync(Arg.Any<Action<int>>(), Arg.Any<CancellationToken>())
+            .Returns(DownloadSucceeded());
+        var dialog = Dialog(updateNow: true);
+        var vm = CreateVm(updateService, dialog);
+        await vm.CheckForUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
+        await vm.BeginUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
+
+        await vm.ShowUpdateReleaseNotesCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
+
+        await dialog.Received(1).ShowAsync(Arg.Is<ReleaseNotesDialogRequest>(r => !r.OfferUpdate));
+        await updateService.Received(1).DownloadUpdateAsync(Arg.Any<Action<int>>(), Arg.Any<CancellationToken>());
+    }
 }
-
-
-

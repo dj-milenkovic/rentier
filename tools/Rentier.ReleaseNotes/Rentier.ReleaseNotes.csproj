@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Release tooling, run by the GitHub workflows (never shipped with the app):
+       "check" validates the "## Release note" section of a PR description,
+       "plan" and "build" write the release-notes document the app and its updates carry.
+       Reuses ReleaseNotesDocument from Rentier.Application, so the app reads exactly the
+       format this tool writes. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Rentier.Application\Rentier.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Rentier.UnitTests" />
+  </ItemGroup>
+
+</Project>

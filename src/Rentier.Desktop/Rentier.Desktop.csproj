@@ -2,6 +2,9 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
+    <!-- Linked from Settings > What's new and the release-notes dialog. In build configuration
+         rather than source, like RentierUpdateFeedUrl in Rentier.Infrastructure.csproj. -->
+    <RentierReleasesPageUrl>https://github.com/dj-milenkovic/rentier/releases</RentierReleasesPageUrl>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
   </PropertyGroup>
 
@@ -13,6 +16,13 @@
          ViewModels, Views, Services, Converters etc. stay on Application abstractions.
          Enforced per type by tests/Rentier.UnitTests/Architecture/LayerDependencyTests.cs. -->
     <ProjectReference Include="..\Rentier.Infrastructure\Rentier.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>ReleasesPageUrl</_Parameter1>
+      <_Parameter2>$(RentierReleasesPageUrl)</_Parameter2>
+    </AssemblyAttribute>
   </ItemGroup>
 
   <ItemGroup>
