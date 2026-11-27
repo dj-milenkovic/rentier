@@ -46,6 +46,7 @@
     <PackageReference Include="ReactiveUI.Avalonia" />
     <PackageReference Include="ReactiveUI" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="Markdig" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="Serilog.Extensions.Logging" />
     <PackageReference Include="Serilog.Sinks.File" />
