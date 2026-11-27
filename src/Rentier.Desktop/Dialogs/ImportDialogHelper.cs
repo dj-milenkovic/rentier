@@ -1,3 +1,4 @@
+using Rentier.Desktop.Converters;
 using System.Diagnostics.CodeAnalysis;
 using Avalonia;
 using Avalonia.Controls;
@@ -31,10 +32,10 @@ internal static class ImportDialogHelper
 
         var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            Title = Strings.Reports_Import_FilePickerTitle,
+            Title = LocalizedText.Get(nameof(Strings.Reports_Import_FilePickerTitle)),
             FileTypeFilter =
             [
-                new FilePickerFileType(Strings.Reports_Import_FilePickerFilter)
+                new FilePickerFileType(LocalizedText.Get(nameof(Strings.Reports_Import_FilePickerFilter)))
                 {
                     Patterns = ["*.csv"]
                 }
@@ -57,8 +58,8 @@ internal static class ImportDialogHelper
         // Step 2: show importer selection if multiple importers exist
         if (importers.Count == 0)
         {
-            await ShowInfoDialogAsync(owner, Strings.Reports_Import_Title,
-                Strings.Reports_Import_NoImporters);
+            await ShowInfoDialogAsync(owner, LocalizedText.Get(nameof(Strings.Reports_Import_Title)),
+                LocalizedText.Get(nameof(Strings.Reports_Import_NoImporters)));
             return null;
         }
 
@@ -116,12 +117,12 @@ internal static class ImportDialogHelper
             HorizontalAlignment = HorizontalAlignment.Stretch
         };
 
-        var confirmButton = new Button { Content = Strings.ImportDialog_Import_Button, Margin = new Thickness(0, 0, 4, 0), IsDefault = true };
+        var confirmButton = new Button { Content = LocalizedText.Get(nameof(Strings.ImportDialog_Import_Button)), Margin = new Thickness(0, 0, 4, 0), IsDefault = true };
         var cancelButton = new Button { Content = "Cancel", IsCancel = true };
 
         var dialog = new Window
         {
-            Title = Strings.Reports_Import_Title,
+            Title = LocalizedText.Get(nameof(Strings.Reports_Import_Title)),
             Width = 420,
             SizeToContent = SizeToContent.Height,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
@@ -132,7 +133,7 @@ internal static class ImportDialogHelper
                 Spacing = 12,
                 Children =
                 {
-                    new TextBlock { Text = Strings.ImportDialog_SelectImporter },
+                    new TextBlock { Text = LocalizedText.Get(nameof(Strings.ImportDialog_SelectImporter)) },
                     comboBox,
                     new StackPanel
                     {

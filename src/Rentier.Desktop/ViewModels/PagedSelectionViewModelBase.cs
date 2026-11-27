@@ -40,7 +40,6 @@ public abstract class PagedSelectionViewModelBase<TRow> : ReactiveObject, IActiv
     protected readonly MultipleDisposable _rowSubscriptions = new();
 
     private readonly ObservableAsPropertyHelper<bool> _hasSelection;
-    private readonly ObservableAsPropertyHelper<string> _deleteSelectedLabel;
 
     public ObservableCollection<TRow> Rows { get; } = new();
 
@@ -88,7 +87,7 @@ public abstract class PagedSelectionViewModelBase<TRow> : ReactiveObject, IActiv
     }
 
     public bool HasSelection => _hasSelection.Value;
-    public string DeleteSelectedLabel => _deleteSelectedLabel.Value;
+    public string DeleteSelectedLabel => string.Format(T(nameof(Strings.BulkDelete_Button_Template)), SelectedCount);
     public bool HasItems => Rows.Count > 0;
     public bool IsEmpty => Rows.Count == 0 && !IsLoading;
     public bool IsEmptyWithFilters => IsEmpty && HasActiveFilters;
@@ -141,8 +140,14 @@ public abstract class PagedSelectionViewModelBase<TRow> : ReactiveObject, IActiv
         }
     }
 
-    protected PagedSelectionViewModelBase(IConfirmationService confirmation, ISequencer scheduler)
+    /// <summary>Resolves UI text in the user's language (neutral English without DI).</summary>
+    protected ILocalizationService Localization { get; }
+
+    protected string T(string key) => Localization[key];
+
+    protected PagedSelectionViewModelBase(IConfirmationService confirmation, ISequencer scheduler, ILocalizationService? localization = null)
     {
+        Localization = localization ?? LocalizationService.CreateEnglish();
         _confirmation = confirmation;
         _scheduler = scheduler;
         Paging.PropertyChanged += OnPagingChanged;
@@ -151,11 +156,11 @@ public abstract class PagedSelectionViewModelBase<TRow> : ReactiveObject, IActiv
             .Select(c => c > 0)
             .ToProperty(this, x => x.HasSelection, scheduler: _scheduler);
 
-        _deleteSelectedLabel = this.WhenAnyValue(x => x.SelectedCount)
-            .Select(c => string.Format(Strings.BulkDelete_Button_Template, c))
-            .ToProperty(this, x => x.DeleteSelectedLabel,
-                initialValue: string.Format(Strings.BulkDelete_Button_Template, 0),
-                scheduler: _scheduler);
+        this.WhenAnyValue(x => x.SelectedCount)
+            .Subscribe(_ => this.RaisePropertyChanged(nameof(DeleteSelectedLabel)));
+
+        // Text built from resources must follow a language switch without a page reload.
+        Localization.CultureChanged.Subscribe(_ => OnCultureChanged());
 
         var hasItemsObservable = this.WhenAnyValue(x => x.HasItems);
         var hasSelectionObservable = this.WhenAnyValue(x => x.HasSelection);
@@ -351,6 +356,13 @@ public abstract class PagedSelectionViewModelBase<TRow> : ReactiveObject, IActiv
         }
         SelectedCount = Rows.Count(r => r.IsSelected);
         this.RaisePropertyChanged(nameof(IsAllSelected));
+    }
+
+    /// <summary>Re-raises text properties after the UI language changed.</summary>
+    protected virtual void OnCultureChanged()
+    {
+        this.RaisePropertyChanged(nameof(PageIndicator));
+        this.RaisePropertyChanged(nameof(DeleteSelectedLabel));
     }
 
     private void RaiseEmptyStateChanged()

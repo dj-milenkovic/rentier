@@ -62,12 +62,18 @@ public sealed class FilingsViewModel : PagedSelectionViewModelBase<FilingRowView
     public bool HasReportFilter => _hasReportFilter.Value;
 
     public string EmptyStateMessage => HasActiveFilters
-        ? Strings.Filter_NoResults
-        : Strings.Filings_Empty;
+        ? T(nameof(Strings.Filter_NoResults))
+        : T(nameof(Strings.Filings_Empty));
 
-    protected override string PageIndicatorFormat => Strings.Filings_Page_Indicator;
-    protected override string DeleteConfirmButtonText => Strings.Filings_Delete_Confirm_Button;
-    protected override string DeleteCancelButtonText => Strings.Filings_Delete_Cancel_Button;
+    protected override string PageIndicatorFormat => T(nameof(Strings.Filings_Page_Indicator));
+
+    protected override void OnCultureChanged()
+    {
+        base.OnCultureChanged();
+        this.RaisePropertyChanged(nameof(EmptyStateMessage));
+    }
+    protected override string DeleteConfirmButtonText => T(nameof(Strings.Filings_Delete_Confirm_Button));
+    protected override string DeleteCancelButtonText => T(nameof(Strings.Filings_Delete_Cancel_Button));
 
     /// <summary>False when a ReportIdFilter is active (flyout filters are disabled while browsing by report).</summary>
     public bool IsFilterRowEnabled => _reportIdFilter == null;
@@ -103,7 +109,8 @@ public sealed class FilingsViewModel : PagedSelectionViewModelBase<FilingRowView
         IConfirmationService confirmation,
         IFileSaveService fileSave,
         INavigationService navigation,
-        ISequencer? scheduler = null) : base(confirmation, scheduler ?? RxSchedulers.MainThreadScheduler)
+        ISequencer? scheduler = null,
+        ILocalizationService? localization = null) : base(confirmation, scheduler ?? RxSchedulers.MainThreadScheduler, localization)
     {
         _handlers = handlers;
         _fileSave = fileSave;
@@ -116,14 +123,14 @@ public sealed class FilingsViewModel : PagedSelectionViewModelBase<FilingRowView
         // Feature 050: initialise flyout filter ViewModels
         StatusFilter = new EnumFilterFlyoutViewModel<FilingStatus>(new[]
         {
-            new CheckableItem<FilingStatus>(Strings.Filter_StatusInit,  FilingStatus.Init),
-            new CheckableItem<FilingStatus>(Strings.Filter_StatusFiled, FilingStatus.Filed),
-            new CheckableItem<FilingStatus>(Strings.Filter_StatusPaid,  FilingStatus.Paid),
+            new CheckableItem<FilingStatus>(T(nameof(Strings.Filter_StatusInit)),  FilingStatus.Init),
+            new CheckableItem<FilingStatus>(T(nameof(Strings.Filter_StatusFiled)), FilingStatus.Filed),
+            new CheckableItem<FilingStatus>(T(nameof(Strings.Filter_StatusPaid)),  FilingStatus.Paid),
         });
         IncomeTypeFilter = new EnumFilterFlyoutViewModel<IncomeType>(new[]
         {
-            new CheckableItem<IncomeType>(Strings.Filter_IncomeDividend, IncomeType.Dividend),
-            new CheckableItem<IncomeType>(Strings.Filter_IncomeInterest, IncomeType.Interest),
+            new CheckableItem<IncomeType>(T(nameof(Strings.Filter_IncomeDividend)), IncomeType.Dividend),
+            new CheckableItem<IncomeType>(T(nameof(Strings.Filter_IncomeInterest)), IncomeType.Interest),
         });
         PayingEntityFilter = new TextFilterFlyoutViewModel();
         PaymentReferenceFilter = new TextFilterFlyoutViewModel();
@@ -218,7 +225,8 @@ public sealed class FilingsViewModel : PagedSelectionViewModelBase<FilingRowView
                 dto,
                 args => AdvanceStatusCommand.Execute(args).Subscribe(),
                 id => ExportCommand.Execute(id).Subscribe(),
-                id => DeleteCommand.Execute(id).Subscribe()))
+                id => DeleteCommand.Execute(id).Subscribe(),
+                Localization))
             .ToList();
 
         return Result<PageOf<FilingRowViewModel>, Error>.Success(
@@ -238,7 +246,7 @@ public sealed class FilingsViewModel : PagedSelectionViewModelBase<FilingRowView
     {
         var visibleCount = Rows.Count;
         if (!await ConfirmDeleteAsync(
-                Strings.Filings_Delete_Confirmation_Title, Strings.Filings_Delete_Confirmation_Message))
+                T(nameof(Strings.Filings_Delete_Confirmation_Title)), T(nameof(Strings.Filings_Delete_Confirmation_Message))))
             return;
 
         var result = await _handlers.DeleteFiling.HandleAsync(new DeleteFilingCommand(id), ct);
@@ -261,10 +269,10 @@ public sealed class FilingsViewModel : PagedSelectionViewModelBase<FilingRowView
         }
 
         await _fileSave.SaveAsync(new FileSaveRequest(
-            Strings.Filings_Export_SaveDialog_Title,
+            T(nameof(Strings.Filings_Export_SaveDialog_Title)),
             result.Value.SuggestedFileName,
             result.Value.Bytes,
-            Strings.Filings_Export_Filter_Xml,
+            T(nameof(Strings.Filings_Export_Filter_Xml)),
             [EXPORT_FILE_PATTERN]));
     }
 
@@ -278,8 +286,8 @@ public sealed class FilingsViewModel : PagedSelectionViewModelBase<FilingRowView
 
         if (selectedIds.Count == 0) return;
 
-        var message = string.Format(Strings.BulkDelete_Filings_Confirmation_Message, selectedIds.Count);
-        if (!await ConfirmDeleteAsync(Strings.Filings_Delete_Confirmation_Title, message))
+        var message = string.Format(T(nameof(Strings.BulkDelete_Filings_Confirmation_Message)), selectedIds.Count);
+        if (!await ConfirmDeleteAsync(T(nameof(Strings.Filings_Delete_Confirmation_Title)), message))
             return;
 
         var result = await _handlers.BulkDeleteFilings.HandleAsync(
@@ -287,7 +295,7 @@ public sealed class FilingsViewModel : PagedSelectionViewModelBase<FilingRowView
 
         if (!result.IsSuccess)
         {
-            ErrorMessage = Strings.BulkDelete_Error_Failed;
+            ErrorMessage = T(nameof(Strings.BulkDelete_Error_Failed));
             return;
         }
 

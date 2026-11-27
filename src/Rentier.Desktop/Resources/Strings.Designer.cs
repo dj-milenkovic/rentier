@@ -316,4 +316,15 @@ public static class Strings
     public static string Sync_Impact_Incremental => "Fetches new emails since last sync. Duplicates are skipped.";
     public static string Sync_Impact_ReplayFromDate => "Re-fetches emails from {0}. Duplicates are skipped.";
     public static string Sync_Impact_FullReplay => "Fetches ALL emails in the mailbox. Duplicates are skipped.";
+    public static string Sync_FailedUnexpectedly => "Sync failed unexpectedly: {0}";
+    public static string Sync_CancelledByUser => "Sync cancelled by user.";
+
+    // Settings form titles and empty states
+    public static string Mailboxes_Form_NewTitle => "New mailbox";
+    public static string Mailboxes_Form_EditTitle => "Edit mailbox";
+    public static string Mailboxes_Form_NewHint => "Fill in the IMAP details and click Save to add a mailbox.";
+    public static string Importers_Form_NewTitle => "New importer";
+    public static string Importers_Form_EditTitle => "Edit importer";
+    public static string Importers_Form_NewHint => "Fill in the fields and click Save to add an importer.";
+    public static string Sync_Log_Empty => "The sync log appears here. Click \"Start Sync\" to fetch new reports from your mailboxes.";
 }

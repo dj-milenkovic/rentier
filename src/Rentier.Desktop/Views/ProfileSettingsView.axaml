@@ -8,7 +8,8 @@
     x:DataType="vm:ProfileSettingsViewModel"
              x:CompileBindings="False">
   <ScrollViewer>
-    <StackPanel Spacing="12" Margin="20">
+    <!-- MaxWidth: full-window text boxes are hard to scan on wide screens. -->
+    <StackPanel Spacing="12" Margin="20" MaxWidth="640" HorizontalAlignment="Left">
 
       <TextBlock Text="{Binding [Profile_Jmbg_Label], Source={StaticResource Localizer}}" />
       <TextBox Text="{Binding Jmbg}" MaxLength="13" />

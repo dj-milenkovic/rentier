@@ -30,8 +30,7 @@ public sealed class DashboardViewModel : ReactiveObject, IActivatableViewModel
     private int _filedCount;
     private int _paidCount;
     private string _totalUnpaidDisplay = string.Empty;
-    private string _lastSyncDisplay = string.Empty;
-    private bool _hasLastSync;
+    private DateOnly? _lastSyncDate;
 
     public bool IsLoading
     {
@@ -93,29 +92,28 @@ public sealed class DashboardViewModel : ReactiveObject, IActivatableViewModel
         private set => this.RaiseAndSetIfChanged(ref _totalUnpaidDisplay, value);
     }
 
-    public string LastSyncDisplay
-    {
-        get => _lastSyncDisplay;
-        private set => this.RaiseAndSetIfChanged(ref _lastSyncDisplay, value);
-    }
-
-    /// <summary>False until a mailbox sync has completed; the view then shows a localized "Never".</summary>
-    public bool HasLastSync
-    {
-        get => _hasLastSync;
-        private set => this.RaiseAndSetIfChanged(ref _hasLastSync, value);
-    }
+    public string LastSyncDisplay => _lastSyncDate.HasValue
+        ? _lastSyncDate.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+        : T(nameof(Strings.Dashboard_LastSyncNever));
 
     public bool HasOverdueFilings => _overdueFilings.Count > 0;
 
     public ReactiveCommand<RxVoid, RxVoid> LoadCommand { get; }
     public ReactiveCommand<RxVoid, RxVoid> NavigateToFilingsCommand { get; }
 
+    private readonly ILocalizationService _loc;
+
+    /// <summary>Resolves UI text in the user's language (neutral English without DI).</summary>
+    private string T(string key) => _loc[key];
+
     public DashboardViewModel(
         IQueryHandler<GetDashboardQuery, Result<DashboardDto, Error>> handler,
         INavigationService navigation,
-        ISequencer? scheduler = null)
+        ISequencer? scheduler = null,
+        ILocalizationService? localization = null)
     {
+        _loc = localization ?? LocalizationService.CreateEnglish();
+        _loc.CultureChanged.Subscribe(_ => this.RaisePropertyChanged(nameof(LastSyncDisplay)));
         _handler = handler;
         var outputScheduler = scheduler ?? RxSchedulers.MainThreadScheduler;
 
@@ -157,10 +155,8 @@ public sealed class DashboardViewModel : ReactiveObject, IActivatableViewModel
             FiledCount = dto.FiledCount;
             PaidCount = dto.PaidCount;
             TotalUnpaidDisplay = dto.TotalUnpaidRsd.ToString("N2", CultureInfo.InvariantCulture) + " RSD";
-            LastSyncDisplay = dto.LastSyncDate.HasValue
-                ? dto.LastSyncDate.Value.ToString("yyyy-MM-dd")
-                : Strings.Dashboard_LastSyncNever;
-            HasLastSync = dto.LastSyncDate.HasValue;
+            _lastSyncDate = dto.LastSyncDate;
+            this.RaisePropertyChanged(nameof(LastSyncDisplay));
             HasData = true;
             this.RaisePropertyChanged(nameof(HasOverdueFilings));
         }

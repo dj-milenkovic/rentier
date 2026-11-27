@@ -875,4 +875,31 @@
   <data name="Sync_Impact_FullReplay" xml:space="preserve">
     <value>Fetches ALL emails in the mailbox. Duplicates are skipped.</value>
   </data>
+  <data name="Sync_FailedUnexpectedly" xml:space="preserve">
+    <value>Sync failed unexpectedly: {0}</value>
+  </data>
+  <data name="Sync_CancelledByUser" xml:space="preserve">
+    <value>Sync cancelled by user.</value>
+  </data>
+  <data name="Mailboxes_Form_NewTitle" xml:space="preserve">
+    <value>New mailbox</value>
+  </data>
+  <data name="Mailboxes_Form_EditTitle" xml:space="preserve">
+    <value>Edit mailbox</value>
+  </data>
+  <data name="Mailboxes_Form_NewHint" xml:space="preserve">
+    <value>Fill in the IMAP details and click Save to add a mailbox.</value>
+  </data>
+  <data name="Importers_Form_NewTitle" xml:space="preserve">
+    <value>New importer</value>
+  </data>
+  <data name="Importers_Form_EditTitle" xml:space="preserve">
+    <value>Edit importer</value>
+  </data>
+  <data name="Importers_Form_NewHint" xml:space="preserve">
+    <value>Fill in the fields and click Save to add an importer.</value>
+  </data>
+  <data name="Sync_Log_Empty" xml:space="preserve">
+    <value>The sync log appears here. Click "Start Sync" to fetch new reports from your mailboxes.</value>
+  </data>
 </root>

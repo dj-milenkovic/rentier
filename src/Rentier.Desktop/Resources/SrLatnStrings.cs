@@ -308,5 +308,14 @@ public static class SrLatnStrings
         ["Sync_Impact_Incremental"] = "Preuzima nove emailove od poslednje sinhronizacije. Duplikati se preskaču.",
         ["Sync_Impact_ReplayFromDate"] = "Ponovo preuzima emailove od {0}. Duplikati se preskaču.",
         ["Sync_Impact_FullReplay"] = "Preuzima SVE emailove iz sandučeta. Duplikati se preskaču.",
+        ["Sync_FailedUnexpectedly"] = "Sinhronizacija nije uspela zbog neočekivane greške: {0}",
+        ["Sync_CancelledByUser"] = "Sinhronizaciju je otkazao korisnik.",
+        ["Mailboxes_Form_NewTitle"] = "Novo poštansko sanduče",
+        ["Mailboxes_Form_EditTitle"] = "Izmena poštanskog sandučeta",
+        ["Mailboxes_Form_NewHint"] = "Unesite IMAP podatke i kliknite Sačuvaj da dodate sanduče.",
+        ["Importers_Form_NewTitle"] = "Novi uvoznik",
+        ["Importers_Form_EditTitle"] = "Izmena uvoznika",
+        ["Importers_Form_NewHint"] = "Popunite polja i kliknite Sačuvaj da dodate uvoznika.",
+        ["Sync_Log_Empty"] = "Ovde se prikazuje dnevnik sinhronizacije. Kliknite „Pokreni sinhronizaciju“ da preuzmete nove izveštaje iz sandučića.",
     };
 }

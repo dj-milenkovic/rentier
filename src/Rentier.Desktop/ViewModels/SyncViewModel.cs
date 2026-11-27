@@ -1,8 +1,10 @@
+using Rentier.Desktop.Services;
 using System.Collections.ObjectModel;
 using ReactiveUI.Primitives;
 using ReactiveUI.Primitives.Concurrency;
 using ReactiveUI.Primitives.Disposables;
 using Rentier.Desktop.Extensions;
+using Rentier.Desktop.Resources;
 using ReactiveUI;
 using Rentier.Application.Commands;
 using Rentier.Application.Common;
@@ -40,6 +42,9 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
 
     private readonly ObservableCollection<SyncProgressEntryViewModel> _logEntries = new();
     public ObservableCollection<SyncProgressEntryViewModel> LogEntries => _logEntries;
+
+    /// <summary>False until the first log line arrives; the view shows an empty-state hint.</summary>
+    public bool HasLogEntries => _logEntries.Count > 0;
 
     private string _summaryMessage = string.Empty;
     public string SummaryMessage
@@ -102,8 +107,7 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
     private readonly ObservableAsPropertyHelper<bool> _isFullReplayMode;
     public bool IsFullReplayMode => _isFullReplayMode.Value;
 
-    private readonly ObservableAsPropertyHelper<string> _impactSummary;
-    public string ImpactSummary => _impactSummary.Value;
+    public string ImpactSummary => BuildImpactSummary(SelectedSyncMode, ReplayFromDateOffset, T);
 
     /// <summary>
     /// Describes what a sync in <paramref name="mode"/> will fetch. Already-imported reports are
@@ -117,15 +121,13 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
             : "...";
         return mode switch
         {
-            SyncMode.Incremental => text(nameof(Resources.Strings.Sync_Impact_Incremental)),
-            SyncMode.ReplayFromDate => string.Format(text(nameof(Resources.Strings.Sync_Impact_ReplayFromDate)), dateStr),
-            SyncMode.FullReplay => text(nameof(Resources.Strings.Sync_Impact_FullReplay)),
+            SyncMode.Incremental => text(nameof(Strings.Sync_Impact_Incremental)),
+            SyncMode.ReplayFromDate => string.Format(text(nameof(Strings.Sync_Impact_ReplayFromDate)), dateStr),
+            SyncMode.FullReplay => text(nameof(Strings.Sync_Impact_FullReplay)),
             _ => string.Empty
         };
     }
 
-    private static string EnglishText(string key) =>
-        typeof(Resources.Strings).GetProperty(key)?.GetValue(null) as string ?? key;
 
     private readonly ObservableAsPropertyHelper<string?> _validationError;
     public string? ValidationError => _validationError.Value;
@@ -134,9 +136,17 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
     public ReactiveCommand<RxVoid, RxVoid> SyncCommand { get; }
     public ReactiveCommand<RxVoid, RxVoid> CancelCommand { get; }
 
+    private readonly ILocalizationService _loc;
+
+    /// <summary>Resolves UI text in the user's language (neutral English without DI).</summary>
+    private string T(string key) => _loc[key];
+
     public SyncViewModel(
-        ISyncAllCommandHandler handler, TimeProvider timeProvider, ISequencer? scheduler = null)
+        ISyncAllCommandHandler handler, TimeProvider timeProvider, ISequencer? scheduler = null,
+        ILocalizationService? localization = null)
     {
+        _loc = localization ?? LocalizationService.CreateEnglish();
+        _logEntries.CollectionChanged += (_, _) => this.RaisePropertyChanged(nameof(HasLogEntries));
         _handler = handler;
         _timeProvider = timeProvider;
         var effectiveScheduler = scheduler ?? RxSchedulers.MainThreadScheduler;
@@ -161,21 +171,22 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
         {
             if (m == SyncMode.ReplayFromDate)
             {
-                if (d == null) return Resources.Strings.Sync_Validation_DateRequired;
+                if (d == null) return T(nameof(Strings.Sync_Validation_DateRequired));
                 var date = DateOnly.FromDateTime(d.Value.DateTime);
                 if (date > _timeProvider.GetLocalToday())
-                    return Resources.Strings.Sync_Validation_DateNotFuture;
+                    return T(nameof(Strings.Sync_Validation_DateNotFuture));
             }
             return (string?)null;
         }).ToProperty(this, x => x.ValidationError);
 
         // Already-imported reports are always skipped: the summary must not promise anything else.
-        _impactSummary = modeStream.CombineLatest(dateStream, (m, d) => BuildImpactSummary(m, d, EnglishText))
-            .ToProperty(this, x => x.ImpactSummary, initialValue: string.Empty);
+        modeStream.CombineLatest(dateStream, (_, _) => RxVoid.Default)
+            .Subscribe(_ => this.RaisePropertyChanged(nameof(ImpactSummary)));
+        _loc.CultureChanged.Subscribe(_ => this.RaisePropertyChanged(nameof(ImpactSummary)));
 
         _errorSummaryMessage = this
             .WhenAnyValue(x => x.ErrorMessage, x => x.HasErrors,
-                (msg, hasErrors) => msg ?? (hasErrors ? Resources.Strings.Sync_PartialSuccess_Message : null))
+                (msg, hasErrors) => msg ?? (hasErrors ? T(nameof(Strings.Sync_PartialSuccess_Message)) : null))
             .ToProperty(this, x => x.ErrorSummaryMessage);
 
         var canSync = this.WhenAnyValue(x => x.ValidationError)
@@ -200,7 +211,7 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
                 {
                     ErrorMessage = ex.Message;
                     HasErrors = true;
-                    SummaryMessage = $"Sync failed unexpectedly: {ex.Message}";
+                    SummaryMessage = string.Format(T(nameof(Strings.Sync_FailedUnexpectedly)), ex.Message);
                 })
                 .DisposeWith(disposables);
         });
@@ -236,20 +247,20 @@ public sealed class SyncViewModel : ReactiveObject, IActivatableViewModel
             if (result.IsSuccess)
             {
                 HasErrors = result.Value.Errors.Count > 0;
-                SummaryMessage = $"Sync complete: {result.Value.FilingsCreated} filing(s) created, {result.Value.Errors.Count} error(s).";
+                SummaryMessage = string.Format(T(nameof(Strings.Sync_Complete)), result.Value.FilingsCreated, result.Value.Errors.Count);
             }
             else
             {
                 ErrorMessage = result.Error.Message;
                 HasErrors = true;
-                SummaryMessage = $"Sync failed: {result.Error.Message}";
+                SummaryMessage = string.Format(T(nameof(Strings.Sync_Failed)), result.Error.Message);
             }
         }
         catch (OperationCanceledException)
         {
             LogEntries.Add(new SyncProgressEntryViewModel(
-                new SyncProgressEntry(_timeProvider.GetLocalNow(), "Sync cancelled by user.", SyncProgressSeverity.Warning)));
-            SummaryMessage = "Sync cancelled by user.";
+                new SyncProgressEntry(_timeProvider.GetLocalNow(), T(nameof(Strings.Sync_CancelledByUser)), SyncProgressSeverity.Warning)));
+            SummaryMessage = T(nameof(Strings.Sync_CancelledByUser));
         }
         finally
         {

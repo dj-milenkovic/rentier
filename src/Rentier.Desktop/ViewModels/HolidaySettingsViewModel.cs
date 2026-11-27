@@ -1,3 +1,4 @@
+using Rentier.Desktop.Services;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using ReactiveUI.Primitives;
@@ -40,7 +41,7 @@ public sealed class HolidaySettingsViewModel : ReactiveObject, IActivatableViewM
 
     /// <summary>Returns a validation message when EndYear is less than StartYear; null otherwise.</summary>
     public string? YearRangeValidationMessage =>
-        EndYear < StartYear ? Strings.Holidays_YearRange_Error : null;
+        EndYear < StartYear ? T(nameof(Strings.Holidays_YearRange_Error)) : null;
 
     /// <summary>Returns true when the Entries collection is non-empty.</summary>
     public bool HasItems => Entries.Count > 0;
@@ -60,12 +61,19 @@ public sealed class HolidaySettingsViewModel : ReactiveObject, IActivatableViewM
 
     public ViewModelActivator Activator { get; } = new();
 
+    private readonly ILocalizationService _loc;
+
+    /// <summary>Resolves UI text in the user's language (neutral English without DI).</summary>
+    private string T(string key) => _loc[key];
+
     public HolidaySettingsViewModel(
         IQueryHandler<GetHolidayConfQuery, Result<HolidayConfDto, Error>> queryHandler,
         ICommandHandler<SaveHolidayConfCommand, Result<VoidResult, Error>> saveHandler,
         ICommandHandler<FetchHolidaysFromWebCommand, Result<IReadOnlyList<HolidayEntryDto>, Error>> fetchHandler,
-        ISequencer? scheduler = null)
+        ISequencer? scheduler = null,
+        ILocalizationService? localization = null)
     {
+        _loc = localization ?? LocalizationService.CreateEnglish();
         _queryHandler = queryHandler;
         _saveHandler = saveHandler;
         _fetchHandler = fetchHandler;
@@ -120,7 +128,7 @@ public sealed class HolidaySettingsViewModel : ReactiveObject, IActivatableViewM
         {
             var cmd = new SaveHolidayConfCommand(Entries.Select(e => e.ToDto()).ToList(), StartYear, EndYear);
             var result = await _saveHandler.HandleAsync(cmd, ct);
-            if (result.IsSuccess) { SuccessMessage = Strings.Holidays_Saved_Confirmation; HasUnsavedChanges = false; }
+            if (result.IsSuccess) { SuccessMessage = T(nameof(Strings.Holidays_Saved_Confirmation)); HasUnsavedChanges = false; }
             else { ErrorMessage = result.Error.Message; }
         }
         finally { IsLoading = false; }
@@ -150,7 +158,7 @@ public sealed class HolidaySettingsViewModel : ReactiveObject, IActivatableViewM
 
                 var added = newHolidays.Count;
                 if (added > 0) HasUnsavedChanges = true;
-                SuccessMessage = string.Format(Strings.Holidays_FetchFromWeb_Success, added, EndYear - StartYear + 1);
+                SuccessMessage = string.Format(T(nameof(Strings.Holidays_FetchFromWeb_Success)), added, EndYear - StartYear + 1);
             }
             else { ErrorMessage = result.Error.Message; }
         }

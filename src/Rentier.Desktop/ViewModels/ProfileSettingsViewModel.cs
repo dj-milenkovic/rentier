@@ -1,3 +1,4 @@
+using Rentier.Desktop.Services;
 using ReactiveUI.Primitives;
 using ReactiveUI.Primitives.Signals;
 using ReactiveUI.Primitives.Disposables;
@@ -85,15 +86,22 @@ public sealed class ProfileSettingsViewModel : ReactiveObject, IActivatableViewM
     /// <summary>Returns a validation error when JMBG is non-empty but not exactly 13 digits.</summary>
     public string? JmbgValidationMessage =>
         !string.IsNullOrEmpty(Jmbg) && (Jmbg.Length != 13 || !Jmbg.All(char.IsDigit))
-            ? Strings.Profile_JmbgValidation_Error
+            ? T(nameof(Strings.Profile_JmbgValidation_Error))
             : null;
 
     public ReactiveCommand<RxVoid, RxVoid> SaveCommand { get; }
 
+    private readonly ILocalizationService _loc;
+
+    /// <summary>Resolves UI text in the user's language (neutral English without DI).</summary>
+    private string T(string key) => _loc[key];
+
     public ProfileSettingsViewModel(
         ICommandHandler<SaveTaxpayerProfileCommand, Result<VoidResult, Error>> saveHandler,
-        IQueryHandler<GetTaxpayerProfileQuery, Result<TaxpayerProfileDto?, Error>> getHandler)
+        IQueryHandler<GetTaxpayerProfileQuery, Result<TaxpayerProfileDto?, Error>> getHandler,
+        ILocalizationService? localization = null)
     {
+        _loc = localization ?? LocalizationService.CreateEnglish();
         _saveHandler = saveHandler;
         _getHandler = getHandler;
 
@@ -154,7 +162,7 @@ public sealed class ProfileSettingsViewModel : ReactiveObject, IActivatableViewM
             var result = await _saveHandler.HandleAsync(command);
 
             if (result.IsSuccess)
-                SuccessMessage = Strings.Profile_Saved_Confirmation;
+                SuccessMessage = T(nameof(Strings.Profile_Saved_Confirmation));
             else
                 ErrorMessage = result.Error.Message;
         }

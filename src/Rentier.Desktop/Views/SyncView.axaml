@@ -55,17 +55,10 @@
                    IsVisible="{Binding IsFullReplayMode}" />
 
         <!-- Impact summary -->
-        <TextBlock
+        <TextBlock Text="{Binding ImpactSummary}"
                    Foreground="{DynamicResource RentierTextSecondaryBrush}"
                    FontStyle="Italic"
-                   TextWrapping="Wrap">
-          <TextBlock.Text>
-            <MultiBinding Converter="{x:Static local:SyncImpactSummaryConverter.Instance}">
-              <Binding Path="SelectedSyncMode" />
-              <Binding Path="ReplayFromDateOffset" />
-            </MultiBinding>
-          </TextBlock.Text>
-        </TextBlock>
+                   TextWrapping="Wrap" />
 
         <!-- Validation error -->
         <TextBlock Text="{Binding ValidationError}"
@@ -90,6 +83,12 @@
             Background="{DynamicResource RentierCardBrush}"
             BorderBrush="{DynamicResource RentierBorderBrush}" BorderThickness="1"
             CornerRadius="{StaticResource RentierCardCornerRadius}">
+      <Panel>
+      <TextBlock Text="{Binding [Sync_Log_Empty], Source={StaticResource Localizer}}"
+                 IsVisible="{Binding !HasLogEntries}"
+                 HorizontalAlignment="Center" VerticalAlignment="Center"
+                 TextAlignment="Center" TextWrapping="Wrap" MaxWidth="420" Margin="16"
+                 Foreground="{DynamicResource RentierTextSecondaryBrush}" />
       <ScrollViewer Name="LogScrollViewer" HorizontalScrollBarVisibility="Disabled">
         <ItemsControl ItemsSource="{Binding LogEntries}">
           <ItemsControl.ItemTemplate>
@@ -107,6 +106,7 @@
           </ItemsControl.ItemTemplate>
         </ItemsControl>
       </ScrollViewer>
+      </Panel>
     </Border>
 
     <!-- Summary + error panel -->

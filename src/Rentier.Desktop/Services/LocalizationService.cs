@@ -25,6 +25,17 @@ public sealed class LocalizationService : ILocalizationService
         _currentCultureCode = SR_LATN;
     }
 
+    /// <summary>
+    /// A neutral-English instance for ViewModels constructed without DI (unit tests), so their
+    /// text stays deterministic. The app always injects the shared, user-selected instance.
+    /// </summary>
+    public static ILocalizationService CreateEnglish()
+    {
+        var english = new LocalizationService();
+        english.SetCulture("en");
+        return english;
+    }
+
     public string this[string key]
     {
         get

@@ -78,16 +78,9 @@
                 Margin="8" HorizontalAlignment="Center">
       <Button Content="{Binding [Filings_Page_Previous], Source={StaticResource Localizer}}"
               Command="{Binding PreviousPageCommand}" />
-      <!-- MinWidth: the indicator is first measured as "… 1 od 1" and was clipped once the
+      <!-- MinWidth: the indicator is first measured as "… 1 of 1" and was clipped once the
            total grew, because the centered pager did not re-measure it. -->
-      <TextBlock VerticalAlignment="Center" MinWidth="96" TextAlignment="Center">
-        <TextBlock.Text>
-          <MultiBinding Converter="{x:Static local:LocalizedFormatConverter.Instance}" ConverterParameter="Filings_Page_Indicator">
-            <Binding Path="CurrentPage" />
-            <Binding Path="TotalPages" />
-          </MultiBinding>
-        </TextBlock.Text>
-      </TextBlock>
+      <TextBlock Text="{Binding PageIndicator}" VerticalAlignment="Center" MinWidth="96" TextAlignment="Center" />
       <Button Content="{Binding [Filings_Page_Next], Source={StaticResource Localizer}}"
               Command="{Binding NextPageCommand}" />
     </StackPanel>

@@ -63,16 +63,9 @@
                 Margin="8" HorizontalAlignment="Center">
       <Button Content="{Binding [Reports_Page_Previous], Source={StaticResource Localizer}}"
               Command="{Binding PreviousPageCommand}" />
-      <!-- MinWidth: the indicator is first measured as "… 1 od 1" and was clipped once the
+      <!-- MinWidth: the indicator is first measured as "… 1 of 1" and was clipped once the
            total grew, because the centered pager did not re-measure it. -->
-      <TextBlock VerticalAlignment="Center" MinWidth="96" TextAlignment="Center">
-        <TextBlock.Text>
-          <MultiBinding Converter="{x:Static local:LocalizedFormatConverter.Instance}" ConverterParameter="Reports_Page_Indicator">
-            <Binding Path="CurrentPage" />
-            <Binding Path="TotalPages" />
-          </MultiBinding>
-        </TextBlock.Text>
-      </TextBlock>
+      <TextBlock Text="{Binding PageIndicator}" VerticalAlignment="Center" MinWidth="96" TextAlignment="Center" />
       <Button Content="{Binding [Reports_Page_Next], Source={StaticResource Localizer}}"
               Command="{Binding NextPageCommand}" />
     </StackPanel>
@@ -359,8 +352,16 @@
           </DataGridTemplateColumn.Header>
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
-              <TextBlock Text="{Binding Status, Converter={x:Static local:ReportStatusDisplayConverter.Instance}}"
-                         TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="4,0" />
+              <!-- Tinted pill: color signals the outcome, text keeps full contrast. -->
+              <Border Background="{Binding Status, Converter={x:Static local:ReportStatusBrushConverter.Background}}"
+                      BorderBrush="{Binding Status, Converter={x:Static local:ReportStatusBrushConverter.Border}}"
+                      BorderThickness="1" CornerRadius="10" Padding="8,1"
+                      HorizontalAlignment="Left" VerticalAlignment="Center" Margin="4,0">
+                <TextBlock Text="{Binding Status, Converter={x:Static local:ReportStatusDisplayConverter.Instance}}"
+                           Foreground="{DynamicResource RentierTextPrimaryBrush}"
+                           FontSize="11" FontWeight="SemiBold" Margin="0"
+                           TextTrimming="CharacterEllipsis" />
+              </Border>
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
