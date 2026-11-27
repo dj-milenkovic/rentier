@@ -9,7 +9,6 @@ Ovaj vodič vas provodi kroz instalaciju Rentier-a, podešavanje profila poresko
 | Zahtev | Detalji |
 |---|---|
 | Operativni sistem | Windows 10, Ubuntu 20.04 ili macOS 12 (ili noviji) |
-| .NET Runtime | [.NET 10.0](https://dotnet.microsoft.com/download) |
 | IBKR nalog | Sa dividendama ili kamatama koje treba prijaviti |
 | Srpski JMBG | Vaš 13-cifreni jedinstveni matični broj građana |
 
@@ -17,11 +16,42 @@ Ovaj vodič vas provodi kroz instalaciju Rentier-a, podešavanje profila poresko
 
 ## Korak 1 — Preuzimanje i instalacija
 
-Rentier se preuzima sa [GitHub Releases](https://github.com/dj-milenkovic/rentier/releases) stranice projekta, gde su dostupne i instalacione i portabilne verzije za Windows, macOS i Linux.
+Rentier preuzmite sa [GitHub Releases](https://github.com/dj-milenkovic/rentier/releases) stranice projekta. Svaki paket sadrži sve što je Rentier-u potrebno za rad, pa .NET ne morate da instalirate.
 
-1. Otvorite Releases stranicu i preuzmite paket za svoj operativni sistem.
-2. Za instalacionu verziju, pokrenite instaler i pratite uputstva.
-3. Za portabilnu verziju, raspakujte arhivu na željenu lokaciju i pokrenite izvršni fajl direktno — instalacija nije potrebna.
+| Operativni sistem | Fajl | Kako se instalira |
+|---|---|---|
+| Windows (instaler) | `Rentier-<verzija>-win-x64-setup.exe` | Pokrenite ga i pratite uputstva. Instalira Rentier samo za vaš nalog (podrazumevano u `%LocalAppData%\Programs\Rentier`) i ne traži administratorska prava. |
+| Windows (portabilna verzija) | `Rentier-<verzija>-win-x64.zip` | Raspakujte ga u novu, praznu fasciklu u koju možete da upisujete (na primer u svojoj korisničkoj fascikli) i pokrenite `Rentier.exe`. Ne pokreće se nikakav instalacioni program. |
+| macOS, Apple silicon (M1 i noviji) | `Rentier-<verzija>-osx-arm64.dmg` | Otvorite DMG i prevucite `Rentier.app` u **Applications**. Pokrećite ga iz Applications, ne iz DMG-a. |
+| macOS, Intel | `Rentier-<verzija>-osx-x64.dmg` | Isto kao iznad. |
+| Linux x64 | `Rentier-<verzija>-linux-x64.AppImage` | Učinite ga izvršnim (`chmod +x Rentier-<verzija>-linux-x64.AppImage`) i pokrenite ga. Držite ga u fascikli u koju možete da upisujete. Možda će mu trebati `libfuse2`, a potreban mu je i ICU (`libicu`), koji većina distribucija već sadrži. |
+
+Ako ne želite da pokrećete instaler, koristite Windows ZIP, macOS DMG ili Linux AppImage: nijedan od njih ne pokreće instalacioni program, a ažuriraju se sami, isto kao instalirana verzija.
+
+### Ažuriranja
+
+Gore navedeni paketi se sami ažuriraju. Paketi **v1.3.0 i stariji**, kao i **v1.3.1** paketi bez `-velopack` u nazivu, **to ne mogu**: pogledajte [Prelazak sa paketa koji se ne ažurira sam](#prelazak-sa-paketa-koji-se-ne-ažurira-sam) ispod.
+
+Pri svakom pokretanju Rentier proverava da li na Releases stranici postoji novija verzija. Ako postoji, na vrhu prozora se pojavljuje traka:
+
+1. **„Dostupna je nova verzija v<verzija>”**: izaberite **Ažuriraj sada** da je preuzmete ili **Kasnije** da sakrijete traku. Rentier će vas ponovo pitati pri sledećem pokretanju.
+2. **„Preuzimanje ažuriranja... <n>%”** prikazuje napredak preuzimanja.
+3. **„Ažuriranje je spremno. Ponovo pokrenite program da biste ga primenili.”**: izaberite **Ponovo pokreni** da se Rentier zatvori, instalira ažuriranje i ponovo pokrene, ili **Kasnije** da nastavite sa radom. Ako izaberete Kasnije, ažuriranje se instalira pri sledećem pokretanju Rentier-a.
+
+Ako preuzimanje ili instalacija ne uspe, crvena traka prikazuje **„Ažuriranje nije uspelo: <razlog>”** sa dugmićima **Pokušaj ponovo** i **Zatvori**. **Pokušaj ponovo** ponovo preuzima ažuriranje; kada se preuzimanje završi, ponovo se pojavljuje traka „Ažuriranje je spremno”. Ako razlog kaže da ažuriranje nije moglo da se instalira, možete i da zatvorite i ponovo otvorite Rentier: preuzeto ažuriranje se instalira pri pokretanju. Ako Rentier ne može da pristupi Releases stranici, na primer kada niste povezani na internet, ne prikazuje nikakvu traku i jednostavno ponovo proverava pri sledećem pokretanju.
+
+### Prelazak sa paketa koji se ne ažurira sam
+
+Paketi v1.3.0 i stariji, kao i v1.3.1 paketi bez `-velopack` u nazivu, ne mogu sami da se ažuriraju. Pređite jednom; posle toga se Rentier ažurira iz same aplikacije. Ako ste v1.3.1 instalirali iz `-velopack` paketa, ne morate ništa da radite.
+
+| Operativni sistem | Šta treba uraditi |
+|---|---|
+| Windows, instalirana verzija | Jednom pokrenite `Rentier-<verzija>-win-x64-setup.exe`. Ako je Rentier bio instaliran za vaš nalog, instaler ga ažurira na istom mestu. Ako je bio instaliran **za sve korisnike**, instaler će vam to reći i prekinuti instalaciju: prvo deinstalirajte Rentier u **Podešavanja → Aplikacije** (Settings → Apps), pa ponovo pokrenite instaler. |
+| Windows, portabilni ZIP | Raspakujte novi ZIP u novu, praznu fasciklu i pokrenite `Rentier.exe`. Zatim obrišite staru fasciklu i sve prečice ka njenom `Rentier.Desktop.exe`. |
+| macOS | Otvorite novi DMG i prevucite `Rentier.app` u **Applications**, tako da zameni stari. |
+| Linux | Umesto `.deb` ili `.tar.gz` paketa koristite AppImage. Ako ste instalirali `.deb`, uklonite ga komandom `sudo apt remove rentier`, da stara stavka u meniju više ne bi pokretala staru verziju. |
+
+**Vaši podaci ostaju netaknuti.** Rentier čuva bazu podataka, podešavanja i dnevnike u vašem korisničkom profilu, a ne u fascikli programa: `%LocalAppData%\Rentier` na Windows-u, `~/Library/Application Support/Rentier` na macOS-u i `~/.local/share/Rentier` na Linux-u. Prelazak na drugi paket, ažuriranje ili deinstalacija programa ne diraju tu fasciklu.
 
 ---
 
@@ -150,7 +180,7 @@ Za svaki filing:
 
 Rentier upisuje jedan dnevnik po danu (na primer `rentier-20260115.log`) i briše dnevnike starije od 30 dana. Dnevnici beleže šta je program radio i eventualne greške, sa vremenskim oznakama. Rentier izbegava da u njih upisuje lične ili finansijske podatke (imena, adrese e-pošte, brojeve računa ili iznose), ali pregledajte dnevnik pre nego što ga podelite.
 
-- **Gde se nalaze:** otvorite **Podešavanja → Dijagnostika → Otvori fasciklu sa dnevnicima**. Na Windows-u je fascikla `%LOCALAPPDATA%\Rentier\logs`; na macOS-u i Linux-u je `Rentier/logs` unutar korisničke fascikle sa podacima (`~/.local/share`).
+- **Gde se nalaze:** otvorite **Podešavanja → Dijagnostika → Otvori fasciklu sa dnevnicima**. Na Windows-u je fascikla `%LOCALAPPDATA%\Rentier\logs`, na macOS-u `~/Library/Application Support/Rentier/logs`, a na Linux-u `~/.local/share/Rentier/logs`.
 - **Više detalja:** ako se od vas zatraži da reprodukujete problem, uključite **Detaljno (debug) beleženje** na istoj stranici. Stupa na snagu odmah i pamti se dok ga ne isključite.
 - **Prijava problema:** priložite dnevnik za dan kada se problem desio uz svoj [GitHub issue](https://github.com/dj-milenkovic/rentier/issues).
 

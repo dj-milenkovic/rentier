@@ -10,6 +10,14 @@
 
 ---
 
+## Download and Updates
+
+Download Rentier from [GitHub Releases](https://github.com/dj-milenkovic/rentier/releases): `Rentier-<version>-win-x64-setup.exe` or `-win-x64.zip` for Windows, `-osx-arm64.dmg` (Apple silicon) or `-osx-x64.dmg` (Intel) for macOS, and `-linux-x64.AppImage` for Linux. Every package updates itself from inside the app; packages of v1.3.0 and earlier, and the v1.3.1 packages without `-velopack` in their name, do not and need a one-time switch.
+
+See [Getting Started → Step 1](GETTING-STARTED.md#step-1--download-and-install) for installation, [Updates](GETTING-STARTED.md#updates) for how update notifications work, and [Switching from a package that does not update itself](GETTING-STARTED.md#switching-from-a-package-that-does-not-update-itself).
+
+---
+
 ## Screenshots
 
 Application screenshots are available in the [`screenshots`](screenshots/) folder (shared resource for both languages).

@@ -36,8 +36,8 @@ env:
   PROJECT_PATH: src/Rentier.Desktop/Rentier.Desktop.csproj
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
   DOTNET_NOLOGO: 1
-  # Velopack auto-update. Every release also ships auto-updating "-velopack" packages next to
-  # the classic ones, plus one update feed per channel (releases.<channel>.json + .nupkg).
+  # Velopack auto-update. Every release asset is a self-updating Velopack package (there is no
+  # separate non-updating set), plus one update feed per channel (releases.<channel>.json + .nupkg).
   # Channels are named after the runtime: vpk adds the channel to file names only for
   # non-default channels, so the OS defaults (win, linux) would collide in one release.
   # The app reads the feed from REPO_URL (baked in via RentierUpdateFeedUrl), so a fork's
@@ -173,7 +173,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   # ──────────────────────────────────────────────────────────────────
-  # Windows x64 — ZIP + InnoSetup installer
+  # Windows x64 — Velopack portable ZIP + InnoSetup installer of that layout
   # ──────────────────────────────────────────────────────────────────
   build-windows:
     needs: [compute-version, tag]
@@ -206,26 +206,6 @@ jobs:
           -p:RentierUpdateFeedUrl=${{ env.REPO_URL }}
           -o ./publish/win-x64
 
-      - name: Create ZIP archive
-        shell: pwsh
-        run: Compress-Archive -Path ./publish/win-x64/* -DestinationPath "./Rentier-${{ needs.compute-version.outputs.version }}-win-x64.zip"
-
-      - name: Build InnoSetup installer
-        shell: pwsh
-        run: |
-          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
-          if (-not (Test-Path $iscc)) {
-            Write-Host "InnoSetup not found, installing via Chocolatey..."
-            choco install innosetup -y --no-progress | Out-Null
-          }
-          & $iscc `
-            /DAppVersion=${{ needs.compute-version.outputs.version }} `
-            /DSourcePath="$PWD\publish\win-x64" `
-            /DOutputPath="$PWD" `
-            /DIconPath="$PWD\Assets\Icons\rentier.ico" `
-            .github\installers\rentier-setup.iss
-
-      # ── Velopack (auto-updating) packages — in addition to the classic ones above ──
       - name: Restore .NET tools (vpk)
         run: dotnet tool restore
 
@@ -242,7 +222,8 @@ jobs:
           VERSION: ${{ needs.compute-version.outputs.version }}
         # --noInst is required: Velopack's own Setup.exe installs to %LocalAppData%\<packId>,
         # which for "Rentier" is the user data folder, and it replaces that folder on install.
-        # The portable layout is shipped inside InnoSetup instead (same path as today).
+        # The portable layout is shipped inside InnoSetup instead, which installs it to
+        # %LocalAppData%\Programs\Rentier (the install folder, never the data folder).
         run: >
           dotnet vpk pack
           --packId $env:PACK_ID --packTitle Rentier --packAuthors Rentier
@@ -266,14 +247,18 @@ jobs:
 
           $portable = ($assets | Where-Object Type -eq 'Portable').RelativeFileName
           if (-not $portable) { throw "vpk produced no portable package" }
-          Copy-Item "velopack/$portable" "Rentier-$env:VERSION-win-x64-velopack.zip"
+          Copy-Item "velopack/$portable" "Rentier-$env:VERSION-win-x64.zip"
           Expand-Archive "velopack/$portable" -DestinationPath publish/win-x64-velopack -Force
 
-      - name: Build Velopack InnoSetup installer
+      - name: Build InnoSetup installer
         shell: pwsh
         run: |
-          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" `
-            /DVelopack `
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            Write-Host "InnoSetup not found, installing via Chocolatey..."
+            choco install innosetup -y --no-progress | Out-Null
+          }
+          & $iscc `
             /DAppVersion=${{ needs.compute-version.outputs.version }} `
             /DSourcePath="$PWD\publish\win-x64-velopack" `
             /DOutputPath="$PWD" `
@@ -286,8 +271,6 @@ jobs:
           path: |
             Rentier-*-win-x64.zip
             Rentier-*-win-x64-setup.exe
-            Rentier-*-win-x64-velopack.zip
-            Rentier-*-win-x64-velopack-setup.exe
           if-no-files-found: error
 
       - uses: actions/upload-artifact@v7.0.1
@@ -297,7 +280,7 @@ jobs:
           if-no-files-found: error
 
   # ──────────────────────────────────────────────────────────────────
-  # macOS — .app bundle + .dmg  (x64 and ARM64)
+  # macOS — Velopack's self-updating Rentier.app in a .dmg  (x64 and ARM64)
   # R2R intentionally excluded: not beneficial for Avalonia on macOS.
   # ──────────────────────────────────────────────────────────────────
   build-macos:
@@ -333,76 +316,6 @@ jobs:
           -p:RentierUpdateFeedUrl=${{ env.REPO_URL }}
           -o ./publish/${{ matrix.rid }}
 
-      - name: Create .app bundle
-        env:
-          VERSION: ${{ needs.compute-version.outputs.version }}
-          RID: ${{ matrix.rid }}
-        run: |
-          APP="Rentier.app"
-          mkdir -p "${APP}/Contents/MacOS"
-          mkdir -p "${APP}/Contents/Resources"
-
-          cp -R publish/${RID}/* "${APP}/Contents/MacOS/"
-          cp Assets/Icons/rentier.icns "${APP}/Contents/Resources/"
-          chmod +x "${APP}/Contents/MacOS/Rentier.Desktop"
-
-          cat > "${APP}/Contents/Info.plist" << PLIST
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
-            "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-            <key>CFBundleName</key>
-            <string>Rentier</string>
-            <key>CFBundleDisplayName</key>
-            <string>Rentier</string>
-            <key>CFBundleIdentifier</key>
-            <string>com.rentier.desktop</string>
-            <key>CFBundleVersion</key>
-            <string>${VERSION}</string>
-            <key>CFBundleShortVersionString</key>
-            <string>${VERSION}</string>
-            <key>CFBundleExecutable</key>
-            <string>Rentier.Desktop</string>
-            <key>CFBundleIconFile</key>
-            <string>rentier</string>
-            <key>CFBundlePackageType</key>
-            <string>APPL</string>
-            <key>NSHighResolutionCapable</key>
-            <true/>
-            <key>LSMinimumSystemVersion</key>
-            <string>10.15</string>
-          </dict>
-          </plist>
-          PLIST
-
-      - name: Create DMG
-        env:
-          VERSION: ${{ needs.compute-version.outputs.version }}
-          RID: ${{ matrix.rid }}
-        run: |
-          brew install create-dmg
-
-          # create-dmg returns exit code 2 when it skips setting a background
-          # image (which is fine). Treat only real failures as errors.
-          create-dmg \
-            --volname "Rentier" \
-            --volicon "Assets/Icons/rentier.icns" \
-            --window-pos 200 120 \
-            --window-size 600 400 \
-            --icon-size 100 \
-            --icon "Rentier.app" 175 190 \
-            --hide-extension "Rentier.app" \
-            --app-drop-link 425 190 \
-            "Rentier-${VERSION}-${RID}.dmg" \
-            "Rentier.app" || true
-
-          if [ ! -f "Rentier-${VERSION}-${RID}.dmg" ]; then
-            echo "::error::DMG creation failed for ${RID}"
-            exit 1
-          fi
-
-      # ── Velopack (auto-updating) package — in addition to the classic DMG above ──
       - name: Restore .NET tools (vpk)
         run: dotnet tool restore
 
@@ -425,11 +338,13 @@ jobs:
           --mainExe Rentier.Desktop --icon Assets/Icons/rentier.icns
           --bundleId com.rentier.desktop -x
 
-      - name: Collect Velopack feed and build Velopack DMG
+      - name: Collect Velopack feed and build DMG
         env:
           VERSION: ${{ needs.compute-version.outputs.version }}
           RID: ${{ matrix.rid }}
         run: |
+          brew install create-dmg
+
           # assets.<channel>.json lists exactly the files this pack created.
           ASSETS="velopack/assets.${RID}.json"
           mkdir -p feed-out velopack-dmg
@@ -442,6 +357,8 @@ jobs:
           ditto -x -k "velopack/${PORTABLE}" velopack-dmg
           [ -d velopack-dmg/Rentier.app ] || { echo "::error::Rentier.app missing from ${PORTABLE}"; exit 1; }
 
+          # create-dmg returns exit code 2 when it skips setting a background
+          # image (which is fine). Treat only real failures as errors.
           create-dmg \
             --volname "Rentier" \
             --volicon "Assets/Icons/rentier.icns" \
@@ -451,20 +368,39 @@ jobs:
             --icon "Rentier.app" 175 190 \
             --hide-extension "Rentier.app" \
             --app-drop-link 425 190 \
-            "Rentier-${VERSION}-${RID}-velopack.dmg" \
+            "Rentier-${VERSION}-${RID}.dmg" \
             velopack-dmg || true
 
-          if [ ! -f "Rentier-${VERSION}-${RID}-velopack.dmg" ]; then
-            echo "::error::Velopack DMG creation failed for ${RID}"
+          if [ ! -f "Rentier-${VERSION}-${RID}.dmg" ]; then
+            echo "::error::DMG creation failed for ${RID}"
             exit 1
           fi
+
+      - name: Smoke test the macOS app
+        env:
+          RID: ${{ matrix.rid }}
+        run: |
+          # The DMG holds this same Rentier.app, and it is the only macOS download: run it before
+          # release. --smoke-test-update fails unless Velopack accepts the bundle as installed.
+          # macos-latest is Apple silicon, so the osx-x64 app runs under Rosetta 2.
+          if [ "$RID" = "osx-x64" ] && ! arch -x86_64 /usr/bin/true 2>/dev/null; then
+            sudo softwareupdate --install-rosetta --agree-to-license
+          fi
+
+          APP=velopack-dmg/Rentier.app
+          EXE=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "${APP}/Contents/Info.plist")
+          BIN="${APP}/Contents/MacOS/${EXE}"
+          [ -x "$BIN" ] || { echo "::error::${BIN} is missing or not executable"; exit 1; }
+
+          for arg in --smoke-test --smoke-test-update; do
+            "$BIN" "$arg" || { echo "::error::${RID} Rentier.app: ${arg} failed"; exit 1; }
+          done
+          echo "MACOS SMOKE TEST PASSED (${RID})"
 
       - uses: actions/upload-artifact@v7.0.1
         with:
           name: release-${{ matrix.rid }}
-          path: |
-            Rentier-*-${{ matrix.rid }}.dmg
-            Rentier-*-${{ matrix.rid }}-velopack.dmg
+          path: Rentier-*-${{ matrix.rid }}.dmg
           if-no-files-found: error
 
       - uses: actions/upload-artifact@v7.0.1
@@ -474,7 +410,7 @@ jobs:
           if-no-files-found: error
 
   # ──────────────────────────────────────────────────────────────────
-  # Linux x64 — tar.gz + .deb
+  # Linux x64 — Velopack AppImage
   # R2R intentionally excluded: not beneficial for Avalonia on Linux.
   # ──────────────────────────────────────────────────────────────────
   build-linux:
@@ -507,70 +443,8 @@ jobs:
           -p:RentierUpdateFeedUrl=${{ env.REPO_URL }}
           -o ./publish/linux-x64
 
-      - name: Create tar.gz
-        env:
-          VERSION: ${{ needs.compute-version.outputs.version }}
-        run: |
-          cd publish/linux-x64
-          tar -czf "../../Rentier-${VERSION}-linux-x64.tar.gz" ./*
-
-      - name: Create .deb package
-        env:
-          VERSION: ${{ needs.compute-version.outputs.version }}
-        run: |
-          PKG="rentier_${VERSION}_amd64"
-
-          mkdir -p "${PKG}/DEBIAN"
-          mkdir -p "${PKG}/usr/lib/rentier"
-          mkdir -p "${PKG}/usr/bin"
-          mkdir -p "${PKG}/usr/share/applications"
-          mkdir -p "${PKG}/usr/share/icons/hicolor/256x256/apps"
-
-          # Copy published binary (single-file)
-          cp publish/linux-x64/Rentier.Desktop "${PKG}/usr/lib/rentier/"
-          chmod 755 "${PKG}/usr/lib/rentier/Rentier.Desktop"
-
-          # Launcher symlink
-          ln -s /usr/lib/rentier/Rentier.Desktop "${PKG}/usr/bin/rentier"
-
-          # Icon
-          cp Assets/Icons/png/rentier_256x256.png \
-             "${PKG}/usr/share/icons/hicolor/256x256/apps/rentier.png"
-
-          # Desktop entry
-          cat > "${PKG}/usr/share/applications/rentier.desktop" << 'EOF'
-          [Desktop Entry]
-          Name=Rentier
-          Comment=PP-OPO Tax Filing Assistant
-          Exec=/usr/bin/rentier
-          Icon=rentier
-          Terminal=false
-          Type=Application
-          Categories=Finance;Office;
-          EOF
-
-          # Control file
-          INSTALLED_SIZE=$(du -sk "${PKG}/usr" | cut -f1)
-          cat > "${PKG}/DEBIAN/control" << EOF
-          Package: rentier
-          Version: ${VERSION}
-          Section: finance
-          Priority: optional
-          Architecture: amd64
-          Installed-Size: ${INSTALLED_SIZE}
-          Depends: libicu-dev
-          Maintainer: Rentier <noreply@rentier.app>
-          Description: Automated Serbian PP-OPO passive income tax filing
-           Rentier automates the process of filing PP-OPO passive income
-           tax returns for Serbian tax residents with foreign income.
-          EOF
-
-          dpkg-deb --build --root-owner-group "${PKG}"
-          mv "${PKG}.deb" "Rentier-${VERSION}-linux-x64.deb"
-
-      # ── Velopack (auto-updating) AppImage — in addition to the classic packages above ──
-      # The .deb installs root-owned files under /usr/lib, which the app cannot replace, so on
-      # Linux only the AppImage can update itself.
+      # The AppImage is the only Linux package: a .deb would install root-owned files under
+      # /usr/lib, which the app cannot replace, so it could never update itself.
       - name: Restore .NET tools (vpk)
         run: dotnet tool restore
 
@@ -605,13 +479,24 @@ jobs:
           [ -n "$APPIMAGE" ] || { echo "::error::vpk produced no AppImage"; exit 1; }
           cp "velopack/${APPIMAGE}" "Rentier-${VERSION}-linux-x64.AppImage"
 
+      - name: Smoke test the AppImage
+        env:
+          VERSION: ${{ needs.compute-version.outputs.version }}
+        run: |
+          # The AppImage is the only Linux download: run it before release, through its own
+          # entry point, so Velopack sees what a user's copy sees. APPIMAGE_EXTRACT_AND_RUN=1
+          # runs it without FUSE. --smoke-test-update fails unless Velopack accepts it as installed.
+          APP="./Rentier-${VERSION}-linux-x64.AppImage"
+          chmod +x "$APP"
+          for arg in --smoke-test --smoke-test-update; do
+            APPIMAGE_EXTRACT_AND_RUN=1 "$APP" "$arg" || { echo "::error::AppImage ${arg} failed"; exit 1; }
+          done
+          echo "APPIMAGE SMOKE TEST PASSED"
+
       - uses: actions/upload-artifact@v7.0.1
         with:
           name: release-linux-x64
-          path: |
-            Rentier-*-linux-x64.tar.gz
-            Rentier-*-linux-x64.deb
-            Rentier-*-linux-x64.AppImage
+          path: Rentier-*-linux-x64.AppImage
           if-no-files-found: error
 
       - uses: actions/upload-artifact@v7.0.1
@@ -621,8 +506,8 @@ jobs:
           if-no-files-found: error
 
   # ──────────────────────────────────────────────────────────────────
-  # Windows artifact smoke test — validates the built EXE is functional
-  # before publishing the GitHub Release.
+  # Windows artifact smoke test — validates the portable ZIP and the installer before
+  # publishing the GitHub Release.
   # ──────────────────────────────────────────────────────────────────
   smoke-test-windows:
     name: Windows Artifact Smoke Test
@@ -638,40 +523,12 @@ jobs:
           name: release-win-x64
           path: ./artifact
 
-      - name: Validate artifact structure
+      - name: Validate portable ZIP layout and smoke test it
         shell: pwsh
-        env:
-          VERSION: ${{ needs.compute-version.outputs.version }}
         run: |
           $zip = Get-ChildItem ./artifact -Filter "Rentier-*-win-x64.zip" -Recurse |
             Select-Object -First 1
           if (-not $zip) { throw "Win-x64 ZIP not found in downloaded artifact" }
-
-          Expand-Archive -Path $zip.FullName -DestinationPath ./extracted -Force
-
-          $exe = Get-ChildItem ./extracted -Filter "Rentier.Desktop.exe" -Recurse |
-            Select-Object -First 1
-          if (-not $exe) { throw "Rentier.Desktop.exe missing from ZIP" }
-
-          Write-Host "Artifact structure OK: single-file EXE present (native libs bundled inside)"
-          "EXE_PATH=$($exe.FullName)" | Out-File -Append $env:GITHUB_ENV
-
-      - name: Headless launch smoke test
-        shell: pwsh
-        run: |
-          $proc = Start-Process $env:EXE_PATH `
-            -ArgumentList "--smoke-test" -PassThru -Wait -NoNewWindow
-          if ($proc.ExitCode -ne 0) {
-            throw "Smoke test exited with code $($proc.ExitCode) — artifact is not functional"
-          }
-          Write-Host "SMOKE TEST PASSED (exit code 0)"
-
-      - name: Validate Velopack portable layout and smoke test it
-        shell: pwsh
-        run: |
-          $zip = Get-ChildItem ./artifact -Filter "Rentier-*-win-x64-velopack.zip" -Recurse |
-            Select-Object -First 1
-          if (-not $zip) { throw "Velopack win-x64 ZIP not found in downloaded artifact" }
           Expand-Archive -Path $zip.FullName -DestinationPath ./velopack-extracted -Force
 
           # Without Update.exe + current\ next to the launcher, Velopack reports the app as not
@@ -683,7 +540,7 @@ jobs:
           $proc = Start-Process ./velopack-extracted/current/Rentier.Desktop.exe `
             -ArgumentList "--smoke-test" -PassThru -Wait -NoNewWindow
           if ($proc.ExitCode -ne 0) {
-            throw "Velopack smoke test exited with code $($proc.ExitCode) — artifact is not functional"
+            throw "Smoke test exited with code $($proc.ExitCode) — artifact is not functional"
           }
 
           # --smoke-test exits before Velopack starts, so it cannot see whether Velopack accepts
@@ -692,9 +549,78 @@ jobs:
           $proc = Start-Process ./velopack-extracted/current/Rentier.Desktop.exe `
             -ArgumentList "--smoke-test-update" -PassThru -Wait -NoNewWindow
           if ($proc.ExitCode -ne 0) {
-            throw "Velopack update smoke test exited with code $($proc.ExitCode) — the installed app would never update"
+            throw "Update smoke test exited with code $($proc.ExitCode) — the installed app would never update"
           }
-          Write-Host "VELOPACK SMOKE TEST PASSED (exit code 0)"
+          Write-Host "PORTABLE ZIP SMOKE TEST PASSED (exit code 0)"
+
+      - name: Install, smoke test and uninstall the installer
+        shell: pwsh
+        run: |
+          # setup.exe is the main Windows download: install it per-user (silently, into a temp
+          # folder), check that Velopack accepts the installed layout and that the Rentier.exe
+          # launcher (what the shortcuts start) runs the app, then uninstall it and check that the
+          # user data folder and its files survived.
+          $setup = Get-ChildItem ./artifact -Filter "Rentier-*-win-x64-setup.exe" -Recurse |
+            Select-Object -First 1
+          if (-not $setup) { throw "Win-x64 installer not found in downloaded artifact" }
+
+          $dir = Join-Path $env:RUNNER_TEMP 'rentier-install'
+          $log = Join-Path $env:RUNNER_TEMP 'rentier-setup.log'
+          $proc = Start-Process $setup.FullName -PassThru -Wait `
+            -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=`"$dir`"", "/LOG=`"$log`""
+          if ($proc.ExitCode -ne 0) {
+            Get-Content $log -ErrorAction SilentlyContinue
+            throw "Installer exited with code $($proc.ExitCode)"
+          }
+
+          foreach ($f in 'Rentier.exe', 'Update.exe', 'current\Rentier.Desktop.exe', 'current\sq.version', 'unins000.exe') {
+            if (-not (Test-Path (Join-Path $dir $f))) { throw "Installed layout is missing $f" }
+          }
+
+          # The portable ZIP step above already created the user data folder. Start from none, so
+          # the checks below see what the installed copy does.
+          $data = Join-Path $env:LOCALAPPDATA 'Rentier'
+          $smokeDb = Join-Path $data 'rentier-smoke.db'
+          Remove-Item $data -Recurse -Force -ErrorAction SilentlyContinue
+
+          $exe = Join-Path $dir 'current\Rentier.Desktop.exe'
+          foreach ($arg in '--smoke-test', '--smoke-test-update') {
+            $proc = Start-Process $exe -ArgumentList $arg -PassThru -Wait -NoNewWindow
+            if ($proc.ExitCode -ne 0) { throw "Installed app: $arg exited with code $($proc.ExitCode)" }
+          }
+          if (-not (Test-Path $smokeDb)) { throw "The installed app's --smoke-test did not create $smokeDb" }
+
+          # The shortcuts start Rentier.exe, Velopack's launcher, not the app itself. It starts
+          # current\Rentier.Desktop.exe with the same arguments and exits without waiting, so its
+          # exit code says nothing about the app: check that the app ran (the smoke database is
+          # created again) and has exited.
+          Remove-Item $smokeDb -Force
+          $proc = Start-Process (Join-Path $dir 'Rentier.exe') -ArgumentList '--smoke-test' -PassThru -Wait
+          if ($proc.ExitCode -ne 0) { throw "Launcher Rentier.exe exited with code $($proc.ExitCode)" }
+          $deadline = (Get-Date).AddSeconds(120)
+          while (-not (Test-Path $smokeDb) -or (Get-Process -Name 'Rentier.Desktop' -ErrorAction SilentlyContinue)) {
+            if ((Get-Date) -gt $deadline) { throw "Rentier.exe did not start the app (no $smokeDb, or the app never exited)" }
+            Start-Sleep -Seconds 2
+          }
+
+          # Uninstalling must leave the user data folder and every file in it alone, not just
+          # the folder itself.
+          $sentinel = Join-Path $data 'uninstall-must-keep-this.txt'
+          Set-Content -Path $sentinel -Value 'user data'
+
+          $proc = Start-Process (Join-Path $dir 'unins000.exe') -PassThru -Wait `
+            -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART'
+          if ($proc.ExitCode -ne 0) { throw "Uninstaller exited with code $($proc.ExitCode)" }
+          # The uninstaller hands over to a temporary copy of itself, so wait for the files to go.
+          $deadline = (Get-Date).AddSeconds(120)
+          while ((Test-Path (Join-Path $dir 'Rentier.exe')) -or (Test-Path (Join-Path $dir 'current'))) {
+            if ((Get-Date) -gt $deadline) { throw "Uninstall did not remove the installed files" }
+            Start-Sleep -Seconds 2
+          }
+          foreach ($f in $sentinel, $smokeDb) {
+            if (-not (Test-Path $f)) { throw "Uninstall deleted user data: $f" }
+          }
+          Write-Host "INSTALLER SMOKE TEST PASSED"
 
   # ──────────────────────────────────────────────────────────────────
   # Create GitHub Release with all artifacts + checksums
@@ -746,12 +672,6 @@ jobs:
             "Rentier-${VERSION}-win-x64-setup.exe"
             "Rentier-${VERSION}-osx-arm64.dmg"
             "Rentier-${VERSION}-osx-x64.dmg"
-            "Rentier-${VERSION}-linux-x64.tar.gz"
-            "Rentier-${VERSION}-linux-x64.deb"
-            "Rentier-${VERSION}-win-x64-velopack.zip"
-            "Rentier-${VERSION}-win-x64-velopack-setup.exe"
-            "Rentier-${VERSION}-osx-arm64-velopack.dmg"
-            "Rentier-${VERSION}-osx-x64-velopack.dmg"
             "Rentier-${VERSION}-linux-x64.AppImage"
           )
           missing=0
@@ -815,25 +735,22 @@ jobs:
             echo ""
             echo "## Download"
             echo ""
+            echo "Every package updates itself: Rentier checks for a new version when it starts and offers to install it."
+            echo ""
             echo "| Platform | Installer | Portable |"
             echo "|----------|-----------|----------|"
             echo "| Windows x64 | \`Rentier-${VERSION}-win-x64-setup.exe\` | \`Rentier-${VERSION}-win-x64.zip\` |"
-            echo "| macOS ARM64 | \`Rentier-${VERSION}-osx-arm64.dmg\` | — |"
-            echo "| macOS x64 | \`Rentier-${VERSION}-osx-x64.dmg\` | — |"
-            echo "| Linux x64 | \`Rentier-${VERSION}-linux-x64.deb\` | \`Rentier-${VERSION}-linux-x64.tar.gz\` |"
+            echo "| macOS Apple silicon | \`Rentier-${VERSION}-osx-arm64.dmg\` | — |"
+            echo "| macOS Intel | \`Rentier-${VERSION}-osx-x64.dmg\` | — |"
+            echo "| Linux x64 | — | \`Rentier-${VERSION}-linux-x64.AppImage\` (\`chmod +x\`; may need \`libfuse2\`; needs ICU, \`libicu\`) |"
             echo ""
-            echo "### Auto-updating packages (preview)"
+            echo "### Switching from a package that does not update itself"
             echo ""
-            echo "These install to the same place as the packages above, but Rentier then updates itself from inside the app."
+            echo "Packages of v1.3.0 and earlier, and the v1.3.1 packages without \`-velopack\` in their name, cannot update themselves. Switch once; after that Rentier updates from inside the app. (Installed v1.3.1 from a \`-velopack\` package? Then there is nothing to do.) Your data stays in your user profile and is not affected."
             echo ""
-            echo "| Platform | Installer | Portable |"
-            echo "|----------|-----------|----------|"
-            echo "| Windows x64 | \`Rentier-${VERSION}-win-x64-velopack-setup.exe\` | \`Rentier-${VERSION}-win-x64-velopack.zip\` |"
-            echo "| macOS ARM64 | \`Rentier-${VERSION}-osx-arm64-velopack.dmg\` | — |"
-            echo "| macOS x64 | \`Rentier-${VERSION}-osx-x64-velopack.dmg\` | — |"
-            echo "| Linux x64 | — | \`Rentier-${VERSION}-linux-x64.AppImage\` (\`chmod +x\`; may need \`libfuse2\`) |"
-            echo ""
-            echo "Switching from a package above: run the auto-updating installer once (Windows upgrades an install made for your account in place; an install made for all users must be uninstalled first, and the installer tells you so; on macOS replace \`Rentier.app\` in Applications). Your data is not affected."
+            echo "- **Windows:** run \`Rentier-${VERSION}-win-x64-setup.exe\`. An install made for your account is upgraded in place. If Rentier was installed for all users, the installer says so: uninstall it in Settings > Apps first, then run the installer again. Using the portable ZIP? Extract the new ZIP into a new, empty folder, start \`Rentier.exe\`, and delete the old folder."
+            echo "- **macOS:** open the DMG and drag \`Rentier.app\` into Applications, replacing the old one."
+            echo "- **Linux:** use the AppImage instead of the \`.deb\` or \`.tar.gz\`. If you installed the \`.deb\`, remove it with \`sudo apt remove rentier\`."
             echo ""
             echo "## Checksums (SHA256)"
             echo ""

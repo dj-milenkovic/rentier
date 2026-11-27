@@ -83,15 +83,30 @@ IBKR Activity Statement (CSV)
 ## Prerequisites
 
 - **Windows 10 / Ubuntu 20.04 / macOS 12 or later**
-- **.NET 10.0 Runtime** — [download](https://dotnet.microsoft.com/download)
 - An **Interactive Brokers** account with activity to report
 - A **Serbian taxpayer identification number** (JMBG)
+
+Every release package includes the .NET runtime, so nothing else needs to be installed. The [.NET 10 SDK](https://dotnet.microsoft.com/download) is needed only to build Rentier from source.
+
+---
+
+## Download
+
+Download the package for your system from [GitHub Releases](../../releases):
+
+| System | File |
+|---|---|
+| Windows | `Rentier-<version>-win-x64-setup.exe` (installer, no administrator rights needed) or `Rentier-<version>-win-x64.zip` (portable, no installer) |
+| macOS | `Rentier-<version>-osx-arm64.dmg` (Apple silicon) or `Rentier-<version>-osx-x64.dmg` (Intel) |
+| Linux | `Rentier-<version>-linux-x64.AppImage` (portable; `chmod +x`; may need `libfuse2`; needs ICU, `libicu`) |
+
+Every package updates itself: when Rentier starts and finds a newer version, a bar at the top of the window offers to download and install it. Packages of v1.3.0 and earlier, and the v1.3.1 packages without `-velopack` in their name, cannot update themselves; switch once as described in [Getting Started](docs/en-US/GETTING-STARTED.md#switching-from-a-package-that-does-not-update-itself). Your data stays in your user profile and is not affected.
 
 ---
 
 ## Quick Start
 
-1. **Download and install** the application (see [Getting Started](docs/en-US/GETTING-STARTED.md))
+1. **Download and install** the application (see [Download](#download) and [Getting Started](docs/en-US/GETTING-STARTED.md)); it then keeps itself up to date
 2. **Create your taxpayer profile** — enter your JMBG, full name, address, and municipality code
 3. **Configure an Importer** — link it to your profile and choose how statements arrive (manual upload or email)
 4. **Import a statement** — upload an IBKR CSV or trigger a mailbox sync
