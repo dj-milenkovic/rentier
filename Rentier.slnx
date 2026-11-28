@@ -5,9 +5,6 @@
     <Project Path="src/Rentier.Domain/Rentier.Domain.csproj" />
     <Project Path="src/Rentier.Infrastructure/Rentier.Infrastructure.csproj" />
   </Folder>
-  <Folder Name="/.github/tools/">
-    <Project Path=".github/tools/Rentier.ReleaseNotes/Rentier.ReleaseNotes.csproj" />
-  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Rentier.Infrastructure.Tests/Rentier.Infrastructure.Tests.csproj" />
     <Project Path="tests/Rentier.Scenarios.Tests/Rentier.Scenarios.Tests.csproj" />

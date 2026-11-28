@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!-- Tests for the release tooling next to it (Rentier.ReleaseNotes) and for the workflows and
-       PR template it works with. Part of Rentier.slnx, so CI runs them with the other tests. -->
+       PR template it works with. Not in Rentier.slnx: .github/workflows/release-tools.yml runs
+       them, or locally "dotnet test .github/tools/Rentier.ReleaseNotes.Tests". -->
   <PropertyGroup>
     <IsPackable>false</IsPackable>
   </PropertyGroup>

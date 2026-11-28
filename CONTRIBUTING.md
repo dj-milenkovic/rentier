@@ -193,9 +193,10 @@ on GitHub as part of the last English bullet. The note ends at the next `##` or 
   notes into a temporary file during the release; nothing is committed. Versions up to v1.4.0
   (`RELEASE_NOTES_SINCE` in `auto-release.yml`) predate release notes and are not shown. Only
   release builds carry notes; a local build's Settings → What's new is empty.
-- Its tests live next to it in `.github/tools/Rentier.ReleaseNotes.Tests` and are not part of
-  `Rentier.slnx`. The **Release Tools** workflow runs them when the tooling, the release workflows
-  or the PR template change; locally: `dotnet test .github/tools/Rentier.ReleaseNotes.Tests`.
+- The tool and its tests (`.github/tools/Rentier.ReleaseNotes.Tests`) are not part of
+  `Rentier.slnx`. The **Release Tools** workflow formats, scans and tests them when the tooling,
+  the release workflows or the PR template change; locally:
+  `dotnet test .github/tools/Rentier.ReleaseNotes.Tests`.
 
 ### Code Review Expectations
 
