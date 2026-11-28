@@ -153,6 +153,26 @@ public class ReportRepositoryTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task GetByIdAsync_RowDeletedThroughAnotherContext_ReturnsNull()
+    {
+        // A long-lived repository must not serve a copy cached by an earlier call (issue #119).
+        var ct = TestContext.Current.CancellationToken;
+        var importer = MakeImporter();
+        await _context.Importers.AddAsync(importer, ct);
+        await _context.SaveChangesAsync(ct);
+        var report = MakeReport(importer.Id);
+        await _repository.AddAsync(report, ct);
+        await _repository.GetByIdAsync(report.Id, ct); // cache the copy in this context
+        await using var otherContext = new AppDbContext(
+            new DbContextOptionsBuilder<AppDbContext>().UseSqlite(_connection).Options);
+        await new ReportRepository(otherContext).DeleteAsync(report.Id, ct);
+
+        var result = await _repository.GetByIdAsync(report.Id, ct);
+
+        result.Should().BeNull();
+    }
+
+    [Fact]
     public async Task GetByIdAsync_WithNonExistentId_ReturnsNull()
     {
         var result = await _repository.GetByIdAsync(Guid.NewGuid(), TestContext.Current.CancellationToken);

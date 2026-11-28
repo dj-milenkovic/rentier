@@ -35,6 +35,28 @@ public abstract class UnitOfWorkAwareRepository
         => IsStaging ? Task.CompletedTask : Db.SaveChangesAsync(ct);
 
     /// <summary>
+    /// Loads an entity by key as it is <b>now</b>, for a caller that may go on to change it.
+    /// <list type="bullet">
+    /// <item><b>Staging</b>: served from the shared context first, so a change staged earlier in
+    /// the same unit of work is visible.</item>
+    /// <item><b>Standalone</b>: the context outlives a single operation (the Filings page keeps
+    /// its handlers, and so their contexts, for as long as it is open), and <c>FindAsync</c>
+    /// would return the copy cached by an earlier call even after another context changed the
+    /// row. Saving that copy back writes every stale column over the newer values (issue #119).
+    /// Each standalone call is a complete, already-committed operation, so nothing pending is
+    /// lost by clearing the tracker; the row is then read fresh from the database.</item>
+    /// </list>
+    /// </summary>
+    private protected async Task<TEntity?> FindCurrentAsync<TEntity>(
+        DbSet<TEntity> set, object[] key, CancellationToken ct)
+        where TEntity : class
+    {
+        if (!IsStaging)
+            Db.ChangeTracker.Clear();
+        return await set.FindAsync(key, ct);
+    }
+
+    /// <summary>
     /// The tracked entries of <typeparamref name="TEntity"/> without running DetectChanges,
     /// which would otherwise scan every tracked entity on each call. Safe for repository
     /// code because staged states are set explicitly by Add/Update/Remove/Attach.

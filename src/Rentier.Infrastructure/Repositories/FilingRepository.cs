@@ -27,7 +27,7 @@ public sealed class FilingRepository : UnitOfWorkAwareRepository, IFilingReposit
     }
 
     public async Task<Filing?> GetByIdAsync(Guid id, CancellationToken ct = default)
-        => await Db.Filings.FindAsync([id], ct);
+        => await FindCurrentAsync(Db.Filings, [id], ct);
 
     public async Task<IReadOnlyList<Filing>> GetAllAsync(CancellationToken ct = default)
     {
@@ -141,7 +141,7 @@ public sealed class FilingRepository : UnitOfWorkAwareRepository, IFilingReposit
 
     public async Task DeleteAsync(Guid id, CancellationToken ct = default)
     {
-        var entity = await Db.Filings.FindAsync([id], ct);
+        var entity = await FindCurrentAsync(Db.Filings, [id], ct);
         if (entity is not null)
         {
             Db.Filings.Remove(entity);
