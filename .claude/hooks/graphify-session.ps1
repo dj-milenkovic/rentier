@@ -13,6 +13,11 @@
 #
 # Whatever this script writes to stdout is added to the session's context.
 # Fails open (exit 0) on any problem: a missing graph must never block a session.
+# But never *silently*: every failure prints a "Graphify: ..." line into the session
+# context, and the background worker records its outcome in a status file next to
+# its log so the next session start can report a failed build.
+#
+# Works on Windows, Linux and macOS (PowerShell 7+; `-WindowStyle` is Windows-only).
 #
 #   -Build <dir>  internal: the detached worker that runs the rebuild and then
 #                 records the HEAD it was built for in graphify-out/.built-head.
@@ -34,23 +39,38 @@ function Find-GraphifyPython {
 }
 
 if ($Build) {
+    $status = Join-Path ([System.IO.Path]::GetTempPath()) "graphify-session-$((Split-Path $Build -Leaf)).log.status"
     try {
         Set-Location -LiteralPath $Build
         $env:PYTHONHASHSEED = '0'   # deterministic Louvain clustering, same as graphify's git hooks
         $python = Find-GraphifyPython
-        if (-not $python) { exit 0 }
+        if (-not $python) {
+            Set-Content -LiteralPath $status -Value 'failed: python with the graphify package not found'
+            exit 0
+        }
         $head = (git rev-parse HEAD 2>$null)
         & $python -m graphify update .
-        if ($LASTEXITCODE -eq 0 -and $head) {
+        if ($LASTEXITCODE -ne 0) {
+            Set-Content -LiteralPath $status -Value "failed: 'graphify update' exited with code $LASTEXITCODE"
+            exit 0
+        }
+        if ($head) {
             Set-Content -LiteralPath (Join-Path 'graphify-out' $HEAD_MARKER) -Value $head -NoNewline
         }
-    } catch { Write-Error $_ }
+        Set-Content -LiteralPath $status -Value 'ok'
+    } catch {
+        Write-Error $_
+        try { Set-Content -LiteralPath $status -Value "failed: $($_.Exception.Message)" } catch { }
+    }
     exit 0
 }
 
 try {
     $top = (git rev-parse --show-toplevel 2>$null)
-    if (-not $top) { exit 0 }
+    if (-not $top) {
+        Write-Output 'Graphify: not inside a git checkout (or git is not on PATH); skipped graph refresh.'
+        exit 0
+    }
     $top = (Resolve-Path -LiteralPath $top).Path
     $head = (git -C $top rev-parse HEAD 2>$null)
 
@@ -63,20 +83,42 @@ try {
 
     $python = Find-GraphifyPython
     if (-not $python) {
-        if ($hasGraph) {
-            Write-Output 'Graphify: graphify-out/graph.json exists but the graphify Python package was not found, so it cannot be refreshed or queried. Install it with `pip install graphifyy`.'
-        }
+        $what = if ($hasGraph) { 'graphify-out/graph.json exists but it cannot be refreshed or queried' } else { 'no knowledge graph can be built' }
+        Write-Output "Graphify: the graphify Python package was not found (looked for python, python3, py), so $what. Install it with ``pip install graphifyy``. Use normal search meanwhile."
         exit 0
+    }
+
+    $log = Join-Path ([System.IO.Path]::GetTempPath()) "graphify-session-$((Split-Path $top -Leaf)).log"
+    $statusPath = "$log.status"
+    $lastFailure = $null
+    if (Test-Path -LiteralPath $statusPath) {
+        $prev = (Get-Content -LiteralPath $statusPath -Raw).Trim()
+        if ($prev -like 'failed*') { $lastFailure = "Graphify: the previous background build $prev (see $log and $log.err)." }
     }
 
     $needsBuild = (-not $hasGraph) -or ($head -and $builtHead -ne $head)
     if ($needsBuild) {
-        $log = Join-Path ([System.IO.Path]::GetTempPath()) "graphify-session-$((Split-Path $top -Leaf)).log"
         $pwsh = (Get-Process -Id $PID).Path
-        Start-Process -FilePath $pwsh `
-            -ArgumentList '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$PSCommandPath`"", '-Build', "`"$top`"" `
-            -WorkingDirectory $top -WindowStyle Hidden `
-            -RedirectStandardOutput $log -RedirectStandardError "$log.err" | Out-Null
+        $workerArgs = '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $PSCommandPath, '-Build', $top
+        Set-Content -LiteralPath $statusPath -Value 'running'
+        if ($IsWindows -or $PSVersionTable.PSEdition -eq 'Desktop') {
+            $worker = Start-Process -FilePath $pwsh -WindowStyle Hidden -WorkingDirectory $top `
+                -ArgumentList ($workerArgs | ForEach-Object { "`"$_`"" }) `
+                -RedirectStandardOutput $log -RedirectStandardError "$log.err" -PassThru
+        } else {
+            # Unix: Start-Process pipes the child's output through THIS process, so the worker
+            # would die (SIGPIPE) the moment the hook exits. Let a detached shell redirect to the
+            # files natively instead, in its own session (setsid, where available) so it outlives us.
+            $shScript = 'log=$1; shift; if command -v setsid >/dev/null 2>&1; then set -- setsid "$@"; fi; nohup "$@" >"$log" 2>"$log.err" </dev/null &'
+            # ProcessStartInfo.ArgumentList passes each argument verbatim (no re-quoting).
+            $psi = [System.Diagnostics.ProcessStartInfo]::new('sh')
+            $psi.WorkingDirectory = $top
+            foreach ($arg in (@('-c', $shScript, 'sh', $log, $pwsh) + $workerArgs)) { $psi.ArgumentList.Add($arg) }
+            $worker = [System.Diagnostics.Process]::Start($psi)
+            if (-not $worker.WaitForExit(5000)) { throw 'sh did not return after launching the background build.' }
+            if ($worker.ExitCode -ne 0) { throw "sh failed to launch the background build (exit $($worker.ExitCode))." }
+        }
+        if (-not $worker) { throw 'Start-Process returned no process for the background build.' }
     }
 
     if ($hasGraph) {
@@ -88,5 +130,8 @@ For any codebase/architecture question, use the graphify skill FIRST: run ``grap
     } else {
         Write-Output "Graphify: no knowledge graph in this checkout yet; building it in the background (a few minutes; log: $log). Until graphify-out/graph.json exists, use normal search."
     }
-} catch { }
+    if ($lastFailure) { Write-Output $lastFailure }
+} catch {
+    Write-Output "Graphify: the SessionStart hook failed and the graph was not refreshed: $($_.Exception.Message). Use normal search."
+}
 exit 0
