@@ -40,7 +40,7 @@ tests/Rentier.Tests.Common/        Shared test fixtures/builders
 ```bash
 dotnet restore Rentier.slnx
 dotnet build Rentier.slnx --no-restore -c Release
-dotnet format Rentier.slnx --no-restore --verify-no-changes
+dotnet format Rentier.slnx --no-restore   # fix formatting; the format-gate hook checks it on git commit
 
 # Unit + Application tests (excludes integration)
 dotnet test Rentier.slnx --filter "Category!=Integration"
@@ -58,9 +58,9 @@ app's What's new. It is required for `feat`/`fix`/`perf` titles unless the scope
 both empty for internal changes. See CONTRIBUTING.md → Release notes.
 
 CI (`.github/workflows/ci.yml`) runs format + vulnerable-package check → migration tests
-→ build/test matrix (Windows/macOS/Linux) → coverage merge → SonarCloud. Match this
-locally before pushing (`dotnet list Rentier.slnx package --vulnerable --include-transitive`
-catches the package gate).
+→ build/test matrix (Windows/macOS/Linux) → coverage merge → SonarCloud. The format gate is
+enforced locally by the `format-gate.ps1` hook; match the rest before pushing
+(`dotnet list Rentier.slnx package --vulnerable --include-transitive` catches the package gate).
 The canonical remote is `github` (github.com/dj-milenkovic/rentier) — CI and PRs run there.
 
 ## Absolute Rules (non-negotiable)
@@ -105,6 +105,9 @@ When implementing a feature, create:
 
 `.claude/hooks/*.ps1` are cross-platform (Windows/Linux/macOS) and run with `pwsh` (PowerShell 7+) — never `powershell`.
 Hooks fail open (exit 0) but must never fail silently: print a warning when a required tool is missing.
+The one deliberate block is `format-gate.ps1`: it stops a `git commit` while
+`dotnet format Rentier.slnx --verify-no-changes` (CI's format gate) fails; fix with
+`dotnet format Rentier.slnx --no-restore`, re-stage, and commit again.
 
 ## Graphify
 

@@ -87,7 +87,6 @@ Ensure `.github/workflows/*.yml` pin the detected **target version** consistentl
 - [ ] TargetFramework upgraded to next stable version in all `.csproj` files
 - [ ] `Directory.Build.props` / `Directory.Packages.props` updated if they pin TFM/versions
 - [ ] All NuGet packages compatible and updated
-- [ ] `dotnet format Rentier.slnx --verify-no-changes` passes
 - [ ] Build and test pipelines succeed locally and in CI
 - [ ] Integration tests pass (`tests/Rentier.Infrastructure.Tests` with `Category=Integration`)
 

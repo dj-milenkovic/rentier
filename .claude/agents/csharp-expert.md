@@ -69,8 +69,7 @@ Full checklist in `.claude/skills/csharp-async/SKILL.md`. Non-negotiables here:
 - Domain tests use no mocks; Application tests mock repositories/ports with
   NSubstitute; never mock the code under test.
 - In xUnit v3 tests, pass `TestContext.Current.CancellationToken` to async calls.
-- Verify with `dotnet test Rentier.slnx --filter "Category!=Integration"` and run
-  `dotnet format Rentier.slnx --verify-no-changes` before claiming done.
+- Verify with `dotnet test Rentier.slnx --filter "Category!=Integration"` before claiming done.
 
 ## Rentier non-negotiables
 

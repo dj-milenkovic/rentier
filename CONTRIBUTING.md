@@ -34,6 +34,9 @@ dotnet build
 The hooks in `.claude/hooks/` run on Windows, Linux and macOS and require
 **PowerShell 7+** (`pwsh`, not Windows PowerShell 5.1): <https://aka.ms/powershell>.
 Without `pwsh`, Claude Code shows a "command not found" hook error; the hooks never block your work.
+They act on Claude's own tool calls only: `format-gate.ps1` stops a `git commit` that Claude runs
+while `dotnet format Rentier.slnx --verify-no-changes` fails, so Claude's commits always pass CI's
+format gate. Your own `git` commands are never affected.
 Optional tools: `graphify` (`pip install graphifyy`) and the `sonar` CLI. Hooks print a warning when they are missing.
 
 ## Run the Application
