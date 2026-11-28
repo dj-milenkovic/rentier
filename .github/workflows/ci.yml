@@ -312,12 +312,35 @@ jobs:
           name: coverage-report
           path: ./coverage-report
 
+      # Create or update one coverage comment per PR with `gh api` instead of a third-party
+      # action (third-party actions are a supply-chain risk in a job with pull-requests: write,
+      # see #194). The marker matches the one sticky-pull-request-comment wrote, so the comment
+      # it created earlier is reused. Same pattern as stryker.yml "Post mutation report to PR".
       - name: Post coverage to PR
         if: github.event_name == 'pull_request'
-        uses: marocchino/sticky-pull-request-comment@v3.0.5
-        with:
-          header: coverage
-          path: ./coverage-report/SummaryGithub.md
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        shell: bash
+        run: |
+          summary=./coverage-report/SummaryGithub.md
+          if [ ! -f "$summary" ]; then
+            echo "No $summary produced; skipping PR comment."
+            exit 0
+          fi
+          marker='<!-- Sticky Pull Request Commentcoverage -->'
+          printf '%s\n\n%s\n' "$(cat "$summary")" "$marker" > coverage-comment.md
+          comment_id=$(gh api --paginate "repos/$REPO/issues/$PR_NUMBER/comments" \
+            --jq ".[] | select(.user.login == \"github-actions[bot]\" and (.body | contains(\"$marker\"))) | .id" \
+            | head -n 1)
+          if [ -n "$comment_id" ]; then
+            gh api -X PATCH "repos/$REPO/issues/comments/$comment_id" -F body=@coverage-comment.md > /dev/null
+            echo "Updated comment $comment_id"
+          else
+            gh api -X POST "repos/$REPO/issues/$PR_NUMBER/comments" -F body=@coverage-comment.md > /dev/null
+            echo "Created coverage comment"
+          fi
 
       - name: Post coverage summary
         shell: bash
