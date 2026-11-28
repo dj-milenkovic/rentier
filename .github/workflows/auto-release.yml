@@ -181,8 +181,17 @@ jobs:
             git log "${prev:+${prev}..}${end}" --no-merges --format=%s \
               | grep -oE '\(#[0-9]+\)$' | tr -d '(#)' | sort -un \
               | while read -r pr; do
-                  gh api "repos/${REPO}/pulls/${pr}" --jq '.body // ""' > "pr-bodies/${ver}/${pr}.md" \
-                    || echo "::warning::Could not read the description of PR #${pr}"
+                  # A missing description would read as "no release note", so a fetch that keeps
+                  # failing stops the release instead of dropping that PR's note.
+                  for try in 1 2 3; do
+                    gh api "repos/${REPO}/pulls/${pr}" --jq '.body // ""' > "pr-bodies/${ver}/${pr}.md" && break
+                    rm -f "pr-bodies/${ver}/${pr}.md"
+                    if [ "$try" -eq 3 ]; then
+                      echo "::error::Could not read the description of PR #${pr}; the release stops here. Run it again."
+                      exit 1
+                    fi
+                    sleep 5
+                  done
                 done
           done < versions.txt
 
@@ -291,6 +300,7 @@ jobs:
           -p:AssemblyVersion=${{ needs.compute-version.outputs.version }}
           -p:FileVersion=${{ needs.compute-version.outputs.version }}
           -p:RentierUpdateFeedUrl=${{ env.REPO_URL }}
+          -p:RentierReleasesPageUrl=${{ env.REPO_URL }}/releases
           -p:RentierReleaseNotesPath=${{ github.workspace }}/release-notes-app/release-notes.md
           -o ./publish/win-x64
 
@@ -409,6 +419,7 @@ jobs:
           -p:AssemblyVersion=${{ needs.compute-version.outputs.version }}
           -p:FileVersion=${{ needs.compute-version.outputs.version }}
           -p:RentierUpdateFeedUrl=${{ env.REPO_URL }}
+          -p:RentierReleasesPageUrl=${{ env.REPO_URL }}/releases
           -p:RentierReleaseNotesPath=${{ github.workspace }}/release-notes-app/release-notes.md
           -o ./publish/${{ matrix.rid }}
 
@@ -544,6 +555,7 @@ jobs:
           -p:AssemblyVersion=${{ needs.compute-version.outputs.version }}
           -p:FileVersion=${{ needs.compute-version.outputs.version }}
           -p:RentierUpdateFeedUrl=${{ env.REPO_URL }}
+          -p:RentierReleasesPageUrl=${{ env.REPO_URL }}/releases
           -p:RentierReleaseNotesPath=${{ github.workspace }}/release-notes-app/release-notes.md
           -o ./publish/linux-x64
 

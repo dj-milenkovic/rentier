@@ -3,7 +3,9 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <!-- Linked from Settings > What's new and the release-notes dialog. In build configuration
-         rather than source, like RentierUpdateFeedUrl in Rentier.Infrastructure.csproj. -->
+         rather than source, like RentierUpdateFeedUrl in Rentier.Infrastructure.csproj. This is
+         the default for local builds; the release workflow sets it from the repository it runs in,
+         so a fork links its own releases. -->
     <RentierReleasesPageUrl>https://github.com/dj-milenkovic/rentier/releases</RentierReleasesPageUrl>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
   </PropertyGroup>

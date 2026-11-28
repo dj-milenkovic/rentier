@@ -703,6 +703,24 @@ public class MainWindowViewModel_UpdateTests
     }
 
     [Fact]
+    public async Task ShowUpdateReleaseNotesCommand_WhenUserChoosesUpdateNow_StaysAvailableDuringDownload()
+    {
+        var updateService = BuildUpdateService(new UpdateCheckResult(true, "2.1.0", TwoVersionsOfNotes));
+        var pendingDownload = new TaskCompletionSource<Result<bool, Error>>();
+        updateService.DownloadUpdateAsync(Arg.Any<Action<int>>(), Arg.Any<CancellationToken>())
+            .Returns(pendingDownload.Task);
+        var vm = CreateVm(updateService, Dialog(updateNow: true));
+        await vm.CheckForUpdateCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
+
+        // Not awaited: if the command waited for the download, it would never finish here.
+        using var _ = vm.ShowUpdateReleaseNotesCommand.Execute().Subscribe();
+
+        (vm.CurrentUpdateState, await vm.ShowUpdateReleaseNotesCommand.CanExecute.FirstAsync(TestContext.Current.CancellationToken))
+            .Should().Be((UpdateState.Downloading, true));
+        pendingDownload.SetResult(await DownloadSucceeded());
+    }
+
+    [Fact]
     public async Task ShowUpdateReleaseNotesCommand_WhenUserCloses_DoesNotDownload()
     {
         var updateService = BuildUpdateService(new UpdateCheckResult(true, "2.1.0", TwoVersionsOfNotes));

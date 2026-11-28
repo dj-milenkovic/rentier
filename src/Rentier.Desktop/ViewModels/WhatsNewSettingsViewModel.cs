@@ -85,7 +85,7 @@ public sealed class WhatsNewSettingsViewModel : ReactiveObject, IActivatableView
         string.Format(_localization[nameof(Strings.WhatsNew_Subheader)], _appVersion.DisplayVersion);
 
     /// <summary>GitHub Releases, for versions older than the notes cover.</summary>
-    public Uri? ReleasesPageUri => ReleasesPage.Uri;
+    public Uri? ReleasesPageUri { get; } = ReleasesPage.Uri;
 
     private async Task LoadAsync()
     {

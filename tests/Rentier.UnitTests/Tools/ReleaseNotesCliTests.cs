@@ -75,8 +75,10 @@ public class ReleaseNotesCliTests
 
     private static readonly Version[] Versions = [new(1, 6, 0), new(1, 5, 0)];
 
-    private static IEnumerable<string> FiveHasNotes(Version v) =>
-        v == new Version(1, 5, 0) ? ["## Release note\nEN: Five\nSR: Pet\n"] : ["chore: Bump x"];
+    private static IEnumerable<PrBody> Prs(params string[] bodies) => bodies.Select((b, i) => new PrBody(i + 1, b));
+
+    private static IEnumerable<PrBody> FiveHasNotes(Version v) =>
+        v == new Version(1, 5, 0) ? Prs("## Release note\nEN: Five\nSR: Pet\n") : Prs("chore: Bump x");
 
     [Fact]
     public void BuildDocument_NewVersionWithoutNotes_StopsTheRelease()
@@ -105,7 +107,7 @@ public class ReleaseNotesCliTests
     public void BuildDocument_OlderVersionWithoutNotes_DoesNotStopTheRelease()
     {
         // An older version without notes was itself released with the override.
-        var exitCode = Cli.BuildDocument(Versions, v => v == new Version(1, 6, 0) ? ["## Release note\nEN: Six\nSR: Šest\n"] : [],
+        var exitCode = Cli.BuildDocument(Versions, v => v == new Version(1, 6, 0) ? Prs("## Release note\nEN: Six\nSR: Šest\n") : [],
             allowNoUserChanges: false, new StringWriter(), out var document);
 
         exitCode.Should().Be(0);
@@ -115,7 +117,7 @@ public class ReleaseNotesCliTests
     [Fact]
     public void BuildDocument_NewVersionWithNotes_Succeeds()
     {
-        var exitCode = Cli.BuildDocument(Versions, _ => ["## Release note\nEN: Note\nSR: Beleška\n"],
+        var exitCode = Cli.BuildDocument(Versions, _ => Prs("## Release note\nEN: Note\nSR: Beleška\n"),
             allowNoUserChanges: false, new StringWriter(), out var document);
 
         exitCode.Should().Be(0);

@@ -39,6 +39,25 @@ public class ReleaseNotesWorkflowContractTests
             "Settings > What's new reads the notes embedded by Rentier.Infrastructure.csproj");
     }
 
+    [Fact]
+    public void EveryPublish_LinksTheReleasesPageOfThisRepository()
+    {
+        var publishes = Commands("dotnet publish ${{ env.PROJECT_PATH }}");
+
+        publishes.Should().OnlyContain(p => p.Contains("-p:RentierReleasesPageUrl=${{ env.REPO_URL }}/releases"),
+            "a fork's build must link its own releases, as its update feed already does");
+    }
+
+    [Fact]
+    public void CollectPrDescriptions_FailedFetch_StopsTheRelease()
+    {
+        var step = Regex.Match(ReleaseWorkflow(), @"- name: Collect PR descriptions\n(?<body>(?:        .*\n|\n)*)").Groups["body"].Value;
+
+        step.Should().NotContain("::warning::Could not read",
+            "a missing description reads as \"no release note\" and would slip past the no-user-facing-changes guard");
+        step.Should().MatchRegex(@"::error::Could not read the description[^\n]*\n\s*exit 1");
+    }
+
     [Theory]
     [InlineData("build-windows")]
     [InlineData("build-macos")]

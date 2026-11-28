@@ -409,8 +409,10 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
             new ReleaseNotesDialogRequest(subheader, notes, OfferUpdate: IsUpdateAvailableState));
 
         // The state may have moved on while the dialog was open; only start from UpdateAvailable.
+        // Started through BeginUpdateCommand rather than awaited here: this command then ends with
+        // the dialog, so "What's new" stays clickable during the download.
         if (updateNow && IsUpdateAvailableState)
-            await RunDownloadUpdateAsync();
+            BeginUpdateCommand.Execute().Subscribe();
     }
 
     private async Task RunDownloadUpdateAsync()

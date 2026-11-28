@@ -95,8 +95,10 @@ internal static class Cli
             var dir = Path.Combine(prDirectory, $"v{version}");
             return Directory.Exists(dir)
                 ? Directory.GetFiles(dir, "*.md")
-                    .OrderBy(f => int.TryParse(Path.GetFileNameWithoutExtension(f), out var n) ? n : int.MaxValue)
-                    .Select(File.ReadAllText)
+                    .Select(f => new PrBody(
+                        int.TryParse(Path.GetFileNameWithoutExtension(f), out var n) ? n : int.MaxValue,
+                        File.ReadAllText(f)))
+                    .OrderBy(p => p.Number)
                 : [];
         }, allowNoUserChanges, output, out var document);
 
@@ -108,7 +110,7 @@ internal static class Cli
     /// <summary>The decision part of <c>build</c>, without file access.</summary>
     internal static int BuildDocument(
         IReadOnlyList<Version> versions,
-        Func<Version, IEnumerable<string>> prBodies,
+        Func<Version, IEnumerable<PrBody>> prBodies,
         bool allowNoUserChanges,
         TextWriter output,
         out string document)

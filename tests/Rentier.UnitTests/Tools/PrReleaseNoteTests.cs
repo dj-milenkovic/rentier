@@ -134,6 +134,22 @@ public class PrReleaseNoteTests
     }
 
     [Fact]
+    public void Parse_OtherHeadingAtLanguageLevelAfterSerbian_EndsTheNote()
+    {
+        var note = PrReleaseNote.Parse("## Release note\n### EN\n- One\n### SR\n- Jedan\n### Screenshots\n- image here\n");
+
+        note.Serbian.Should().Be("- Jedan");
+    }
+
+    [Fact]
+    public void Parse_OtherHeadingAtLanguageLevelAfterEnglish_EndsTheNote()
+    {
+        var note = PrReleaseNote.Parse("## Release note\n### EN\n- One\n### Notes for reviewer\n- check this\n### SR\n- Jedan\n");
+
+        note.English.Should().Be("- One");
+    }
+
+    [Fact]
     public void Parse_CrLfBody_IsNormalised()
     {
         PrReleaseNote.Parse("## Release note\r\nEN: One\r\nSR: Jedan\r\n").English.Should().Be("- One");

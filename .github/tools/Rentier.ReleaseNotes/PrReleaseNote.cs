@@ -18,6 +18,7 @@ namespace Rentier.ReleaseNotes;
 /// GitHub shows an <c>SR:</c> line written right after an English list as part of its last
 /// item. Each language may run over several lines and may be a Markdown list. HTML comments
 /// (the template's hints) are ignored, so an untouched template counts as "no note".
+/// The note ends at the next heading, other than EN / SR, at their level or above.
 /// </summary>
 public sealed partial record PrReleaseNote(bool HasSection, string English, string Serbian)
 {
@@ -67,8 +68,10 @@ public sealed partial record PrReleaseNote(bool HasSection, string English, stri
                 continue;
             }
 
+            // Any other heading at the EN/SR level or above ends the note: for "## Release note",
+            // the next "##" or "###" (e.g. "### Screenshots" or "## Testing").
             var heading = AnyHeading().Match(line);
-            if (heading.Success && heading.Groups["marks"].Length <= level)
+            if (heading.Success && heading.Groups["marks"].Length <= level + 1)
                 break;
 
             var marker = LanguageMarker().Match(line);

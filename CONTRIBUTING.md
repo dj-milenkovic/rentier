@@ -168,7 +168,8 @@ which the PR template provides:
 ```
 
 Keep the `### EN` / `### SR` headings: an `SR:` line written right after an English list shows
-on GitHub as part of the last English bullet.
+on GitHub as part of the last English bullet. The note ends at the next `##` or `###` heading
+(e.g. `## Testing` or `### Screenshots`), so don't use sub-headings inside it.
 
 - Write for users: what they see or can do now, not how it was built. Serbian in Latin script,
   using the app's own words.
@@ -181,6 +182,9 @@ on GitHub as part of the last English bullet.
   needs no note; leave the lines empty.
 - You can still fix a note after merging, until the next release is made: the release workflow
   reads the PR descriptions then.
+- **Reverting a PR before it is released?** Keep the line `Reverts #N` in the revert PR's
+  description (GitHub's **Revert** button writes it). The reverted PR's note is then left out of
+  that release.
 - **A release needs at least one note.** If no PR merged since the last release has one, the
   Auto Release workflow stops before tagging. To release anyway (e.g. a dependency security fix),
   run it with **Release without user-facing changes** ticked; the app then shows "Stability and

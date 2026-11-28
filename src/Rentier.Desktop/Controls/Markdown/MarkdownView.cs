@@ -137,7 +137,7 @@ public sealed class MarkdownView : Decorator
 
         foreach (var item in list.OfType<ListItemBlock>())
         {
-            var marker = list.IsOrdered ? $"{number++}." : (listDepth == 0 ? "•" : "◦");
+            var marker = list.IsOrdered ? $"{number++}." : BulletMarker(listDepth);
             var content = new StackPanel { Spacing = 3 };
             AddBlocks(content, item, depth + 1, listDepth + 1);
 
@@ -150,6 +150,9 @@ public sealed class MarkdownView : Decorator
 
         return panel;
     }
+
+    /// <summary>A filled bullet for top-level lists, a hollow one for nested lists.</summary>
+    private static string BulletMarker(int listDepth) => listDepth == 0 ? "•" : "◦";
 
     private static Border Quote(QuoteBlock quote, int depth, int listDepth)
     {
