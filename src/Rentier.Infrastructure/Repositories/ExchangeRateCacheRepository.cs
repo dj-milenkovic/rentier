@@ -14,7 +14,7 @@ public sealed class ExchangeRateCacheRepository : IExchangeRateCacheRepository
     public async Task<ExchangeRate?> GetAsync(DateOnly date, string currency, CancellationToken ct = default)
     {
         // The context outlives one operation: never serve a rate cached by an earlier call (#119).
-        _db.StartFromCurrentState();
+        _db.ChangeTracker.Clear();
         return await _db.ExchangeRateCache
             .FindAsync(new object[] { date, currency.ToUpperInvariant() }, ct);
     }
@@ -32,7 +32,7 @@ public sealed class ExchangeRateCacheRepository : IExchangeRateCacheRepository
     public async Task SaveAsync(ExchangeRate rate, CancellationToken ct = default)
     {
         var upper = rate.Currency.ToUpperInvariant();
-        _db.StartFromCurrentState();
+        _db.ChangeTracker.Clear();
         var existing = await _db.ExchangeRateCache
             .FindAsync(new object[] { rate.Date, upper }, ct);
         if (existing is not null)
@@ -49,7 +49,7 @@ public sealed class ExchangeRateCacheRepository : IExchangeRateCacheRepository
 
         // SetValues only writes columns that differ from the tracked copy, so that copy must be
         // the database's current row, not one cached by an earlier call (#119).
-        _db.StartFromCurrentState();
+        _db.ChangeTracker.Clear();
 
         // Single query to fetch all existing rows for this date, avoiding N round-trips
         var date = rates[0].Date;

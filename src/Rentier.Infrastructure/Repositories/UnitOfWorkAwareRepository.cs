@@ -39,9 +39,15 @@ public abstract class UnitOfWorkAwareRepository
     /// <list type="bullet">
     /// <item><b>Staging</b>: served from the shared context first, so a change staged earlier in
     /// the same unit of work is visible.</item>
-    /// <item><b>Standalone</b>: the context outlives a single operation, so the row is read
-    /// fresh rather than served from an earlier call's cache — see
-    /// <see cref="StandaloneOperationExtensions"/> (issue #119).</item>
+    /// <item><b>Standalone</b> (the DI registration): the context is transient, but the handler
+    /// owning the repository often lives as long as its page (the Filings page keeps its
+    /// handlers in <c>FilingsHandlers</c>), so the context outlives a single operation.
+    /// <c>FindAsync</c> would return the copy cached by an earlier call even after another
+    /// context changed or deleted the row, and saving it back writes every stale column over
+    /// the newer values (issue #119). Each standalone call is a complete, already-committed
+    /// operation, so clearing the tracker loses nothing pending; the row is then read fresh.
+    /// The other repositories (mailbox, importer, profile, preference, rate cache) clear their
+    /// tracker at the start of each operation for the same reason.</item>
     /// </list>
     /// </summary>
     private protected async Task<TEntity?> FindCurrentAsync<TEntity>(
@@ -49,7 +55,7 @@ public abstract class UnitOfWorkAwareRepository
         where TEntity : class
     {
         if (!IsStaging)
-            Db.StartFromCurrentState();
+            Db.ChangeTracker.Clear();
         return await set.FindAsync(key, ct);
     }
 

@@ -14,7 +14,7 @@ public sealed class UserPreferenceRepository : IUserPreferenceRepository
     public async Task<UserPreference?> GetAsync(string key, CancellationToken ct = default)
     {
         // The context outlives one operation: never serve a copy cached by an earlier call (#119).
-        _db.StartFromCurrentState();
+        _db.ChangeTracker.Clear();
         return await _db.UserPreferences.FindAsync([key], ct);
     }
 
@@ -22,7 +22,7 @@ public sealed class UserPreferenceRepository : IUserPreferenceRepository
     {
         // Decide insert vs update from the database, not from a copy cached by an earlier call,
         // which may be stale or a different instance than the one being saved.
-        _db.StartFromCurrentState();
+        _db.ChangeTracker.Clear();
         var exists = await _db.UserPreferences.AnyAsync(p => p.Key == preference.Key, ct);
         if (!exists)
             _db.UserPreferences.Add(preference);

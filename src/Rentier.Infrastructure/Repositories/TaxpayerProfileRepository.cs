@@ -18,7 +18,7 @@ public sealed class TaxpayerProfileRepository : ITaxpayerProfileRepository
     {
         // A tracking query returns an instance cached by an earlier call without refreshing its
         // values, and the context outlives one operation, so start from the current state (#119).
-        _db.StartFromCurrentState();
+        _db.ChangeTracker.Clear();
         return await _db.TaxpayerProfiles.FirstOrDefaultAsync(ct);
     }
 
@@ -26,7 +26,7 @@ public sealed class TaxpayerProfileRepository : ITaxpayerProfileRepository
     {
         // Forget any copy cached by an earlier call so Update on the incoming instance
         // doesn't trigger a tracking conflict.
-        _db.StartFromCurrentState();
+        _db.ChangeTracker.Clear();
 
         bool exists = await _db.TaxpayerProfiles.AnyAsync(ct);
         if (!exists)

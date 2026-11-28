@@ -17,7 +17,7 @@ public sealed class MailboxRepository : IMailboxRepository
     public async Task<Mailbox?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
         // The context outlives one operation: never serve a copy cached by an earlier call (#119).
-        _db.StartFromCurrentState();
+        _db.ChangeTracker.Clear();
         return await _db.Mailboxes.FindAsync([id], ct);
     }
 
@@ -36,14 +36,14 @@ public sealed class MailboxRepository : IMailboxRepository
     public async Task UpdateAsync(Mailbox mailbox, CancellationToken ct = default)
     {
         // Forget any copy cached by an earlier call so it can't conflict with the incoming one.
-        _db.StartFromCurrentState();
+        _db.ChangeTracker.Clear();
         _db.Mailboxes.Update(mailbox);
         await _db.SaveChangesAsync(ct);
     }
 
     public async Task DeleteAsync(Guid id, CancellationToken ct = default)
     {
-        _db.StartFromCurrentState();
+        _db.ChangeTracker.Clear();
         var entity = await _db.Mailboxes.FindAsync([id], ct);
         if (entity is not null)
         {
