@@ -24,7 +24,7 @@ public sealed class ReportRepository : UnitOfWorkAwareRepository, IReportReposit
     }
 
     public async Task<Report?> GetByIdAsync(Guid id, CancellationToken ct = default)
-        => await Db.Reports.FindAsync([id], ct);
+        => await FindCurrentAsync(Db.Reports, [id], ct);
 
     public async Task<IReadOnlyList<Report>> GetAllAsync(bool sortDescending = true, CancellationToken ct = default)
     {
@@ -88,7 +88,7 @@ public sealed class ReportRepository : UnitOfWorkAwareRepository, IReportReposit
 
     public async Task DeleteAsync(Guid id, CancellationToken ct = default)
     {
-        var entity = await Db.Reports.FindAsync([id], ct);
+        var entity = await FindCurrentAsync(Db.Reports, [id], ct);
         if (entity is not null)
         {
             Db.Reports.Remove(entity);

@@ -103,4 +103,43 @@ public class UserPreferenceRepositoryTests : IAsyncLifetime
         lang!.Value.Should().Be("en");
         theme!.Value.Should().Be("Dark");
     }
+
+    // ── Long-lived repository (issue #119) ──────────────────────────────────
+    // Pages keep their handlers — and the context behind each repository — for as long as they
+    // are open, so a repository must never serve a copy cached by one of its earlier calls.
+
+    private AppDbContext CreateOtherContext()
+        => new(new DbContextOptionsBuilder<AppDbContext>().UseSqlite(_connection).Options);
+
+    [Fact]
+    public async Task GetAsync_ValueSavedThroughAnotherContext_ReturnsCurrentValue()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await _repository.SaveAsync(new UserPreference("Language", "en"), ct);
+        await _repository.GetAsync("Language", ct); // cache the old copy in this context
+        await using var otherContext = CreateOtherContext();
+        var other = new UserPreferenceRepository(otherContext);
+        var changed = (await other.GetAsync("Language", ct))!;
+        changed.UpdateValue("sr");
+        await other.SaveAsync(changed, ct);
+
+        var result = await _repository.GetAsync("Language", ct);
+
+        result!.Value.Should().Be("sr");
+    }
+
+    [Fact]
+    public async Task SaveAsync_RowDeletedThroughAnotherContext_InsertsItAgain()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var preference = new UserPreference("Language", "en");
+        await _repository.SaveAsync(preference, ct);
+        await using var otherContext = CreateOtherContext();
+        await otherContext.UserPreferences.ExecuteDeleteAsync(ct);
+
+        await _repository.SaveAsync(new UserPreference("Language", "sr"), ct);
+
+        var stored = await otherContext.UserPreferences.AsNoTracking().SingleAsync(ct);
+        stored.Value.Should().Be("sr");
+    }
 }

@@ -81,4 +81,25 @@ public class TaxpayerProfileRepositoryTests : IAsyncLifetime
         var result = await _repository.GetAsync(TestContext.Current.CancellationToken);
         result.Should().BeNull();
     }
+
+    // ── Long-lived repository (issue #119) ──────────────────────────────────
+    // Pages keep their handlers — and the context behind each repository — for as long as they
+    // are open, so a repository must never serve a copy cached by one of its earlier calls.
+
+    [Fact]
+    public async Task GetAsync_ProfileSavedThroughAnotherContext_ReturnsCurrentValues()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var id = Guid.NewGuid();
+        await _repository.SaveAsync(new TaxpayerProfile(id, "1234567890123", "Old Name", "Old Addr", "049"), ct);
+        await _repository.GetAsync(ct); // cache the old copy in this context
+        await using var otherContext = new AppDbContext(
+            new DbContextOptionsBuilder<AppDbContext>().UseSqlite(_connection).Options);
+        await new TaxpayerProfileRepository(otherContext).SaveAsync(
+            new TaxpayerProfile(id, "1234567890123", "New Name", "New Addr", "049"), ct);
+
+        var result = await _repository.GetAsync(ct);
+
+        result!.Address.Should().Be("New Addr");
+    }
 }

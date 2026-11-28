@@ -85,4 +85,3 @@ Apply changes systematically, testing after each modification.
   never introduce a cross-layer dependency violation (e.g. EF Core leaking into Domain).
 - Preserve the absolute rules: `decimal` for money, `DateOnly` for dates, fully async
   I/O, `Result<T, Error>` from Infrastructure. Do not "modernize" these away.
-- Run `dotnet format Rentier.slnx --verify-no-changes` after formatting-related cleanup.

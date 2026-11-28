@@ -12,8 +12,12 @@ public sealed class ExchangeRateCacheRepository : IExchangeRateCacheRepository
     public ExchangeRateCacheRepository(AppDbContext db) => _db = db;
 
     public async Task<ExchangeRate?> GetAsync(DateOnly date, string currency, CancellationToken ct = default)
-        => await _db.ExchangeRateCache
+    {
+        // The context outlives one operation: never serve a rate cached by an earlier call (#119).
+        _db.ChangeTracker.Clear();
+        return await _db.ExchangeRateCache
             .FindAsync(new object[] { date, currency.ToUpperInvariant() }, ct);
+    }
 
     public async Task<IReadOnlyList<ExchangeRate>> GetByDateRangeAsync(
         DateOnly from, DateOnly to, string currency, CancellationToken ct = default)
@@ -28,6 +32,7 @@ public sealed class ExchangeRateCacheRepository : IExchangeRateCacheRepository
     public async Task SaveAsync(ExchangeRate rate, CancellationToken ct = default)
     {
         var upper = rate.Currency.ToUpperInvariant();
+        _db.ChangeTracker.Clear();
         var existing = await _db.ExchangeRateCache
             .FindAsync(new object[] { rate.Date, upper }, ct);
         if (existing is not null)
@@ -41,6 +46,10 @@ public sealed class ExchangeRateCacheRepository : IExchangeRateCacheRepository
     public async Task SaveBatchAsync(IReadOnlyList<ExchangeRate> rates, CancellationToken ct = default)
     {
         if (rates.Count == 0) return;
+
+        // SetValues only writes columns that differ from the tracked copy, so that copy must be
+        // the database's current row, not one cached by an earlier call (#119).
+        _db.ChangeTracker.Clear();
 
         // Single query to fetch all existing rows for this date, avoiding N round-trips
         var date = rates[0].Date;

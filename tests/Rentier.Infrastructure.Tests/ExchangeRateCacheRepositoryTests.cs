@@ -157,4 +157,71 @@ public class ExchangeRateCacheRepositoryTests
             result!.Currency.Should().Be("EUR");
         }
     }
+
+    // ── Long-lived repository (issue #119) ──────────────────────────────────
+    // Handlers keep their repositories — and the context behind each — for as long as their page
+    // is open, so a repository must never act on a copy cached by one of its earlier calls.
+
+    private static AppDbContext CreateOtherContext(SqliteConnection conn)
+        => new(new DbContextOptionsBuilder<AppDbContext>().UseSqlite(conn).Options);
+
+    [Fact]
+    public async Task GetAsync_RateChangedThroughAnotherContext_ReturnsCurrentRate()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (db, conn) = await CreateDbAsync();
+        await using (db) await using (conn)
+        {
+            var repo = new ExchangeRateCacheRepository(db);
+            var date = new DateOnly(2024, 1, 15);
+            await repo.SaveAsync(new ExchangeRate(date, "EUR", 117.0000m), ct);
+            await using var otherContext = CreateOtherContext(conn);
+            await new ExchangeRateCacheRepository(otherContext).SaveAsync(new ExchangeRate(date, "EUR", 117.5952m), ct);
+
+            var result = await repo.GetAsync(date, "EUR", ct);
+
+            result!.RateToRsd.Should().Be(117.5952m);
+        }
+    }
+
+    [Fact]
+    public async Task SaveBatchAsync_RateChangedThroughAnotherContext_WritesTheNewRate()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (db, conn) = await CreateDbAsync();
+        await using (db) await using (conn)
+        {
+            var repo = new ExchangeRateCacheRepository(db);
+            var date = new DateOnly(2024, 1, 15);
+            await repo.SaveBatchAsync([new ExchangeRate(date, "EUR", 117.5952m)], ct);
+            await using var otherContext = CreateOtherContext(conn);
+            await new ExchangeRateCacheRepository(otherContext).SaveAsync(new ExchangeRate(date, "EUR", 1m), ct);
+
+            // Same value this context cached earlier: it must still be written over the newer row.
+            await repo.SaveBatchAsync([new ExchangeRate(date, "EUR", 117.5952m)], ct);
+
+            var stored = await otherContext.ExchangeRateCache.AsNoTracking().SingleAsync(ct);
+            stored.RateToRsd.Should().Be(117.5952m);
+        }
+    }
+
+    [Fact]
+    public async Task SaveAsync_RowDeletedThroughAnotherContext_InsertsItAgain()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (db, conn) = await CreateDbAsync();
+        await using (db) await using (conn)
+        {
+            var repo = new ExchangeRateCacheRepository(db);
+            var date = new DateOnly(2024, 1, 15);
+            await repo.SaveAsync(new ExchangeRate(date, "EUR", 117.0000m), ct);
+            await using var otherContext = CreateOtherContext(conn);
+            await otherContext.ExchangeRateCache.ExecuteDeleteAsync(ct);
+
+            await repo.SaveAsync(new ExchangeRate(date, "EUR", 117.5952m), ct);
+
+            var stored = await otherContext.ExchangeRateCache.AsNoTracking().SingleAsync(ct);
+            stored.RateToRsd.Should().Be(117.5952m);
+        }
+    }
 }

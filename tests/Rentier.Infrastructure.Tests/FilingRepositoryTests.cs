@@ -90,6 +90,75 @@ public class FilingRepositoryTests : IAsyncLifetime
         result.Should().BeNull();
     }
 
+    // ── Long-lived repository (issue #119) ──────────────────────────────────
+    // The Filings page keeps its handlers — and the context behind each repository — for as long
+    // as it is open, so a repository must never serve a copy cached by one of its earlier calls.
+
+    private async Task<(Filing Filing, FilingRepository Other, AppDbContext OtherContext)> SeedFiledWithSecondRepositoryAsync()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var profile = MakeProfile();
+        await _context.TaxpayerProfiles.AddAsync(profile, ct);
+        await _context.SaveChangesAsync(ct);
+        var filing = MakeFiling(profile.Id);
+        filing.AdvanceStatus(FilingStatus.Filed);
+        await _repository.AddAsync(filing, ct);
+
+        var otherContext = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseSqlite(_connection).Options);
+        return (filing, new FilingRepository(otherContext), otherContext);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_RowChangedThroughAnotherContext_ReturnsCurrentValues()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (filing, other, otherContext) = await SeedFiledWithSecondRepositoryAsync();
+        await using var _ = otherContext;
+        await _repository.GetByIdAsync(filing.Id, ct); // cache the Filed copy in this context
+        var paid = (await other.GetByIdAsync(filing.Id, ct))!;
+        paid.AdvanceStatus(FilingStatus.Paid);
+        await other.UpdateAsync(paid, ct);
+
+        var result = await _repository.GetByIdAsync(filing.Id, ct);
+
+        result!.Status.Should().Be(FilingStatus.Paid);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_AfterAnotherContextChangedTheStatus_DoesNotRevertIt()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (filing, other, otherContext) = await SeedFiledWithSecondRepositoryAsync();
+        await using var _ = otherContext;
+        await _repository.GetByIdAsync(filing.Id, ct); // cache the Filed copy in this context
+        var paid = (await other.GetByIdAsync(filing.Id, ct))!;
+        paid.AdvanceStatus(FilingStatus.Paid);
+        await other.UpdateAsync(paid, ct);
+
+        var current = (await _repository.GetByIdAsync(filing.Id, ct))!;
+        current.SetPaymentReference("97 1234");
+        await _repository.UpdateAsync(current, ct);
+
+        await using var freshContext = new AppDbContext(
+            new DbContextOptionsBuilder<AppDbContext>().UseSqlite(_connection).Options);
+        var stored = await freshContext.Filings.AsNoTracking().SingleAsync(f => f.Id == filing.Id, ct);
+        stored.Status.Should().Be(FilingStatus.Paid);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_RowDeletedThroughAnotherContext_ReturnsNull()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (filing, other, otherContext) = await SeedFiledWithSecondRepositoryAsync();
+        await using var _ = otherContext;
+        await _repository.GetByIdAsync(filing.Id, ct); // cache the copy in this context
+        await other.DeleteAsync(filing.Id, ct);
+
+        var result = await _repository.GetByIdAsync(filing.Id, ct);
+
+        result.Should().BeNull();
+    }
+
     [Fact]
     public async Task GetByIncomeEventAsync_EntityDiffersOnlyInCase_ReturnsFiling()
     {

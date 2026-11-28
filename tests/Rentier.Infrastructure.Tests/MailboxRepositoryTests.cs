@@ -2,6 +2,7 @@ using FluentAssertions;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Rentier.Domain.Entities;
+using Rentier.Domain.ValueObjects;
 using Rentier.Infrastructure.Persistence;
 using Rentier.Infrastructure.Repositories;
 using Rentier.Tests.Common.Fakes;
@@ -108,5 +109,44 @@ public class MailboxRepositoryTests : IAsyncLifetime
     {
         var act = async () => await _repository.DeleteAsync(Guid.NewGuid());
         await act.Should().NotThrowAsync();
+    }
+
+    // ── Long-lived repository (issue #119) ──────────────────────────────────
+    // Pages keep their handlers — and the context behind each repository — for as long as they
+    // are open, so a repository must never serve a copy cached by one of its earlier calls.
+
+    private AppDbContext CreateOtherContext()
+        => new(new DbContextOptionsBuilder<AppDbContext>().UseSqlite(_connection).Options);
+
+    [Fact]
+    public async Task GetByIdAsync_CursorAdvancedThroughAnotherContext_ReturnsCurrentCursor()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var mailbox = MakeMailbox();
+        await _repository.AddAsync(mailbox, ct);
+        await using var otherContext = CreateOtherContext();
+        var other = new MailboxRepository(otherContext);
+        var advanced = (await other.GetByIdAsync(mailbox.Id, ct))!;
+        var cursor = new MailboxCursor.SyncedTo(new DateOnly(2024, 6, 1), 42L);
+        advanced.UpdateCursor(cursor);
+        await other.UpdateAsync(advanced, ct);
+
+        var result = await _repository.GetByIdAsync(mailbox.Id, ct);
+
+        result!.Cursor.Should().Be(cursor);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_RowDeletedThroughAnotherContext_ReturnsNull()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var mailbox = MakeMailbox();
+        await _repository.AddAsync(mailbox, ct);
+        await using var otherContext = CreateOtherContext();
+        await new MailboxRepository(otherContext).DeleteAsync(mailbox.Id, ct);
+
+        var result = await _repository.GetByIdAsync(mailbox.Id, ct);
+
+        result.Should().BeNull();
     }
 }

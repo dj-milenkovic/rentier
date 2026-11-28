@@ -181,5 +181,7 @@ covered by `.claude/skills/rentier-ui-tests` — use it for any ViewModel change
 ```bash
 dotnet build Rentier.slnx --no-restore -c Release
 dotnet test Rentier.slnx --filter "Category!=Integration"
-dotnet format Rentier.slnx --no-restore --verify-no-changes
 ```
+
+Formatting is checked by the `format-gate` hook when you commit (fix with
+`dotnet format Rentier.slnx --no-restore`).

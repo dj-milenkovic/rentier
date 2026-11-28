@@ -84,9 +84,11 @@ confirmation, which you'll skip.
 ```bash
 dotnet build Rentier.slnx --no-restore -c Release
 dotnet test Rentier.slnx --filter "Category!=Integration"
-dotnet format Rentier.slnx --no-restore --verify-no-changes
 dotnet list Rentier.slnx package --vulnerable --include-transitive
 ```
+
+Formatting is checked by the `format-gate` hook when you commit (fix with
+`dotnet format Rentier.slnx --no-restore`).
 
 ## References
 
