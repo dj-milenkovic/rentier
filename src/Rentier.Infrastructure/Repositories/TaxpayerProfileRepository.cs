@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using Rentier.Application.Repositories;
 using Rentier.Domain.Entities;
 using Rentier.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace Rentier.Infrastructure.Repositories;
 
@@ -17,18 +16,17 @@ public sealed class TaxpayerProfileRepository : ITaxpayerProfileRepository
 
     public async Task<TaxpayerProfile?> GetAsync(CancellationToken ct = default)
     {
+        // A tracking query returns an instance cached by an earlier call without refreshing its
+        // values, and the context outlives one operation, so start from the current state (#119).
+        _db.StartFromCurrentState();
         return await _db.TaxpayerProfiles.FirstOrDefaultAsync(ct);
     }
 
     public async Task SaveAsync(TaxpayerProfile profile, CancellationToken ct = default)
     {
-        // Detach any stale tracked instance with the same primary key so that
-        // Update on the incoming (new) instance doesn't trigger a tracking conflict.
-        EntityEntry<TaxpayerProfile>? tracked = _db.ChangeTracker
-            .Entries<TaxpayerProfile>()
-            .FirstOrDefault(e => e.Entity.Id == profile.Id);
-        if (tracked is not null)
-            tracked.State = EntityState.Detached;
+        // Forget any copy cached by an earlier call so Update on the incoming instance
+        // doesn't trigger a tracking conflict.
+        _db.StartFromCurrentState();
 
         bool exists = await _db.TaxpayerProfiles.AnyAsync(ct);
         if (!exists)

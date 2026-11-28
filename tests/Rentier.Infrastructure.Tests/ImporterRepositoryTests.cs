@@ -120,4 +120,43 @@ public sealed class ImporterRepositoryTests : IAsyncLifetime
         var act = async () => await _repository.DeleteAsync(Guid.NewGuid());
         await act.Should().NotThrowAsync();
     }
+
+    // ── Long-lived repository (issue #119) ──────────────────────────────────
+    // Pages keep their handlers — and the context behind each repository — for as long as they
+    // are open, so a repository must never serve a copy cached by one of its earlier calls.
+
+    private AppDbContext CreateOtherContext()
+        => new(new DbContextOptionsBuilder<AppDbContext>().UseSqlite(_connection).Options);
+
+    [Fact]
+    public async Task GetByIdAsync_UpdatedThroughAnotherContext_ReturnsCurrentValues()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var importer = MakeImporter();
+        await _repository.AddAsync(importer, ct);
+        await using var otherContext = CreateOtherContext();
+        var other = new ImporterRepository(otherContext);
+        var edited = (await other.GetByIdAsync(importer.Id, ct))!;
+        edited.UpdateDetails(new ImporterDetails(
+            "Renamed", ReportType.IbkrCsv, null, null, string.Empty, string.Empty, string.Empty, "New notes"));
+        await other.UpdateAsync(edited, ct);
+
+        var result = await _repository.GetByIdAsync(importer.Id, ct);
+
+        result!.PaymentNotes.Should().Be("New notes");
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_RowDeletedThroughAnotherContext_ReturnsNull()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var importer = MakeImporter();
+        await _repository.AddAsync(importer, ct);
+        await using var otherContext = CreateOtherContext();
+        await new ImporterRepository(otherContext).DeleteAsync(importer.Id, ct);
+
+        var result = await _repository.GetByIdAsync(importer.Id, ct);
+
+        result.Should().BeNull();
+    }
 }
