@@ -5,8 +5,8 @@
 # fast per-edit. Whitespace rules cover the most common format failures; the
 # full `dotnet format Rentier.slnx` (style + analyzers) remains the CI authority.
 #
-# Requires PowerShell 7+ (pwsh). If pwsh or dotnet is missing, the hook fails
-# open (exit 0) — formatting is then caught by CI instead of blocking edits.
+# Requires PowerShell 7+ (pwsh; a missing pwsh surfaces as a hook "command not found"
+# error). If dotnet is missing, the hook warns on stderr and fails open (exit 0) — formatting is then caught by CI instead of blocking edits.
 
 $payload = [Console]::In.ReadToEnd()
 try { $json = $payload | ConvertFrom-Json } catch { exit 0 }
@@ -16,6 +16,11 @@ if (-not $file -or [System.IO.Path]::GetExtension($file) -ne '.cs') { exit 0 }
 # Never touch EF migrations (forward-only, never edited) or build output.
 if ($file -match '[\\/](Migrations|obj|bin)[\\/]') { exit 0 }
 if (-not (Test-Path -LiteralPath $file)) { exit 0 }
+
+if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {
+    [Console]::Error.WriteLine('format-on-edit skipped: `dotnet` was not found on PATH.')
+    exit 0
+}
 
 $dir = Split-Path -Path $file -Parent
 $name = Split-Path -Path $file -Leaf

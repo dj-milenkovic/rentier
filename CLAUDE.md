@@ -101,6 +101,11 @@ When implementing a feature, create:
 - Before changing tax computation, deadlines, exchange-rate handling, or PP-OPO XML,
   consult `.claude/skills/rentier-tax-rules` — it documents the rules as implemented.
 
+## Hooks
+
+`.claude/hooks/*.ps1` are cross-platform (Windows/Linux/macOS) and run with `pwsh` (PowerShell 7+) — never `powershell`.
+Hooks fail open (exit 0) but must never fail silently: print a warning when a required tool is missing.
+
 ## Graphify
 
 `graphify-out/` holds a per-checkout knowledge graph, kept current by
