@@ -21,10 +21,11 @@
 
       <!-- No-profile info callout (blue, informational) -->
       <Border IsVisible="{Binding HasNoProfile}"
-              Background="#EFF6FF" BorderBrush="#3B82F6" BorderThickness="1"
-              CornerRadius="4" Padding="12,10">
+              Background="{DynamicResource RentierInfoBackgroundBrush}"
+              BorderBrush="{DynamicResource RentierAccentBrush}" BorderThickness="1"
+              CornerRadius="{StaticResource RentierControlCornerRadius}" Padding="12,10">
         <TextBlock Text="{Binding [ManualFiling_Error_NoProfile], Source={StaticResource Localizer}}"
-                   Foreground="#1D4ED8" TextWrapping="Wrap" />
+                   Foreground="{DynamicResource RentierInfoForegroundBrush}" TextWrapping="Wrap" />
       </Border>
 
       <!-- Error banner (real errors only, not no-profile) -->
@@ -34,7 +35,7 @@
           <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
         <TextBlock Grid.Column="0" Text="{Binding ErrorMessage}"
-                   Foreground="Red" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,4" />
+                   Foreground="{DynamicResource RentierDangerForegroundBrush}" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,4" />
         <Button Grid.Column="1" Content="{Binding [Filings_Error_Dismiss], Source={StaticResource Localizer}}"
                 Command="{Binding ClearErrorCommand}" VerticalAlignment="Center" Margin="4,0,0,0" />
       </Grid>

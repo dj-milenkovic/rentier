@@ -16,7 +16,7 @@
     <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="4" Margin="8,8,8,2">
       <TextBlock Text="{Binding [Settings_Holidays_TabHeader], Source={StaticResource Localizer}}"
                  FontWeight="SemiBold" FontSize="14" />
-      <TextBlock Text="*" Foreground="OrangeRed" FontWeight="Bold"
+      <TextBlock Text="*" Foreground="{DynamicResource RentierWarningForegroundBrush}" FontWeight="Bold"
                  IsVisible="{Binding HasUnsavedChanges}"
                  ToolTip.Tip="{Binding [Holidays_UnsavedChanges_Label], Source={StaticResource Localizer}}" />
     </StackPanel>
@@ -36,7 +36,7 @@
     <TextBlock DockPanel.Dock="Top"
                Text="{Binding YearRangeValidationMessage}"
                IsVisible="{Binding YearRangeValidationMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-               Foreground="Red" FontSize="11" Margin="8,0,8,4" />
+               Foreground="{DynamicResource RentierDangerForegroundBrush}" FontSize="11" Margin="8,0,8,4" />
     <TextBlock DockPanel.Dock="Top"
                Text="{Binding [Holidays_YearRange_HelperText], Source={StaticResource Localizer}}"
                Margin="8,0,8,4" Opacity="0.6" FontSize="11" TextWrapping="Wrap" />
@@ -46,8 +46,8 @@
                IsVisible="{Binding IsFilteredEmpty}"
                HorizontalAlignment="Center" Opacity="0.6" Margin="8,16" />
     <StackPanel DockPanel.Dock="Bottom" Margin="8,4">
-      <TextBlock Text="{Binding ErrorMessage}" IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" Foreground="Red" />
-      <TextBlock Text="{Binding SuccessMessage}" IsVisible="{Binding SuccessMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" Foreground="Green" />
+      <TextBlock Text="{Binding ErrorMessage}" IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" Foreground="{DynamicResource RentierDangerForegroundBrush}" />
+      <TextBlock Text="{Binding SuccessMessage}" IsVisible="{Binding SuccessMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" Foreground="{DynamicResource RentierSuccessForegroundBrush}" />
       <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsLoading}" />
     </StackPanel>
     <TextBlock DockPanel.Dock="Top"
@@ -57,7 +57,7 @@
                Opacity="0.6" Margin="8,16" />
     <DataGrid x:Name="HolidaysGrid" ItemsSource="{Binding FilteredEntries}" SelectedItem="{Binding SelectedEntry, Mode=TwoWay}" AutoGenerateColumns="False" Margin="8,4">
       <DataGrid.Columns>
-        <DataGridTemplateColumn Header="{Binding [Holidays_Date_Column], Source={StaticResource Localizer}}" Width="*">
+        <DataGridTemplateColumn Header="{Binding [Holidays_Date_Column], Source={StaticResource Localizer}}" Width="140" MinWidth="120">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <TextBlock Text="{Binding Date, Converter={StaticResource DateOnlyConverter}}" VerticalAlignment="Center" Margin="4,0" />
@@ -69,7 +69,7 @@
             </DataTemplate>
           </DataGridTemplateColumn.CellEditingTemplate>
         </DataGridTemplateColumn>
-        <DataGridTextColumn Header="{Binding [Holidays_Name_Column], Source={StaticResource Localizer}}" Binding="{Binding Name}" Width="2*" />
+        <DataGridTextColumn Header="{Binding [Holidays_Name_Column], Source={StaticResource Localizer}}" Binding="{Binding Name}" Width="*" MinWidth="200" />
       </DataGrid.Columns>
     </DataGrid>
   </DockPanel>

@@ -14,11 +14,11 @@ public sealed class NullableReportStatusConverter : IValueConverter
     {
         return value switch
         {
-            null => Strings.Reports_Filter_Status_All,
-            ReportStatus.Init => Strings.ReportStatus_Init,
-            ReportStatus.Processed => Strings.ReportStatus_Processed,
-            ReportStatus.PartialError => Strings.ReportStatus_PartialError,
-            ReportStatus.Error => Strings.ReportStatus_Error,
+            null => LocalizedText.Get(nameof(Strings.Reports_Filter_Status_All)),
+            ReportStatus.Init => LocalizedText.Get(nameof(Strings.ReportStatus_Init)),
+            ReportStatus.Processed => LocalizedText.Get(nameof(Strings.ReportStatus_Processed)),
+            ReportStatus.PartialError => LocalizedText.Get(nameof(Strings.ReportStatus_PartialError)),
+            ReportStatus.Error => LocalizedText.Get(nameof(Strings.ReportStatus_Error)),
             _ => value.ToString()
         };
     }

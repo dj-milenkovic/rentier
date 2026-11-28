@@ -3,8 +3,8 @@ using ReactiveUI.Primitives;
 using ReactiveUI.Primitives.Extensions;
 using ReactiveUI;
 using Rentier.Application.DTOs;
-using Rentier.Desktop.Extensions;
 using Rentier.Desktop.Resources;
+using Rentier.Desktop.Services;
 using Rentier.Domain.Enums;
 using Rentier.Domain.Services;
 
@@ -42,7 +42,11 @@ public sealed class FilingRowViewModel : ReactiveObject, ISelectableRow
         TaxPayable.ToString("N2", CultureInfo.InvariantCulture) + " RSD";
 
     /// <summary>Localised display label for the current status (used by the read-only badge).</summary>
-    public string StatusDisplayText => Status.ToDisplayString();
+    public string StatusDisplayText => StatusText(Status);
+
+    private readonly ILocalizationService _loc;
+
+    private string StatusText(FilingStatus status) => _loc["FilingStatus_" + status];
 
     /// <summary>
     /// Payment reference is editable once the filing is Filed, and stays editable in Paid so a
@@ -60,8 +64,8 @@ public sealed class FilingRowViewModel : ReactiveObject, ISelectableRow
 
     /// <summary>Tooltip text for the advance-status button.</summary>
     public string AdvanceStatusTooltip => HasNextStatus
-        ? string.Format(Strings.Filings_Tooltip_AdvanceStatus, AvailableNextStatuses[0].ToDisplayString())
-        : Strings.Filings_Tooltip_AdvanceStatus_None;
+        ? string.Format(_loc[nameof(Strings.Filings_Tooltip_AdvanceStatus)], StatusText(AvailableNextStatuses[0]))
+        : _loc[nameof(Strings.Filings_Tooltip_AdvanceStatus_None)];
 
     /// <summary>Per-row command to advance this filing to its next status.</summary>
     public ReactiveCommand<RxVoid, RxVoid> AdvanceStatusCommand { get; }
@@ -76,8 +80,10 @@ public sealed class FilingRowViewModel : ReactiveObject, ISelectableRow
         FilingRowDto dto,
         Action<(Guid Id, FilingStatus NewStatus)> advanceStatus,
         Action<Guid> export,
-        Action<Guid> delete)
+        Action<Guid> delete,
+        ILocalizationService localization)
     {
+        _loc = localization;
         Id = dto.Id;
         Status = dto.Status;
         IncomeType = dto.IncomeType;
@@ -98,5 +104,7 @@ public sealed class FilingRowViewModel : ReactiveObject, ISelectableRow
         FilingRowDto dto,
         Action<(Guid Id, FilingStatus NewStatus)> advanceStatus,
         Action<Guid> export,
-        Action<Guid> delete) => new(dto, advanceStatus, export, delete);
+        Action<Guid> delete,
+        ILocalizationService? localization = null) =>
+        new(dto, advanceStatus, export, delete, localization ?? LocalizationService.CreateEnglish());
 }

@@ -29,9 +29,9 @@ public sealed class ReportsViewModel : PagedSelectionViewModelBase<ReportRowView
     public TextFilterFlyoutViewModel FilingCountFilter { get; }
     public EnumFilterFlyoutViewModel<ReportStatus> StatusFilter { get; }
 
-    protected override string PageIndicatorFormat => Strings.Reports_Page_Indicator;
-    protected override string DeleteConfirmButtonText => Strings.Reports_Delete_Confirm_Button;
-    protected override string DeleteCancelButtonText => Strings.Reports_Delete_Cancel_Button;
+    protected override string PageIndicatorFormat => T(nameof(Strings.Reports_Page_Indicator));
+    protected override string DeleteConfirmButtonText => T(nameof(Strings.Reports_Delete_Confirm_Button));
+    protected override string DeleteCancelButtonText => T(nameof(Strings.Reports_Delete_Cancel_Button));
 
     /// <summary>When true, reports are sorted newest-first. Changing this property resets the page to 1.</summary>
     public bool SortDescending
@@ -60,7 +60,8 @@ public sealed class ReportsViewModel : PagedSelectionViewModelBase<ReportRowView
         IConfirmationService confirmation,
         IReportImportDialogService importDialog,
         INavigationService navigation,
-        ISequencer? scheduler = null) : base(confirmation, scheduler ?? RxSchedulers.MainThreadScheduler)
+        ISequencer? scheduler = null,
+        ILocalizationService? localization = null) : base(confirmation, scheduler ?? RxSchedulers.MainThreadScheduler, localization)
     {
         _handlers = handlers;
         _importDialog = importDialog;
@@ -72,10 +73,10 @@ public sealed class ReportsViewModel : PagedSelectionViewModelBase<ReportRowView
         FilingCountFilter = new TextFilterFlyoutViewModel();
         StatusFilter = new EnumFilterFlyoutViewModel<ReportStatus>(new[]
         {
-            new CheckableItem<ReportStatus>(Strings.Filter_StatusInit ?? "Init", ReportStatus.Init),
-            new CheckableItem<ReportStatus>("Processed", ReportStatus.Processed),
-            new CheckableItem<ReportStatus>("Error", ReportStatus.Error),
-            new CheckableItem<ReportStatus>("Partial Error", ReportStatus.PartialError),
+            new CheckableItem<ReportStatus>(T(nameof(Strings.ReportStatus_Init)), ReportStatus.Init),
+            new CheckableItem<ReportStatus>(T(nameof(Strings.ReportStatus_Processed)), ReportStatus.Processed),
+            new CheckableItem<ReportStatus>(T(nameof(Strings.ReportStatus_Error)), ReportStatus.Error),
+            new CheckableItem<ReportStatus>(T(nameof(Strings.ReportStatus_PartialError)), ReportStatus.PartialError),
         });
         RegisterFilters(
             NameFilter, ImporterFilter, ImportDateFilter, EmailDateFilter, FilingCountFilter, StatusFilter);
@@ -177,8 +178,8 @@ public sealed class ReportsViewModel : PagedSelectionViewModelBase<ReportRowView
     {
         var visibleCount = Rows.Count;
         var confirmed = await ConfirmDeleteAsync(
-            Strings.Reports_Delete_Confirmation_Title,
-            Strings.Reports_Delete_Confirmation_Message);
+            T(nameof(Strings.Reports_Delete_Confirmation_Title)),
+            T(nameof(Strings.Reports_Delete_Confirmation_Message)));
         if (!confirmed)
             return;
 
@@ -211,8 +212,8 @@ public sealed class ReportsViewModel : PagedSelectionViewModelBase<ReportRowView
         if (selectedIds.Count == 0) return;
 
         var message = string.Format(
-            Strings.BulkDelete_Reports_Confirmation_Message, selectedIds.Count);
-        if (!await ConfirmDeleteAsync(Strings.BulkDelete_Reports_Confirmation_Title, message))
+            T(nameof(Strings.BulkDelete_Reports_Confirmation_Message)), selectedIds.Count);
+        if (!await ConfirmDeleteAsync(T(nameof(Strings.BulkDelete_Reports_Confirmation_Title)), message))
             return;
 
         var result = await _handlers.BulkDeleteReports.HandleAsync(
@@ -220,7 +221,7 @@ public sealed class ReportsViewModel : PagedSelectionViewModelBase<ReportRowView
 
         if (!result.IsSuccess)
         {
-            ErrorMessage = Strings.BulkDelete_Error_Failed;
+            ErrorMessage = T(nameof(Strings.BulkDelete_Error_Failed));
             return;
         }
 

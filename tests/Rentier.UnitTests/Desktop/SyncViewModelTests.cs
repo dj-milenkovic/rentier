@@ -1,3 +1,5 @@
+using Rentier.Desktop.Services;
+using Rentier.Desktop.Resources;
 using ReactiveUI.Primitives.Concurrency;
 using ReactiveUI.Primitives;
 using FluentAssertions;
@@ -33,11 +35,20 @@ public class SyncViewModelTests
 
     private static SyncViewModel CreateVm(
         ISyncAllCommandHandler? handler = null,
-        TimeProvider? timeProvider = null)
+        TimeProvider? timeProvider = null,
+        ILocalizationService? localization = null)
         => new(
             handler ?? MakeHandler(),
             timeProvider ?? TestClock.Provider(),
-            ImmediateSequencer.Instance);
+            ImmediateSequencer.Instance,
+            localization);
+
+    private static LocalizationService Serbian()
+    {
+        var loc = new LocalizationService();
+        loc.SetCulture("sr-Latn");
+        return loc;
+    }
 
     /// <summary>A date as the DatePicker hands it over: midnight of the picked local day.</summary>
     private static DateTimeOffset Picked(DateOnly date) =>
@@ -431,6 +442,66 @@ public class SyncViewModelTests
         // Default: Incremental
 
         vm.ImpactSummary.Should().Be("Fetches new emails since last sync. Duplicates are skipped.");
+    }
+
+    [Fact]
+    public void BuildImpactSummary_SerbianLookup_UsesTranslatedText()
+    {
+        var text = SyncViewModel.BuildImpactSummary(
+            SyncMode.FullReplay, null, key => SrLatnStrings.All[key]);
+
+        text.Should().Be(SrLatnStrings.All["Sync_Impact_FullReplay"]);
+    }
+
+    [Fact]
+    public void BuildImpactSummary_ReplayFromDate_FormatsDateIntoTranslatedText()
+    {
+        var text = SyncViewModel.BuildImpactSummary(
+            SyncMode.ReplayFromDate,
+            new DateTimeOffset(2024, 3, 15, 0, 0, 0, TimeSpan.Zero),
+            key => SrLatnStrings.All[key]);
+
+        text.Should().Be("Ponovo preuzima emailove od 2024-03-15. Duplikati se preskaču.");
+    }
+
+    [Fact]
+    public void ImpactSummary_SerbianLocalization_ShowsTranslatedText()
+    {
+        var vm = CreateVm(localization: Serbian());
+
+        vm.ImpactSummary.Should().Be(SrLatnStrings.All["Sync_Impact_Incremental"]);
+    }
+
+    [Fact]
+    public void ImpactSummary_AfterLanguageSwitch_FollowsNewLanguage()
+    {
+        var loc = Serbian();
+        var vm = CreateVm(localization: loc);
+
+        loc.SetCulture("en");
+
+        vm.ImpactSummary.Should().Be("Fetches new emails since last sync. Duplicates are skipped.");
+    }
+
+    [Fact]
+    public void HasLogEntries_BeforeAnySync_IsFalse()
+    {
+        var vm = CreateVm();
+
+        vm.HasLogEntries.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task HasLogEntries_AfterSyncCancelled_IsTrue()
+    {
+        var handler = Substitute.For<ISyncAllCommandHandler>();
+        handler.HandleAsync(Arg.Any<SyncAllCommand>(), Arg.Any<IProgress<SyncProgressEntry>>(), Arg.Any<CancellationToken>())
+            .Returns<Task<Result<SyncAllResult, Error>>>(_ => throw new OperationCanceledException());
+        var vm = CreateVm(handler);
+
+        await vm.SyncCommand.Execute().FirstAsync(TestContext.Current.CancellationToken);
+
+        vm.HasLogEntries.Should().BeTrue();
     }
 
     [Fact]
