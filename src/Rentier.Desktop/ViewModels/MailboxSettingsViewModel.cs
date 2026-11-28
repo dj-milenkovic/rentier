@@ -1,3 +1,4 @@
+using Rentier.Desktop.Services;
 using System.Collections.ObjectModel;
 using ReactiveUI.Primitives;
 using ReactiveUI.Primitives.Concurrency;
@@ -96,14 +97,21 @@ public sealed class MailboxSettingsViewModel : ReactiveObject, IActivatableViewM
 
     public ViewModelActivator Activator { get; } = new();
 
+    private readonly ILocalizationService _loc;
+
+    /// <summary>Resolves UI text in the user's language (neutral English without DI).</summary>
+    private string T(string key) => _loc[key];
+
     public MailboxSettingsViewModel(
         IQueryHandler<GetMailboxesQuery, Result<IReadOnlyList<MailboxDto>, Error>> queryHandler,
         ICommandHandler<AddMailboxCommand, Result<Guid, Error>> addHandler,
         ICommandHandler<UpdateMailboxCommand, Result<VoidResult, Error>> updateHandler,
         ICommandHandler<DeleteMailboxCommand, Result<VoidResult, Error>> deleteHandler,
         ISequencer? scheduler = null,
-        Func<string, string, string, string, Task<bool>>? confirmAction = null)
+        Func<string, string, string, string, Task<bool>>? confirmAction = null,
+        ILocalizationService? localization = null)
     {
+        _loc = localization ?? LocalizationService.CreateEnglish();
         _queryHandler = queryHandler;
         _addHandler = addHandler;
         _updateHandler = updateHandler;
@@ -185,7 +193,7 @@ public sealed class MailboxSettingsViewModel : ReactiveObject, IActivatableViewM
                     await ReloadAsync(ct);
                     SelectedMailbox = Mailboxes.FirstOrDefault(m => m.Id == editedId);
                     Password = string.Empty;
-                    SuccessMessage = Strings.Mailboxes_SuccessMessage_Label;
+                    SuccessMessage = T(nameof(Strings.Mailboxes_SuccessMessage_Label));
                 }
                 else
                 {
@@ -204,7 +212,7 @@ public sealed class MailboxSettingsViewModel : ReactiveObject, IActivatableViewM
                     SelectedMailbox = newItem;
                     IsEditMode = true;
                     Password = string.Empty;
-                    SuccessMessage = Strings.Mailboxes_SuccessMessage_Label;
+                    SuccessMessage = T(nameof(Strings.Mailboxes_SuccessMessage_Label));
                 }
                 else
                 {
@@ -223,10 +231,10 @@ public sealed class MailboxSettingsViewModel : ReactiveObject, IActivatableViewM
         if (SelectedMailbox is null) return;
 
         var confirmed = await _confirmAction(
-            Strings.Mailbox_Delete_Title,
-            string.Format(Strings.Mailbox_Delete_Message, SelectedMailbox.Host),
-            Strings.Common_Delete,
-            Strings.Common_Cancel);
+            T(nameof(Strings.Mailbox_Delete_Title)),
+            string.Format(T(nameof(Strings.Mailbox_Delete_Message)), SelectedMailbox.Host),
+            T(nameof(Strings.Common_Delete)),
+            T(nameof(Strings.Common_Cancel)));
         if (!confirmed) return;
 
         IsLoading = true;

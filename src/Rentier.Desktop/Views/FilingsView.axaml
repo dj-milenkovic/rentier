@@ -8,8 +8,9 @@
     x:Class="Rentier.Desktop.Views.FilingsView"
     x:CompileBindings="False">
   <reactive:ReactiveUserControl.Resources>
-    <StreamGeometry x:Key="AdvanceStatusIcon">M9 18 L15 12 L9 6</StreamGeometry>
-    <StreamGeometry x:Key="ExportPpOpoXmlIcon">M12 3 L12 15 M7 10 L12 15 L17 10 M5 21 L19 21</StreamGeometry>
+    <!-- Closed shapes only: PathIcon fills geometry, so open line paths render as blobs or nothing. -->
+    <StreamGeometry x:Key="AdvanceStatusIcon">M4 11 H15.2 L10.6 6.4 L12 5 L19 12 L12 19 L10.6 17.6 L15.2 13 H4 Z</StreamGeometry>
+    <StreamGeometry x:Key="ExportPpOpoXmlIcon">M11 3 H13 V12.2 L16.6 8.6 L18 10 L12 16 L6 10 L7.4 8.6 L11 12.2 Z M5 19 H19 V21 H5 Z</StreamGeometry>
     <!-- T006: SortArrowConverter — registered here (view-scoped; only used in FilingsView column headers) -->
     <local:SortArrowConverter x:Key="SortArrowConverter" />
     <!-- Feature 050: FilterActiveConverter — colours the funnel icon when a filter is active -->
@@ -77,7 +78,9 @@
                 Margin="8" HorizontalAlignment="Center">
       <Button Content="{Binding [Filings_Page_Previous], Source={StaticResource Localizer}}"
               Command="{Binding PreviousPageCommand}" />
-      <TextBlock Text="{Binding PageIndicator}" VerticalAlignment="Center" />
+      <!-- MinWidth: the indicator is first measured as "… 1 of 1" and was clipped once the
+           total grew, because the centered pager did not re-measure it. -->
+      <TextBlock Text="{Binding PageIndicator}" VerticalAlignment="Center" MinWidth="96" TextAlignment="Center" />
       <Button Content="{Binding [Filings_Page_Next], Source={StaticResource Localizer}}"
               Command="{Binding NextPageCommand}" />
     </StackPanel>
@@ -128,7 +131,7 @@
             </DataGridTemplateColumn.CellTemplate>
           </DataGridTemplateColumn>
 
-          <DataGridTemplateColumn Width="80" MinWidth="80" CanUserSort="False">
+          <DataGridTemplateColumn Width="92" MinWidth="84" CanUserSort="False">
             <DataGridTemplateColumn.Header>
               <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
                 <TextBlock Text="{Binding [Filings_Col_Status], Source={StaticResource Localizer}}"
@@ -159,7 +162,7 @@
                         <ItemsControl.ItemTemplate>
                           <DataTemplate>
                             <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}"
-                                      Content="{Binding Label}" Margin="0,2" />
+                                      Content="{Binding Value, Converter={x:Static local:FilingStatusDisplayConverter.Instance}}" Margin="0,2" />
                           </DataTemplate>
                         </ItemsControl.ItemTemplate>
                       </ItemsControl>
@@ -188,7 +191,7 @@
                         CornerRadius="10" Padding="8,2"
                         IsHitTestVisible="False"
                         HorizontalAlignment="Center" VerticalAlignment="Center" Margin="4,0">
-                  <TextBlock Text="{Binding StatusDisplayText}"
+                  <TextBlock Text="{Binding Status, Converter={x:Static local:FilingStatusDisplayConverter.Instance}}"
                              Foreground="{DynamicResource RentierStatusBadgeTextBrush}" FontSize="11" FontWeight="SemiBold"
                              HorizontalAlignment="Center" />
                 </Border>
@@ -196,7 +199,7 @@
             </DataGridTemplateColumn.CellTemplate>
           </DataGridTemplateColumn>
 
-          <DataGridTemplateColumn Width="120" MinWidth="120" Tag="IncomeType" CanUserSort="True">
+          <DataGridTemplateColumn Width="118" MinWidth="104" Tag="IncomeType" CanUserSort="True">
             <DataGridTemplateColumn.Header>
               <StackPanel Orientation="Horizontal" Spacing="4" Cursor="Hand">
                 <TextBlock Text="{Binding [Filings_Col_IncomeType], Source={StaticResource Localizer}}"
@@ -235,7 +238,7 @@
                         <ItemsControl.ItemTemplate>
                           <DataTemplate>
                             <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}"
-                                      Content="{Binding Label}" Margin="0,2" />
+                                      Content="{Binding Value, Converter={x:Static local:IncomeTypeDisplayConverter.Instance}}" Margin="0,2" />
                           </DataTemplate>
                         </ItemsControl.ItemTemplate>
                       </ItemsControl>
@@ -265,7 +268,7 @@
             </DataGridTemplateColumn.CellTemplate>
           </DataGridTemplateColumn>
 
-          <DataGridTemplateColumn Width="*" MinWidth="120" Tag="PayingEntity" CanUserSort="True">
+          <DataGridTemplateColumn Width="*" MinWidth="150" Tag="PayingEntity" CanUserSort="True">
             <DataGridTemplateColumn.Header>
               <StackPanel Orientation="Horizontal" Spacing="4" Cursor="Hand">
                 <TextBlock Text="{Binding [Filings_Col_PayingEntity], Source={StaticResource Localizer}}"
@@ -315,12 +318,13 @@
             </DataGridTemplateColumn.Header>
             <DataGridTemplateColumn.CellTemplate>
               <DataTemplate>
-                <TextBlock Text="{Binding PayingEntity}" />
+                <TextBlock Text="{Binding PayingEntity}" TextTrimming="CharacterEllipsis"
+                           ToolTip.Tip="{Binding PayingEntity}" />
               </DataTemplate>
             </DataGridTemplateColumn.CellTemplate>
           </DataGridTemplateColumn>
 
-          <DataGridTemplateColumn Width="*" MinWidth="130" Tag="FilingDeadline" CanUserSort="True">
+          <DataGridTemplateColumn Width="124" MinWidth="110" Tag="FilingDeadline" CanUserSort="True">
             <DataGridTemplateColumn.Header>
               <StackPanel Orientation="Horizontal" Spacing="4" Cursor="Hand">
                 <TextBlock Text="{Binding [Filings_Col_Deadline], Source={StaticResource Localizer}}"
@@ -376,7 +380,7 @@
           </DataGridTemplateColumn>
 
           <!-- Tax Payable column — sortable (feature 046), no filter -->
-          <DataGridTemplateColumn Width="130" MinWidth="100" Tag="TaxPayable" CanUserSort="True">
+          <DataGridTemplateColumn Width="140" MinWidth="128" Tag="TaxPayable" CanUserSort="True">
             <DataGridTemplateColumn.Header>
               <StackPanel Orientation="Horizontal" Spacing="4" Cursor="Hand">
                 <TextBlock Text="{Binding [Filings_Col_TaxPayable], Source={StaticResource Localizer}}"
@@ -393,13 +397,13 @@
             </DataGridTemplateColumn.Header>
             <DataGridTemplateColumn.CellTemplate>
               <DataTemplate>
-                <TextBlock Text="{Binding TaxPayableDisplay}" />
+                <TextBlock Text="{Binding TaxPayableDisplay}" HorizontalAlignment="Right" Margin="4,0,10,0" />
               </DataTemplate>
             </DataGridTemplateColumn.CellTemplate>
           </DataGridTemplateColumn>
 
           <!-- Payment Reference column — template header with filter flyout (feature 050) -->
-          <DataGridTemplateColumn Width="180" MinWidth="140" Tag="PaymentReference" CanUserSort="False">
+          <DataGridTemplateColumn Width="172" MinWidth="110" Tag="PaymentReference" CanUserSort="False">
             <DataGridTemplateColumn.Header>
               <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
                 <TextBlock Text="{Binding [Filings_Col_PaymentRef], Source={StaticResource Localizer}}"
@@ -465,11 +469,13 @@
           </DataGridTemplateColumn>
 
           <!-- Actions column -->
-          <DataGridTemplateColumn Header="{Binding [Filings_Col_Actions], Source={StaticResource Localizer}}" Width="Auto" CanUserSort="False">
+          <DataGridTemplateColumn Header="{Binding [Filings_Col_Actions], Source={StaticResource Localizer}}" Width="104" MinWidth="104" CanUserResize="False" CanUserSort="False">
             <DataGridTemplateColumn.CellTemplate>
               <DataTemplate>
                 <StackPanel Orientation="Horizontal" Spacing="2"
                             HorizontalAlignment="Center" VerticalAlignment="Center">
+                  <!-- Fixed-width slot keeps export/delete aligned on rows that cannot advance (Paid). -->
+                  <Panel Width="24">
                   <Button Command="{Binding AdvanceStatusCommand}"
                           IsVisible="{Binding HasNextStatus}"
                           AutomationProperties.Name="{Binding AdvanceStatusTooltip}"
@@ -477,6 +483,7 @@
                           Padding="4" Background="Transparent" BorderThickness="0">
                     <PathIcon Data="{StaticResource AdvanceStatusIcon}" Width="16" Height="16" />
                   </Button>
+                  </Panel>
                   <Button Command="{Binding ExportCommand}"
                           AutomationProperties.Name="{Binding [Filings_Tooltip_Export], Source={StaticResource Localizer}}"
                           ToolTip.Tip="{Binding [Filings_Tooltip_Export], Source={StaticResource Localizer}}"

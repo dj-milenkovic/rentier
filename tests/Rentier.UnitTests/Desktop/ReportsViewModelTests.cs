@@ -68,7 +68,8 @@ public class ReportsViewModelTests
         IConfirmationService? confirmation = null,
         IReportImportDialogService? importDialog = null,
         INavigationService? navigation = null,
-        ICommandHandler<BulkDeleteReportsCommand, Result<VoidResult, Error>>? bulkDelete = null)
+        ICommandHandler<BulkDeleteReportsCommand, Result<VoidResult, Error>>? bulkDelete = null,
+        ILocalizationService? localization = null)
     {
         return new ReportsViewModel(
             new ReportsHandlers(
@@ -79,7 +80,15 @@ public class ReportsViewModelTests
             confirmation ?? DesktopTestDoubles.Confirmation(),
             importDialog ?? DesktopTestDoubles.ImportDialog(),
             navigation ?? Substitute.For<INavigationService>(),
-            ImmediateSequencer.Instance);
+            ImmediateSequencer.Instance,
+            localization);
+    }
+
+    private static LocalizationService Serbian()
+    {
+        var loc = new LocalizationService();
+        loc.SetCulture("sr-Latn");
+        return loc;
     }
 
     // ── US1: Browse reports list ─────────────────────────────────────────────
@@ -321,6 +330,24 @@ public class ReportsViewModelTests
         using var _activation = vm.Activator.Activate();
 
         vm.PageIndicator.Should().Be("Page 1 of 3");
+    }
+
+    [Fact]
+    public void Pagination_PageIndicatorInSerbian_UsesTranslatedFormat()
+    {
+        var vm = CreateVm(getReports: MakePagedGetReports(75, 3, [MakeDto()]), localization: Serbian());
+        using var _activation = vm.Activator.Activate();
+
+        vm.PageIndicator.Should().Be("Strana 1 od 3");
+    }
+
+    [Fact]
+    public void StatusFilterLabels_InSerbian_AreTranslated()
+    {
+        var vm = CreateVm(localization: Serbian());
+
+        vm.StatusFilter.WorkingItems.Select(i => i.Label)
+            .Should().Contain(SrLatnStrings.All["ReportStatus_PartialError"]);
     }
 
     [Fact]

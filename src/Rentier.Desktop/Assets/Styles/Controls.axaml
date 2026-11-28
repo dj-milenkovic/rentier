@@ -78,6 +78,12 @@
     <Setter Property="CornerRadius" Value="{StaticResource RentierControlCornerRadius}" />
   </Style>
 
+  <!-- ── DataGrid ───────────────────────────────────────────────────────── -->
+  <!-- Narrow columns end text with an ellipsis instead of cutting a glyph in half. -->
+  <Style Selector="DataGridCell TextBlock">
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+  </Style>
+
   <!-- ── TabControl ─────────────────────────────────────────────────────── -->
   <Style Selector="TabControl">
     <Setter Property="Background" Value="Transparent" />

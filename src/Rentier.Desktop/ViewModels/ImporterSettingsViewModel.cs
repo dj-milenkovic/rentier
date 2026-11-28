@@ -135,11 +135,18 @@ public sealed class ImporterSettingsViewModel : ReactiveObject, IActivatableView
 
     public ViewModelActivator Activator { get; } = new();
 
+    private readonly ILocalizationService _loc;
+
+    /// <summary>Resolves UI text in the user's language (neutral English without DI).</summary>
+    private string T(string key) => _loc[key];
+
     public ImporterSettingsViewModel(
         ImporterSettingsHandlers handlers,
         IConfirmationService confirmation,
-        ISequencer? scheduler = null)
+        ISequencer? scheduler = null,
+        ILocalizationService? localization = null)
     {
+        _loc = localization ?? LocalizationService.CreateEnglish();
         _handlers = handlers;
         _scheduler = scheduler ?? RxSchedulers.MainThreadScheduler;
         _confirmation = confirmation;
@@ -265,7 +272,7 @@ public sealed class ImporterSettingsViewModel : ReactiveObject, IActivatableView
             ClearForm();
         // The save itself succeeded; a failed refresh is reported alongside it (after ClearForm,
         // which resets both messages) so a stale list is never shown silently.
-        SuccessMessage = Strings.Importers_Saved_Confirmation;
+        SuccessMessage = T(nameof(Strings.Importers_Saved_Confirmation));
         if (reloadError is not null)
             ErrorMessage = reloadError.Message;
     }
@@ -275,10 +282,10 @@ public sealed class ImporterSettingsViewModel : ReactiveObject, IActivatableView
         if (SelectedImporter is null) return;
 
         var confirmed = await _confirmation.ConfirmAsync(new ConfirmationRequest(
-            Strings.Importer_Delete_Title,
-            string.Format(Strings.Importer_Delete_Message, SelectedImporter.DisplayName),
-            Strings.Common_Delete,
-            Strings.Common_Cancel));
+            T(nameof(Strings.Importer_Delete_Title)),
+            string.Format(T(nameof(Strings.Importer_Delete_Message)), SelectedImporter.DisplayName),
+            T(nameof(Strings.Common_Delete)),
+            T(nameof(Strings.Common_Cancel))));
         if (!confirmed) return;
 
         IsLoading = true;

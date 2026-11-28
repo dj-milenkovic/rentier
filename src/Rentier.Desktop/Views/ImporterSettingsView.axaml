@@ -31,7 +31,18 @@
 
     <!-- Right panel: form -->
     <ScrollViewer Grid.Column="1">
-      <StackPanel Margin="16" Spacing="8">
+      <StackPanel Margin="16" Spacing="8" MaxWidth="640" HorizontalAlignment="Left">
+        <!-- Form title: an empty form is the "add new" form, so say so. -->
+        <TextBlock Text="{Binding [Importers_Form_NewTitle], Source={StaticResource Localizer}}"
+                   IsVisible="{Binding !IsEditMode}"
+                   FontSize="16" FontWeight="SemiBold" />
+        <TextBlock Text="{Binding [Importers_Form_EditTitle], Source={StaticResource Localizer}}"
+                   IsVisible="{Binding IsEditMode}"
+                   FontSize="16" FontWeight="SemiBold" />
+        <TextBlock Text="{Binding [Importers_Form_NewHint], Source={StaticResource Localizer}}"
+                   IsVisible="{Binding !IsEditMode}"
+                   FontSize="12" TextWrapping="Wrap" Margin="0,0,0,8"
+                   Foreground="{DynamicResource RentierTextSecondaryBrush}" />
         <TextBlock Text="{Binding [Importers_DisplayName_Label], Source={StaticResource Localizer}}" />
         <TextBox Text="{Binding DisplayName}" />
 
@@ -62,7 +73,9 @@
                   PlaceholderText="{Binding [Importers_NoMailbox_Placeholder], Source={StaticResource Localizer}}">
           <ComboBox.ItemTemplate>
             <DataTemplate>
-              <TextBlock>
+              <!-- Hidden without a mailbox: otherwise the empty selection box rendered a
+                   stray " @ " over the "no mailbox" placeholder. -->
+              <TextBlock IsVisible="{Binding Host, Converter={x:Static StringConverters.IsNotNullOrEmpty}, FallbackValue=False}">
                 <Run Text="{Binding Username}" /><Run Text=" @ " /><Run Text="{Binding Host}" />
               </TextBlock>
             </DataTemplate>
@@ -92,10 +105,10 @@
         </StackPanel>
 
         <TextBlock Text="{Binding ErrorMessage}"
-                   Foreground="Red"
+                   Foreground="{DynamicResource RentierDangerForegroundBrush}"
                    IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
         <TextBlock Text="{Binding SuccessMessage}"
-                   Foreground="Green"
+                   Foreground="{DynamicResource RentierSuccessForegroundBrush}"
                    IsVisible="{Binding SuccessMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
         <ProgressBar IsIndeterminate="True"
                      IsVisible="{Binding IsLoading}"

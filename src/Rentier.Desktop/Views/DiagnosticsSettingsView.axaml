@@ -4,6 +4,8 @@
              x:Class="Rentier.Desktop.Views.DiagnosticsSettingsView"
              x:DataType="vm:DiagnosticsSettingsViewModel"
              x:CompileBindings="False">
+  <!-- Scrolls when the window is short or text is enlarged. -->
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled">
   <StackPanel Spacing="24" Margin="20">
 
     <!-- Section header -->
@@ -22,7 +24,9 @@
             BorderThickness="1">
       <StackPanel Spacing="12">
         <ToggleSwitch IsChecked="{Binding IsDebugLoggingEnabled, Mode=TwoWay}"
-                      Content="{Binding [Diagnostics_DebugLogging_Label], Source={StaticResource Localizer}}" />
+                      Content="{Binding [Diagnostics_DebugLogging_Label], Source={StaticResource Localizer}}"
+                      OnContent="{Binding [Common_On], Source={StaticResource Localizer}}"
+                      OffContent="{Binding [Common_Off], Source={StaticResource Localizer}}" />
         <TextBlock Text="{Binding [Diagnostics_DebugLogging_Note], Source={StaticResource Localizer}}"
                    FontSize="11" TextWrapping="Wrap"
                    Foreground="{DynamicResource RentierTextSecondaryBrush}" />
@@ -56,4 +60,5 @@
                IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
   </StackPanel>
+  </ScrollViewer>
 </UserControl>

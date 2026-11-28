@@ -1,3 +1,5 @@
+using Rentier.Desktop.Resources;
+using Rentier.Desktop.Services;
 using FluentAssertions;
 using Rentier.Application.DTOs;
 using Rentier.Desktop.ViewModels;
@@ -153,6 +155,16 @@ public class FilingRowViewModelTests
     {
         var vm = MakeRowVm(FilingStatus.Filed);
         vm.AdvanceStatusTooltip.Should().Contain("Paid");
+    }
+
+    [Fact]
+    public void AdvanceStatusTooltip_InitStatusInSerbian_NamesTranslatedNextStatus()
+    {
+        var serbian = new LocalizationService();
+        serbian.SetCulture("sr-Latn");
+        var vm = FilingRowViewModel.From(MakeDto(status: FilingStatus.Init), delegate { }, _ => { }, _ => { }, serbian);
+
+        vm.AdvanceStatusTooltip.Should().Contain(SrLatnStrings.All["FilingStatus_Filed"]);
     }
 
     [Fact]

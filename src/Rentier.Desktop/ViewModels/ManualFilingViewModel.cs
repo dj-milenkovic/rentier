@@ -160,8 +160,8 @@ public sealed class ManualFilingViewModel : ReactiveObject, IActivatableViewMode
             var dateText = Preview.ExchangeRateSourceDate.ToString("yyyy-MM-dd");
             return Preview.ExchangeRateSourceType switch
             {
-                ExchangeRateSourceType.Exact => string.Format(Strings.ManualFiling_RateSource_Exact, dateText),
-                _ => string.Format(Strings.ManualFiling_RateSource_Fallback, dateText),
+                ExchangeRateSourceType.Exact => string.Format(T(nameof(Strings.ManualFiling_RateSource_Exact)), dateText),
+                _ => string.Format(T(nameof(Strings.ManualFiling_RateSource_Fallback)), dateText),
             };
         }
     }
@@ -188,14 +188,21 @@ public sealed class ManualFilingViewModel : ReactiveObject, IActivatableViewMode
 
     // ── Constructor ──────────────────────────────────────────────────────────
 
+    private readonly ILocalizationService _loc;
+
+    /// <summary>Resolves UI text in the user's language (neutral English without DI).</summary>
+    private string T(string key) => _loc[key];
+
     public ManualFilingViewModel(
         ICommandHandler<CalculateManualFilingCommand, Result<ManualFilingPreviewDto, Error>> calculateHandler,
         ICommandHandler<CreateManualFilingCommand, Result<Guid, Error>> createHandler,
         IQueryHandler<GetTaxpayerProfileQuery, Result<TaxpayerProfileDto?, Error>> profileQueryHandler,
         IConfirmationService confirmation,
         INavigationService navigation,
-        ISequencer? scheduler = null)
+        ISequencer? scheduler = null,
+        ILocalizationService? localization = null)
     {
+        _loc = localization ?? LocalizationService.CreateEnglish();
         _calculateHandler = calculateHandler;
         _createHandler = createHandler;
         _profileQueryHandler = profileQueryHandler;
@@ -281,7 +288,7 @@ public sealed class ManualFilingViewModel : ReactiveObject, IActivatableViewMode
             {
                 // Show as an informational callout rather than a red error
                 HasNoProfile = true;
-                ErrorMessage = Strings.ManualFiling_Error_NoProfile; // kept for test compatibility
+                ErrorMessage = T(nameof(Strings.ManualFiling_Error_NoProfile)); // kept for test compatibility
             }
             else
                 _taxpayerProfileId = result.Value.Id;
@@ -297,10 +304,10 @@ public sealed class ManualFilingViewModel : ReactiveObject, IActivatableViewMode
         if (IsDirty)
         {
             var confirmed = await _confirmation.ConfirmAsync(new ConfirmationRequest(
-                Strings.ManualFiling_Cancel_Discard_Title,
-                Strings.ManualFiling_Cancel_Discard_Message,
-                Strings.ManualFiling_Cancel_Discard_Confirm,
-                Strings.ManualFiling_Cancel_Discard_Keep));
+                T(nameof(Strings.ManualFiling_Cancel_Discard_Title)),
+                T(nameof(Strings.ManualFiling_Cancel_Discard_Message)),
+                T(nameof(Strings.ManualFiling_Cancel_Discard_Confirm)),
+                T(nameof(Strings.ManualFiling_Cancel_Discard_Keep))));
             if (!confirmed) return;
         }
         _navigation.NavigateToFilings();

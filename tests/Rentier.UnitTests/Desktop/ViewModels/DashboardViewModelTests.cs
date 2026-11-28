@@ -45,12 +45,21 @@ public class DashboardViewModelTests
 
     private static DashboardViewModel CreateVm(
         IQueryHandler<GetDashboardQuery, Result<DashboardDto, Error>>? handler = null,
-        INavigationService? navigation = null)
+        INavigationService? navigation = null,
+        ILocalizationService? localization = null)
     {
         return new DashboardViewModel(
             handler ?? MakeHandler(),
             navigation ?? Substitute.For<INavigationService>(),
-            ImmediateSequencer.Instance);
+            ImmediateSequencer.Instance,
+            localization);
+    }
+
+    private static LocalizationService Serbian()
+    {
+        var loc = new LocalizationService();
+        loc.SetCulture("sr-Latn");
+        return loc;
     }
 
     [Fact]
@@ -127,6 +136,28 @@ public class DashboardViewModelTests
         var vm = CreateVm(handler: MakeHandler(dto));
 
         using var _ = vm.Activator.Activate();
+
+        vm.LastSyncDisplay.Should().Be("Never");
+    }
+
+    [Fact]
+    public void LoadCommand_LastSyncNullInSerbian_ShowsTranslatedNever()
+    {
+        var vm = CreateVm(handler: MakeHandler(EmptyDashboard()), localization: Serbian());
+
+        using var _ = vm.Activator.Activate();
+
+        vm.LastSyncDisplay.Should().Be("Nikad");
+    }
+
+    [Fact]
+    public void LastSyncDisplay_AfterLanguageSwitch_FollowsNewLanguage()
+    {
+        var loc = Serbian();
+        var vm = CreateVm(handler: MakeHandler(EmptyDashboard()), localization: loc);
+        using var _ = vm.Activator.Activate();
+
+        loc.SetCulture("en");
 
         vm.LastSyncDisplay.Should().Be("Never");
     }
