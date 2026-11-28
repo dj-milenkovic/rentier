@@ -26,6 +26,15 @@ internal interface IVelopackManager
     Task<string?> CheckForUpdatesAsync(CancellationToken cancellationToken);
 
     /// <summary>
+    /// The release-notes Markdown packed into the update found by the last check
+    /// (<c>vpk pack --releaseNotes</c>), or null when there is none.
+    /// </summary>
+    string? PendingReleaseNotesMarkdown { get; }
+
+    /// <summary>The installed version, or null when this copy is not an installed app.</summary>
+    string? CurrentVersion { get; }
+
+    /// <summary>
     /// Downloads the update found by the last check, reporting progress via the callback (0–100).
     /// </summary>
     Task DownloadUpdatesAsync(Action<int> progress, CancellationToken cancellationToken);

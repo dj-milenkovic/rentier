@@ -1,0 +1,66 @@
+name: Release Tools
+
+# Checks the release tooling in .github/tools (Rentier.ReleaseNotes) and its contract with the
+# workflows and the PR template. The tool and its tests are not in Rentier.slnx, so the main CI
+# neither formats, scans nor tests them; this workflow does, whenever a file they cover changes.
+
+on:
+  pull_request:
+    branches: [main]
+    paths: &tool-paths
+      - '.github/tools/**'
+      - '.github/workflows/auto-release.yml'
+      - '.github/workflows/release-note.yml'
+      - '.github/workflows/release-tools.yml'
+      - '.github/pull_request_template.md'
+      # The tool reuses ReleaseNotesDocument, so the app reads exactly the format it writes.
+      - 'src/Rentier.Application/**'
+      - 'Directory.Build.props'
+      - 'Directory.Packages.props'
+      - '.editorconfig'
+  push:
+    branches: [main]
+    paths: *tool-paths
+
+concurrency:
+  group: release-tools-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  TOOL: .github/tools/Rentier.ReleaseNotes/Rentier.ReleaseNotes.csproj
+  TESTS: .github/tools/Rentier.ReleaseNotes.Tests/Rentier.ReleaseNotes.Tests.csproj
+
+jobs:
+  test:
+    name: Release tools (format + tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: actions/setup-dotnet@v6.0.0
+        with:
+          dotnet-version: '10.x'
+
+      - name: Restore
+        run: dotnet restore "${TESTS}"
+
+      # Each project on its own: formatting the test project does not check the tool's files.
+      - name: Check formatting
+        run: |
+          dotnet format "${TOOL}" --no-restore --verify-no-changes
+          dotnet format "${TESTS}" --no-restore --verify-no-changes
+
+      - name: Check for vulnerable packages
+        run: |
+          for proj in "${TOOL}" "${TESTS}"; do
+            dotnet list "${proj}" package --vulnerable --include-transitive 2>&1 | tee -a vuln-report.txt
+          done
+          ! grep -qi "has the following vulnerable packages" vuln-report.txt
+
+      - name: Test
+        run: dotnet test "${TESTS}" --no-restore -c Release

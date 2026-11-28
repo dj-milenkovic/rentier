@@ -54,7 +54,59 @@ public class VelopackUpdateServiceTests
 
         var result = await service.CheckForUpdatesAsync(TestContext.Current.CancellationToken);
 
-        result.Should().Be(new Rentier.Application.DTOs.UpdateCheckResult(true, "2.0.0"));
+        result.IsUpdateAvailable.Should().BeTrue();
+        result.TargetVersion.Should().Be("2.0.0");
+        result.Notes.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task CheckForUpdatesAsync_WhenUpdateCarriesNotes_ReturnsOnlyVersionsNewerThanInstalled()
+    {
+        var manager = new FakeVelopackManager(isInstalled: true, availableVersion: "1.6.0")
+        {
+            CurrentVersion = "1.4.0",
+            PendingReleaseNotesMarkdown = """
+                ## v1.6.0
+
+                ### EN
+                - Six
+
+                ### SR
+                - Šest
+
+                ## v1.5.0
+
+                ### EN
+                - Five
+
+                ## v1.4.0
+
+                ### EN
+                - Four (installed already)
+                """,
+        };
+        var service = CreateService(manager);
+
+        var result = await service.CheckForUpdatesAsync(TestContext.Current.CancellationToken);
+
+        result.Notes.Select(n => n.DisplayVersion).Should().Equal("v1.6.0", "v1.5.0");
+        result.Notes[0].For("sr-Latn").Should().Be("- Šest");
+        result.Notes[1].For("sr-Latn").Should().Be("- Five", "a version without Serbian notes falls back to English");
+    }
+
+    [Fact]
+    public async Task CheckForUpdatesAsync_WhenInstalledVersionUnknown_ReturnsAllNotes()
+    {
+        var manager = new FakeVelopackManager(isInstalled: true, availableVersion: "1.6.0")
+        {
+            CurrentVersion = null,
+            PendingReleaseNotesMarkdown = "## v1.6.0\n\n### EN\n- Six\n\n## v1.5.0\n\n### EN\n- Five\n",
+        };
+        var service = CreateService(manager);
+
+        var result = await service.CheckForUpdatesAsync(TestContext.Current.CancellationToken);
+
+        result.Notes.Should().HaveCount(2);
     }
 
     [Fact]
@@ -376,6 +428,8 @@ internal sealed class FakeVelopackManager : IVelopackManager
     public bool IsInstalled { get; }
     public bool HasUpdateToDownload { get; private set; }
     public bool HasUpdateToApply { get; private set; }
+    public string? PendingReleaseNotesMarkdown { get; init; }
+    public string? CurrentVersion { get; init; }
     public int CheckCallCount { get; private set; }
     public int DownloadCallCount { get; private set; }
     public int ApplyCallCount { get; private set; }

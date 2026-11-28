@@ -94,6 +94,7 @@ public class MainWindowViewHeadlessTests
         services.AddSingleton(BuildImporterVm(getProfileForManualFiling));
         services.AddSingleton(BuildAppearanceVm());
         services.AddSingleton(DesktopTestDoubles.DiagnosticsViewModel());
+        services.AddSingleton(DesktopTestDoubles.WhatsNewViewModel());
 
         return services.BuildServiceProvider();
     }
@@ -174,12 +175,18 @@ public class MainWindowViewHeadlessTests
         return svc;
     }
 
-    private static MainWindowViewModel CreateVm()
+    private static MainWindowViewModel CreateVm(UpdateCheckResult? updateCheck = null)
     {
         var provider = BuildProvider();
         var updateService = provider.GetRequiredService<IUpdateService>();
+        if (updateCheck is not null)
+        {
+            updateService = Substitute.For<IUpdateService>();
+            updateService.CheckForUpdatesAsync(Arg.Any<CancellationToken>()).Returns(updateCheck);
+        }
+
         return new(provider, BuildLocalizationService(), updateService, BuildAppVersionService(),
-            provider.GetRequiredService<INavigationRequestSource>());
+            provider.GetRequiredService<INavigationRequestSource>(), Substitute.For<IReleaseNotesDialogService>());
     }
 
     [AvaloniaFact]
@@ -271,5 +278,72 @@ public class MainWindowViewHeadlessTests
         afterFirstClick.Should().Be(!initiallyExpanded, "the first click should toggle the group");
         afterSecondClick.Should().Be(initiallyExpanded,
             "the second consecutive click must toggle it back — this is the bug from issue #67");
+    }
+
+    private static Border FindUpdateBar(Window window) =>
+        window.GetVisualDescendants().OfType<Border>()
+            .Single(b => Avalonia.Automation.AutomationProperties.GetName(b) == "Update Notification Bar");
+
+    [AvaloniaFact]
+    public void MainWindow_UpdateBar_SpansWholeWindowAboveSidebarAndStaysThin()
+    {
+        var vm = CreateVm(new UpdateCheckResult(true, "9.9.9"));
+        var window = new MainWindow(vm);
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+        window.UpdateLayout();
+
+        vm.CurrentUpdateState.Should().Be(UpdateState.UpdateAvailable);
+
+        var bar = FindUpdateBar(window);
+        var sidebar = window.GetVisualDescendants().OfType<Border>().First(b => b.Width == 220);
+        var barTop = bar.TranslatePoint(new Point(0, 0), window)!.Value;
+        var sidebarTop = sidebar.TranslatePoint(new Point(0, 0), window)!.Value;
+
+        bar.IsEffectivelyVisible.Should().BeTrue();
+        barTop.Should().Be(new Point(0, 0), "the bar starts at the window's top-left corner");
+        bar.Bounds.Width.Should().BeApproximately(window.ClientSize.Width, 0.5, "the bar spans the whole window");
+        bar.Bounds.Height.Should().BeLessThanOrEqualTo(36, "the bar is a thin strip");
+        sidebarTop.Y.Should().BeApproximately(bar.Bounds.Height, 0.5, "the sidebar starts below the bar");
+
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void MainWindow_WhenNoUpdate_UpdateBarIsHiddenAndSidebarStartsAtTop()
+    {
+        var vm = CreateVm();
+        var window = new MainWindow(vm);
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+        window.UpdateLayout();
+
+        var sidebar = window.GetVisualDescendants().OfType<Border>().First(b => b.Width == 220);
+
+        FindUpdateBar(window).IsVisible.Should().BeFalse();
+        sidebar.TranslatePoint(new Point(0, 0), window)!.Value.Y.Should().Be(0);
+
+        window.Close();
+    }
+
+    [AvaloniaTheory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void MainWindow_UpdateBar_WhatsNewButtonShownOnlyWhenUpdateCarriesNotes(bool withNotes)
+    {
+        Rentier.Application.ReleaseNotes.ReleaseNotesEntry[] notes = withNotes
+            ? [new(new Version(9, 9, 9), "- Nine", "- Devet")]
+            : [];
+        var vm = CreateVm(new UpdateCheckResult(true, "9.9.9", notes));
+        var window = new MainWindow(vm);
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        var whatsNew = FindUpdateBar(window).GetVisualDescendants().OfType<Button>()
+            .Single(b => ReferenceEquals(b.Command, vm.ShowUpdateReleaseNotesCommand));
+
+        whatsNew.IsVisible.Should().Be(withNotes);
+
+        window.Close();
     }
 }

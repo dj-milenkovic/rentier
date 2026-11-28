@@ -10,6 +10,7 @@ using ReactiveUI;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
+using Rentier.Application.ReleaseNotes;
 using Rentier.Desktop.Services;
 
 namespace Rentier.Desktop.ViewModels;
@@ -53,6 +54,7 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
         {
             this.RaiseAndSetIfChanged(ref _currentUpdateState, value);
             this.RaisePropertyChanged(nameof(UpdateBarVisible));
+            this.RaisePropertyChanged(nameof(CanShowUpdateReleaseNotes));
             this.RaisePropertyChanged(nameof(IsUpdateAvailableState));
             this.RaisePropertyChanged(nameof(IsDownloadingState));
             this.RaisePropertyChanged(nameof(IsDownloadedState));
@@ -117,6 +119,29 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
     public bool IsDownloadedState => _currentUpdateState == UpdateState.Downloaded;
     public bool IsErrorState => _currentUpdateState == UpdateState.Error;
 
+    // ── Release notes of the available update ─────────────────────────────────
+
+    private IReadOnlyList<ReleaseNotesEntry> _updateReleaseNotes = [];
+
+    /// <summary>
+    /// Notes for every version between the installed one and the available update, newest first.
+    /// Empty when the update carries none.
+    /// </summary>
+    public IReadOnlyList<ReleaseNotesEntry> UpdateReleaseNotes
+    {
+        get => _updateReleaseNotes;
+        private set
+        {
+            this.RaiseAndSetIfChanged(ref _updateReleaseNotes, value);
+            this.RaisePropertyChanged(nameof(CanShowUpdateReleaseNotes));
+        }
+    }
+
+    /// <summary>The update bar's "What's new" button: shown while an update is offered or on its way.</summary>
+    public bool CanShowUpdateReleaseNotes =>
+        _updateReleaseNotes.Count > 0
+        && _currentUpdateState is UpdateState.UpdateAvailable or UpdateState.Downloading or UpdateState.Downloaded;
+
     // ── Update commands ───────────────────────────────────────────────────────
 
     public ReactiveCommand<RxVoid, RxVoid> CheckForUpdateCommand { get; }
@@ -125,8 +150,10 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
     public ReactiveCommand<RxVoid, RxVoid> RestartNowCommand { get; }
     public ReactiveCommand<RxVoid, RxVoid> DismissRestartCommand { get; }
     public ReactiveCommand<RxVoid, RxVoid> RetryDownloadCommand { get; }
+    public ReactiveCommand<RxVoid, RxVoid> ShowUpdateReleaseNotesCommand { get; }
 
     private readonly IUpdateService _updateService;
+    private readonly IReleaseNotesDialogService _releaseNotesDialog;
     private readonly ILocalizationService _localizationService;
     private readonly ISequencer _outputScheduler;
     private readonly IServiceProvider _provider;
@@ -137,9 +164,11 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
         IUpdateService updateService,
         IAppVersionService appVersionService,
         INavigationRequestSource navigationRequests,
+        IReleaseNotesDialogService releaseNotesDialog,
         ISequencer? outputScheduler = null)
     {
         _updateService = updateService;
+        _releaseNotesDialog = releaseNotesDialog;
         _localizationService = localizationService;
         _outputScheduler = outputScheduler ?? RxSchedulers.MainThreadScheduler;
         AppVersionText = appVersionService.DisplayVersion;
@@ -182,6 +211,10 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
 
         RetryDownloadCommand = ReactiveCommand.CreateFromTask(
             RunDownloadUpdateAsync, canRetry, outputScheduler: _outputScheduler);
+
+        var canShowNotes = this.WhenAnyValue(x => x.CanShowUpdateReleaseNotes);
+        ShowUpdateReleaseNotesCommand = ReactiveCommand.CreateFromTask(
+            ShowUpdateReleaseNotesAsync, canShowNotes, outputScheduler: _outputScheduler);
 
         _provider = provider;
         NavigationEntries = BuildNavigationEntries(provider, localizationService);
@@ -265,6 +298,7 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
         var importerVm = provider.GetRequiredService<ImporterSettingsViewModel>();
         var appearanceVm = provider.GetRequiredService<AppearanceSettingsViewModel>();
         var diagnosticsVm = provider.GetRequiredService<DiagnosticsSettingsViewModel>();
+        var whatsNewVm = provider.GetRequiredService<WhatsNewSettingsViewModel>();
 
         var settingsGroup = new NavigationEntry(localizationService["Nav_Settings"], viewModel: null, Icon: NavIcon("NavSettingsIcon"))
         {
@@ -280,7 +314,9 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
 
         var diagnosticsChild = new NavigationEntry(localizationService["Nav_Settings_Diagnostics"], diagnosticsVm, Icon: NavIcon("NavDiagnosticsIcon")) { IndentLevel = 1, ParentGroup = settingsGroup };
 
-        settingsGroup.Children = new[] { profileChild, holidaysChild, mailboxesChild, importersChild, languageChild, diagnosticsChild };
+        var whatsNewChild = new NavigationEntry(localizationService["Nav_Settings_WhatsNew"], whatsNewVm, Icon: NavIcon("NavWhatsNewIcon")) { IndentLevel = 1, ParentGroup = settingsGroup };
+
+        settingsGroup.Children = new[] { profileChild, holidaysChild, mailboxesChild, importersChild, languageChild, diagnosticsChild, whatsNewChild };
 
         return new List<NavigationEntry>
         {
@@ -295,6 +331,7 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
             importersChild,
             languageChild,
             diagnosticsChild,
+            whatsNewChild,
         };
     }
 
@@ -350,12 +387,32 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
         if (result.IsUpdateAvailable)
         {
             AvailableVersion = result.TargetVersion;
+            UpdateReleaseNotes = result.Notes;
             CurrentUpdateState = UpdateState.UpdateAvailable;
         }
         else
         {
             CurrentUpdateState = UpdateState.Idle;
         }
+    }
+
+    private async Task ShowUpdateReleaseNotesAsync()
+    {
+        var culture = _localizationService.CurrentCultureCode;
+        var notes = UpdateReleaseNotes
+            .Select(e => new ReleaseNoteDto(e.DisplayVersion, e.For(culture)))
+            .ToList();
+        var subheader = string.Format(
+            _localizationService["ReleaseNotesDialog_Subheader"], AppVersionText, $"v{AvailableVersion}");
+
+        var updateNow = await _releaseNotesDialog.ShowAsync(
+            new ReleaseNotesDialogRequest(subheader, notes, OfferUpdate: IsUpdateAvailableState));
+
+        // The state may have moved on while the dialog was open; only start from UpdateAvailable.
+        // Started through BeginUpdateCommand rather than awaited here: this command then ends with
+        // the dialog, so "What's new" stays clickable during the download.
+        if (updateNow && IsUpdateAvailableState)
+            BeginUpdateCommand.Execute().Subscribe();
     }
 
     private async Task RunDownloadUpdateAsync()
@@ -393,6 +450,7 @@ public sealed class MainWindowViewModel : ReactiveObject, IActivatableViewModel
                 ImporterSettingsViewModel => "Nav_Settings_Importers",
                 AppearanceSettingsViewModel => "Nav_Settings_Appearance",
                 DiagnosticsSettingsViewModel => "Nav_Settings_Diagnostics",
+                WhatsNewSettingsViewModel => "Nav_Settings_WhatsNew",
                 _ => null,
             };
 

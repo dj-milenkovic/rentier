@@ -24,6 +24,10 @@ on:
         description: 'Dry run: build and verify every release asset, but create no tag and no release'
         type: boolean
         default: false
+      allow_no_user_changes:
+        description: 'Release without user-facing changes (e.g. a dependency security fix): no merged PR has a release note; the app shows a generic line'
+        type: boolean
+        default: false
 
 # Serialize releases so concurrent merges never compute the same tag.
 # cancel-in-progress: false ensures both releases still happen, just sequentially.
@@ -44,6 +48,9 @@ env:
   # build updates from the fork.
   PACK_ID: Rentier
   REPO_URL: https://github.com/${{ github.repository }}
+  # In-app release notes (What's new) start after this version: earlier PRs carry no
+  # "## Release note" section, so older versions are left out instead of showing a generic line.
+  RELEASE_NOTES_SINCE: '1.4.0'
 
 jobs:
   # ──────────────────────────────────────────────────────────────────
@@ -128,11 +135,94 @@ jobs:
           echo "Previous: ${LATEST}  →  Next: ${NEW_TAG} (${BUMP} bump)"
 
   # ──────────────────────────────────────────────────────────────────
-  # 2. Create annotated git tag
+  # 2. User-facing release notes (last 10 versions), shipped inside the app
+  #    (Settings > What's new) and inside each update (vpk --releaseNotes).
+  #    Built from the "## Release note" section of each merged PR's description
+  #    (versions after RELEASE_NOTES_SINCE); the file is never committed.
+  #    Runs before the tag: a release with no user-facing change stops here
+  #    unless "Release without user-facing changes" is ticked.
+  # ──────────────────────────────────────────────────────────────────
+  release-notes:
+    name: Build release notes
+    needs: compute-version
+    if: needs.compute-version.outputs.skip == 'false'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v6.0.0
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Collect PR descriptions
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.compute-version.outputs.version }}
+          REPO: ${{ github.repository }}
+        run: |
+          git tag --list 'v*' > tags.txt
+          dotnet run --project .github/tools/Rentier.ReleaseNotes -c Release -- plan \
+            --since "${RELEASE_NOTES_SINCE}" --version "${VERSION}" --tags-file tags.txt > versions.txt
+          echo "Versions that take their notes from PR descriptions:"; cat versions.txt
+
+          while read -r ver; do
+            [ -n "$ver" ] || continue
+            # The PRs of a version: squash commits "(#N)" since the tag before it. The version
+            # being released has no tag yet (or only a local one on a dry run), so it ends at HEAD.
+            prev=$( (git tag --list 'v*'; echo "$ver") | sort -uV | grep -B1 -x "$ver" | head -n1 )
+            [ "$prev" != "$ver" ] || prev=""
+            end="$ver"; git rev-parse -q --verify "refs/tags/${ver}" >/dev/null || end=HEAD
+            mkdir -p "pr-bodies/${ver}"
+            git log "${prev:+${prev}..}${end}" --no-merges --format=%s \
+              | grep -oE '\(#[0-9]+\)$' | tr -d '(#)' | sort -un \
+              | while read -r pr; do
+                  # A missing description would read as "no release note", so a fetch that keeps
+                  # failing stops the release instead of dropping that PR's note.
+                  for try in 1 2 3; do
+                    gh api "repos/${REPO}/pulls/${pr}" --jq '.body // ""' > "pr-bodies/${ver}/${pr}.md" && break
+                    rm -f "pr-bodies/${ver}/${pr}.md"
+                    if [ "$try" -eq 3 ]; then
+                      echo "::error::Could not read the description of PR #${pr}; the release stops here. Run it again."
+                      exit 1
+                    fi
+                    sleep 5
+                  done
+                done
+          done < versions.txt
+
+      - name: Build release notes
+        env:
+          VERSION: ${{ needs.compute-version.outputs.version }}
+          # Without it, a release whose PRs have no release note stops here (before the tag).
+          ALLOW_NO_USER_CHANGES: ${{ inputs.allow_no_user_changes }}
+        run: |
+          mkdir -p release-notes-app
+          dotnet run --project .github/tools/Rentier.ReleaseNotes -c Release -- build \
+            --since "${RELEASE_NOTES_SINCE}" --version "${VERSION}" --tags-file tags.txt \
+            --pr-bodies pr-bodies --out release-notes-app/release-notes.md \
+            --allow-no-user-changes "${ALLOW_NO_USER_CHANGES:-false}"
+          cat release-notes-app/release-notes.md
+
+      - uses: actions/upload-artifact@v7.0.1
+        with:
+          # Not "release-*": the release job downloads that pattern into the release assets.
+          name: app-release-notes
+          path: release-notes-app/release-notes.md
+          if-no-files-found: error
+          retention-days: 7
+
+  # ──────────────────────────────────────────────────────────────────
+  # 3. Create annotated git tag
   # ──────────────────────────────────────────────────────────────────
   tag:
     name: Create git tag
-    needs: compute-version
+    # After the release notes: a release with no user-facing change stops before anything is tagged.
+    needs: [compute-version, release-notes]
     if: needs.compute-version.outputs.skip == 'false'
     runs-on: ubuntu-latest
     permissions:
@@ -176,7 +266,7 @@ jobs:
   # Windows x64 — Velopack portable ZIP + InnoSetup installer of that layout
   # ──────────────────────────────────────────────────────────────────
   build-windows:
-    needs: [compute-version, tag]
+    needs: [compute-version, tag, release-notes]
     if: needs.compute-version.outputs.skip == 'false'
     runs-on: windows-latest
     permissions:
@@ -187,6 +277,12 @@ jobs:
       - uses: actions/setup-dotnet@v6.0.0
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Download release notes
+        uses: actions/download-artifact@v8.0.1
+        with:
+          name: app-release-notes
+          path: release-notes-app
 
       - name: Publish win-x64
         run: >
@@ -204,6 +300,8 @@ jobs:
           -p:AssemblyVersion=${{ needs.compute-version.outputs.version }}
           -p:FileVersion=${{ needs.compute-version.outputs.version }}
           -p:RentierUpdateFeedUrl=${{ env.REPO_URL }}
+          -p:RentierReleasesPageUrl=${{ env.REPO_URL }}/releases
+          -p:RentierReleaseNotesPath=${{ github.workspace }}/release-notes-app/release-notes.md
           -o ./publish/win-x64
 
       - name: Restore .NET tools (vpk)
@@ -230,6 +328,7 @@ jobs:
           --packVersion $env:VERSION --packDir publish/win-x64 --runtime win-x64
           --channel win-x64 -o velopack
           --mainExe Rentier.Desktop.exe --icon Assets/Icons/rentier.ico
+          --releaseNotes release-notes-app/release-notes.md
           --noInst -x
 
       - name: Collect Velopack feed and portable layout
@@ -284,7 +383,7 @@ jobs:
   # R2R intentionally excluded: not beneficial for Avalonia on macOS.
   # ──────────────────────────────────────────────────────────────────
   build-macos:
-    needs: [compute-version, tag]
+    needs: [compute-version, tag, release-notes]
     if: needs.compute-version.outputs.skip == 'false'
     runs-on: macos-latest
     permissions:
@@ -298,6 +397,12 @@ jobs:
       - uses: actions/setup-dotnet@v6.0.0
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Download release notes
+        uses: actions/download-artifact@v8.0.1
+        with:
+          name: app-release-notes
+          path: release-notes-app
 
       - name: Publish ${{ matrix.rid }}
         run: >
@@ -314,6 +419,8 @@ jobs:
           -p:AssemblyVersion=${{ needs.compute-version.outputs.version }}
           -p:FileVersion=${{ needs.compute-version.outputs.version }}
           -p:RentierUpdateFeedUrl=${{ env.REPO_URL }}
+          -p:RentierReleasesPageUrl=${{ env.REPO_URL }}/releases
+          -p:RentierReleaseNotesPath=${{ github.workspace }}/release-notes-app/release-notes.md
           -o ./publish/${{ matrix.rid }}
 
       - name: Restore .NET tools (vpk)
@@ -336,6 +443,7 @@ jobs:
           --packVersion "${VERSION}" --packDir "publish/${RID}" --runtime "${RID}"
           --channel "${RID}" -o velopack
           --mainExe Rentier.Desktop --icon Assets/Icons/rentier.icns
+          --releaseNotes release-notes-app/release-notes.md
           --bundleId com.rentier.desktop -x
 
       - name: Collect Velopack feed and build DMG
@@ -414,7 +522,7 @@ jobs:
   # R2R intentionally excluded: not beneficial for Avalonia on Linux.
   # ──────────────────────────────────────────────────────────────────
   build-linux:
-    needs: [compute-version, tag]
+    needs: [compute-version, tag, release-notes]
     if: needs.compute-version.outputs.skip == 'false'
     runs-on: ubuntu-latest
     permissions:
@@ -425,6 +533,12 @@ jobs:
       - uses: actions/setup-dotnet@v6.0.0
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Download release notes
+        uses: actions/download-artifact@v8.0.1
+        with:
+          name: app-release-notes
+          path: release-notes-app
 
       - name: Publish linux-x64
         run: >
@@ -441,6 +555,8 @@ jobs:
           -p:AssemblyVersion=${{ needs.compute-version.outputs.version }}
           -p:FileVersion=${{ needs.compute-version.outputs.version }}
           -p:RentierUpdateFeedUrl=${{ env.REPO_URL }}
+          -p:RentierReleasesPageUrl=${{ env.REPO_URL }}/releases
+          -p:RentierReleaseNotesPath=${{ github.workspace }}/release-notes-app/release-notes.md
           -o ./publish/linux-x64
 
       # The AppImage is the only Linux package: a .deb would install root-owned files under
@@ -462,6 +578,7 @@ jobs:
           --packVersion "${VERSION}" --packDir publish/linux-x64 --runtime linux-x64
           --channel linux-x64 -o velopack
           --mainExe Rentier.Desktop --icon Assets/Icons/png/rentier_256x256.png
+          --releaseNotes release-notes-app/release-notes.md
           --categories Office -x
 
       - name: Collect Velopack feed and AppImage
@@ -626,7 +743,7 @@ jobs:
   # Create GitHub Release with all artifacts + checksums
   # ──────────────────────────────────────────────────────────────────
   release:
-    needs: [compute-version, tag, build-windows, build-macos, build-linux, smoke-test-windows]
+    needs: [compute-version, tag, release-notes, build-windows, build-macos, build-linux, smoke-test-windows]
     if: needs.compute-version.outputs.skip == 'false'
     runs-on: ubuntu-latest
     permissions:
@@ -681,6 +798,12 @@ jobs:
           [ "$missing" -eq 0 ] || { echo "::error::Aborting release — missing artifact(s) above."; exit 1; }
           echo "All ${#expected[@]} platform artifacts present."
 
+      - name: Download release notes
+        uses: actions/download-artifact@v8.0.1
+        with:
+          name: app-release-notes
+          path: release-notes-app
+
       - name: Verify Velopack update feeds
         working-directory: dist
         env:
@@ -700,6 +823,10 @@ jobs:
               echo "::error::$feed has no Full package for ${VERSION}"; failed=1
             elif [ ! -f "$pkg" ]; then
               echo "::error::$feed references $pkg, which is not in the release"; failed=1
+            elif [ -s ../release-notes-app/release-notes.md ] && [ -z "$(jq -r --arg v "$VERSION" \
+                '.Assets[] | select(.Version == $v and .Type == "Full") | .NotesMarkdown // ""' "$feed")" ]; then
+              # The app's "What's new" on the update bar reads these notes from the feed.
+              echo "::error::$feed has no release notes for ${VERSION} (vpk pack --releaseNotes)"; failed=1
             else
               echo "${ch}: ${pkg}"
             fi
@@ -771,6 +898,7 @@ jobs:
             dist/releases.*.json
             dist/SHA256SUMS.txt
             release-notes.md
+            release-notes-app/release-notes.md
           if-no-files-found: error
           retention-days: 7
 

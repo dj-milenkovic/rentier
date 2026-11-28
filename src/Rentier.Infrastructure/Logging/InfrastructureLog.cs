@@ -110,6 +110,9 @@ internal static partial class InfrastructureLog
     [LoggerMessage(5005, LogLevel.Information, "Update available: version {TargetVersion}")]
     public static partial void UpdateAvailable(this ILogger logger, string targetVersion);
 
+    [LoggerMessage(5012, LogLevel.Debug, "Update release notes read: {VersionCount} version(s) newer than the installed one")]
+    public static partial void UpdateReleaseNotesRead(this ILogger logger, int versionCount);
+
     [LoggerMessage(5006, LogLevel.Debug, "No update available")]
     public static partial void UpdateNotAvailable(this ILogger logger);
 

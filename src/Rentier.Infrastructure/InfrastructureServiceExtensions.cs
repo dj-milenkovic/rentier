@@ -12,6 +12,7 @@ using Rentier.Infrastructure.Scraping;
 using Rentier.Infrastructure.Security;
 using Rentier.Infrastructure.Serialization;
 using Rentier.Infrastructure.Sync;
+using Rentier.Infrastructure.ReleaseNotes;
 using Rentier.Infrastructure.Updates;
 using Rentier.Infrastructure.Logging;
 
@@ -77,6 +78,7 @@ public static class InfrastructureServiceExtensions
         services.AddTransient<IXmlFilingSerializer, PpOpoXmlSerializer>();
         services.AddTransient<IMailboxSyncService, ImapMailboxSyncService>();
         services.AddSingleton<IUpdateService, VelopackUpdateService>();
+        services.AddSingleton<IInstalledReleaseNotesSource, EmbeddedReleaseNotesSource>();
         services.AddTransient<IDatabaseInitializer, DatabaseInitializer>();
     }
 }
