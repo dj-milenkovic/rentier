@@ -29,6 +29,9 @@ on:
         type: boolean
         default: false
 
+permissions:
+  contents: read
+
 # Serialize releases so concurrent merges never compute the same tag.
 # cancel-in-progress: false ensures both releases still happen, just sequentially.
 concurrency:
