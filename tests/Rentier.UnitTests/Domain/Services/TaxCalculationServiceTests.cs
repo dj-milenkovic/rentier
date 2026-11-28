@@ -193,6 +193,58 @@ public class TaxCalculationServiceTests
         result.GrossIncomeRsd.Should().Be(0.34m);
     }
 
+    [Theory]
+    [InlineData("0.30", "0.03", "117.21", "35.16", "3.52", "5.27", "1.75")]      // one unrounded expression gives 1.76
+    [InlineData("7.77", "0.03", "117.1234", "910.05", "3.51", "136.51", "133.00")] // one unrounded expression gives 132.99
+    [InlineData("33.33", "0", "0.335", "11.17", "0.00", "1.68", "1.68")]          // tax is taken from the ROUNDED gross; unrounded gives 1.67
+    public void Calculate_PerStepRounding_FiledAmountsAreDefinedOnRoundedIntermediates(
+        string income, string wht, string rate,
+        string expectedGross, string expectedWht, string expectedGrossTax, string expectedDue)
+    {
+        var result = TaxCalculationService.Calculate(
+            new IncomeTaxInput(IncomeType.Dividend, "TEST", TestDate, decimal.Parse(income, System.Globalization.CultureInfo.InvariantCulture), "USD",
+                decimal.Parse(wht, System.Globalization.CultureInfo.InvariantCulture), "USD"),
+            Rate(decimal.Parse(rate, System.Globalization.CultureInfo.InvariantCulture)));
+
+        result.GrossIncomeRsd.Should().Be(decimal.Parse(expectedGross, System.Globalization.CultureInfo.InvariantCulture));
+        result.WhtPaidRsd.Should().Be(decimal.Parse(expectedWht, System.Globalization.CultureInfo.InvariantCulture));
+        result.GrossTaxPayableRsd.Should().Be(decimal.Parse(expectedGrossTax, System.Globalization.CultureInfo.InvariantCulture));
+        result.TaxPayableRsd.Should().Be(decimal.Parse(expectedDue, System.Globalization.CultureInfo.InvariantCulture));
+    }
+
+    [Fact]
+    public void Calculate_WhtExactlyEqualsGrossTax_TaxDueIsZero()
+    {
+        // 100 @ 100 → gross tax 1500.00; WHT 15 @ 100 → 1500.00
+        var result = TaxCalculationService.Calculate(new IncomeTaxInput(IncomeType.Dividend, "TEST", TestDate, 100m, "USD", 15m, "USD"), Rate(100m));
+
+        result.GrossTaxPayableRsd.Should().Be(1500.00m);
+        result.WhtPaidRsd.Should().Be(1500.00m);
+        result.TaxPayableRsd.Should().Be(0.00m);
+    }
+
+    [Fact]
+    public void Calculate_WhtOneCentBelowGrossTax_TaxDueIsOneCent()
+    {
+        // WHT 14.9999 @ 100 → 1499.99 RSD, one cent under the 1500.00 gross tax
+        var result = TaxCalculationService.Calculate(new IncomeTaxInput(IncomeType.Dividend, "TEST", TestDate, 100m, "USD", 14.9999m, "USD"), Rate(100m));
+
+        result.WhtPaidRsd.Should().Be(1499.99m);
+        result.GrossTaxPayableRsd.Should().Be(1500.00m);
+        result.TaxPayableRsd.Should().Be(0.01m);
+    }
+
+    [Fact]
+    public void Calculate_VeryLargeAmountWithFourDecimalRate_NoOverflowAndExact()
+    {
+        // 1,000,000,000 × 117.1234 = 117,123,400,000.00; × 0.15 = 17,568,510,000.00
+        var result = TaxCalculationService.Calculate(new IncomeTaxInput(IncomeType.Dividend, "TEST", TestDate, 1_000_000_000m, "USD", 0m, "USD"), Rate(117.1234m));
+
+        result.GrossIncomeRsd.Should().Be(117_123_400_000.00m);
+        result.GrossTaxPayableRsd.Should().Be(17_568_510_000.00m);
+        result.TaxPayableRsd.Should().Be(17_568_510_000.00m);
+    }
+
     [Fact]
     public void Calculate_LowercaseIncomeCurrency_MatchesUppercaseRate()
     {
