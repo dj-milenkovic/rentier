@@ -32,6 +32,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Parsers\Fixtures\*.csv" />
     <EmbeddedResource Include="Parsers\Fixtures\*.txt" />
+    <EmbeddedResource Include="ReleaseNotes\Fixtures\release-notes.md" LogicalName="Rentier.Tests.ReleaseNotes.md" />
   </ItemGroup>
 
 </Project>

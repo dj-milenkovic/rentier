@@ -1,0 +1,44 @@
+name: PR Release Note
+
+# Checks the "## Release note" section of the PR description (see .github/pull_request_template.md).
+# Its "### EN" and "### SR" bullets become this PR's entry in the app's "What's new" once it is released.
+# The PR title decides whether a note is required:
+#   - feat, fix and perf are user-facing and need a note in both languages, unless every scope is
+#     internal: build, ci, claude, deps, dev, docs, release, test(s). Example: "fix(ci): ...".
+#   - Every other type (chore, ci, refactor, test, docs, Dependabot's chore: Bump ...) needs none.
+#   - A note in one language only always fails: the app shows notes in English and Serbian.
+# Editing the title or the description re-runs the check.
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+    branches: [main]
+
+concurrency:
+  group: release-note-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  release-note:
+    name: Release note (EN + SR)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: actions/setup-dotnet@v6.0.0
+        with:
+          dotnet-version: '10.x'
+
+      - name: Check the release note
+        env:
+          # Passed through the environment, never interpolated into the script: both are
+          # written by whoever opens the PR.
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          printf '%s' "${PR_BODY}" > "${RUNNER_TEMP}/pr-body.md"
+          dotnet run --project .github/tools/Rentier.ReleaseNotes -c Release -- check \
+            --title "${PR_TITLE}" --body-file "${RUNNER_TEMP}/pr-body.md"

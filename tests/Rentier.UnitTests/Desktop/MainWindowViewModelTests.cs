@@ -87,6 +87,7 @@ public class MainWindowViewModelTests
         services.AddSingleton(BuildImporterVm(getProfileForManualFiling));
         services.AddSingleton(BuildAppearanceVm());
         services.AddSingleton(DesktopTestDoubles.DiagnosticsViewModel());
+        services.AddSingleton(DesktopTestDoubles.WhatsNewViewModel());
 
         return services.BuildServiceProvider();
     }
@@ -173,7 +174,7 @@ public class MainWindowViewModelTests
         var provider = BuildProvider();
         var updateService = provider.GetRequiredService<IUpdateService>();
         return new(provider, BuildLocalizationService(), updateService, BuildAppVersionService(),
-            provider.GetRequiredService<INavigationRequestSource>());
+            provider.GetRequiredService<INavigationRequestSource>(), Substitute.For<IReleaseNotesDialogService>());
     }
 
     // ── Constructor tests ─────────────────────────────────────────────────────
@@ -195,12 +196,12 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
-    public void NavigationEntries_ContainsTenEntries()
+    public void NavigationEntries_ContainsTwelveEntries()
     {
         var vm = CreateVm();
 
-        // 4 top-level + 1 Settings group header + 5 children
-        vm.NavigationEntries.Should().HaveCount(11);
+        // 4 top-level + 1 Settings group header + 7 children
+        vm.NavigationEntries.Should().HaveCount(12);
     }
 
     [Fact]
@@ -212,7 +213,7 @@ public class MainWindowViewModelTests
 
         var vm = new MainWindowViewModel(
             provider, BuildLocalizationService(), updateService, appVersionService,
-            provider.GetRequiredService<INavigationRequestSource>());
+            provider.GetRequiredService<INavigationRequestSource>(), Substitute.For<IReleaseNotesDialogService>());
 
         vm.AppVersionText.Should().Be("v9.9.9");
     }
@@ -329,7 +330,7 @@ public class MainWindowViewModelTests
         var provider = BuildProvider();
         var vm = new MainWindowViewModel(
             provider, BuildLocalizationService(), provider.GetRequiredService<IUpdateService>(),
-            BuildAppVersionService(), provider.GetRequiredService<INavigationRequestSource>());
+            BuildAppVersionService(), provider.GetRequiredService<INavigationRequestSource>(), Substitute.For<IReleaseNotesDialogService>());
         return (vm, provider.GetRequiredService<INavigationService>());
     }
 

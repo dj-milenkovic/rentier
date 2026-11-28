@@ -32,13 +32,17 @@ If you prefer not to run an installer, use the Windows ZIP, the macOS DMG or the
 
 The packages above update themselves. Packages of **v1.3.0 and earlier**, and the **v1.3.1** packages without `-velopack` in their name, **do not**: see [Switching from a package that does not update itself](#switching-from-a-package-that-does-not-update-itself) below.
 
-Each time Rentier starts, it checks the Releases page for a newer version. If there is one, a bar appears at the top of the window:
+Each time Rentier starts, it checks the Releases page for a newer version. If there is one, a thin bar appears across the top of the window:
 
 1. **"Update v<version> available"**: choose **Update Now** to download it, or **Later** to hide the bar. Rentier asks again the next time it starts.
 2. **"Downloading update... <n>%"** shows the download progress.
 3. **"Update ready. Restart to apply."**: choose **Restart Now** to close Rentier, install the update and start it again, or **Later** to keep working. If you choose Later, the update is installed the next time you start Rentier.
 
+While an update is offered, downloading or ready, the bar also has a **What's new** button. It opens the changes in every version between the one you have and the new one, so nothing is missed when you skip a few updates. Before the download starts, the window also offers **Update Now**.
+
 If the download or the installation fails, a red bar shows **"Update failed: <reason>"** with **Retry** and **Dismiss**. **Retry** downloads the update again; when it is done, the "Update ready" bar appears again. If the reason says the update could not be installed, you can also close and reopen Rentier: it installs a downloaded update when it starts. If Rentier cannot reach the Releases page, for example when you are offline, it shows no bar and simply checks again on the next start.
+
+To read the changes in the version you have, and in the nine before it, open **Settings → What's new**. Older versions are listed on the [GitHub Releases](https://github.com/dj-milenkovic/rentier/releases) page.
 
 ### Switching from a package that does not update itself
 

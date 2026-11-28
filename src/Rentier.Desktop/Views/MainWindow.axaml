@@ -21,216 +21,225 @@
     <conv:BoolToDoubleConverter x:Key="ChildFontSizeConverter" TrueValue="12" FalseValue="13" />
   </Window.Resources>
 
+  <Window.Styles>
+    <!-- Update bar: info tint normally, danger tint after a failure. -->
+    <Style Selector="Border.update-bar">
+      <Setter Property="Background"  Value="{DynamicResource RentierInfoBackgroundBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource RentierBorderBrush}" />
+    </Style>
+    <Style Selector="Border.update-bar.error">
+      <Setter Property="Background"  Value="{DynamicResource RentierDangerBackgroundBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource RentierDangerForegroundBrush}" />
+    </Style>
+    <Style Selector="TextBlock.update-bar-text">
+      <Setter Property="FontSize"          Value="12" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Foreground"        Value="{DynamicResource RentierTextPrimaryBrush}" />
+    </Style>
+  </Window.Styles>
+
   <DockPanel>
 
-    <!-- ── Sidebar ───────────────────────────────────────────────────────── -->
-    <Border DockPanel.Dock="Left"
-            Width="220"
-            Background="{DynamicResource RentierSidebarBrush}"
-            BorderBrush="{DynamicResource RentierBorderBrush}"
-            BorderThickness="0,0,1,0">
-      <DockPanel>
+    <!-- ── Update notification bar: one thin strip across the whole window ── -->
+    <Border DockPanel.Dock="Top"
+            Classes="update-bar"
+            Classes.error="{Binding IsErrorState}"
+            AutomationProperties.Name="Update Notification Bar"
+            IsVisible="{Binding UpdateBarVisible}"
+            Padding="12,3"
+            BorderThickness="0,0,0,1">
+      <Grid ColumnDefinitions="*,Auto" MinHeight="26">
 
-        <!-- Logo header -->
-        <Border DockPanel.Dock="Top"
-                Padding="16,14,16,14"
-                BorderBrush="{DynamicResource RentierBorderBrush}"
-                BorderThickness="0,0,0,1"
-                Margin="0,0,0,8">
-          <StackPanel HorizontalAlignment="Center">
-            <Image Source="avares://Rentier.Desktop/Assets/Icons/app-icon-alpha.png"
-                   Width="80" Height="80"
-                   HorizontalAlignment="Center"
-                   RenderOptions.BitmapInterpolationMode="HighQuality" />
-            <TextBlock Text="Rentier"
-                       FontSize="25" FontWeight="SemiBold"
-                       LetterSpacing="1.25"
-                       Foreground="{DynamicResource RentierTextPrimaryBrush}"
-                       HorizontalAlignment="Center" />
+        <!-- Message (one per state) -->
+        <Panel VerticalAlignment="Center">
+          <TextBlock Classes="update-bar-text"
+                     Text="{Binding UpdateAvailableText}"
+                     IsVisible="{Binding IsUpdateAvailableState}" />
+          <StackPanel Orientation="Horizontal" Spacing="8"
+                      IsVisible="{Binding IsDownloadingState}">
+            <TextBlock Classes="update-bar-text" Text="{Binding DownloadingText}" />
+            <ProgressBar Value="{Binding DownloadProgress}"
+                         Minimum="0" Maximum="100"
+                         Width="120" MinHeight="4" Height="4"
+                         AutomationProperties.Name="Download Progress"
+                         VerticalAlignment="Center" />
           </StackPanel>
-        </Border>
+          <TextBlock Classes="update-bar-text"
+                     Text="{Binding [Update_Ready_Message], Source={StaticResource Localizer}}"
+                     IsVisible="{Binding IsDownloadedState}" />
+          <TextBlock Classes="update-bar-text"
+                     Text="{Binding UpdateFailedText}"
+                     IsVisible="{Binding IsErrorState}" />
+        </Panel>
 
-        <!-- App version footer — pinned to the bottom of the sidebar. The nav
-             ListBox below remains the DockPanel's last child, so it still fills
-             all remaining vertical space regardless of this element's Dock. -->
-        <SelectableTextBlock DockPanel.Dock="Bottom"
-                              Text="{Binding AppVersionText}"
-                              FontSize="11"
-                              Foreground="{DynamicResource RentierTextSecondaryBrush}"
-                              HorizontalAlignment="Center"
-                              Margin="0,4,0,10"
-                              AutomationProperties.Name="App Version" />
+        <!-- Actions (one set per state) -->
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+          <Button Classes="compact"
+                  Content="{Binding [Update_WhatsNew_Button], Source={StaticResource Localizer}}"
+                  Command="{Binding ShowUpdateReleaseNotesCommand}"
+                  IsVisible="{Binding CanShowUpdateReleaseNotes}" />
 
-        <!-- Navigation list -->
-        <ListBox DockPanel.Dock="Top"
-                 Classes="sidebar-nav"
-                 ItemsSource="{Binding NavigationEntries}"
-                 SelectedItem="{Binding SelectedEntry}">
-          <ListBox.ItemTemplate>
-            <DataTemplate x:DataType="vm:NavigationEntry">
-              <!-- Outer container: hidden when IsVisible=false (e.g. ManualFiling transient entry) -->
-              <Grid IsVisible="{Binding IsVisible}"
-                    Height="{Binding IsChild, Converter={StaticResource ChildHeightConverter}}">
+          <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding IsUpdateAvailableState}">
+            <Button Classes="accent compact"
+                    Content="{Binding [Update_Now_Button], Source={StaticResource Localizer}}"
+                    Command="{Binding BeginUpdateCommand}" />
+            <Button Classes="compact"
+                    Content="{Binding [Update_Later_Button], Source={StaticResource Localizer}}"
+                    Command="{Binding DismissUpdateCommand}" />
+          </StackPanel>
 
-                <!-- ── Group header row (Settings collapsible group) ─────── -->
-                <Grid ColumnDefinitions="4,44,*"
-                      IsVisible="{Binding IsGroup}">
+          <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding IsDownloadedState}">
+            <Button Classes="accent compact"
+                    Content="{Binding [Update_Restart_Button], Source={StaticResource Localizer}}"
+                    Command="{Binding RestartNowCommand}" />
+            <Button Classes="compact"
+                    Content="{Binding [Update_Later_Button], Source={StaticResource Localizer}}"
+                    Command="{Binding DismissRestartCommand}" />
+          </StackPanel>
 
-                  <!-- Spacer (no active pipe for group headers) -->
-                  <Border Grid.Column="0" Width="4" />
+          <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding IsErrorState}">
+            <Button Classes="compact"
+                    Content="{Binding [Update_Retry_Button], Source={StaticResource Localizer}}"
+                    Command="{Binding RetryDownloadCommand}" />
+            <Button Classes="compact"
+                    Content="{Binding [Update_Dismiss_Button], Source={StaticResource Localizer}}"
+                    Command="{Binding DismissUpdateCommand}" />
+          </StackPanel>
+        </StackPanel>
 
-                  <!-- Group icon -->
-                  <PathIcon Grid.Column="1"
-                            Data="{Binding Icon}"
-                            Width="18" Height="18"
-                            Foreground="{DynamicResource RentierTextPrimaryBrush}"
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center" />
-
-                  <!-- Label + chevron -->
-                  <Grid Grid.Column="2"
-                        ColumnDefinitions="*,24">
-                    <TextBlock Grid.Column="0"
-                               Text="{Binding Label}"
-                               FontSize="13" FontWeight="Medium"
-                               Foreground="{DynamicResource RentierTextPrimaryBrush}"
-                               VerticalAlignment="Center" />
-
-                    <!-- Chevron — rotates 0° (collapsed/right) → 90° (expanded/down) -->
-                    <PathIcon Grid.Column="1"
-                              Data="{StaticResource NavChevronIcon}"
-                              Width="12" Height="12"
-                              Foreground="{DynamicResource RentierTextPrimaryBrush}"
-                              HorizontalAlignment="Center"
-                              VerticalAlignment="Center"
-                              RenderTransformOrigin="50%,50%">
-                      <PathIcon.RenderTransform>
-                        <RotateTransform Angle="{Binding IsExpanded, Converter={StaticResource BoolToAngleConverter}}" />
-                      </PathIcon.RenderTransform>
-                    </PathIcon>
-                  </Grid>
-                </Grid>
-
-                <!-- ── Regular / child item row ──────────────────────────── -->
-                <Grid ColumnDefinitions="4,44,*"
-                      IsVisible="{Binding !IsGroup}">
-
-                  <!-- Active selection pipe — driven by IsActive (decoupled from ListBox selection) -->
-                  <Border Grid.Column="0"
-                          Width="3" Height="20"
-                          CornerRadius="1.5"
-                          Background="{DynamicResource RentierNavActivePipeBrush}"
-                          IsVisible="{Binding IsActive}"
-                          VerticalAlignment="Center"
-                          HorizontalAlignment="Left" />
-
-                  <!-- Nav icon — offset left for child items (IndentLevel=1 → 16px left margin) -->
-                  <PathIcon Grid.Column="1"
-                            Data="{Binding Icon}"
-                            Width="18" Height="18"
-                            Margin="{Binding IndentLevel, Converter={x:Static conv:IndentToMarginConverter.Instance}}"
-                            Foreground="{DynamicResource RentierTextPrimaryBrush}"
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center" />
-
-                  <!-- Label — smaller font for child items -->
-                  <TextBlock Grid.Column="2"
-                             Text="{Binding Label}"
-                             FontSize="{Binding IsChild, Converter={StaticResource ChildFontSizeConverter}}"
-                             FontWeight="Medium"
-                             Foreground="{DynamicResource RentierTextPrimaryBrush}"
-                             VerticalAlignment="Center" />
-                </Grid>
-
-              </Grid>
-            </DataTemplate>
-          </ListBox.ItemTemplate>
-        </ListBox>
-
-      </DockPanel>
+      </Grid>
     </Border>
 
-    <!-- ── Content area ──────────────────────────────────────────────────── -->
     <DockPanel>
 
-      <!-- ── Update notification bar (DockPanel.Dock="Top", shown above content) ── -->
-      <Border DockPanel.Dock="Top"
-              AutomationProperties.Name="Update Notification Bar"
-              IsVisible="{Binding UpdateBarVisible}"
-              Padding="12,4">
-        <Panel>
+      <!-- ── Sidebar ───────────────────────────────────────────────────────── -->
+      <Border DockPanel.Dock="Left"
+              Width="220"
+              Background="{DynamicResource RentierSidebarBrush}"
+              BorderBrush="{DynamicResource RentierBorderBrush}"
+              BorderThickness="0,0,1,0">
+        <DockPanel>
 
-          <!-- UpdateAvailable panel -->
-          <Border Background="{DynamicResource RentierInfoBrush}"
-                  CornerRadius="4"
-                  Padding="12,6"
-                  IsVisible="{Binding IsUpdateAvailableState}">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <TextBlock Text="{Binding UpdateAvailableText}"
-                         VerticalAlignment="Center"
-                         Foreground="{DynamicResource RentierTextPrimaryBrush}" />
-              <Button Content="{Binding [Update_Now_Button], Source={StaticResource Localizer}}"
-                      Command="{Binding BeginUpdateCommand}"
-                      Classes="accent" />
-              <Button Content="{Binding [Update_Later_Button], Source={StaticResource Localizer}}"
-                      Command="{Binding DismissUpdateCommand}" />
+          <!-- Logo header -->
+          <Border DockPanel.Dock="Top"
+                  Padding="16,14,16,14"
+                  BorderBrush="{DynamicResource RentierBorderBrush}"
+                  BorderThickness="0,0,0,1"
+                  Margin="0,0,0,8">
+            <StackPanel HorizontalAlignment="Center">
+              <Image Source="avares://Rentier.Desktop/Assets/Icons/app-icon-alpha.png"
+                     Width="80" Height="80"
+                     HorizontalAlignment="Center"
+                     RenderOptions.BitmapInterpolationMode="HighQuality" />
+              <TextBlock Text="Rentier"
+                         FontSize="25" FontWeight="SemiBold"
+                         LetterSpacing="1.25"
+                         Foreground="{DynamicResource RentierTextPrimaryBrush}"
+                         HorizontalAlignment="Center" />
             </StackPanel>
           </Border>
 
-          <!-- Downloading panel -->
-          <Border Background="{DynamicResource RentierInfoBrush}"
-                  CornerRadius="4"
-                  Padding="12,6"
-                  IsVisible="{Binding IsDownloadingState}">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <TextBlock Text="{Binding DownloadingText}"
-                         VerticalAlignment="Center"
-                         Foreground="{DynamicResource RentierTextPrimaryBrush}" />
-              <ProgressBar Value="{Binding DownloadProgress}"
-                           Minimum="0" Maximum="100"
-                           Width="120"
-                           AutomationProperties.Name="Download Progress"
-                           VerticalAlignment="Center" />
-            </StackPanel>
-          </Border>
+          <!-- App version footer — pinned to the bottom of the sidebar. The nav
+               ListBox below remains the DockPanel's last child, so it still fills
+               all remaining vertical space regardless of this element's Dock. -->
+          <SelectableTextBlock DockPanel.Dock="Bottom"
+                                Text="{Binding AppVersionText}"
+                                FontSize="11"
+                                Foreground="{DynamicResource RentierTextSecondaryBrush}"
+                                HorizontalAlignment="Center"
+                                Margin="0,4,0,10"
+                                AutomationProperties.Name="App Version" />
 
-          <!-- Downloaded panel -->
-          <Border Background="{DynamicResource RentierInfoBrush}"
-                  CornerRadius="4"
-                  Padding="12,6"
-                  IsVisible="{Binding IsDownloadedState}">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <TextBlock Text="{Binding [Update_Ready_Message], Source={StaticResource Localizer}}"
-                         VerticalAlignment="Center"
-                         Foreground="{DynamicResource RentierTextPrimaryBrush}" />
-              <Button Content="{Binding [Update_Restart_Button], Source={StaticResource Localizer}}"
-                      Command="{Binding RestartNowCommand}"
-                      Classes="accent" />
-              <Button Content="{Binding [Update_Later_Button], Source={StaticResource Localizer}}"
-                      Command="{Binding DismissRestartCommand}" />
-            </StackPanel>
-          </Border>
+          <!-- Navigation list -->
+          <ListBox DockPanel.Dock="Top"
+                   Classes="sidebar-nav"
+                   ItemsSource="{Binding NavigationEntries}"
+                   SelectedItem="{Binding SelectedEntry}">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:NavigationEntry">
+                <!-- Outer container: hidden when IsVisible=false (e.g. ManualFiling transient entry) -->
+                <Grid IsVisible="{Binding IsVisible}"
+                      Height="{Binding IsChild, Converter={StaticResource ChildHeightConverter}}">
 
-          <!-- Error panel -->
-          <Border Background="{DynamicResource RentierErrorBrush}"
-                  CornerRadius="4"
-                  Padding="12,6"
-                  IsVisible="{Binding IsErrorState}">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <TextBlock Text="{Binding UpdateFailedText}"
-                         VerticalAlignment="Center"
-                         Foreground="{DynamicResource RentierTextPrimaryBrush}" />
-              <Button Content="{Binding [Update_Retry_Button], Source={StaticResource Localizer}}"
-                      Command="{Binding RetryDownloadCommand}" />
-              <Button Content="{Binding [Update_Dismiss_Button], Source={StaticResource Localizer}}"
-                      Command="{Binding DismissUpdateCommand}" />
-            </StackPanel>
-          </Border>
+                  <!-- ── Group header row (Settings collapsible group) ─────── -->
+                  <Grid ColumnDefinitions="4,44,*"
+                        IsVisible="{Binding IsGroup}">
 
-        </Panel>
+                    <!-- Spacer (no active pipe for group headers) -->
+                    <Border Grid.Column="0" Width="4" />
+
+                    <!-- Group icon -->
+                    <PathIcon Grid.Column="1"
+                              Data="{Binding Icon}"
+                              Width="18" Height="18"
+                              Foreground="{DynamicResource RentierTextPrimaryBrush}"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center" />
+
+                    <!-- Label + chevron -->
+                    <Grid Grid.Column="2"
+                          ColumnDefinitions="*,24">
+                      <TextBlock Grid.Column="0"
+                                 Text="{Binding Label}"
+                                 FontSize="13" FontWeight="Medium"
+                                 Foreground="{DynamicResource RentierTextPrimaryBrush}"
+                                 VerticalAlignment="Center" />
+
+                      <!-- Chevron — rotates 0° (collapsed/right) → 90° (expanded/down) -->
+                      <PathIcon Grid.Column="1"
+                                Data="{StaticResource NavChevronIcon}"
+                                Width="12" Height="12"
+                                Foreground="{DynamicResource RentierTextPrimaryBrush}"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                RenderTransformOrigin="50%,50%">
+                        <PathIcon.RenderTransform>
+                          <RotateTransform Angle="{Binding IsExpanded, Converter={StaticResource BoolToAngleConverter}}" />
+                        </PathIcon.RenderTransform>
+                      </PathIcon>
+                    </Grid>
+                  </Grid>
+
+                  <!-- ── Regular / child item row ──────────────────────────── -->
+                  <Grid ColumnDefinitions="4,44,*"
+                        IsVisible="{Binding !IsGroup}">
+
+                    <!-- Active selection pipe — driven by IsActive (decoupled from ListBox selection) -->
+                    <Border Grid.Column="0"
+                            Width="3" Height="20"
+                            CornerRadius="1.5"
+                            Background="{DynamicResource RentierNavActivePipeBrush}"
+                            IsVisible="{Binding IsActive}"
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Left" />
+
+                    <!-- Nav icon — offset left for child items (IndentLevel=1 → 16px left margin) -->
+                    <PathIcon Grid.Column="1"
+                              Data="{Binding Icon}"
+                              Width="18" Height="18"
+                              Margin="{Binding IndentLevel, Converter={x:Static conv:IndentToMarginConverter.Instance}}"
+                              Foreground="{DynamicResource RentierTextPrimaryBrush}"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center" />
+
+                    <!-- Label — smaller font for child items -->
+                    <TextBlock Grid.Column="2"
+                               Text="{Binding Label}"
+                               FontSize="{Binding IsChild, Converter={StaticResource ChildFontSizeConverter}}"
+                               FontWeight="Medium"
+                               Foreground="{DynamicResource RentierTextPrimaryBrush}"
+                               VerticalAlignment="Center" />
+                  </Grid>
+
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+
+        </DockPanel>
       </Border>
 
-      <!-- ── Main content ───────────────────────────────────────────────────── -->
+      <!-- ── Content area ──────────────────────────────────────────────────── -->
       <ContentControl Content="{Binding CurrentViewModel}"
                       Margin="0"
                       Background="{DynamicResource RentierRegionBrush}" />

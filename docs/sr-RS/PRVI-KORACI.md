@@ -32,13 +32,17 @@ Ako ne želite da pokrećete instaler, koristite Windows ZIP, macOS DMG ili Linu
 
 Gore navedeni paketi se sami ažuriraju. Paketi **v1.3.0 i stariji**, kao i **v1.3.1** paketi bez `-velopack` u nazivu, **to ne mogu**: pogledajte [Prelazak sa paketa koji se ne ažurira sam](#prelazak-sa-paketa-koji-se-ne-ažurira-sam) ispod.
 
-Pri svakom pokretanju Rentier proverava da li na Releases stranici postoji novija verzija. Ako postoji, na vrhu prozora se pojavljuje traka:
+Pri svakom pokretanju Rentier proverava da li na Releases stranici postoji novija verzija. Ako postoji, preko celog vrha prozora se pojavljuje tanka traka:
 
 1. **„Dostupna je nova verzija v<verzija>”**: izaberite **Ažuriraj sada** da je preuzmete ili **Kasnije** da sakrijete traku. Rentier će vas ponovo pitati pri sledećem pokretanju.
 2. **„Preuzimanje ažuriranja... <n>%”** prikazuje napredak preuzimanja.
 3. **„Ažuriranje je spremno. Ponovo pokrenite program da biste ga primenili.”**: izaberite **Ponovo pokreni** da se Rentier zatvori, instalira ažuriranje i ponovo pokrene, ili **Kasnije** da nastavite sa radom. Ako izaberete Kasnije, ažuriranje se instalira pri sledećem pokretanju Rentier-a.
 
+Dok je ažuriranje ponuđeno, dok se preuzima ili kada je spremno, na traci je i dugme **Šta je novo**. Ono otvara izmene u svim verzijama između one koju imate i nove, pa ništa ne propustite i kada preskočite nekoliko ažuriranja. Pre nego što preuzimanje počne, prozor nudi i **Ažuriraj sada**.
+
 Ako preuzimanje ili instalacija ne uspe, crvena traka prikazuje **„Ažuriranje nije uspelo: <razlog>”** sa dugmićima **Pokušaj ponovo** i **Zatvori**. **Pokušaj ponovo** ponovo preuzima ažuriranje; kada se preuzimanje završi, ponovo se pojavljuje traka „Ažuriranje je spremno”. Ako razlog kaže da ažuriranje nije moglo da se instalira, možete i da zatvorite i ponovo otvorite Rentier: preuzeto ažuriranje se instalira pri pokretanju. Ako Rentier ne može da pristupi Releases stranici, na primer kada niste povezani na internet, ne prikazuje nikakvu traku i jednostavno ponovo proverava pri sledećem pokretanju.
+
+Izmene u verziji koju imate, i u devet verzija pre nje, pročitajte u **Podešavanja → Šta je novo**. Starije verzije su navedene na stranici [GitHub Releases](https://github.com/dj-milenkovic/rentier/releases).
 
 ### Prelazak sa paketa koji se ne ažurira sam
 

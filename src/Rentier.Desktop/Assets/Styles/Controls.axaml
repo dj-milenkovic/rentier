@@ -49,6 +49,13 @@
     <Setter Property="CornerRadius" Value="{StaticResource RentierControlCornerRadius}" />
   </Style>
 
+  <!-- ── Compact button (update bar: keeps the strip thin) ──────────────── -->
+  <Style Selector="Button.compact">
+    <Setter Property="Padding"   Value="10,2" />
+    <Setter Property="MinHeight" Value="24" />
+    <Setter Property="FontSize"  Value="12" />
+  </Style>
+
   <!-- ── Global corner-radius harmonisation ─────────────────────────────── -->
   <Style Selector="Button">
     <Setter Property="CornerRadius" Value="{StaticResource RentierControlCornerRadius}" />

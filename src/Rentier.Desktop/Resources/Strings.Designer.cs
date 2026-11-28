@@ -309,4 +309,16 @@ public static class Strings
     public static string Update_Error_DownloadCancelled => "the download was cancelled.";
     public static string Update_Error_ApplyFailed => "the update could not be installed. Close and reopen Rentier to try again.";
     public static string Update_Error_Unknown => "an unexpected error occurred.";
+
+    // Release notes: update bar "What's new", its dialog, and Settings > What's new
+    public static string Nav_Settings_WhatsNew => "What's new";
+    public static string Update_WhatsNew_Button => "What's new";
+    public static string WhatsNew_Header => "What's new";
+    public static string WhatsNew_Subheader => "You're using {0}. Here's what changed in recent versions.";
+    public static string WhatsNew_Empty => "This copy of Rentier has no release notes.";
+    public static string WhatsNew_LoadError => "The release notes could not be loaded.";
+    public static string WhatsNew_OlderReleases => "Older versions: GitHub Releases";
+    public static string ReleaseNotesDialog_Title => "What's new";
+    public static string ReleaseNotesDialog_Subheader => "Changes from {0} to {1}";
+    public static string ReleaseNotesDialog_Close => "Close";
 }

@@ -6,6 +6,13 @@
     <RentierUpdateFeedUrl>https://github.com/dj-milenkovic/rentier</RentierUpdateFeedUrl>
   </PropertyGroup>
 
+  <!-- Release notes for Settings > What's new belong to the release process: only the release
+       workflow passes them (-p:RentierReleaseNotesPath=..., a temporary file built from the PR
+       descriptions). Other builds carry none. -->
+  <ItemGroup Condition="'$(RentierReleaseNotesPath)' != ''">
+    <EmbeddedResource Include="$(RentierReleaseNotesPath)" LogicalName="Rentier.ReleaseNotes.md" Visible="false" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\Rentier.Domain\Rentier.Domain.csproj" />
     <ProjectReference Include="..\Rentier.Application\Rentier.Application.csproj" />

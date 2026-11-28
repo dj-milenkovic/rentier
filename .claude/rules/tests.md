@@ -16,6 +16,9 @@ paths:
   `[Trait("Category", "Integration")]` (matches CI's `--filter` usage).
 - **`tests/Rentier.Scenarios.Tests`** — end-to-end scenarios spanning multiple
   layers; prefer realistic fixture data over mocks where practical.
+- **`.github/tools/Rentier.ReleaseNotes.Tests`** — the release tool's tests and the workflow /
+  PR-template contract tests. Not in `Rentier.slnx`: run it directly (`dotnet test <its folder>`);
+  CI runs it in `release-tools.yml`.
 - **`tests/Rentier.Tests.Common`** — shared builders/fixtures; put reusable test
   data here instead of duplicating across projects.
 - One behavior per test; Arrange-Act-Assert; avoid multiple assertions per test

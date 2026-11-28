@@ -55,6 +55,10 @@ internal sealed class VelopackManagerAdapter : IVelopackManager
     // before the last restart still counts.
     public bool HasUpdateToApply => _manager.UpdatePendingRestart is not null;
 
+    public string? PendingReleaseNotesMarkdown => _pendingUpdate?.TargetFullRelease?.NotesMarkdown;
+
+    public string? CurrentVersion => _manager.CurrentVersion?.ToString();
+
     public async Task<string?> CheckForUpdatesAsync(CancellationToken cancellationToken)
     {
         // UpdateManager.CheckForUpdatesAsync takes no token; WaitAsync stops waiting on cancellation.

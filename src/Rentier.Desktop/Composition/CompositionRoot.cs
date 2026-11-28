@@ -43,6 +43,11 @@ public static class CompositionRoot
             ICommandHandler<SetUserPreferenceCommand, Result<VoidResult, Error>>,
             SetUserPreferenceCommandHandler>();
 
+        // Release notes built into this copy (Settings > What's new)
+        services.AddTransient<
+            IQueryHandler<GetInstalledReleaseNotesQuery, Result<IReadOnlyList<ReleaseNoteDto>, Error>>,
+            GetInstalledReleaseNotesQueryHandler>();
+
         // Application shared services
 
         // Application handlers
@@ -64,6 +69,7 @@ public static class CompositionRoot
         services.AddSingleton<ProfileSettingsViewModel>();
         services.AddSingleton<AppearanceSettingsViewModel>();
         services.AddSingleton<DiagnosticsSettingsViewModel>();
+        services.AddSingleton<WhatsNewSettingsViewModel>();
         services.AddSingleton<MainWindowViewModel>();
 
         // Holiday handlers
@@ -139,6 +145,7 @@ public static class CompositionRoot
         services.AddSingleton<IConfirmationService, ConfirmationService>();
         services.AddSingleton<IFileSaveService, FileSaveService>();
         services.AddSingleton<IFolderLauncher, FolderLauncher>();
+        services.AddSingleton<IReleaseNotesDialogService, ReleaseNotesDialogService>();
         services.AddTransient<IReportImportDialogService, ReportImportDialogService>();
         services.AddSingleton<NavigationService>();
         services.AddSingleton<INavigationService>(sp => sp.GetRequiredService<NavigationService>());

@@ -7,6 +7,7 @@ public static class SrLatnStrings
 {
     private const string OBRISI = "Obriši";
     private const string OTKAZI = "Otkaži";
+    private const string STA_JE_NOVO = "Šta je novo";
 
     public static readonly IReadOnlyDictionary<string, string> All = new Dictionary<string, string>
     {
@@ -303,5 +304,17 @@ public static class SrLatnStrings
         ["Update_Error_DownloadCancelled"] = "preuzimanje je otkazano.",
         ["Update_Error_ApplyFailed"] = "ažuriranje nije moglo da se instalira. Zatvorite i ponovo otvorite Rentier da biste pokušali još jednom.",
         ["Update_Error_Unknown"] = "došlo je do neočekivane greške.",
+
+        // ── Release notes ────────────────────────────────────────────────────
+        ["Nav_Settings_WhatsNew"] = STA_JE_NOVO,
+        ["Update_WhatsNew_Button"] = STA_JE_NOVO,
+        ["WhatsNew_Header"] = STA_JE_NOVO,
+        ["WhatsNew_Subheader"] = "Koristite {0}. Evo šta se promenilo u poslednjim verzijama.",
+        ["WhatsNew_Empty"] = "Ova kopija programa Rentier nema beleške o izdanjima.",
+        ["WhatsNew_LoadError"] = "Beleške o izdanjima nije moguće učitati.",
+        ["WhatsNew_OlderReleases"] = "Starije verzije: GitHub Releases",
+        ["ReleaseNotesDialog_Title"] = STA_JE_NOVO,
+        ["ReleaseNotesDialog_Subheader"] = "Izmene od {0} do {1}",
+        ["ReleaseNotesDialog_Close"] = "Zatvori",
     };
 }

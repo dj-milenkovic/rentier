@@ -1,0 +1,68 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Rentier.Desktop.ViewModels"
+             xmlns:dto="using:Rentier.Application.DTOs"
+             xmlns:md="using:Rentier.Desktop.Controls.Markdown"
+             x:Class="Rentier.Desktop.Views.WhatsNewSettingsView"
+             x:DataType="vm:WhatsNewSettingsViewModel"
+             x:CompileBindings="False">
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+    <StackPanel Spacing="16" Margin="20">
+
+      <!-- Section header -->
+      <StackPanel Spacing="4">
+        <TextBlock Text="{Binding [WhatsNew_Header], Source={StaticResource Localizer}}"
+                   FontSize="18" FontWeight="SemiBold"
+                   Foreground="{DynamicResource RentierTextPrimaryBrush}" />
+        <TextBlock Text="{Binding SubheaderText}"
+                   FontSize="13" TextWrapping="Wrap"
+                   Foreground="{DynamicResource RentierTextSecondaryBrush}" />
+      </StackPanel>
+
+      <ProgressBar IsIndeterminate="True"
+                   IsVisible="{Binding IsLoading}"
+                   AutomationProperties.Name="Loading Release Notes" />
+
+      <TextBlock Text="{Binding ErrorMessage}"
+                 TextWrapping="Wrap"
+                 Foreground="{DynamicResource RentierDangerForegroundBrush}"
+                 IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+      <TextBlock Text="{Binding [WhatsNew_Empty], Source={StaticResource Localizer}}"
+                 TextWrapping="Wrap"
+                 Foreground="{DynamicResource RentierTextSecondaryBrush}"
+                 IsVisible="{Binding IsEmpty}" />
+
+      <!-- One card per version, newest first -->
+      <ItemsControl ItemsSource="{Binding Notes}" IsVisible="{Binding HasItems}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <StackPanel Spacing="12" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="dto:ReleaseNoteDto">
+            <Border Classes="card"
+                    BorderBrush="{DynamicResource RentierBorderBrush}"
+                    BorderThickness="1">
+              <StackPanel Spacing="8">
+                <TextBlock Text="{Binding Version}"
+                           FontSize="15" FontWeight="SemiBold"
+                           Foreground="{DynamicResource RentierTextPrimaryBrush}" />
+                <md:MarkdownView Markdown="{Binding Markdown}"
+                                 TextElement.Foreground="{DynamicResource RentierTextPrimaryBrush}"
+                                 TextElement.FontSize="13" />
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <HyperlinkButton Content="{Binding [WhatsNew_OlderReleases], Source={StaticResource Localizer}}"
+                       NavigateUri="{Binding ReleasesPageUri}"
+                       IsVisible="{Binding ReleasesPageUri, Converter={x:Static ObjectConverters.IsNotNull}}"
+                       Padding="0" />
+
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

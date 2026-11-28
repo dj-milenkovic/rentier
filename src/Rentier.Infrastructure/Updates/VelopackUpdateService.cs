@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Rentier.Application.Common;
 using Rentier.Application.DTOs;
 using Rentier.Application.Interfaces;
+using Rentier.Application.ReleaseNotes;
 using Rentier.Infrastructure.Logging;
 
 namespace Rentier.Infrastructure.Updates;
@@ -79,7 +80,7 @@ public sealed class VelopackUpdateService : IUpdateService, IDisposable
             }
 
             _logger.UpdateAvailable(version);
-            return new UpdateCheckResult(true, version);
+            return new UpdateCheckResult(true, version, ReadReleaseNotes());
         }
         catch (Exception ex)
         {
@@ -89,6 +90,21 @@ public sealed class VelopackUpdateService : IUpdateService, IDisposable
             _logger.UpdateCheckFailed(ex);
             return new UpdateCheckResult(false, null);
         }
+    }
+
+    /// <summary>
+    /// The update's notes for every version newer than the installed one. The update carries
+    /// the last <see cref="ReleaseNotesDocument.MAX_VERSIONS"/> releases' notes, so a user who
+    /// skipped versions still sees what changed in between.
+    /// </summary>
+    private IReadOnlyList<ReleaseNotesEntry> ReadReleaseNotes()
+    {
+        var entries = ReleaseNotesDocument.Parse(_manager.PendingReleaseNotesMarkdown);
+        var notes = ReleaseNotesDocument.TryParseVersion(_manager.CurrentVersion, out var installed)
+            ? ReleaseNotesDocument.NewerThan(entries, installed)
+            : entries;
+        _logger.UpdateReleaseNotesRead(notes.Count);
+        return notes;
     }
 
     /// <inheritdoc />

@@ -148,6 +148,55 @@ We welcome contributions! Before opening a pull request:
 5. **Run tests locally** — `dotnet test`
 6. **Commit** using conventional commit messages
 7. **Push** and open a **Pull Request** with a clear description
+8. **Fill in the "Release note" section** of the PR description if users will notice the change
+   (see below)
+
+### Release notes
+
+The app shows what changed in each version (Settings → What's new, and **What's new** on the
+update bar). Those notes come from the `## Release note` section of each merged PR's description,
+which the PR template provides:
+
+```
+## Release note
+
+### EN
+- The update bar now spans the whole window.
+
+### SR
+- Traka za ažuriranje sada je preko celog prozora.
+```
+
+Keep the `### EN` / `### SR` headings: an `SR:` line written right after an English list shows
+on GitHub as part of the last English bullet. The note ends at the next `##` or `###` heading
+(e.g. `## Testing` or `### Screenshots`), so don't use sub-headings inside it.
+
+- Write for users: what they see or can do now, not how it was built. Serbian in Latin script,
+  using the app's own words.
+- **The PR title decides whether a note is required.** The **PR Release Note** check fails when:
+  - a `feat`, `fix` or `perf` PR has no note. If users will not notice the change, give the title
+    an internal scope instead: `build`, `ci`, `claude`, `deps`, `dev`, `docs`, `release` or
+    `test(s)`, e.g. `fix(ci): flaky macOS job`.
+  - a note has only one language.
+- Every other type (`chore`, `ci`, `refactor`, `test`, `docs`, Dependabot's `chore: Bump ...`)
+  needs no note; leave the lines empty.
+- You can still fix a note after merging, until the next release is made: the release workflow
+  reads the PR descriptions then.
+- **Reverting a PR before it is released?** Keep the line `Reverts #N` in the revert PR's
+  description (GitHub's **Revert** button writes it). The reverted PR's note is then left out of
+  that release.
+- **A release needs at least one note.** If no PR merged since the last release has one, the
+  Auto Release workflow stops before tagging. To release anyway (e.g. a dependency security fix),
+  run it with **Release without user-facing changes** ticked; the app then shows "Stability and
+  security improvements." for that version.
+- The release tooling lives with the workflows: `.github/tools/Rentier.ReleaseNotes` builds the
+  notes into a temporary file during the release; nothing is committed. Versions up to v1.4.0
+  (`RELEASE_NOTES_SINCE` in `auto-release.yml`) predate release notes and are not shown. Only
+  release builds carry notes; a local build's Settings → What's new is empty.
+- The tool and its tests (`.github/tools/Rentier.ReleaseNotes.Tests`) are not part of
+  `Rentier.slnx`. The **Release Tools** workflow formats, scans and tests them when the tooling,
+  the release workflows or the PR template change; locally:
+  `dotnet test .github/tools/Rentier.ReleaseNotes.Tests`.
 
 ### Code Review Expectations
 
