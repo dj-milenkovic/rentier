@@ -29,6 +29,13 @@ dotnet restore
 dotnet build
 ```
 
+## Claude Code hooks (optional)
+
+The hooks in `.claude/hooks/` run on Windows, Linux and macOS and require
+**PowerShell 7+** (`pwsh`, not Windows PowerShell 5.1): <https://aka.ms/powershell>.
+Without `pwsh`, Claude Code shows a "command not found" hook error; the hooks never block your work.
+Optional tools: `graphify` (`pip install graphifyy`) and the `sonar` CLI. Hooks print a warning when they are missing.
+
 ## Run the Application
 
 ```bash
