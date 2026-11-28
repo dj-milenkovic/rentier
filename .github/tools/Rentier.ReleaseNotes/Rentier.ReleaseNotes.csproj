@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="Rentier.UnitTests" />
+    <InternalsVisibleTo Include="Rentier.ReleaseNotes.Tests" />
   </ItemGroup>
 
 </Project>

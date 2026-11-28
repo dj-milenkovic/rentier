@@ -16,6 +16,7 @@ rules, trait/CI contract, and the "when you add X, you add Y" checklist.
 | UI — Headless view | `Rentier.UnitTests` | Avalonia.Headless.XUnit (`[AvaloniaFact]`) | `Category=UI` | `build` matrix |
 | Integration — adapters | `Rentier.Infrastructure.Tests` | xUnit v3 + SQLite `:memory:` + Verify | `Category=Integration` | `integration-tests` |
 | E2E — scenarios | `Rentier.Scenarios.Tests` | xUnit v3 + production DI + fakes | `Category=Integration` | `integration-tests` |
+| Release tooling + workflow contracts | `Rentier.ReleaseNotes.Tests` (in `.github/tools/`, not in `Rentier.slnx`) | xUnit v3 + FluentAssertions | _(none)_ | `release-tools.yml` (when the tooling, release workflows or PR template change) |
 | Mutation | _(Stryker.NET)_ | dotnet-stryker | _(n/a)_ | `stryker` (Domain PRs + weekly) |
 
 **Speed contract:** no-trait tests < 5 s total, zero I/O, zero threads blocked.

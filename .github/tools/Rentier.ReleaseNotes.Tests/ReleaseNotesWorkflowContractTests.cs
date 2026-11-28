@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 using FluentAssertions;
 using Xunit;
 
-namespace Rentier.UnitTests.Tools;
+namespace Rentier.ReleaseNotes.Tests;
 
 /// <summary>
 /// Guards how the workflows deliver release notes: built once per release, embedded in every

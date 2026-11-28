@@ -2,7 +2,7 @@ using FluentAssertions;
 using Rentier.ReleaseNotes;
 using Xunit;
 
-namespace Rentier.UnitTests.Tools;
+namespace Rentier.ReleaseNotes.Tests;
 
 public class PrReleaseNoteTests
 {

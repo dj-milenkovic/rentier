@@ -9,7 +9,6 @@
     <ProjectReference Include="..\..\src\Rentier.Application\Rentier.Application.csproj" />
     <ProjectReference Include="..\..\src\Rentier.Desktop\Rentier.Desktop.csproj" />
     <ProjectReference Include="..\Rentier.Tests.Common\Rentier.Tests.Common.csproj" />
-    <ProjectReference Include="..\..\.github\tools\Rentier.ReleaseNotes\Rentier.ReleaseNotes.csproj" />
   </ItemGroup>
 
   <ItemGroup>

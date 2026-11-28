@@ -3,7 +3,7 @@ using Rentier.Application.ReleaseNotes;
 using Rentier.ReleaseNotes;
 using Xunit;
 
-namespace Rentier.UnitTests.Tools;
+namespace Rentier.ReleaseNotes.Tests;
 
 public class ReleaseNotesBuilderTests
 {

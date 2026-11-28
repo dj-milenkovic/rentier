@@ -33,6 +33,7 @@ tests/Rentier.UnitTests/           Domain + Application tests (no I/O)
 tests/Rentier.Infrastructure.Tests/  EF Core/SQLite, parser, serializer integration tests
 tests/Rentier.Scenarios.Tests/     End-to-end scenario tests
 tests/Rentier.Tests.Common/        Shared test fixtures/builders
+.github/tools/Rentier.ReleaseNotes(.Tests)/  Release-notes tool + its tests (tests not in Rentier.slnx; run by release-tools.yml)
 ```
 
 ## Common Commands
